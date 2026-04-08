@@ -240,10 +240,24 @@
       <div class="text-6xl mb-4">🏭</div>
       <h2 class="text-2xl font-black mb-1 text-slate-800">SQF & MLM</h2>
       <p class="text-indigo-600 font-black mb-2 text-xs uppercase tracking-widest">ระบบจัดการสต๊อกรวม</p>
-      <p class="text-slate-400 font-bold mb-8 text-xs">สุพรรณคิวฟู้ดส์ | แม่ละมาย</p>
-      <input type="text" id="usernameInput" placeholder="ระบุชื่อพนักงาน"
-        class="w-full bg-slate-50 border-2 border-slate-200 p-5 rounded-3xl mb-5 text-center outline-none focus:border-indigo-600 font-black text-xl"
+      <p class="text-slate-400 font-bold mb-6 text-xs">สุพรรณคิวฟู้ดส์ | แม่ละมาย</p>
+      <input type="text" id="usernameInput" placeholder="👤 ระบุชื่อพนักงาน"
+        class="w-full bg-slate-50 border-2 border-slate-200 p-5 rounded-3xl mb-3 text-center outline-none focus:border-indigo-600 font-black text-xl"
         onkeydown="if(event.key==='Enter') login()">
+      <!-- ตั้งชื่ออุปกรณ์ (แสดงเฉพาะครั้งแรก) -->
+      <div id="loginDeviceSection">
+        <div style="border-top:1px dashed #e2e8f0;margin:8px 0 10px;"></div>
+        <p style="font-size:11px;color:#64748b;margin-bottom:6px;font-weight:700;">📱 ตั้งชื่ออุปกรณ์นี้ <span style="color:#ef4444;">(ครั้งแรก — ห้ามซ้ำกัน)</span></p>
+        <input type="text" id="deviceNameInput" placeholder="เช่น iPad ห้องเย็น, มือถือพี่นก"
+          class="w-full bg-amber-50 border-2 border-amber-300 p-4 rounded-3xl mb-3 text-center outline-none font-bold text-base"
+          onkeydown="if(event.key==='Enter') login()">
+      </div>
+      <!-- แสดงชื่ออุปกรณ์ถ้าตั้งไว้แล้ว -->
+      <div id="loginDeviceExisting" style="display:none;margin-bottom:10px;">
+        <div style="border-top:1px dashed #e2e8f0;margin:8px 0 8px;"></div>
+        <p style="font-size:11px;color:#64748b;">📱 อุปกรณ์นี้: <b id="loginDeviceName" style="color:#4f46e5;"></b>
+          &nbsp;<button onclick="changeDeviceName()" style="font-size:10px;color:#94a3b8;text-decoration:underline;background:none;border:none;cursor:pointer;">เปลี่ยน</button></p>
+      </div>
       <button onclick="login()" class="w-full bg-indigo-600 text-white py-5 rounded-3xl font-black hover:bg-slate-900 transition-all shadow-xl text-lg uppercase">
         เข้าสู่ระบบ 🚀
       </button>
@@ -253,8 +267,11 @@
   <!-- ═══ NAVIGATION BAR ═══ -->
   <nav id="mainNav" class="fixed top-0 left-0 right-0 z-[150] bg-slate-900 shadow-2xl" style="display:none">
     <div class="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between gap-3">
-      <span class="text-white font-black text-sm shrink-0">
+      <span class="text-white font-black text-sm shrink-0" style="line-height:1.3;">
         👤 <span id="navUser" class="text-indigo-400"></span>
+        <span style="color:#475569;font-size:9px;"> · </span>
+        <span style="color:#fbbf24;font-size:11px;">📱 <span id="navDevice"></span></span>
+        <button onclick="changeDeviceName()" title="เปลี่ยนชื่ออุปกรณ์" style="background:none;border:none;cursor:pointer;color:#64748b;font-size:10px;padding:0 2px;vertical-align:middle;">✏️</button>
       </span>
       <div class="flex gap-1 overflow-x-auto">
         <button id="navBtn-COLDROOM" class="nav-btn" onclick="switchModule('COLDROOM')">❄️ คลังสินค้า<span id="badge-COLDROOM" class="nav-badge" style="display:none"></span></button>
@@ -964,11 +981,48 @@
   }
 
   // ─────────────────────────────────────────────
+  // DEVICE MANAGEMENT
+  // ─────────────────────────────────────────────
+  let currentDevice = { id: "", name: "" };
+
+  function generateDeviceId() {
+    if (typeof crypto !== "undefined" && crypto.randomUUID) return crypto.randomUUID();
+    return "dev-" + Date.now() + "-" + Math.random().toString(36).slice(2, 9);
+  }
+
+  function loadDevice() {
+    let id = localStorage.getItem("appstock_device_id");
+    if (!id) { id = generateDeviceId(); localStorage.setItem("appstock_device_id", id); }
+    const name = localStorage.getItem("appstock_device_name") || "";
+    currentDevice = { id, name };
+    return currentDevice;
+  }
+
+  function changeDeviceName() {
+    const newName = prompt("📱 ระบุชื่ออุปกรณ์ใหม่:\n(เช่น iPad ห้องเย็น, มือถือพี่นก)", currentDevice.name);
+    if (newName === null) return;
+    const trimmed = newName.trim();
+    if (!trimmed) { showToast("กรุณาระบุชื่ออุปกรณ์", "warn"); return; }
+    localStorage.setItem("appstock_device_name", trimmed);
+    currentDevice.name = trimmed;
+    const navEl = document.getElementById("navDevice");
+    if (navEl) navEl.innerText = trimmed;
+    showToast("✅ เปลี่ยนชื่ออุปกรณ์เป็น: " + trimmed);
+  }
+
+  // ─────────────────────────────────────────────
   // LOGIN / LOGOUT
   // ─────────────────────────────────────────────
   function login() {
     const user = document.getElementById("usernameInput").value.trim();
     if (!user) { showToast("กรุณาระบุชื่อพนักงาน", "warn"); return; }
+    const dev = loadDevice();
+    if (!dev.name) {
+      // ครั้งแรก — ต้องตั้งชื่ออุปกรณ์
+      const devName = (document.getElementById("deviceNameInput")?.value || "").trim();
+      if (!devName) { showToast("📱 กรุณาตั้งชื่ออุปกรณ์นี้ก่อนเข้าสู่ระบบ", "warn"); document.getElementById("deviceNameInput")?.focus(); return; }
+      localStorage.setItem("appstock_device_name", devName);
+    }
     localStorage.setItem("unified_stock_user", user);
     location.reload();
   }
@@ -979,14 +1033,23 @@
   }
 
   function checkAuth() {
+    loadDevice();
     const saved = localStorage.getItem("unified_stock_user");
     if (saved) {
       currentUser = saved;
       document.getElementById("loginOverlay").style.display = "none";
       document.getElementById("mainNav").style.display      = "block";
       document.getElementById("navUser").innerText          = currentUser;
+      document.getElementById("navDevice").innerText        = currentDevice.name || "ไม่ระบุ";
       document.getElementById("rawCurrentUser").innerText   = currentUser;
       switchModule("COLDROOM");
+    } else {
+      // ยังไม่ได้ล็อกอิน — ปรับหน้า login ให้แสดงชื่ออุปกรณ์ถ้าตั้งแล้ว
+      if (currentDevice.name) {
+        document.getElementById("loginDeviceSection").style.display  = "none";
+        document.getElementById("loginDeviceExisting").style.display = "block";
+        document.getElementById("loginDeviceName").innerText         = currentDevice.name;
+      }
     }
   }
 
@@ -1063,7 +1126,11 @@
       const res = await fetch(GAS_URL, {
         method: "POST",
         headers: { "Content-Type": "text/plain;charset=utf-8" },
-        body: JSON.stringify({ module: "COLDROOM", action, payload })
+        body: JSON.stringify({
+          module: "COLDROOM", action, payload,
+          deviceId:   currentDevice.id,
+          deviceName: currentDevice.name || "ไม่ระบุ"
+        })
       });
       return await res.json();
     } catch (e) {
@@ -2062,7 +2129,15 @@
   }
 
   async function rawFetch(payload) {
-    const res = await fetch(GAS_URL, { method:"POST", body: JSON.stringify({ ...payload, module: rawCurrentModule }) });
+    const res = await fetch(GAS_URL, {
+      method: "POST",
+      body: JSON.stringify({
+        ...payload,
+        module:     rawCurrentModule,
+        deviceId:   currentDevice.id,
+        deviceName: currentDevice.name || "ไม่ระบุ"
+      })
+    });
     return await res.json();
   }
 

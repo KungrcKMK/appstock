@@ -1692,15 +1692,18 @@
   }
 
   async function crAskClearGlobal(i) {
-    const row = window.crAllLotsData[i];
-    const emp = $$cr("crEmployee").value.trim();
-    if (!emp) { await crShowModal("alert","ไม่พบข้อมูลพนักงาน","กรุณาระบุชื่อผู้บันทึกก่อน"); crSwitchTab("stock"); $$cr("crEmployee").focus(); return; }
+    const row = window.crAllLotsData?.[i];
+    if (!row) { showToast("ไม่พบข้อมูล lot นี้ กรุณาโหลดใหม่","warn"); crLoadOverview(); return; }
+    // ใช้ currentUser เป็น fallback ถ้า employee input ว่าง
+    const emp = ($$cr("crEmployee")?.value?.trim()) || currentUser;
+    if (!emp) { await crShowModal("alert","ไม่พบข้อมูลพนักงาน","กรุณาเข้าสู่ระบบหรือระบุชื่อผู้บันทึกก่อน"); return; }
     const reason = await crShowModal("prompt","🗑️ นำสินค้าออก",`รอบผลิต ${isoToDdmmyy(row.MFG)} ของ ${row.ProductName}\nกรุณาระบุเหตุผล:`);
     if (!reason) return;
-    const conf = await crShowModal("confirm","ยืนยัน","ยืนยันการปรับยอดเป็น 0 ใช่หรือไม่?");
+    const conf = await crShowModal("confirm","ยืนยัน",`ยืนยันการนำออก Lot นี้?\n(ยอดคงเหลือจะถูกตั้งเป็น 0)`);
     if (conf) {
       const res = await crCallServer("clearLotStock",{ barcode:row.Barcode, mfg:row.MFG, reason, employeeName:emp });
-      if (res.ok) { if(navigator.vibrate) navigator.vibrate([100,50,100]); showToast("ดำเนินการเรียบร้อย"); crClearAll(); crLoadOverview(); }
+      if (res?.ok) { if(navigator.vibrate) navigator.vibrate([100,50,100]); showToast("ดำเนินการเรียบร้อย"); crClearAll(); crLoadOverview(); }
+      else { showToast(res?.error || "เกิดข้อผิดพลาด กรุณาลองใหม่","err"); }
     }
   }
 

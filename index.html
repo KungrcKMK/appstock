@@ -1,0 +1,3006 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>AppStock — ระบบจัดการสต๊อก SQF & MLM</title>
+
+  <!-- PWA -->
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#4f46e5">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="AppStock">
+  <link rel="apple-touch-icon" href="icons/icon-192.png">
+  <link rel="icon" type="image/svg+xml" href="icons/icon.svg">
+
+  <!-- SEO / Share -->
+  <meta name="description" content="ระบบจัดการสต๊อก Cold Room, SQF และ MLM — สุพรรณคิวฟู้ดส์">
+  <meta property="og:title" content="AppStock — ระบบจัดการสต๊อก">
+  <meta property="og:description" content="Cold Room | SQF | MLM Stock Management">
+  <meta property="og:type" content="website">
+
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Sarabun:wght@400;600;800&display=swap" rel="stylesheet">
+  <script src="https://unpkg.com/html5-qrcode"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  <style>
+    body { font-family: 'Sarabun', 'Inter', sans-serif; }
+    .hide { display: none !important; }
+
+    /* ── Loading ── */
+    .loading-overlay { position:fixed;inset:0;z-index:9998;background:rgba(15,23,42,0.65);backdrop-filter:blur(4px);display:none;align-items:center;justify-content:center; }
+    .loading-overlay.active { display:flex; }
+    .loading-box { background:#fff;border-radius:2rem;padding:28px 32px;box-shadow:0 16px 30px rgba(0,0,0,.2);display:flex;align-items:center;gap:16px;font-weight:800;color:#0f172a; }
+    .spinner { width:28px;height:28px;border:4px solid #e2e8f0;border-top-color:#2563eb;border-radius:50%;animation:spin .8s linear infinite; }
+    @keyframes spin { to { transform:rotate(360deg); } }
+
+    /* ── Toast ── */
+    .toast-container { position:fixed;top:72px;right:20px;z-index:9999;display:flex;flex-direction:column;gap:10px;pointer-events:none; }
+    .toast-item { min-width:260px;max-width:400px;padding:12px 18px;border-radius:1rem;color:#fff;font-weight:800;font-size:14px;box-shadow:0 8px 24px rgba(0,0,0,.18);animation:slideIn .25s ease-out; }
+    .toast-success { background:#059669; }
+    .toast-error   { background:#dc2626; }
+    .toast-warn    { background:#ea580c; }
+    .toast-info    { background:#2563eb; }
+    @keyframes slideIn { from{opacity:0;transform:translateY(-8px) translateX(16px)} to{opacity:1;transform:translateY(0) translateX(0)} }
+
+    /* ── Nav ── */
+    #main-nav { display:none; }
+    .nav-btn { padding:8px 16px;border-radius:12px;font-weight:800;font-size:12px;text-transform:uppercase;transition:all .2s;color:rgba(255,255,255,.6);background:transparent;border:none;cursor:pointer;white-space:nowrap; }
+    .nav-btn.active { background:rgba(255,255,255,.15);color:#fff;box-shadow:0 2px 8px rgba(0,0,0,.2); }
+    .nav-btn:hover:not(.active) { color:#fff; }
+    .nav-badge { display:inline-flex;align-items:center;justify-content:center;min-width:18px;height:18px;padding:0 5px;border-radius:999px;font-size:10px;font-weight:900;background:#ef4444;color:#fff;margin-left:4px;animation:badgePop .3s ease; }
+    @keyframes badgePop { 0%{transform:scale(0)} 70%{transform:scale(1.3)} 100%{transform:scale(1)} }
+
+    /* ── Alert Modal ── */
+    .alert-item { display:flex;justify-content:space-between;align-items:center;padding:12px 0;border-bottom:1px solid #f1f5f9;gap:8px; }
+    .alert-item:last-child { border-bottom:none; }
+    .alert-pulse { animation:pulse 2s infinite; }
+    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.6} }
+
+    /* ── Autocomplete Dropdown ── */
+    .ac-dropdown { position:fixed;z-index:9700;background:#fff;border:2px solid #c7d2fe;border-radius:14px;box-shadow:0 12px 32px rgba(79,70,229,0.18);max-height:300px;overflow-y:auto;display:none;font-family:'Sarabun',sans-serif;min-width:220px; }
+    .ac-dropdown.show { display:block; }
+    .ac-item { padding:10px 16px;cursor:pointer;border-bottom:1px solid #f1f5f9; }
+    .ac-item:last-child { border-bottom:none; }
+    .ac-item:hover,.ac-item.ac-hover { background:#eff6ff; }
+    .ac-main { font-weight:700;color:#1e293b;font-size:14px;line-height:1.3; }
+    .ac-sub  { font-size:11px;color:#94a3b8;margin-top:2px; }
+    .ac-badge { display:inline-block;padding:1px 7px;border-radius:6px;font-size:10px;font-weight:800;margin-left:6px;background:#e0e7ff;color:#4338ca;vertical-align:middle; }
+    .ac-empty { padding:14px 16px;color:#94a3b8;font-size:13px;text-align:center; }
+
+    /* ── Coldroom custom styles ── */
+    :root { --bg:#f8fafc;--card:#fff;--line:#e2e8f0;--text:#0f172a;--muted:#64748b;--primary:#4f46e5;--primary-dark:#4338ca;--ok:#16a34a;--warn:#ea580c;--danger:#dc2626;--radius:20px;--radius-sm:12px;--shadow:0 10px 25px -5px rgba(0,0,0,.05); }
+    #module-COLDROOM { background:var(--bg); }
+    #module-COLDROOM .cr-wrap { max-width:1450px;margin:20px auto;padding:14px 14px 100px; }
+    #module-COLDROOM .cr-topbar { display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:20px; }
+    #module-COLDROOM .cr-badge { background:#e0e7ff;color:var(--primary);padding:6px 14px;border-radius:999px;font-size:13px;font-weight:700; }
+    #module-COLDROOM .cr-tabbar { display:flex;gap:6px;margin-bottom:20px;background:#f1f5f9;padding:6px;border-radius:16px; }
+    #module-COLDROOM .cr-tab-btn { flex:1 1 0;border:none;padding:12px 4px;border-radius:12px;background:transparent;color:var(--muted);font-size:12px;font-weight:700;cursor:pointer;text-align:center;white-space:nowrap;transition:.2s;font-family:inherit; }
+    #module-COLDROOM .cr-tab-btn.active { background:#fff;color:var(--primary);box-shadow:0 4px 6px rgba(0,0,0,.05); }
+    #module-COLDROOM .cr-tab-panel { display:none;animation:fadeIn .3s; }
+    #module-COLDROOM .cr-tab-panel.active { display:block; }
+    @keyframes fadeIn { from{opacity:0;transform:translateY(4px)} to{opacity:1;transform:translateY(0)} }
+    #module-COLDROOM .card { background:#fff;border-radius:var(--radius);box-shadow:var(--shadow);padding:24px;margin-bottom:20px;border:1px solid var(--line); }
+    #module-COLDROOM .mini-stats { display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:16px; }
+    #module-COLDROOM .stat { border:1px solid var(--line);background:#f8fafc;border-radius:16px;padding:16px;text-align:center; }
+    #module-COLDROOM .stat .v { font-size:24px;font-weight:700;color:var(--primary); }
+    #module-COLDROOM .row { display:grid;grid-template-columns:repeat(2,1fr);gap:16px;margin-bottom:16px; }
+    #module-COLDROOM .field { display:flex;flex-direction:column;gap:8px; }
+    #module-COLDROOM .field.full { grid-column:1/-1; }
+    #module-COLDROOM label { font-size:13px;font-weight:700;color:var(--muted); }
+    #module-COLDROOM input, #module-COLDROOM select, #module-COLDROOM textarea { width:100%;padding:14px 16px;border:1px solid var(--line);border-radius:var(--radius-sm);font-size:15px;outline:none;font-family:inherit;transition:.2s;box-sizing:border-box; }
+    #module-COLDROOM input:focus, #module-COLDROOM textarea:focus { border-color:var(--primary);box-shadow:0 0 0 4px rgba(79,70,229,.1); }
+    #module-COLDROOM button.cr-btn { border:none;padding:14px 20px;border-radius:var(--radius-sm);font-size:15px;font-weight:700;cursor:pointer;transition:.2s;display:inline-flex;align-items:center;justify-content:center;gap:8px;font-family:inherit; }
+    #module-COLDROOM button.cr-btn:active { transform:scale(.97); }
+    #module-COLDROOM .btn-primary { background:var(--primary);color:#fff; }
+    #module-COLDROOM .btn-light { background:#f1f5f9;color:var(--text);border:1px solid var(--line); }
+    #module-COLDROOM .cr-status { padding:14px;border-radius:var(--radius-sm);font-size:14px;font-weight:600;display:none;margin-bottom:16px;border:1px solid transparent; }
+    #module-COLDROOM .cr-status.ok  { display:flex;background:#dcfce7;color:#16a34a;border-color:#bbf7d0; }
+    #module-COLDROOM .cr-status.warn{ display:flex;background:#ffedd5;color:#ea580c;border-color:#fed7aa; }
+    #module-COLDROOM .cr-status.err { display:flex;background:#fee2e2;color:#dc2626;border-color:#fecaca; }
+    #module-COLDROOM .big-stat-box { background:var(--primary);color:#fff;padding:25px;border-radius:20px;margin-bottom:20px;text-align:center;box-shadow:0 8px 20px rgba(79,70,229,.25); }
+    #module-COLDROOM .big-stat-label { font-size:14px;opacity:.9;margin-bottom:8px;display:block; }
+    #module-COLDROOM .big-stat-value { font-size:56px;font-weight:800;line-height:1; }
+    #module-COLDROOM .big-stat-unit { font-size:20px;margin-left:10px;opacity:.8; }
+    #module-COLDROOM .lot-breakdown-box { background:rgba(0,0,0,.15);border-radius:12px;padding:12px;margin-top:15px;text-align:left;font-size:14px;line-height:1.6;display:none; }
+    #module-COLDROOM .scanner-box { border-radius:16px;overflow:hidden;background:#000;position:relative;min-height:240px;margin:10px 0; }
+    #module-COLDROOM .scanner-video { width:100%;height:240px;object-fit:cover; }
+    #module-COLDROOM .scanner-frame { position:absolute;inset:0;border:2px solid #fff;width:70%;height:50%;margin:auto;border-radius:12px;box-shadow:0 0 0 1000px rgba(0,0,0,.5); }
+    #module-COLDROOM .table-wrap { overflow-x:auto;border:1px solid var(--line);border-radius:16px; }
+    #module-COLDROOM table { width:100%;border-collapse:collapse;font-size:14px;min-width:700px; }
+    #module-COLDROOM th, #module-COLDROOM td { padding:14px;text-align:left;border-bottom:1px solid #f1f5f9; }
+    #module-COLDROOM th { background:#f8fafc;font-weight:700;color:var(--muted);font-size:12px; }
+    #module-COLDROOM .pill { padding:4px 10px;border-radius:99px;font-size:12px;font-weight:700; }
+    #module-COLDROOM .pill-danger { background:#fee2e2;color:#dc2626; }
+    #module-COLDROOM .pill-ok    { background:#dcfce7;color:#16a34a; }
+    #module-COLDROOM .sticky-actions { position:fixed;bottom:0;left:0;right:0;background:#fff;padding:16px;display:flex;gap:10px;border-top:1px solid var(--line);z-index:100;box-shadow:0 -5px 15px rgba(0,0,0,.05); }
+
+    /* ── Raw Materials (SQF/MLM) custom ── */
+    .badge-status { display:inline-flex;align-items:center;justify-content:center;gap:5px;width:96px;height:32px;padding:0 8px;border-radius:9999px;font-weight:800;font-size:10px;line-height:1;white-space:nowrap;box-sizing:border-box; }
+    .history-item { padding:12px;border-radius:1.5rem;border-left-width:8px;transition:all .2s; }
+    .history-text-main { font-weight:800;font-size:14px;line-height:1.2; }
+    .history-text-sub  { font-weight:600;font-size:10px;opacity:.7;text-transform:uppercase;margin-top:4px; }
+    .custom-scrollbar::-webkit-scrollbar { width:5px; }
+    .custom-scrollbar::-webkit-scrollbar-thumb { background:#cbd5e1;border-radius:10px; }
+    .chart-wrap       { position:relative;height:360px; }
+    .chart-wrap-small { position:relative;height:320px; }
+    .qr-box canvas, .qr-box img { margin:0 auto;background:#fff;padding:10px;border-radius:1.5rem;box-shadow:0 8px 24px rgba(0,0,0,.12); }
+    .btn-disabled { opacity:.65;pointer-events:none; }
+    .filter-active { background-color:#1e293b !important;color:#fff !important;box-shadow:0 4px 12px rgba(0,0,0,.15); }
+
+    /* ── WMS Custom Modal ── */
+    .cr-modal-overlay { position:fixed;inset:0;background:rgba(0,0,0,.5);backdrop-filter:blur(4px);z-index:9997;display:flex;justify-content:center;align-items:center;opacity:0;pointer-events:none;transition:.2s; }
+    .cr-modal-overlay.show { opacity:1;pointer-events:auto; }
+    .cr-modal-box { background:#fff;width:90%;max-width:400px;border-radius:24px;padding:24px;box-shadow:0 20px 40px rgba(0,0,0,.2);transform:scale(.95);transition:.2s; }
+    .cr-modal-overlay.show .cr-modal-box { transform:scale(1); }
+    .cr-modal-box h3 { margin:0 0 10px;font-size:20px; }
+    .cr-modal-box p  { margin:0 0 20px;color:var(--muted);font-size:15px;line-height:1.5; }
+    .cr-modal-actions { display:flex;justify-content:flex-end;gap:10px;margin-top:20px; }
+
+    @media (max-width:600px) {
+      #module-COLDROOM .row { grid-template-columns:1fr; }
+      #module-COLDROOM .mini-stats { grid-template-columns:repeat(2,1fr); }
+      #module-COLDROOM .table-wrap { border:none;overflow:visible;background:transparent; }
+      #module-COLDROOM table { min-width:100%;display:block; }
+      #module-COLDROOM thead { display:none; }
+      #module-COLDROOM tbody { display:flex;flex-direction:column;gap:12px; }
+      #module-COLDROOM tr { display:block;background:#fff;border:1px solid var(--line);border-radius:16px;padding:12px; }
+      #module-COLDROOM td { display:flex;justify-content:space-between;align-items:center;padding:8px 4px;border-bottom:1px dashed var(--line);text-align:right; }
+      #module-COLDROOM td:last-child { border-bottom:none; }
+      #module-COLDROOM td::before { content:attr(data-label);font-weight:700;color:var(--muted);font-size:12px;text-transform:uppercase;float:left;text-align:left; }
+    }
+  </style>
+</head>
+<body class="min-h-screen bg-slate-100">
+
+  <!-- ═══ LOADING OVERLAY ═══ -->
+  <div id="loadingOverlay" class="loading-overlay">
+    <div class="loading-box">
+      <div class="spinner"></div>
+      <div id="loadingText">กำลังประมวลผล...</div>
+    </div>
+  </div>
+
+  <!-- ═══ TOAST ═══ -->
+  <div id="toastContainer" class="toast-container"></div>
+
+  <!-- ═══ UNIFIED TELEGRAM SETTINGS ═══ -->
+  <div id="unifiedSettingsModal" class="hidden fixed inset-0 bg-black/80 backdrop-blur-md z-[400] flex items-center justify-center p-4">
+    <div class="bg-white w-full max-w-lg rounded-[3rem] shadow-2xl overflow-hidden border-8 border-slate-800">
+      <!-- Header -->
+      <div class="bg-slate-900 p-8 text-white">
+        <div class="flex justify-between items-center mb-2">
+          <h2 class="text-2xl font-black uppercase italic tracking-tighter">⚙️ ตั้งค่า Telegram</h2>
+          <button onclick="closeUnifiedSettings()" class="text-3xl hover:text-red-400 transition-colors">✕</button>
+        </div>
+        <div class="flex gap-2 flex-wrap mt-3">
+          <span class="bg-indigo-600 text-white text-xs font-black px-3 py-1 rounded-full">❄️ Cold Room</span>
+          <span class="bg-orange-500 text-white text-xs font-black px-3 py-1 rounded-full">🏭 SQF</span>
+          <span class="bg-blue-600  text-white text-xs font-black px-3 py-1 rounded-full">🏭 MLM</span>
+          <span class="bg-emerald-600 text-white text-xs font-black px-3 py-1 rounded-full">✅ ใช้ร่วมกัน</span>
+        </div>
+      </div>
+
+      <!-- Body -->
+      <div class="p-8 space-y-5">
+        <div class="grid grid-cols-2 gap-4">
+          <div>
+            <label class="text-xs font-black uppercase text-slate-400 mb-1 block">🤖 ชื่อบอท</label>
+            <input type="text" id="uniTgBotName"
+              class="w-full bg-slate-50 border-2 border-slate-200 p-4 rounded-2xl font-bold outline-none focus:border-slate-800 transition-colors"
+              placeholder="@MyStockBot">
+          </div>
+          <div>
+            <label class="text-xs font-black uppercase text-slate-400 mb-1 block">📲 สถานะแจ้งเตือน</label>
+            <select id="uniTgEnable"
+              class="w-full bg-slate-50 border-2 border-slate-200 p-4 rounded-2xl font-bold outline-none focus:border-slate-800 transition-colors">
+              <option value="true">✅ เปิดใช้งาน</option>
+              <option value="false">❌ ปิดใช้งาน</option>
+            </select>
+          </div>
+        </div>
+
+        <div>
+          <label class="text-xs font-black uppercase text-slate-400 mb-1 block">🔑 Bot Token</label>
+          <input type="password" id="uniTgToken"
+            class="w-full bg-slate-50 border-2 border-slate-200 p-4 rounded-2xl font-bold outline-none focus:border-slate-800 transition-colors"
+            placeholder="1234567890:ABC-xxxxxxxxxxxxx">
+        </div>
+
+        <div>
+          <label class="text-xs font-black uppercase text-slate-400 mb-1 block">💬 Chat ID
+            <span class="text-slate-300 font-normal normal-case">(คั่นหลาย ID ด้วยคอมม่า)</span>
+          </label>
+          <textarea id="uniTgChatIds" rows="3"
+            class="w-full bg-slate-50 border-2 border-slate-200 p-4 rounded-2xl font-bold outline-none focus:border-slate-800 transition-colors resize-none"
+            placeholder="-100xxxxxxxxx, -100yyyyyyyyy"></textarea>
+        </div>
+
+        <!-- Test Button -->
+        <button onclick="testTelegram()"
+          class="w-full bg-slate-100 text-slate-700 py-4 rounded-2xl font-black hover:bg-slate-200 transition-all uppercase text-sm">
+          📨 ทดสอบส่งข้อความ
+        </button>
+
+        <!-- Save Button -->
+        <button onclick="saveUnifiedSettings()" id="uniBtnSave"
+          class="w-full bg-slate-900 text-white py-6 rounded-3xl font-black text-xl shadow-xl hover:bg-blue-700 transition-all uppercase">
+          💾 บันทึกการตั้งค่า
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ LOGIN ═══ -->
+  <div id="loginOverlay" class="fixed inset-0 bg-slate-900/95 z-[200] flex items-center justify-center p-6 text-center backdrop-blur-md">
+    <div class="bg-white p-10 rounded-[4rem] shadow-2xl w-full max-w-sm border-t-[12px] border-indigo-600">
+      <div class="text-6xl mb-4">🏭</div>
+      <h2 class="text-2xl font-black mb-1 text-slate-800">SQF & MLM</h2>
+      <p class="text-indigo-600 font-black mb-2 text-xs uppercase tracking-widest">ระบบจัดการสต๊อกรวม</p>
+      <p class="text-slate-400 font-bold mb-8 text-xs">สุพรรณคิวฟู้ดส์ | แม่ละมาย</p>
+      <input type="text" id="usernameInput" placeholder="ระบุชื่อพนักงาน"
+        class="w-full bg-slate-50 border-2 border-slate-200 p-5 rounded-3xl mb-5 text-center outline-none focus:border-indigo-600 font-black text-xl"
+        onkeydown="if(event.key==='Enter') login()">
+      <button onclick="login()" class="w-full bg-indigo-600 text-white py-5 rounded-3xl font-black hover:bg-slate-900 transition-all shadow-xl text-lg uppercase">
+        เข้าสู่ระบบ 🚀
+      </button>
+    </div>
+  </div>
+
+  <!-- ═══ NAVIGATION BAR ═══ -->
+  <nav id="mainNav" class="fixed top-0 left-0 right-0 z-[150] bg-slate-900 shadow-2xl" style="display:none">
+    <div class="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between gap-3">
+      <span class="text-white font-black text-sm shrink-0">
+        👤 <span id="navUser" class="text-indigo-400"></span>
+      </span>
+      <div class="flex gap-1 overflow-x-auto">
+        <button id="navBtn-COLDROOM" class="nav-btn" onclick="switchModule('COLDROOM')">❄️ คลังสินค้า<span id="badge-COLDROOM" class="nav-badge" style="display:none"></span></button>
+        <button id="navBtn-SQF"      class="nav-btn" onclick="switchModule('SQF')">🏭 วัตถุดิบ SQF<span id="badge-SQF" class="nav-badge" style="display:none"></span></button>
+        <button id="navBtn-MLM"      class="nav-btn" onclick="switchModule('MLM')">🏭 วัตถุดิบ MLM<span id="badge-MLM" class="nav-badge" style="display:none"></span></button>
+      </div>
+      <button onclick="openUnifiedSettings()" class="nav-btn" style="background:rgba(255,255,255,0.1);color:#fff;">⚙️ Telegram</button>
+      <button onclick="logout()" class="text-red-400 font-black text-xs hover:text-red-300 shrink-0 nav-btn">🔴 ออก</button>
+    </div>
+
+    <!-- Datalist สำหรับหน่วยนับ (ใช้ร่วมทุก module) -->
+    <datalist id="unitDatalist">
+      <option value="กก."><option value="กรัม"><option value="ลิตร"><option value="มล.">
+      <option value="ชิ้น"><option value="อัน"><option value="กล่อง"><option value="ลัง">
+      <option value="ถุง"><option value="ถ้วย"><option value="ขวด"><option value="แพ็ค">
+      <option value="ม้วน"><option value="แผ่น"><option value="ชุด"><option value="โหล">
+      <option value="ซอง"><option value="ถัง"><option value="ตะกร้า"><option value="แกลลอน">
+    </datalist>
+  </nav>
+
+  <!-- ════════════════════════════════════════════
+       ❄️ MODULE: COLDROOM
+  ════════════════════════════════════════════ -->
+  <div id="module-COLDROOM" class="module-section hide" style="padding-top:60px;">
+
+    <!-- WMS Custom Modal -->
+    <div id="crModal" class="cr-modal-overlay">
+      <div class="cr-modal-box">
+        <h3 id="crModalTitle">Title</h3>
+        <p  id="crModalMessage">Message</p>
+        <input type="text" id="crModalInput" style="display:none;width:100%;padding:12px;border:1px solid #e2e8f0;border-radius:12px;font-size:16px;margin-bottom:4px;" autocomplete="off">
+        <div class="cr-modal-actions">
+          <button class="cr-btn btn-light" id="crModalCancel">ยกเลิก</button>
+          <button class="cr-btn btn-primary" id="crModalConfirm">ตกลง</button>
+        </div>
+      </div>
+    </div>
+
+
+    <div class="cr-wrap">
+      <div class="cr-topbar">
+        <div><h1 style="margin:0;font-size:24px;">❄️ คลังสินค้า SQF</h1></div>
+        <div class="cr-badge">V 3.4.2</div>
+      </div>
+
+      <div class="cr-tabbar">
+        <button class="cr-tab-btn active" id="crTabBtn-stock"      onclick="crSwitchTab('stock')">📦 นับสต๊อก</button>
+        <button class="cr-tab-btn"        id="crTabBtn-balance"    onclick="crSwitchTab('balance')">📊 คงเหลือ</button>
+        <button class="cr-tab-btn"        id="crTabBtn-newproduct" onclick="crSwitchTab('newproduct')">➕ สินค้าใหม่</button>
+        <button class="cr-tab-btn"        id="crTabBtn-editproduct" onclick="crSwitchTab('editproduct')">✏️ แก้ไขสินค้า</button>
+        <button class="cr-tab-btn"        id="crTabBtn-workorder"  onclick="crSwitchTab('workorder')">📋 ใบสั่งผลิต</button>
+        <button class="cr-tab-btn"        id="crTabBtn-report"     onclick="crSwitchTab('report')">📈 แดชบอร์ด</button>
+      </div>
+
+      <!-- Tab: จัดการ -->
+      <div class="cr-tab-panel active" id="cr-tab-stock">
+        <div class="card">
+          <h2>🔍 ค้นหา / สแกนสินค้า</h2>
+          <div style="display:flex;gap:10px;">
+            <button class="cr-btn btn-primary" onclick="crStartScanner('stock')">📷 เปิดกล้อง</button>
+            <button class="cr-btn btn-light"   onclick="crStopScanner()">❌ ปิด</button>
+          </div>
+          <div class="scanner-box hide" id="crScannerBoxStock"><video id="crVideoStock" class="scanner-video" playsinline muted></video><div class="scanner-frame"></div></div>
+          <div class="cr-status" id="crScannerStatus"></div>
+          <div style="display:flex;gap:10px;margin-top:15px;">
+            <input type="text" id="crBarcode" placeholder="🏷️ สแกนบาร์โค้ด หรือ พิมพ์ชื่อสินค้า..." style="flex:1;" autocomplete="off" onkeydown="if(event.key==='Enter') crLookupBarcode()">
+            <button class="cr-btn btn-primary" onclick="crLookupBarcode()">🔍 ค้นหา</button>
+          </div>
+        </div>
+
+        <div class="card">
+          <div style="display:flex;justify-content:space-between;align-items:center;">
+            <h2>💾 รับเข้า / ตรวจนับสต๊อก</h2>
+            <button class="cr-btn btn-light" onclick="crClearLotOnly()" style="padding:8px 12px;font-size:12px;">🧹 ล้างข้อมูล</button>
+          </div>
+          <div class="big-stat-box">
+            <span class="big-stat-label">📉 ยอดคงเหลือในระบบ (ทุกรอบการผลิต)</span>
+            <div><span class="big-stat-value" id="crTotalQty">0</span><span class="big-stat-unit" id="crMasterUnit">-</span></div>
+            <div class="lot-breakdown-box" id="crLotBreakdown"></div>
+          </div>
+          <div class="cr-status" id="crMainStatus"></div>
+          <div class="row"><div class="field full"><label>👤 ผู้บันทึก *</label><input type="text" id="crEmployee" placeholder="ชื่อพนักงาน" autocomplete="off"></div></div>
+          <div class="row"><div class="field full">
+            <div style="display:flex;justify-content:space-between;align-items:center;">
+              <label>📦 ชื่อสินค้า</label>
+              <button id="crBtnEditProductInline" class="cr-btn btn-light" style="display:none;padding:4px 10px;font-size:11px;" onclick="crOpenEditProductFromCurrent()">✏️ แก้ไขสินค้า</button>
+            </div>
+            <input type="text" id="crProductName" readonly autocomplete="off">
+          </div></div>
+          <div class="row">
+            <div class="field"><label>📅 วันผลิต (MFG) 6 หลัก *</label><input type="text" id="crMfg" placeholder="เช่น 170326" maxlength="6" inputmode="numeric" autocomplete="off"></div>
+            <div class="field"><label>⏳ วันหมดอายุ (EXP) *</label><input type="text" id="crExp" placeholder="คำนวณอัตโนมัติ" maxlength="6" inputmode="numeric" autocomplete="off"></div>
+          </div>
+          <div style="background:#f1f5f9;padding:15px;border-radius:15px;">
+            <div class="field full"><label>📦 จำนวน *</label><input type="text" id="crNewQty" placeholder="เช่น 16*48+5" style="font-size:24px;height:60px;border:2px solid var(--primary);" autocomplete="off"></div>
+            <div class="field full" style="margin-top:10px;"><label>💬 หมายเหตุ</label><textarea id="crNote" placeholder="เช่น รับสินค้าใหม่, ส่งขายหมดแล้ว" autocomplete="off"></textarea></div>
+          </div>
+          <div class="sticky-actions">
+            <button class="cr-btn btn-primary" onclick="crSaveCount()" style="flex:2;">✅ บันทึกข้อมูล</button>
+            <button class="cr-btn btn-light"   onclick="crClearAll()"  style="flex:1;">🧹 เริ่มใหม่</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tab: คงเหลือ -->
+      <div class="cr-tab-panel" id="cr-tab-balance">
+        <div class="card">
+          <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:15px;">
+            <h2 style="margin:0;">📊 สต๊อกคงเหลือรายสินค้า</h2>
+            <div style="display:flex;gap:10px;">
+              <button class="cr-btn btn-light"    style="padding:8px 12px;font-size:12px;" onclick="crExport('csv')">📄 CSV</button>
+              <button class="cr-btn btn-primary"  style="padding:8px 12px;font-size:12px;background:#dc2626;" onclick="crExport('pdf')">🖨️ PDF</button>
+            </div>
+          </div>
+          <div class="table-wrap">
+            <table><thead><tr><th>จัดการ</th><th>บาร์โค้ด</th><th>ชื่อสินค้า</th><th>MFG</th><th>EXP</th><th>จำนวน</th><th>เหลือ(วัน)</th><th>สถานะ</th><th>QC</th></tr></thead>
+            <tbody id="crBalanceBody"></tbody></table>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tab: สินค้าใหม่ -->
+      <div class="cr-tab-panel" id="cr-tab-newproduct">
+        <div class="card">
+          <h2>➕ ขึ้นทะเบียนสินค้าใหม่</h2>
+          <div style="display:flex;gap:10px;">
+            <button class="cr-btn btn-primary" onclick="crStartScanner('new')">📷 สแกนบาร์โค้ด</button>
+            <button class="cr-btn btn-light"   onclick="crStopScanner()">❌ ปิด</button>
+          </div>
+          <div class="scanner-box hide" id="crScannerBoxNew"><video id="crVideoNew" class="scanner-video" playsinline muted></video><div class="scanner-frame"></div></div>
+          <div class="cr-status" id="crNewProductStatus"></div>
+          <div class="row" style="margin-top:15px;"><div class="field full"><label>🏷️ บาร์โค้ด *</label><input type="text" id="crNewBarcode" autocomplete="off"></div></div>
+          <div class="row">
+            <div class="field"><label>📦 ชื่อสินค้า *</label><input type="text" id="crNewName" autocomplete="off"></div>
+            <div class="field"><label>📌 SKU</label><input type="text" id="crNewSku" autocomplete="off"></div>
+          </div>
+          <div class="row">
+            <div class="field"><label>📏 หน่วยนับ *</label>
+              <select id="crNewUnit"><option value="">--เลือก--</option><option value="ถ้วย">ถ้วย</option><option value="ถุง">ถุง</option><option value="ชิ้น">ชิ้น</option><option value="ลัง">ลัง</option><option value="กก.">กก.</option></select>
+            </div>
+            <div class="field"><label>⏳ อายุมาตรฐาน (วัน)</label><input type="number" id="crNewShelfLife" value="10" autocomplete="off"></div>
+          </div>
+          <div class="row">
+            <div class="field"><label>🔔 แจ้งเตือนใกล้หมด (%)</label><input type="number" id="crNewWarnPct" value="20" autocomplete="off"></div>
+            <div class="field"><label>🔔 แจ้งเตือนก่อน (วัน)</label><input type="number" id="crNewWarnDays" placeholder="ข้ามหากใช้ %" autocomplete="off"></div>
+          </div>
+          <div class="row">
+            <div class="field"><label>📦 ชื่อชุด / หน่วยสั่งผลิต</label>
+              <input type="text" id="crNewSetName" placeholder="เช่น ชุด, ลัง, แพ็ค" autocomplete="off"></div>
+            <div class="field"><label>🔢 จำนวน <span id="crNewSetNamePreview">หน่วยนับ</span> ต่อ 1 ชุด</label>
+              <input type="number" id="crNewUnitsPerSet" placeholder="เช่น 10" min="1" autocomplete="off"
+                oninput="$$cr('crNewSetNamePreview').textContent = $$cr('crNewUnit').value || 'หน่วยนับ'">
+            </div>
+          </div>
+          <div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;padding:10px 14px;font-size:12px;color:#1d4ed8;margin-bottom:10px;">
+            💡 ตัวอย่าง: ชุด = ตะกร้า, 1 ชุด = 10 ตะกร้า — ตอนสั่งผลิตพิมพ์ว่า "20 ชุด" ระบบจะคิด 200 ตะกร้าให้อัตโนมัติ
+          </div>
+          <button class="cr-btn btn-primary" onclick="crSaveNewProduct()" style="width:100%;">💾 บันทึกข้อมูลสินค้า</button>
+        </div>
+      </div>
+
+      <!-- Tab: แก้ไขสินค้า -->
+      <div class="cr-tab-panel" id="cr-tab-editproduct">
+        <div class="card">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+            <h2 style="margin:0;">✏️ แก้ไขข้อมูลสินค้า</h2>
+            <button class="cr-btn btn-light" style="padding:8px 12px;font-size:12px;" onclick="crLoadEditProductList()">🔄 โหลดรายการ</button>
+          </div>
+
+          <!-- Dropdown เลือกสินค้า -->
+          <div style="margin-bottom:16px;">
+            <label style="font-size:13px;font-weight:600;color:#475569;display:block;margin-bottom:6px;">🔍 เลือกสินค้าที่ต้องการแก้ไข</label>
+            <select id="crEditProductSelect" onchange="crSelectEditProduct()" style="width:100%;padding:12px;font-size:15px;border:2px solid #e2e8f0;border-radius:12px;background:#fff;cursor:pointer;">
+              <option value="">-- กดโหลดรายการ หรือเปิด Tab นี้เพื่อโหลดอัตโนมัติ --</option>
+            </select>
+          </div>
+
+          <!-- สถานะ -->
+          <div class="cr-status" id="crEditProductStatus"></div>
+          <input type="hidden" id="crEditBarcode">
+
+          <!-- ฟิลด์แก้ไข (ซ่อนจนกว่าจะเลือกสินค้า) -->
+          <div id="crEditProductFields" style="display:none;">
+            <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:12px 16px;margin-bottom:16px;font-size:13px;color:#64748b;">
+              🏷️ บาร์โค้ด: <strong id="crEditBarcodeDisplay" style="color:#1e293b;font-size:14px;letter-spacing:1px;"></strong>
+            </div>
+            <div class="row">
+              <div class="field"><label>📦 ชื่อสินค้า *</label><input type="text" id="crEditName" autocomplete="off"></div>
+              <div class="field"><label>📌 SKU</label><input type="text" id="crEditSku" autocomplete="off"></div>
+            </div>
+            <div class="row">
+              <div class="field"><label>📏 หน่วยนับ *</label>
+                <select id="crEditUnit">
+                  <option value="">--เลือก--</option>
+                  <option value="ถ้วย">ถ้วย</option>
+                  <option value="ถุง">ถุง</option>
+                  <option value="ชิ้น">ชิ้น</option>
+                  <option value="ลัง">ลัง</option>
+                  <option value="กก.">กก.</option>
+                  <option value="อื่นๆ">อื่นๆ</option>
+                </select>
+              </div>
+              <div class="field"><label>⏳ อายุมาตรฐาน (วัน)</label><input type="number" id="crEditShelfLife" autocomplete="off"></div>
+            </div>
+            <div class="row">
+              <div class="field"><label>🔔 แจ้งเตือนใกล้หมด (%)</label><input type="number" id="crEditWarnPct" autocomplete="off"></div>
+              <div class="field"><label>🔔 แจ้งเตือนก่อน (วัน)</label><input type="number" id="crEditWarnDays" placeholder="ข้ามหากใช้ %" autocomplete="off"></div>
+            </div>
+            <div class="row">
+              <div class="field">
+                <label>📦 ชื่อชุด / หน่วยสั่งผลิต</label>
+                <input type="text" id="crEditSetName" placeholder="เช่น ชุด, ลัง, แพ็ค" autocomplete="off">
+              </div>
+              <div class="field">
+                <label>🔢 จำนวน <span id="crEditSetNamePreview">หน่วยนับ</span> ต่อ 1 ชุด</label>
+                <input type="number" id="crEditUnitsPerSet" placeholder="เช่น 10" min="1" step="0.5" autocomplete="off"
+                  oninput="document.getElementById('crEditSetNamePreview').textContent = document.getElementById('crEditUnit').value || 'หน่วยนับ'">
+              </div>
+            </div>
+            <div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;padding:10px 14px;font-size:12px;color:#1d4ed8;margin-bottom:16px;">
+              💡 SetName/UnitsPerSet ใช้สำหรับใบสั่งผลิต เช่น ชุด = ตะกร้า, 1 ชุด = 10 ตะกร้า
+            </div>
+            <div class="sticky-actions">
+              <button class="cr-btn btn-primary" onclick="crSubmitEditProduct()" style="flex:2;">💾 บันทึกการแก้ไข</button>
+              <button class="cr-btn btn-light"   onclick="crResetEditProductForm()" style="flex:1;">🧹 ล้าง</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tab: แดชบอร์ด -->
+      <div class="cr-tab-panel" id="cr-tab-report">
+        <div class="card">
+          <div style="display:flex;justify-content:space-between;">
+            <h2>📈 สรุปภาพรวมคลังสินค้า</h2>
+            <button class="cr-btn btn-light" onclick="crLoadOverview()">🔄 อัปเดต</button>
+          </div>
+          <div class="mini-stats">
+            <div class="stat"><div class="v" id="crSumProducts">0</div><div>ชนิดสินค้า</div></div>
+            <div class="stat"><div class="v" id="crSumLots">0</div><div>รอบผลิต</div></div>
+            <div class="stat"><div class="v" id="crSumExpiring" style="color:var(--warn)">0</div><div>ใกล้หมดอายุ</div></div>
+            <div class="stat"><div class="v" id="crSumExpired"  style="color:var(--danger)">0</div><div>หมดอายุแล้ว</div></div>
+          </div>
+          <h3>📦 ยอดรวมตามสินค้า</h3>
+          <div class="table-wrap"><table><thead><tr><th>ชื่อสินค้า</th><th>ยอดรวม</th><th>หน่วย</th><th>รอบผลิต</th></tr></thead><tbody id="crTotalBody"></tbody></table></div>
+          <h3>⚠️ ใกล้หมดอายุ (FEFO)</h3>
+          <div class="table-wrap"><table><thead><tr><th>ชื่อสินค้า</th><th>MFG</th><th>EXP</th><th>เหลือ(วัน)</th><th>จำนวน</th></tr></thead><tbody id="crExpiringBody"></tbody></table></div>
+          <h3>❌ หมดอายุตกค้าง</h3>
+          <div class="table-wrap"><table><thead><tr><th>ชื่อสินค้า</th><th>MFG</th><th>EXP</th><th>เลย(วัน)</th><th>จำนวน</th></tr></thead><tbody id="crExpiredBody"></tbody></table></div>
+        </div>
+      </div>
+
+      <!-- Tab: ใบสั่งผลิต -->
+      <div class="cr-tab-panel" id="cr-tab-workorder">
+        <div class="card">
+          <!-- หัวใบ -->
+          <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:16px;">
+            <h2 style="margin:0;">📋 สร้างใบสั่งผลิต</h2>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;">
+              <button class="cr-btn btn-primary" onclick="crSaveWorkOrder()" id="crWoBtnSave">💾 บันทึก</button>
+              <button class="cr-btn btn-primary" onclick="crPrintWorkOrder()" style="background:#6366f1;">🖨️ พิมพ์</button>
+              <button class="cr-btn btn-light"   onclick="crClearWorkOrder()">🧹 ใหม่</button>
+            </div>
+          </div>
+          <div class="cr-status" id="crWoStatus"></div>
+
+          <!-- เลขที่ + วันที่ + ผู้สั่ง -->
+          <div class="row">
+            <div class="field"><label>🏷️ เลขที่ใบสั่งผลิต</label>
+              <input type="text" id="crWoOrderId" readonly style="background:#f1f5f9;color:#6366f1;font-weight:900;font-size:18px;"></div>
+            <div class="field"><label>📅 วันที่สั่งผลิต</label><input type="date" id="crWoDate"></div>
+            <div class="field"><label>👤 ผู้สั่งผลิต</label><input type="text" id="crWoCreatedBy" readonly style="background:#f1f5f9;"></div>
+          </div>
+
+          <!-- ตารางรายการ SKU -->
+          <div style="margin:16px 0 8px;font-size:12px;font-weight:700;color:#64748b;text-transform:uppercase;">📦 รายการสินค้าที่สั่งผลิต</div>
+          <div class="table-wrap" style="overflow-x:auto;">
+            <table id="crWoItemsTable" style="width:100%;border-collapse:collapse;min-width:700px;">
+              <thead>
+                <tr style="background:#1e293b;color:#fff;font-size:11px;font-weight:700;text-transform:uppercase;">
+                  <th style="padding:10px 12px;text-align:left;width:36px;">#</th>
+                  <th style="padding:10px 12px;text-align:left;">สินค้า</th>
+                  <th style="padding:10px 12px;text-align:center;width:110px;">MFG (6 หลัก)</th>
+                  <th style="padding:10px 12px;text-align:center;width:90px;">EXP</th>
+                  <th style="padding:10px 12px;text-align:left;width:200px;">ชุด × UPS = จำนวน</th>
+                  <th style="padding:10px 12px;text-align:left;width:70px;">หน่วย</th>
+                  <th style="padding:10px 12px;text-align:center;width:40px;">ลบ</th>
+                </tr>
+              </thead>
+              <tbody id="crWoItemsBody"></tbody>
+            </table>
+          </div>
+          <button class="cr-btn btn-light" onclick="crWoAddRow()" style="margin-top:10px;width:100%;border:2px dashed #cbd5e1;background:#f8fafc;color:#6366f1;font-weight:900;">
+            ➕ เพิ่มสินค้า
+          </button>
+
+          <!-- หมายเหตุ -->
+          <div class="row" style="margin-top:14px;">
+            <div class="field full">
+              <label>💬 หมายเหตุ / คำสั่งพิเศษ</label>
+              <textarea id="crWoNote" rows="2" placeholder="ระบุคำสั่งพิเศษหรือรายละเอียดเพิ่มเติม" style="width:100%;padding:10px;border-radius:8px;border:2px solid #e2e8f0;font-family:inherit;resize:vertical;box-sizing:border-box;"></textarea>
+            </div>
+          </div>
+        </div>
+
+        <!-- รายการใบสั่งผลิตล่าสุด -->
+        <div class="card">
+          <div style="display:flex;justify-content:space-between;align-items:center;">
+            <h2>📂 ใบสั่งผลิตล่าสุด</h2>
+            <button class="cr-btn btn-light" onclick="crLoadWorkOrders()" style="padding:8px 12px;font-size:12px;">🔄 โหลด</button>
+          </div>
+          <div class="table-wrap">
+            <table><thead><tr><th>เลขที่</th><th>วันที่</th><th>สินค้า</th><th>MFG</th><th>EXP</th><th>สั่งผลิต</th><th>ผู้สั่ง</th><th>พิมพ์</th><th>ใบรายงาน</th></tr></thead>
+            <tbody id="crWoListBody"></tbody></table>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tab: ตั้งค่า -->
+      <div class="cr-tab-panel" id="cr-tab-settings">
+        <div class="card">
+          <h2>⚙️ ตั้งค่าการแจ้งเตือน Telegram</h2>
+          <div class="cr-status" id="crSettingsStatus"></div>
+          <div class="row">
+            <div class="field"><label>🤖 ชื่อบอท</label><input type="text" id="crTgBotName" autocomplete="off"></div>
+            <div class="field"><label>📲 สถานะ</label>
+              <select id="crTgEnable"><option value="true">เปิดใช้งาน</option><option value="false">ปิดใช้งาน</option></select>
+            </div>
+          </div>
+          <div class="row"><div class="field full"><label>🔑 Bot Token</label><input type="password" id="crTgToken" autocomplete="off"></div></div>
+          <div class="row"><div class="field full"><label>💬 Chat ID</label><textarea id="crTgChatIds" placeholder="คั่นด้วยคอมม่า" autocomplete="off"></textarea></div></div>
+          <button class="cr-btn btn-primary" onclick="crSaveSettings()">💾 บันทึกการตั้งค่า</button>
+        </div>
+      </div>
+    </div><!-- /cr-wrap -->
+  </div><!-- /module-COLDROOM -->
+
+  <!-- ════════════════════════════════════════════
+       🏭 MODULE: RAW MATERIALS (SQF & MLM ใช้ร่วม)
+  ════════════════════════════════════════════ -->
+  <div id="module-RAW" class="module-section hide" style="padding-top:60px;">
+
+    <!-- ═══ UNIFIED STOCK ALERT MODAL ═══ -->
+    <div id="stockAlertModal" class="hidden fixed inset-0 bg-black/85 backdrop-blur-md z-[500] flex items-center justify-center p-4">
+      <div class="bg-white w-full max-w-lg rounded-[3rem] shadow-2xl overflow-hidden">
+
+        <!-- Header -->
+        <div id="alertModalHeader" class="p-6 text-white">
+          <div class="flex items-center gap-4">
+            <div class="text-5xl alert-pulse" id="alertModalIcon">🚨</div>
+            <div>
+              <div class="font-black text-2xl uppercase tracking-tight" id="alertModalTitle">แจ้งเตือนสต๊อก</div>
+              <div class="text-sm opacity-80 font-bold mt-1" id="alertModalSubtitle"></div>
+            </div>
+          </div>
+          <!-- Summary chips -->
+          <div class="flex gap-2 mt-4 flex-wrap" id="alertModalChips"></div>
+        </div>
+
+        <!-- Content -->
+        <div class="max-h-[50vh] overflow-y-auto custom-scrollbar px-6 py-4" id="alertModalContent"></div>
+
+        <!-- Footer -->
+        <div class="p-6 bg-slate-50 border-t flex gap-3">
+          <button onclick="closeStockAlert()" class="flex-1 bg-slate-900 text-white py-5 rounded-2xl font-black text-lg hover:bg-red-600 transition-all">
+            รับทราบ ✅
+          </button>
+          <button onclick="closeStockAlert(true)" class="bg-slate-200 text-slate-600 px-6 py-5 rounded-2xl font-black text-sm hover:bg-slate-300 transition-all">
+            ปิดชั่วคราว
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- rawAlertModal alias (backward compat) -->
+    <div id="rawAlertModal" class="hidden"></div>
+
+    <!-- QR Modal -->
+    <div id="rawQrModal" class="hidden fixed inset-0 bg-black/80 z-[280] flex items-center justify-center p-4">
+      <div class="bg-white w-full max-w-md rounded-[4rem] shadow-2xl overflow-hidden border-8 border-slate-900">
+        <div class="bg-slate-900 p-8 text-white flex justify-between items-center">
+          <h2 class="text-3xl font-black uppercase italic">🧾 QR Code</h2>
+          <button onclick="closeRawQr()" class="text-4xl">✕</button>
+        </div>
+        <div class="p-8 text-center">
+          <p id="rawQrTitle" class="font-black text-slate-700 text-xl mb-6"></p>
+          <div id="rawQrcode" class="qr-box flex justify-center mb-8"></div>
+          <button onclick="downloadRawQr()" class="bg-blue-600 text-white px-8 py-4 rounded-2xl font-black shadow-lg hover:bg-black transition-all text-sm uppercase">ดาวน์โหลด QR</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Verify Modal -->
+    <div id="rawVerifyModal" class="hidden fixed inset-0 bg-black/80 z-[260] flex items-center justify-center p-4">
+      <div class="bg-white p-12 rounded-[5rem] w-full max-w-sm shadow-2xl text-center border-t-[15px] border-purple-600">
+        <h2 class="text-2xl font-black mb-2 uppercase italic">Stock Check ⚖️</h2>
+        <p id="rawVerifyTitle" class="text-purple-600 font-black mb-10 text-sm"></p>
+        <input type="number" id="rawVerifyQty" class="w-full border-4 border-slate-200 p-8 text-7xl font-black rounded-[4rem] text-center outline-none bg-slate-50 mb-10">
+        <button onclick="rawSubmitVerify()" id="rawBtnVerify" class="w-full bg-purple-700 text-white py-7 rounded-[3rem] font-black text-xl shadow-xl hover:bg-black transition-all">ยืนยันยอดจริง ✅</button>
+        <button onclick="closeRawVerify()" class="w-full text-stone-300 font-black text-xs mt-6 uppercase tracking-widest">ยกเลิก ✕</button>
+      </div>
+    </div>
+
+    <!-- Action Modal -->
+    <div id="rawActionModal" class="hidden fixed inset-0 bg-black/80 z-[250] flex items-center justify-center p-4">
+      <div class="bg-white p-10 rounded-[5rem] shadow-2xl text-center border-b-[20px] border-orange-500 w-full max-w-sm">
+        <h2 id="rawModalTitle" class="text-3xl font-black mb-2 uppercase text-slate-800 italic">📥 รับ/เบิก</h2>
+        <p id="rawModalSku"  class="text-sm text-stone-400 font-black mb-2 tracking-widest uppercase"></p>
+        <p id="rawModalUnit" class="text-sm text-emerald-600 font-black mb-8 uppercase"></p>
+        <input type="hidden" id="rawModalSkuVal">
+        <input type="hidden" id="rawModalType" value="OUT">
+        <div class="space-y-10">
+          <div class="flex p-2 bg-slate-100 rounded-[3rem]">
+            <button onclick="setRawType('OUT')" id="rawBtnOut" class="flex-1 py-5 rounded-[2.5rem] font-black text-lg bg-white shadow-xl text-orange-600 uppercase">เบิก 📤</button>
+            <button onclick="setRawType('IN')"  id="rawBtnIn"  class="flex-1 py-5 rounded-[2.5rem] font-black text-lg text-slate-400 uppercase">รับ 📥</button>
+          </div>
+          <input type="number" id="rawModalQty" class="w-full border-4 border-slate-200 p-8 text-7xl font-black rounded-[3rem] text-center outline-none bg-stone-50 focus:border-blue-600" value="1" min="1">
+          <button onclick="rawSubmitAction()" id="rawBtnSubmit" class="w-full bg-blue-600 text-white py-7 rounded-[3rem] font-black text-2xl shadow-xl hover:scale-105 transition-all">✔️ บันทึกรายการ</button>
+          <button onclick="closeRawAction()" class="w-full text-stone-300 font-black text-xs mt-6 uppercase">ปิดหน้าต่าง ✕</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Edit Modal -->
+    <div id="rawEditModal" class="hidden fixed inset-0 bg-black/80 z-[240] flex items-center justify-center p-4">
+      <div class="bg-white w-full max-w-md rounded-[4rem] shadow-2xl overflow-hidden border-8 border-sky-600">
+        <div class="bg-sky-600 p-8 text-white flex justify-between items-center">
+          <h2 class="text-3xl font-black uppercase italic">✏️ แก้ไขสินค้า</h2>
+          <button onclick="closeRawEdit()" class="text-4xl">✕</button>
+        </div>
+        <div class="p-8 space-y-6">
+          <div><label class="text-xs font-black uppercase ml-1">SKU</label><input type="text" id="rawEditSku" class="w-full bg-slate-100 p-5 rounded-2xl font-black text-sky-700 text-xl" readonly></div>
+          <div><label class="text-xs font-black uppercase ml-1">ชื่อวัตถุดิบ</label><input type="text" id="rawEditName" class="w-full bg-slate-50 border-4 border-slate-100 p-5 rounded-2xl font-black text-2xl focus:border-sky-600 outline-none"></div>
+          <div class="grid grid-cols-2 gap-4">
+            <div><label class="text-xs font-black uppercase ml-1">หน่วยนับ</label><input type="text" id="rawEditUnit" list="unitDatalist" class="w-full bg-slate-50 p-4 rounded-xl font-black text-xl"></div>
+            <div><label class="text-xs font-black uppercase ml-1">จุดสั่งซื้อเพิ่ม</label><input type="number" id="rawEditMin" class="w-full bg-slate-50 p-4 rounded-xl font-black text-xl" min="0"></div>
+          </div>
+          <div class="grid grid-cols-2 gap-4">
+            <div><label class="text-xs font-black uppercase ml-1">ใช้ต่อวัน 📊</label><input type="number" id="rawEditDailyUsage" class="w-full bg-slate-50 p-4 rounded-xl font-black text-xl" value="0" min="0" step="0.01"></div>
+            <div><label class="text-xs font-black uppercase ml-1">วันหมดอายุ (ค.ศ.)</label><input type="date" id="rawEditExpiry" class="w-full bg-slate-50 p-4 rounded-xl font-black text-xl outline-none"></div>
+          </div>
+          <button onclick="rawSubmitEdit()" id="rawBtnEdit" class="w-full bg-sky-700 text-white py-6 mt-4 rounded-3xl font-black text-2xl shadow-xl hover:bg-black transition-all">💾 บันทึกการแก้ไข</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Create Modal -->
+    <div id="rawCreateModal" class="hidden fixed inset-0 bg-black/80 z-[230] flex items-center justify-center p-4">
+      <div class="bg-white w-full max-w-md rounded-[4rem] shadow-2xl overflow-hidden border-8 border-emerald-600">
+        <div class="bg-emerald-600 p-8 text-white flex justify-between items-center">
+          <h2 class="text-3xl font-black uppercase italic">📦 ลงทะเบียน SKU</h2>
+          <button onclick="closeRawCreate()" class="text-4xl">✕</button>
+        </div>
+        <div class="p-8 space-y-6">
+          <div><label class="text-xs font-black uppercase ml-1">รหัสอัตโนมัติ 🆔</label><input type="text" id="rawNewSku" class="w-full bg-slate-100 p-5 rounded-2xl font-black text-emerald-700 text-xl" readonly></div>
+          <div><label class="text-xs font-black uppercase ml-1">ชื่อวัตถุดิบ 📝</label><input type="text" id="rawNewName" class="w-full bg-slate-50 border-4 border-slate-100 p-5 rounded-2xl font-black text-2xl focus:border-emerald-600 outline-none"></div>
+          <div class="grid grid-cols-2 gap-4">
+            <div><label class="text-xs font-black uppercase ml-1">ยอดเริ่มต้น 🔢</label><input type="number" id="rawNewQty" class="w-full bg-slate-50 p-4 rounded-xl font-black text-xl" value="0" min="0"></div>
+            <div><label class="text-xs font-black uppercase ml-1">หน่วยนับ 📏</label><input type="text" id="rawNewUnit" list="unitDatalist" class="w-full bg-slate-50 p-4 rounded-xl font-black text-xl" placeholder="กก."></div>
+          </div>
+          <div><label class="text-xs font-black uppercase ml-1">จุดสั่งซื้อเพิ่ม ⚠️</label><input type="number" id="rawNewMin" class="w-full bg-slate-50 p-4 rounded-xl font-black text-xl" value="0" min="0"></div>
+          <div class="grid grid-cols-2 gap-4">
+            <div><label class="text-xs font-black uppercase ml-1">ใช้ต่อวัน 📊</label><input type="number" id="rawNewDailyUsage" class="w-full bg-slate-50 p-4 rounded-xl font-black text-xl" value="0" min="0" step="0.01" placeholder="0"></div>
+            <div class="flex items-end pb-1"><span class="text-xs font-black text-slate-400">หน่วยนับ/วัน<br><span class="text-slate-300">ใช้คำนวณวันหมดสต๊อก</span></span></div>
+          </div>
+          <div><label class="text-xs font-black uppercase ml-1">วันหมดอายุ (ค.ศ.) 📅</label><input type="date" id="rawNewExpiry" class="w-full bg-slate-50 p-4 rounded-xl font-black text-xl outline-none"></div>
+          <button onclick="rawSubmitNew()" id="rawBtnCreate" class="w-full bg-emerald-700 text-white py-6 mt-4 rounded-3xl font-black text-2xl shadow-xl hover:bg-black transition-all">✅ ยืนยันบันทึก</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Settings Modal -->
+    <div id="rawSettingsModal" class="hidden fixed inset-0 bg-black/80 backdrop-blur-md z-[290] flex items-center justify-center p-4">
+      <div class="bg-white w-full max-w-lg rounded-[4rem] shadow-2xl overflow-hidden border-8 border-slate-700">
+        <div class="bg-slate-800 p-8 text-white flex justify-between items-center">
+          <h2 class="text-3xl font-black uppercase italic">⚙️ ตั้งค่า Telegram</h2>
+          <button onclick="closeRawSettings()" class="text-4xl hover:text-red-400">✕</button>
+        </div>
+        <div class="p-8 space-y-5">
+          <p class="text-xs font-black text-slate-400 uppercase tracking-widest bg-slate-50 rounded-2xl p-3 text-center">
+            ⚠️ การตั้งค่านี้ใช้ร่วมกันทุกโรงงาน (Cold Room / SQF / MLM)
+          </p>
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <label class="text-xs font-black uppercase text-slate-400 mb-1 block">🤖 ชื่อบอท</label>
+              <input type="text" id="rawTgBotName" class="w-full bg-slate-50 border-2 border-slate-200 p-4 rounded-2xl font-bold outline-none focus:border-slate-700">
+            </div>
+            <div>
+              <label class="text-xs font-black uppercase text-slate-400 mb-1 block">📲 สถานะ</label>
+              <select id="rawTgEnable" class="w-full bg-slate-50 border-2 border-slate-200 p-4 rounded-2xl font-bold outline-none focus:border-slate-700">
+                <option value="true">✅ เปิดใช้งาน</option>
+                <option value="false">❌ ปิดใช้งาน</option>
+              </select>
+            </div>
+          </div>
+          <div>
+            <label class="text-xs font-black uppercase text-slate-400 mb-1 block">🔑 Bot Token</label>
+            <input type="password" id="rawTgToken" class="w-full bg-slate-50 border-2 border-slate-200 p-4 rounded-2xl font-bold outline-none focus:border-slate-700">
+          </div>
+          <div>
+            <label class="text-xs font-black uppercase text-slate-400 mb-1 block">💬 Chat ID (คั่นด้วย ,)</label>
+            <textarea id="rawTgChatIds" rows="3" class="w-full bg-slate-50 border-2 border-slate-200 p-4 rounded-2xl font-bold outline-none focus:border-slate-700 resize-none" placeholder="-100xxxxxxxxx, -100yyyyyyyyy"></textarea>
+          </div>
+          <button onclick="saveRawSettings()" id="rawBtnSaveSettings" class="w-full bg-slate-900 text-white py-6 rounded-3xl font-black text-xl shadow-xl hover:bg-blue-700 transition-all uppercase">
+            💾 บันทึกการตั้งค่า
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Scanner Modal -->
+    <div id="rawScannerModal" class="hidden fixed inset-0 bg-slate-900 z-[220] flex flex-col items-center justify-center p-6 text-white text-center">
+      <div id="rawReader" class="w-full max-w-sm rounded-[3rem] bg-white overflow-hidden shadow-2xl border-8 border-white/10"></div>
+      <p class="mt-8 font-black animate-pulse text-lg tracking-widest uppercase">📷 จ่อ QR Code ในกรอบ</p>
+      <button onclick="closeRawScanner()" class="mt-12 bg-white/10 border border-white/20 px-16 py-5 rounded-full font-black uppercase text-xs">ปิดกล้อง</button>
+    </div>
+
+    <!-- Main Content -->
+    <div class="max-w-7xl mx-auto p-4 md:p-8">
+      <header class="flex flex-col lg:flex-row justify-between items-start lg:items-center mb-10 gap-6 border-b-4 border-white pb-8">
+        <div>
+          <h1 id="rawModuleTitle" class="text-4xl font-black text-slate-900 tracking-tighter uppercase italic leading-none mb-3">วัตถุดิบ</h1>
+          <p id="rawModuleSubtitle" class="text-sm font-black inline-block px-3 py-1 rounded-lg uppercase">Loading...</p>
+          <div class="mt-4 flex flex-wrap items-center gap-4 font-bold">
+            <span class="bg-white px-5 py-2 rounded-full shadow-sm text-sm">👤 <span id="rawCurrentUser" class="text-blue-600"></span></span>
+            <button onclick="rawRunBackup()" class="text-xs font-black text-emerald-600 hover:underline">☁️ สำรองข้อมูล</button>
+          </div>
+        </div>
+        <div class="flex flex-wrap gap-3">
+          <button onclick="rawExportSelected()" class="bg-indigo-600 text-white px-5 py-3 rounded-2xl font-black shadow-lg hover:bg-black transition-all text-xs uppercase">📊 ส่งออก</button>
+          <button onclick="rawExportPdf()"       class="bg-purple-600  text-white px-5 py-3 rounded-2xl font-black shadow-lg hover:bg-black transition-all text-xs uppercase">📄 ส่งออก PDF</button>
+          <button onclick="openRawCreate()"      class="bg-emerald-600 text-white px-5 py-3 rounded-2xl font-black shadow-lg hover:bg-black transition-all text-xs uppercase">➕ เพิ่มวัตถุดิบ</button>
+          <button onclick="openPurchaseRequest()" class="bg-teal-600   text-white px-5 py-3 rounded-2xl font-black shadow-lg hover:bg-black transition-all text-xs uppercase">📋 ใบขอซื้อ</button>
+          <button onclick="openStockReport()"    class="bg-slate-800   text-white px-5 py-3 rounded-2xl font-black shadow-lg hover:bg-black transition-all text-xs uppercase">📑 ใบรายงาน</button>
+          <button onclick="openRawScanner()"     class="bg-orange-500  text-white px-5 py-3 rounded-2xl font-black shadow-lg hover:bg-black transition-all text-xs uppercase">📷 สแกน QR</button>
+        </div>
+      </header>
+
+      <div id="rawStatCards" class="grid grid-cols-2 md:grid-cols-4 gap-6 mb-10"></div>
+
+      <div class="grid grid-cols-1 xl:grid-cols-3 gap-8 mb-10">
+        <div class="xl:col-span-2 bg-white rounded-[3.5rem] shadow-xl border-4 border-white p-8">
+          <div class="flex items-center justify-between mb-6">
+            <h3 class="font-black text-xl text-slate-800 uppercase tracking-tight">📊 กราฟยอดคงเหลือ</h3>
+            <span class="text-xs font-black text-slate-400 uppercase">Top 12</span>
+          </div>
+          <div class="chart-wrap"><canvas id="rawBarChart"></canvas></div>
+        </div>
+        <div class="bg-white rounded-[3.5rem] shadow-xl border-4 border-white p-8">
+          <div class="flex items-center justify-between mb-6">
+            <h3 class="font-black text-xl text-slate-800 uppercase tracking-tight">🧭 สถานะรวม</h3>
+            <span class="text-xs font-black text-slate-400 uppercase">Safe/Low/Exp</span>
+          </div>
+          <div class="chart-wrap-small"><canvas id="rawDonutChart"></canvas></div>
+        </div>
+      </div>
+
+      <div class="bg-white p-4 rounded-[3.5rem] shadow-xl border-4 border-white mb-10">
+        <div class="flex flex-col xl:flex-row gap-4">
+          <div class="flex-1 relative">
+            <input type="text" id="rawSearch" onkeyup="renderRawInventory(rawLastData)" placeholder="ค้นหา SKU หรือชื่อวัตถุดิบ..."
+              class="w-full bg-slate-50 pl-14 pr-6 py-5 rounded-[2rem] border-4 border-transparent focus:border-blue-600 outline-none font-black text-xl">
+            <span class="absolute left-6 top-1/2 -translate-y-1/2 text-2xl">🔍</span>
+          </div>
+          <div class="flex flex-wrap gap-2 p-1 bg-slate-100 rounded-[2rem]">
+            <button id="rawFilter-all"   onclick="setRawFilter('all')"   class="px-5 py-3 rounded-[1.5rem] text-[11px] font-black uppercase filter-active transition-all">🌈 ทั้งหมด</button>
+            <button id="rawFilter-low"   onclick="setRawFilter('low')"   class="px-5 py-3 rounded-[1.5rem] text-[11px] font-black uppercase bg-white text-slate-400 hover:text-black">⚠️ ต่ำ</button>
+            <button id="rawFilter-exp"   onclick="setRawFilter('exp')"   class="px-5 py-3 rounded-[1.5rem] text-[11px] font-black uppercase bg-white text-slate-400 hover:text-black">🔴 หมดอายุ</button>
+            <button id="rawFilter-exp7"  onclick="setRawFilter('exp7')"  class="px-5 py-3 rounded-[1.5rem] text-[11px] font-black uppercase bg-white text-slate-400 hover:text-black">⏳ 7 วัน</button>
+            <button id="rawFilter-exp30" onclick="setRawFilter('exp30')" class="px-5 py-3 rounded-[1.5rem] text-[11px] font-black uppercase bg-white text-slate-400 hover:text-black">🗓️ 30 วัน</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 lg:grid-cols-4 gap-10">
+        <div class="lg:col-span-3 bg-white rounded-[4rem] shadow-2xl border-4 border-white overflow-hidden">
+          <div class="overflow-x-auto">
+            <table class="w-full text-left">
+              <thead class="bg-slate-50 text-[11px] font-black uppercase text-slate-400 border-b">
+                <tr>
+                  <th class="p-8 text-center"><input type="checkbox" id="rawSelectAll" onclick="rawToggleAll()"></th>
+                  <th class="p-8">สถานะ</th>
+                  <th class="p-8">ข้อมูลสินค้า</th>
+                  <th class="p-8 text-right">ยอดคงเหลือ</th>
+                  <th class="p-8 text-center">จัดการ</th>
+                </tr>
+              </thead>
+              <tbody id="rawInventoryList" class="divide-y divide-slate-100 font-bold"></tbody>
+            </table>
+          </div>
+        </div>
+        <div class="bg-white rounded-[3.5rem] shadow-2xl p-8 h-fit border-4 border-white">
+          <h3 class="font-black text-lg mb-8 border-b-4 border-slate-50 pb-4 flex items-center gap-2 uppercase italic tracking-tighter text-slate-400">📈 ความเคลื่อนไหว</h3>
+          <div id="rawHistoryList" class="space-y-4"></div>
+        </div>
+      </div>
+    </div>
+  </div><!-- /module-RAW -->
+
+  <!-- ════════════════════════════════════════════
+       JAVASCRIPT
+  ════════════════════════════════════════════ -->
+  <script>
+  // ─────────────────────────────────────────────
+  // ⚙️ CONFIG — แก้ URL ตรงนี้หลัง Deploy GAS
+  // ─────────────────────────────────────────────
+  const GAS_URL = "https://script.google.com/macros/s/AKfycbx72vWVvUgaOgZEnzAc8ltaV-a7Rfx_CL9DK1c-B5nAIOxtrlnbi8_b6bmfnDeAZ_xeaw/exec";
+
+  // ─────────────────────────────────────────────
+  // SHARED STATE
+  // ─────────────────────────────────────────────
+  let currentUser   = "";
+  let activeModule  = "";          // "COLDROOM" | "SQF" | "MLM"
+  let crInitDone    = false;
+
+  // ─────────────────────────────────────────────
+  // SHARED UI HELPERS
+  // ─────────────────────────────────────────────
+  function showLoading(text = "กำลังประมวลผล...") {
+    document.getElementById("loadingText").innerText = text;
+    document.getElementById("loadingOverlay").classList.add("active");
+  }
+  function hideLoading() {
+    document.getElementById("loadingOverlay").classList.remove("active");
+  }
+
+  function showToast(msg, type = "info", timeout = 2800) {
+    // normalize type aliases from Cold Room module
+    const typeMap = { ok: "success", err: "error", warn: "warn" };
+    const t = typeMap[type] || type;
+    const el = document.createElement("div");
+    el.className = `toast-item toast-${t}`;
+    el.textContent = msg;
+    document.getElementById("toastContainer").appendChild(el);
+    setTimeout(() => {
+      el.style.opacity = "0"; el.style.transform = "translateX(20px)";
+      setTimeout(() => el.remove(), 250);
+    }, timeout);
+  }
+
+  function escapeHtml(v) {
+    return String(v ?? "").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#39;");
+  }
+  function escapeAttr(v) { return escapeHtml(v); }
+
+  // ─────────────────────────────────────────────
+  // AUTOCOMPLETE UTILITY (ใช้ร่วมทุก module)
+  // getItems() → [{label, sub?, badge?, value}]
+  // onSelect(item, inputEl)
+  // ─────────────────────────────────────────────
+  function buildAutocomplete(inputEl, getItems, onSelect) {
+    if (!inputEl) return null;
+    const drop = document.createElement("div");
+    drop.className = "ac-dropdown";
+    document.body.appendChild(drop);
+    let _items = [], _active = -1;
+
+    function reposition() {
+      const r = inputEl.getBoundingClientRect();
+      drop.style.top   = (r.bottom + 4) + "px";
+      drop.style.left  = r.left + "px";
+      drop.style.width = Math.max(r.width, 240) + "px";
+    }
+    function close() { drop.classList.remove("show"); _active = -1; }
+    function setActive(i) {
+      _active = Math.max(-1, Math.min(i, _items.length - 1));
+      drop.querySelectorAll(".ac-item").forEach((el, j) => el.classList.toggle("ac-hover", j === _active));
+    }
+    function render(q) {
+      const all = getItems();
+      const ql = q.toLowerCase();
+      _items = q ? all.filter(it =>
+        it.label.toLowerCase().includes(ql) ||
+        (it.sub   && it.sub.toLowerCase().includes(ql))  ||
+        (it.value && String(it.value).toLowerCase().includes(ql))
+      ).slice(0, 18) : [];
+      _active = -1;
+      if (!_items.length) { drop.classList.remove("show"); return; }
+      drop.innerHTML = _items.map((it, i) => `
+        <div class="ac-item" data-i="${i}">
+          <div class="ac-main">${escapeHtml(it.label)}${it.badge ? `<span class="ac-badge">${escapeHtml(it.badge)}</span>` : ""}</div>
+          ${it.sub ? `<div class="ac-sub">${escapeHtml(it.sub)}</div>` : ""}
+        </div>`).join("");
+      drop.querySelectorAll(".ac-item").forEach(el => {
+        el.addEventListener("mousedown", e => { e.preventDefault(); onSelect(_items[+el.dataset.i], inputEl); close(); });
+        el.addEventListener("mouseover", () => setActive(+el.dataset.i));
+      });
+      reposition();
+      drop.classList.add("show");
+    }
+
+    inputEl.addEventListener("input",   () => render(inputEl.value.trim()));
+    inputEl.addEventListener("blur",    () => setTimeout(close, 180));
+    inputEl.addEventListener("keydown", e => {
+      if (!drop.classList.contains("show")) return;
+      if      (e.key === "ArrowDown")  { e.preventDefault(); setActive(_active + 1); }
+      else if (e.key === "ArrowUp")    { e.preventDefault(); setActive(_active - 1); }
+      else if (e.key === "Enter" && _active >= 0) { e.preventDefault(); onSelect(_items[_active], inputEl); close(); }
+      else if (e.key === "Escape")     { close(); }
+    });
+    window.addEventListener("resize", close);
+    window.addEventListener("scroll", () => { if (drop.classList.contains("show")) reposition(); }, true);
+    return drop;
+  }
+  function escapeJs(v) {
+    return String(v ?? "").replace(/\\/g,"\\\\").replace(/'/g,"\\'").replace(/"/g,'\\"').replace(/\n/g,"\\n").replace(/\r/g,"");
+  }
+
+  // ─────────────────────────────────────────────
+  // LOGIN / LOGOUT
+  // ─────────────────────────────────────────────
+  function login() {
+    const user = document.getElementById("usernameInput").value.trim();
+    if (!user) { showToast("กรุณาระบุชื่อพนักงาน", "warn"); return; }
+    localStorage.setItem("unified_stock_user", user);
+    location.reload();
+  }
+
+  function logout() {
+    localStorage.removeItem("unified_stock_user");
+    location.reload();
+  }
+
+  function checkAuth() {
+    const saved = localStorage.getItem("unified_stock_user");
+    if (saved) {
+      currentUser = saved;
+      document.getElementById("loginOverlay").style.display = "none";
+      document.getElementById("mainNav").style.display      = "block";
+      document.getElementById("navUser").innerText          = currentUser;
+      document.getElementById("rawCurrentUser").innerText   = currentUser;
+      switchModule("COLDROOM");
+    }
+  }
+
+  // ─────────────────────────────────────────────
+  // MODULE SWITCHER
+  // ─────────────────────────────────────────────
+  function switchModule(mod) {
+    activeModule = mod;
+
+    // hide all
+    document.querySelectorAll(".module-section").forEach(el => el.classList.add("hide"));
+
+    // update nav buttons
+    ["COLDROOM","SQF","MLM"].forEach(m => {
+      const btn = document.getElementById("navBtn-" + m);
+      if (btn) btn.classList.toggle("active", m === mod);
+    });
+
+    if (mod === "COLDROOM") {
+      document.getElementById("module-COLDROOM").classList.remove("hide");
+      if (!crInitDone) initColdroom();
+    } else {
+      document.getElementById("module-RAW").classList.remove("hide");
+      rawCurrentModule = mod;
+      updateRawHeader(mod);
+      rawLoadData(true);
+    }
+  }
+
+  // ═══════════════════════════════════════════════
+  // ❄️ COLD ROOM MODULE
+  // ═══════════════════════════════════════════════
+
+  let crCurrentProduct    = null;
+  let crScannerStream     = null;
+  let crScannerRunning    = false;
+  let crScannerLoopHandle = null;
+  let crBarcodeDetector   = null;
+  let crScannerMode       = "stock";
+  window.crAllLotsData    = [];
+
+  function $$cr(id) { return document.getElementById(id); }
+
+  function isoToDdmmyy(iso) {
+    if (!iso) return "";
+    const s = String(iso).trim();
+    // ISO format: yyyy-MM-dd หรือ yyyy-MM-ddTHH:mm:ss...
+    if (/^\d{4}-\d{2}-\d{2}/.test(s)) {
+      const p = s.split("-");
+      return p[2].substring(0,2) + p[1] + p[0].substring(2,4);
+    }
+    // Full Date string จาก GAS / JS (มี space หรือ GMT)
+    if (s.includes(" ") || s.includes("GMT") || s.includes("T")) {
+      const d = new Date(s);
+      if (!isNaN(d)) {
+        const dd = String(d.getDate()).padStart(2,"0");
+        const mm = String(d.getMonth()+1).padStart(2,"0");
+        const yy = String(d.getFullYear()).slice(2);
+        return dd + mm + yy;
+      }
+    }
+    // DDMMYYYY (8 หลัก) → ตัดเหลือ DDMMYY
+    if (/^\d{8}$/.test(s)) {
+      return s.slice(0,2) + s.slice(2,4) + s.slice(6,8);
+    }
+    // DDMMYY (6 หลัก) → คงเดิม
+    if (/^\d{6}$/.test(s)) return s;
+    return s;
+  }
+
+  async function crCallServer(action, payload = {}) {
+    showLoading("กำลังทำงาน...");
+    try {
+      const res = await fetch(GAS_URL, {
+        method: "POST",
+        headers: { "Content-Type": "text/plain;charset=utf-8" },
+        body: JSON.stringify({ module: "COLDROOM", action, payload })
+      });
+      return await res.json();
+    } catch (e) {
+      showToast("พบข้อผิดพลาด: " + e.message, "err");
+      throw e;
+    } finally {
+      hideLoading();
+    }
+  }
+
+  function crSwitchTab(tab) {
+    ["stock","balance","newproduct","editproduct","workorder","report","settings"].forEach(n => {
+      $$cr("cr-tab-" + n)?.classList.toggle("active", n === tab);
+      $$cr("crTabBtn-" + n)?.classList.toggle("active", n === tab);
+    });
+    crStopScanner(false);
+    if (tab === "workorder")    crInitWorkOrder();
+    if (tab === "editproduct" && crEditProductCache.length === 0) crLoadEditProductList();
+  }
+
+  // ══════════════════════════════════════
+  // 📋 ใบสั่งผลิต (Work Order) — Multi-SKU
+  // ══════════════════════════════════════
+  let crWoProducts = [];   // products list from GAS
+  let crWoRowIdx   = 0;    // row counter
+
+  function ddmmyyToIsoWo(str) {
+    if (!str || str.length !== 6) return "";
+    const dd=str.slice(0,2), mm=str.slice(2,4), yy=str.slice(4,6);
+    return `${2000+parseInt(yy,10)}-${mm}-${dd}`;
+  }
+
+  async function crInitWorkOrder() {
+    const today = new Date().toISOString().slice(0,10);
+    $$cr("crWoDate").value      = today;
+    $$cr("crWoCreatedBy").value = currentUser;
+    const seq = String(Math.floor(Math.random()*900)+100);
+    $$cr("crWoOrderId").value   = "WO-" + today.replace(/-/g,"") + "-" + seq;
+    $$cr("crWoNote").value      = "";
+    // โหลด products ถ้ายังไม่มี
+    if (!crWoProducts.length) await crWoLoadProducts();
+    // เพิ่มแถวแรกอัตโนมัติ
+    $$cr("crWoItemsBody").innerHTML = "";
+    crWoRowIdx = 0;
+    crWoAddRow();
+    crLoadWorkOrders();
+  }
+
+  async function crWoLoadProducts() {
+    // ใช้ cache จาก edit tab ถ้ามีแล้ว ไม่ต้องเรียก GAS ซ้ำ
+    if (crEditProductCache.length > 0) { crWoProducts = crEditProductCache; return; }
+    const res = await crCallServer("getColdRoomProducts", {});
+    crWoProducts = (res.products || []);
+    crEditProductCache = crWoProducts; // แชร์ cache
+  }
+
+  function crWoAddRow() {
+    const idx = crWoRowIdx++;
+    const options = crWoProducts.map(p => {
+      // ใช้ unitsPerSet จริงจาก DB — ถ้าว่างหรือ 0 ให้เก็บเป็น 0 ไว้แยก "ยังไม่ตั้งค่า" ออกจาก "ตั้งค่า=1"
+      const ups = p.UnitsPerSet ? Number(p.UnitsPerSet) : 0;
+      return `<option value="${escapeAttr(p.Barcode)}" data-name="${escapeAttr(p.ProductName)}" data-unit="${escapeAttr(p.DefaultUnit||"")}" data-shelf="${escapeAttr(p.StandardShelfLifeDays||10)}" data-setname="${escapeAttr(p.SetName||"")}" data-ups="${ups}">${escapeHtml(p.ProductName)}</option>`;
+    }).join("");
+    const row = document.createElement("tr");
+    row.id = `crWoRow-${idx}`;
+    row.style.cssText = "border-bottom:1px solid #e2e8f0;";
+    row.innerHTML = `
+      <td style="padding:8px;text-align:center;font-size:12px;color:#94a3b8;font-weight:700;">${idx+1}</td>
+      <td style="padding:8px;">
+        <select id="crWoSel-${idx}" onchange="crWoOnSelectProduct(${idx})"
+          style="width:100%;padding:8px 10px;border:2px solid #e2e8f0;border-radius:8px;font-family:inherit;font-size:13px;font-weight:700;outline:none;background:#fff;">
+          <option value="">— เลือกสินค้า —</option>
+          ${options}
+        </select>
+      </td>
+      <td style="padding:8px;">
+        <input type="text" id="crWoMfg-${idx}" maxlength="6" inputmode="numeric" placeholder="DDMMYY"
+          oninput="crWoCalcExpRow(${idx})"
+          style="width:100%;padding:8px;border:2px solid #e2e8f0;border-radius:8px;text-align:center;font-size:14px;font-weight:900;font-family:monospace;outline:none;">
+      </td>
+      <td style="padding:8px;">
+        <input type="text" id="crWoExp-${idx}" readonly
+          style="width:100%;padding:8px;border:2px solid #f0fdf4;border-radius:8px;text-align:center;font-size:13px;font-weight:900;color:#059669;background:#f0fdf4;font-family:monospace;">
+      </td>
+      <td id="crWoQtyTd-${idx}" style="padding:8px;min-width:200px;">
+        <div style="color:#94a3b8;font-size:12px;text-align:center;">← เลือกสินค้าก่อน</div>
+      </td>
+      <td style="padding:8px;">
+        <input type="text" id="crWoUnit-${idx}" readonly
+          style="width:60px;padding:8px;border:2px solid #f1f5f9;border-radius:8px;font-size:13px;background:#f8fafc;color:#64748b;font-weight:700;">
+      </td>
+      <td style="padding:8px;text-align:center;">
+        <button onclick="crWoRemoveRow(${idx})" style="background:#fee2e2;border:none;color:#dc2626;border-radius:6px;padding:6px 10px;cursor:pointer;font-size:14px;font-weight:900;">✕</button>
+      </td>`;
+    $$cr("crWoItemsBody").appendChild(row);
+  }
+
+  function crWoRemoveRow(idx) {
+    const row = document.getElementById(`crWoRow-${idx}`);
+    if (row) row.remove();
+  }
+
+  function crWoOnSelectProduct(idx) {
+    const sel     = document.getElementById(`crWoSel-${idx}`);
+    const opt     = sel.options[sel.selectedIndex];
+    const barcode = opt.value;
+    const unit    = opt.getAttribute("data-unit")    || "";
+    const setName = opt.getAttribute("data-setname") || "";
+    const ups     = Number(opt.getAttribute("data-ups") || 0); // 0 = ยังไม่ตั้งค่า
+
+    document.getElementById(`crWoUnit-${idx}`).value = unit;
+    crWoCalcExpRow(idx);
+
+    const td = document.getElementById(`crWoQtyTd-${idx}`);
+    if (!td) return;
+
+    if (!barcode) {
+      td.innerHTML = `<div style="color:#94a3b8;font-size:12px;text-align:center;">← เลือกสินค้าก่อน</div>`;
+      return;
+    }
+
+    if (ups > 1 || (ups === 1 && setName)) {
+      // ✅ มีการตั้งค่า SetName/UPS ครบ → แสดงสมการชัดเจน
+      const label = setName || "ชุด";
+      td.innerHTML = `
+        <div style="display:flex;flex-direction:column;gap:4px;">
+          <div style="display:flex;gap:4px;align-items:center;">
+            <input type="number" id="crWoSets-${idx}" min="0" step="0.5" placeholder="${label}"
+              oninput="crWoCalcQtyFromSets(${idx})"
+              style="width:65px;padding:8px;border:2px solid #c7d2fe;border-radius:8px;text-align:right;font-size:14px;font-weight:900;outline:none;background:#eff6ff;">
+            <span style="font-size:11px;color:#6366f1;font-weight:700;white-space:nowrap;">${label}</span>
+            <span style="font-size:12px;color:#94a3b8;">×</span>
+            <span style="font-size:12px;color:#4338ca;font-weight:800;">${ups}</span>
+            <span style="font-size:11px;color:#64748b;">=</span>
+            <input type="number" id="crWoQty-${idx}" min="0" placeholder="จำนวน"
+              style="width:70px;padding:8px;border:2px solid #bbf7d0;border-radius:8px;text-align:right;font-size:14px;font-weight:900;outline:none;background:#f0fdf4;color:#15803d;">
+          </div>
+          <div style="font-size:10px;color:#64748b;padding:0 2px;">1 ${label} = ${ups} ${unit}</div>
+        </div>`;
+    } else {
+      // ⚠️ UPS = 0 หรือ 1 โดยไม่มี SetName = ยังไม่ตั้งค่า
+      td.innerHTML = `
+        <div style="display:flex;flex-direction:column;gap:6px;">
+          <div style="background:#fef3c7;border:1px solid #fcd34d;border-radius:8px;padding:5px 9px;font-size:11px;color:#92400e;display:flex;align-items:center;gap:6px;">
+            <span>⚠️ ยังไม่ตั้งค่า ชุด/UPS</span>
+            <button onclick="crSwitchTab('editproduct');crOpenEditProduct('${escapeJs(barcode)}')"
+              style="background:#f59e0b;color:#fff;border:none;border-radius:5px;padding:2px 7px;font-size:10px;font-weight:800;cursor:pointer;">แก้ไข</button>
+          </div>
+          <div style="display:flex;gap:4px;align-items:center;">
+            <input type="number" id="crWoQty-${idx}" min="1" placeholder="จำนวน${unit ? ' ('+unit+')' : ''}"
+              style="width:100%;padding:8px;border:2px solid #fcd34d;border-radius:8px;text-align:right;font-size:14px;font-weight:900;outline:none;background:#fffbeb;">
+          </div>
+        </div>`;
+    }
+  }
+
+  function crWoCalcQtyFromSets(idx) {
+    const sel  = document.getElementById(`crWoSel-${idx}`);
+    const opt  = sel?.options[sel.selectedIndex];
+    const ups  = Number(opt?.getAttribute("data-ups") || 0);
+    const sets = Number(document.getElementById(`crWoSets-${idx}`)?.value || 0);
+    const qtyEl = document.getElementById(`crWoQty-${idx}`);
+    if (!qtyEl || ups <= 0 || sets <= 0) return;
+    // คำนวณ: ชุด × UPS — ไม่ round ถ้าผลเป็นทศนิยมที่สมเหตุสมผล (เช่น 20.5 ชุด × 10 = 205)
+    const result = sets * ups;
+    qtyEl.value = Number.isInteger(result) ? result : result.toFixed(2);
+    // แสดงสูตรใต้ช่อง
+    const unit    = opt?.getAttribute("data-unit")    || "";
+    const setName = opt?.getAttribute("data-setname") || "ชุด";
+    const infEl = document.getElementById(`crWoCalcInfo-${idx}`);
+    if (infEl) infEl.textContent = `${sets} ${setName} × ${ups} = ${qtyEl.value} ${unit}`;
+  }
+
+  function crWoCalcExpRow(idx) {
+    const sel   = document.getElementById(`crWoSel-${idx}`);
+    const opt   = sel?.options[sel.selectedIndex];
+    const shelf = Number(opt?.getAttribute("data-shelf") || 10);
+    const mfg   = (document.getElementById(`crWoMfg-${idx}`)?.value || "").trim();
+    const expEl = document.getElementById(`crWoExp-${idx}`);
+    if (mfg.length !== 6) { if(expEl) expEl.value=""; return; }
+    const mfgIso  = ddmmyyToIsoWo(mfg); if(!mfgIso) return;
+    const expDate = new Date(mfgIso);
+    expDate.setDate(expDate.getDate() + shelf);
+    const dd=String(expDate.getDate()).padStart(2,"0");
+    const mm=String(expDate.getMonth()+1).padStart(2,"0");
+    const yy=String(expDate.getFullYear()).slice(2);
+    if(expEl) expEl.value = dd+mm+yy;
+  }
+
+  function crWoGetItems() {
+    const items = [];
+    document.querySelectorAll("[id^='crWoRow-']").forEach(row => {
+      const idx  = row.id.replace("crWoRow-","");
+      const sel  = document.getElementById(`crWoSel-${idx}`);
+      const opt  = sel?.options[sel.selectedIndex];
+      const barcode = sel?.value || "";
+      const name    = opt?.getAttribute("data-name") || "";
+      const unit    = document.getElementById(`crWoUnit-${idx}`)?.value || "";
+      const mfg     = (document.getElementById(`crWoMfg-${idx}`)?.value || "").trim();
+      const exp     = document.getElementById(`crWoExp-${idx}`)?.value || "";
+      const qty     = Number(document.getElementById(`crWoQty-${idx}`)?.value || 0);
+      const sets    = Number(document.getElementById(`crWoSets-${idx}`)?.value || 0);  // อาจไม่มีถ้า UPS ไม่ได้ตั้งค่า
+      const ups     = Number(opt?.getAttribute("data-ups") || 0);
+      const setName = opt?.getAttribute("data-setname") || "";
+      // validation: qty ต้องมี, mfg 6 หลัก, มีชื่อสินค้า
+      if (name && mfg.length===6 && qty>0) {
+        // ตรวจสอบ: ถ้า UPS ตั้งค่าแล้ว แต่ qty ≠ sets×ups → อาจมีการแก้มือ → ยอมรับค่า qty ที่ user กรอก
+        items.push({ barcode, name, unit, mfg, exp, qty, sets: sets||0, unitsPerSet: ups||1, setName });
+      }
+    });
+    return items;
+  }
+
+  async function crSaveWorkOrder() {
+    const orderId = $$cr("crWoOrderId").value.trim();
+    const date    = $$cr("crWoDate").value;
+    const note    = $$cr("crWoNote").value.trim();
+    const items   = crWoGetItems();
+    if (!items.length) return showToast("กรุณาเพิ่มสินค้าและกรอก MFG + จำนวน","warn");
+    showLoading("กำลังบันทึก...");
+    const res = await crCallServer("saveWorkOrder", { orderId, date, items, note, createdBy:currentUser });
+    hideLoading();
+    if (res.ok) {
+      showToast("บันทึกใบสั่งผลิตสำเร็จ ✅","success");
+      crPrintWorkOrder();
+      crLoadWorkOrders();
+    } else showToast(res.message||"บันทึกไม่สำเร็จ","error");
+  }
+
+  function crClearWorkOrder() {
+    crInitWorkOrder();
+  }
+
+  async function crLoadWorkOrders() {
+    const res = await crCallServer("getWorkOrders", {});
+    if (!res.ok || !res.orders) return;
+    const body = $$cr("crWoListBody");
+    if (!res.orders.length) { body.innerHTML=`<tr><td colspan="9" style="text-align:center;color:#94a3b8;padding:20px;">ยังไม่มีใบสั่งผลิต</td></tr>`; return; }
+    body.innerHTML = res.orders.map(o => {
+      const items = crWoParseItems(o.Items);
+      const summary = items.length > 1
+        ? `${items[0].name} +${items.length-1} รายการ`
+        : (items[0]?.name || o.ProductName || "-");
+      const totalQty = items.reduce((s,i)=>s+Number(i.qty||0),0);
+      const mfgList  = [...new Set(items.map(i=>isoToDdmmyy(ddmmyyToIsoWo(i.mfg)||i.mfg)||i.mfg))].join(", ");
+      return `<tr>
+        <td style="font-size:11px;font-weight:700;color:#6366f1;">${escapeHtml(o.OrderID)}</td>
+        <td style="font-size:11px;">${o.Date||"-"}</td>
+        <td><b>${escapeHtml(summary)}</b><br><span style="font-size:10px;color:#94a3b8;">${items.length} SKU</span></td>
+        <td style="font-size:11px;">${mfgList||"-"}</td>
+        <td style="font-size:11px;">${items.map(i=>isoToDdmmyy(ddmmyyToIsoWo(i.exp)||i.exp)||i.exp).join(", ")||"-"}</td>
+        <td style="font-weight:700;">${totalQty.toLocaleString()}</td>
+        <td style="font-size:11px;">${escapeHtml(o.CreatedBy||"-")}</td>
+        <td><button class="cr-btn btn-light" style="padding:5px 10px;font-size:11px;" onclick='crReprintWorkOrder(${JSON.stringify(o)})'>🖨️</button></td>
+        <td><button class="cr-btn btn-primary" style="padding:5px 10px;font-size:11px;background:#0f766e;" onclick='crPrintActualReport(${JSON.stringify(o)})'>📊</button></td>
+      </tr>`;
+    }).join("");
+  }
+
+  function crWoParseItems(raw) {
+    if (!raw) return [];
+    try { return typeof raw === "string" ? JSON.parse(raw) : raw; } catch(e) { return []; }
+  }
+
+  function crPrintWorkOrder() {
+    const orderId = $$cr("crWoOrderId").value;
+    const date    = $$cr("crWoDate").value;
+    const note    = $$cr("crWoNote").value;
+    const items   = crWoGetItems();
+    crOpenWorkOrderPrint({ OrderID:orderId, Date:date, Items:items, Note:note, CreatedBy:currentUser });
+  }
+
+  function crReprintWorkOrder(o) {
+    const items = crWoParseItems(o.Items);
+    crOpenWorkOrderPrint({ ...o, Items:items });
+  }
+
+  async function crPrintActualReport(o) {
+    const items = crWoParseItems(o.Items);
+    if (!items.length) { showToast("ไม่พบรายการสินค้าในใบสั่งผลิตนี้","warn"); return; }
+    showLoading("กำลังโหลดยอดจริง...");
+    // ดึงยอดจริงแต่ละ SKU
+    const rows = [];
+    for (const item of items) {
+      const res = await crCallServer("getProductAndBalances", { barcode: item.barcode || item.name });
+      const mfgIso  = ddmmyyToIsoWo(item.mfg) || item.mfg || "";
+      let actual = 0;
+      if (res.found && res.balances) {
+        const lot = res.balances.find(b => (b.MFG||"").startsWith(mfgIso.slice(0,10)));
+        actual = lot ? Number(lot.Qty||0) : 0;
+      }
+      rows.push({ ...item, actual });
+    }
+    hideLoading();
+    const dateStr   = o.Date ? new Date(o.Date).toLocaleDateString("th-TH",{year:"numeric",month:"long",day:"numeric"}) : "-";
+    const printDate = new Date().toLocaleDateString("th-TH",{year:"numeric",month:"long",day:"numeric"});
+    const totalPlan   = rows.reduce((s,r)=>s+Number(r.qty||0),0);
+    const totalActual = rows.reduce((s,r)=>s+r.actual,0);
+    const totalDiff   = totalActual - totalPlan;
+
+    const tableRows = rows.map((r,i) => {
+      const planned = Number(r.qty||0);
+      const actual  = r.actual;
+      const diff    = actual - planned;
+      const diffSign = diff>=0?"+":"";
+      const diffColor = diff>=0?"#059669":"#dc2626";
+      const mfgFmt  = isoToDdmmyy(ddmmyyToIsoWo(r.mfg)||r.mfg)||r.mfg||"-";
+      const expFmt  = isoToDdmmyy(ddmmyyToIsoWo(r.exp)||r.exp)||r.exp||"-";
+      const status  = diff>=0
+        ? `<span style="color:#059669;font-weight:700;">✅ ตามแผน</span>`
+        : `<span style="color:#dc2626;font-weight:700;">⚠️ ขาด ${Math.abs(diff).toLocaleString()}</span>`;
+      return `<tr style="background:${i%2===0?"#fff":"#f8fafc"}">
+        <td style="padding:10px 12px;border:1px solid #e2e8f0;text-align:center;font-size:12px;color:#94a3b8;">${i+1}</td>
+        <td style="padding:10px 12px;border:1px solid #e2e8f0;font-weight:700;">${escapeHtml(r.name||"-")}</td>
+        <td style="padding:10px 12px;border:1px solid #e2e8f0;text-align:center;font-weight:900;color:#6366f1;">${mfgFmt}</td>
+        <td style="padding:10px 12px;border:1px solid #e2e8f0;text-align:center;color:#059669;">${expFmt}</td>
+        <td style="padding:10px 12px;border:1px solid #e2e8f0;text-align:right;font-weight:900;font-size:16px;color:#3b82f6;">${planned.toLocaleString()}</td>
+        <td style="padding:10px 12px;border:1px solid #e2e8f0;text-align:right;font-weight:900;font-size:16px;color:#16a34a;">${actual.toLocaleString()}</td>
+        <td style="padding:10px 12px;border:1px solid #e2e8f0;text-align:right;font-weight:900;font-size:16px;color:${diffColor};">${diffSign}${diff.toLocaleString()}</td>
+        <td style="padding:10px 12px;border:1px solid #e2e8f0;">${escapeHtml(r.unit||"-")}</td>
+        <td style="padding:10px 12px;border:1px solid #e2e8f0;text-align:center;">${status}</td>
+      </tr>`;
+    }).join("");
+
+    const overallDiffColor = totalDiff>=0?"#059669":"#dc2626";
+    const w = window.open("","","width=1050,height=720");
+    w.document.write(`<!DOCTYPE html><html lang="th"><head><meta charset="UTF-8">
+    <title>รายงานยอดผลิตจริง ${o.OrderID}</title>
+    <style>
+      body{font-family:'Sarabun',sans-serif;color:#1e293b;padding:32px 40px;font-size:14px;}
+      .hd{display:flex;justify-content:space-between;align-items:flex-start;border-bottom:3px solid #1e293b;padding-bottom:14px;margin-bottom:22px;}
+      h1{font-size:24px;font-weight:900;margin:0 0 4px;} .sub{font-size:12px;color:#64748b;}
+      .summary{display:flex;gap:16px;margin-bottom:22px;}
+      .sum-card{flex:1;border-radius:10px;padding:16px 20px;text-align:center;}
+      .sum-card .n{font-size:32px;font-weight:900;line-height:1;}
+      .sum-card .l{font-size:11px;font-weight:700;text-transform:uppercase;margin-top:5px;opacity:.7;}
+      .plan-c{background:#eff6ff;border:2px solid #3b82f6;} .plan-c .n{color:#3b82f6;}
+      .act-c{background:#f0fdf4;border:2px solid #22c55e;} .act-c .n{color:#16a34a;}
+      .dif-c{background:#f8fafc;border:2px solid #64748b;} .dif-c .n{color:${overallDiffColor};}
+      .status-bar{padding:12px 18px;border-radius:8px;font-weight:900;font-size:14px;text-align:center;margin-bottom:20px;}
+      .sign{display:flex;gap:40px;margin-top:40px;}
+      .sign-box{flex:1;text-align:center;border-top:2px solid #94a3b8;padding-top:8px;font-size:11px;color:#64748b;}
+      .footer{margin-top:18px;font-size:10px;color:#94a3b8;text-align:center;border-top:1px solid #e2e8f0;padding-top:10px;}
+      @media print{body{padding:14px 22px;} .no-print{display:none;}}
+    </style></head><body>
+    <div class="hd">
+      <div><h1>📊 รายงานยอดผลิตจริง</h1>
+        <div class="sub">อ้างอิงใบสั่งผลิต: <b>${escapeHtml(o.OrderID||"-")}</b> &nbsp;|&nbsp; ❄️ คลังสินค้า SQF</div>
+        <div class="sub">วันที่สั่งผลิต: <b>${dateStr}</b> &nbsp;|&nbsp; ผู้สั่ง: <b>${escapeHtml(o.CreatedBy||"-")}</b></div>
+      </div>
+      <div style="text-align:right;">
+        <div class="sub">วันที่พิมพ์: <b>${printDate}</b> &nbsp;|&nbsp; ผู้พิมพ์: <b>${currentUser}</b></div>
+        <button class="no-print" onclick="window.print()" style="margin-top:8px;background:#0f766e;color:#fff;border:none;padding:8px 20px;border-radius:6px;font-size:12px;font-weight:700;cursor:pointer;">🖨️ พิมพ์</button>
+      </div>
+    </div>
+    <div class="summary">
+      <div class="sum-card plan-c"><div class="n">${totalPlan.toLocaleString()}</div><div class="l">📋 สั่งผลิต (แผน)</div></div>
+      <div class="sum-card act-c"><div class="n">${totalActual.toLocaleString()}</div><div class="l">✅ ผลิตได้จริง</div></div>
+      <div class="sum-card dif-c"><div class="n" style="color:${overallDiffColor};">${totalDiff>=0?"+":""}${totalDiff.toLocaleString()}</div><div class="l">📐 ผลต่าง (จำนวน)</div></div>
+    </div>
+    <div class="status-bar" style="background:${totalDiff>=0?"#f0fdf4":"#fef2f2"};border:2px solid ${totalDiff>=0?"#22c55e":"#ef4444"};color:${totalDiff>=0?"#16a34a":"#dc2626"};">
+      ${totalDiff>=0?"✅ ผลิตได้ตามเป้าหมายโดยรวม":"⚠️ ผลิตได้ต่ำกว่าแผนโดยรวม — ตรวจสอบสาเหตุ"}
+    </div>
+    <table style="width:100%;border-collapse:collapse;font-size:13px;">
+      <thead><tr style="background:#1e293b;color:#fff;font-size:11px;">
+        <th style="padding:9px 12px;text-align:center;width:30px">#</th>
+        <th style="padding:9px 12px;text-align:left;">ชื่อสินค้า</th>
+        <th style="padding:9px 12px;text-align:center;width:80px">MFG</th>
+        <th style="padding:9px 12px;text-align:center;width:80px">EXP</th>
+        <th style="padding:9px 12px;text-align:right;width:90px">📋 สั่งผลิต</th>
+        <th style="padding:9px 12px;text-align:right;width:90px">✅ ผลิตจริง</th>
+        <th style="padding:9px 12px;text-align:right;width:90px">📐 ผลต่าง</th>
+        <th style="padding:9px 12px;text-align:left;width:55px">หน่วย</th>
+        <th style="padding:9px 12px;text-align:center;width:100px">สถานะ</th>
+      </tr></thead>
+      <tbody>${tableRows}</tbody>
+      <tfoot><tr style="background:#f1f5f9;font-weight:900;font-size:14px;">
+        <td colspan="4" style="padding:10px 12px;border:1px solid #e2e8f0;text-align:right;">รวม</td>
+        <td style="padding:10px 12px;border:1px solid #e2e8f0;text-align:right;color:#3b82f6;">${totalPlan.toLocaleString()}</td>
+        <td style="padding:10px 12px;border:1px solid #e2e8f0;text-align:right;color:#16a34a;">${totalActual.toLocaleString()}</td>
+        <td style="padding:10px 12px;border:1px solid #e2e8f0;text-align:right;color:${overallDiffColor};">${totalDiff>=0?"+":""}${totalDiff.toLocaleString()}</td>
+        <td colspan="2" style="padding:10px 12px;border:1px solid #e2e8f0;"></td>
+      </tfoot>
+    </table>
+    ${o.Note ? `<div style="background:#fef9c3;border-left:5px solid #eab308;padding:10px 14px;border-radius:6px;margin:16px 0;font-size:12px;">💬 <b>หมายเหตุ:</b> ${escapeHtml(o.Note)}</div>` : ""}
+    <div class="sign">
+      <div class="sign-box">ผู้จัดทำรายงาน<br><br>( ${currentUser} )</div>
+      <div class="sign-box">ผู้ควบคุมการผลิต<br><br>( .......................... )</div>
+      <div class="sign-box">QC / ผู้อนุมัติ<br><br>( .......................... )</div>
+    </div>
+    <div class="footer">พิมพ์โดยระบบจัดการสต๊อก SQF & MLM &nbsp;|&nbsp; ${new Date().toLocaleString("th-TH")}</div>
+    </body></html>`);
+    w.document.close();
+  }
+
+  function crOpenWorkOrderPrint(o) {
+    const items   = crWoParseItems(o.Items);
+    const dateStr = o.Date ? new Date(o.Date).toLocaleDateString("th-TH",{year:"numeric",month:"long",day:"numeric"}) : "-";
+
+    // ตรวจว่ามีรายการที่ใช้ ชุด/UPS บ้างมั้ย
+    const hasSetItems = items.some(it => Number(it.sets||0) > 0 && it.setName);
+
+    const itemRows = items.map((item,i) => {
+      const mfgFmt = isoToDdmmyy(ddmmyyToIsoWo(item.mfg)||item.mfg) || item.mfg || "-";
+      const expFmt = isoToDdmmyy(ddmmyyToIsoWo(item.exp)||item.exp) || item.exp || "-";
+      const qty    = Number(item.qty || 0);
+      const sets   = Number(item.sets || 0);
+      const ups    = Number(item.unitsPerSet || 1);
+      const sName  = item.setName || "";
+      const unit   = item.unit || "";
+
+      // แสดงจำนวน: ถ้ามีชุด → แสดงทั้ง 2 บรรทัด; ถ้าไม่มี → แสดงแค่ qty
+      const qtyCell = (sets > 0 && sName)
+        ? `<div style="font-size:15px;font-weight:900;color:#6366f1;">${sets.toLocaleString()} ${escapeHtml(sName)}</div>
+           <div style="font-size:11px;color:#94a3b8;margin:2px 0;">× ${ups} ${escapeHtml(unit)}/ชุด</div>
+           <div style="font-size:18px;font-weight:900;color:#1e293b;border-top:1px dashed #e2e8f0;margin-top:4px;padding-top:4px;">= ${qty.toLocaleString()} <span style="font-size:12px;font-weight:400;color:#64748b;">${escapeHtml(unit)}</span></div>`
+        : `<div style="font-size:18px;font-weight:900;">${qty.toLocaleString()} <span style="font-size:12px;font-weight:400;color:#64748b;">${escapeHtml(unit)}</span></div>`;
+
+      return `<tr style="background:${i%2===0?"#fff":"#f8fafc"}">
+        <td style="padding:10px 14px;border:1px solid #e2e8f0;text-align:center;font-size:12px;color:#94a3b8;">${i+1}</td>
+        <td style="padding:10px 14px;border:1px solid #e2e8f0;font-weight:700;font-size:14px;">${escapeHtml(item.name||"-")}</td>
+        <td style="padding:10px 14px;border:1px solid #e2e8f0;font-size:11px;color:#64748b;">${escapeHtml(item.barcode||"-")}</td>
+        <td style="padding:10px 14px;border:1px solid #e2e8f0;text-align:center;font-weight:900;font-size:16px;color:#6366f1;letter-spacing:1px;">${mfgFmt}</td>
+        <td style="padding:10px 14px;border:1px solid #e2e8f0;text-align:center;font-weight:900;font-size:16px;color:#059669;letter-spacing:1px;">${expFmt}</td>
+        <td style="padding:10px 14px;border:1px solid #e2e8f0;text-align:right;vertical-align:middle;">${qtyCell}</td>
+        <td style="padding:10px 14px;border:1px solid #e2e8f0;"></td>
+      </tr>`;
+    }).join("");
+
+    const totalQty  = items.reduce((s,i)=>s+Number(i.qty||0),0);
+    // สรุปชุดแยกตาม setName (เพราะแต่ละสินค้าอาจมี setName ต่างกัน)
+    const setsMap = {};
+    items.forEach(it => {
+      const sets = Number(it.sets||0); const sn = it.setName||"";
+      if (sets>0 && sn) setsMap[sn] = (setsMap[sn]||0) + sets;
+    });
+    const setsSummary = Object.entries(setsMap).map(([n,v])=>`${v.toLocaleString()} ${n}`).join(" + ");
+
+    const w = window.open("","","width=1000,height=700");
+    w.document.write(`<!DOCTYPE html><html lang="th"><head><meta charset="UTF-8">
+    <title>ใบสั่งผลิต ${o.OrderID}</title>
+    <style>
+      body{font-family:'Sarabun',sans-serif;color:#1e293b;padding:36px 48px;font-size:14px;}
+      .hd{display:flex;justify-content:space-between;align-items:flex-start;border-bottom:3px solid #1e293b;padding-bottom:16px;margin-bottom:24px;}
+      h1{font-size:26px;font-weight:900;margin:0 0 4px;}
+      .sub{font-size:12px;color:#64748b;}
+      .note-box{background:#fef9c3;border-left:5px solid #eab308;padding:12px 16px;border-radius:6px;margin:16px 0;font-size:13px;}
+      .total-bar{display:flex;gap:16px;margin:12px 0;flex-wrap:wrap;}
+      .total-card{padding:10px 18px;border-radius:10px;border:2px solid;}
+      .tc-sets{border-color:#c7d2fe;background:#eff6ff;color:#4338ca;}
+      .tc-qty {border-color:#bbf7d0;background:#f0fdf4;color:#15803d;}
+      .tc-label{font-size:10px;font-weight:700;text-transform:uppercase;opacity:.8;margin-bottom:4px;}
+      .tc-value{font-size:20px;font-weight:900;}
+      .sign{display:flex;gap:48px;margin-top:48px;}
+      .sign-box{flex:1;text-align:center;border-top:2px solid #94a3b8;padding-top:8px;font-size:11px;color:#64748b;}
+      .footer{margin-top:20px;font-size:10px;color:#94a3b8;text-align:center;border-top:1px solid #e2e8f0;padding-top:10px;}
+      @media print{body{padding:16px 24px;} .no-print{display:none;}}
+    </style></head><body>
+    <div class="hd">
+      <div>
+        <h1>📋 ใบสั่งผลิต</h1>
+        <div class="sub">❄️ คลังสินค้า SQF — สุพรรณคิวฟู้ดส์</div>
+      </div>
+      <div style="text-align:right;">
+        <div style="font-size:22px;font-weight:900;color:#6366f1;">${escapeHtml(o.OrderID||"-")}</div>
+        <div class="sub">วันที่: <b>${dateStr}</b> &nbsp;|&nbsp; ผู้สั่ง: <b>${escapeHtml(o.CreatedBy||"-")}</b></div>
+        <button class="no-print" onclick="window.print()" style="margin-top:8px;background:#1e293b;color:#fff;border:none;padding:8px 20px;border-radius:6px;font-size:12px;font-weight:700;cursor:pointer;">🖨️ พิมพ์</button>
+      </div>
+    </div>
+    ${setsSummary ? `<div class="total-bar">
+      <div class="total-card tc-sets"><div class="tc-label">📦 สั่งผลิต (ชุด)</div><div class="tc-value">${setsSummary}</div></div>
+      <div class="total-card tc-qty" ><div class="tc-label">🔢 รวมทั้งหมด (หน่วย)</div><div class="tc-value">${totalQty.toLocaleString()}</div></div>
+    </div>` : ""}
+    <table style="width:100%;border-collapse:collapse;margin-bottom:16px;">
+      <thead><tr style="background:#1e293b;color:#fff;font-size:12px;">
+        <th style="padding:10px 14px;text-align:center;width:32px">#</th>
+        <th style="padding:10px 14px;text-align:left;">ชื่อสินค้า</th>
+        <th style="padding:10px 14px;text-align:left;width:110px">บาร์โค้ด</th>
+        <th style="padding:10px 14px;text-align:center;width:90px">MFG</th>
+        <th style="padding:10px 14px;text-align:center;width:90px">EXP</th>
+        <th style="padding:10px 14px;text-align:right;width:150px">จำนวน (ชุด → หน่วย)</th>
+        <th style="padding:10px 14px;text-align:left;width:120px">หมายเหตุ</th>
+      </tr></thead>
+      <tbody>${itemRows}</tbody>
+      <tfoot><tr style="background:#f1f5f9;font-weight:900;">
+        <td colspan="5" style="padding:10px 14px;border:1px solid #e2e8f0;text-align:right;">รวมทั้งหมด</td>
+        <td style="padding:10px 14px;border:1px solid #e2e8f0;text-align:right;">
+          ${setsSummary ? `<div style="font-size:14px;color:#6366f1;font-weight:700;">${setsSummary}</div>` : ""}
+          <div style="font-size:20px;color:#15803d;">${totalQty.toLocaleString()}</div>
+        </td>
+        <td style="padding:10px 14px;border:1px solid #e2e8f0;"></td>
+      </tr></tfoot>
+    </table>
+    ${o.Note ? `<div class="note-box">💬 <b>หมายเหตุ:</b> ${escapeHtml(o.Note)}</div>` : ""}
+    <div class="sign">
+      <div class="sign-box">ผู้สั่งผลิต<br><br>( ${escapeHtml(o.CreatedBy||"...")} )</div>
+      <div class="sign-box">ผู้ควบคุมการผลิต<br><br>( .......................... )</div>
+      <div class="sign-box">QC ตรวจรับ<br><br>( .......................... )</div>
+    </div>
+    <div class="footer">พิมพ์โดยระบบจัดการสต๊อก SQF & MLM &nbsp;|&nbsp; ${new Date().toLocaleString("th-TH")}</div>
+    </body></html>`);
+    w.document.close();
+  }
+
+  // ── Modal ──
+  function crShowModal(type, title, msg) {
+    return new Promise(resolve => {
+      const overlay = $$cr("crModal");
+      $$cr("crModalTitle").innerText = title;
+      $$cr("crModalMessage").innerHTML = msg.replace(/\n/g,"<br>");
+      const input = $$cr("crModalInput");
+      if (type === "prompt") { input.style.display = "block"; input.value = ""; setTimeout(() => input.focus(), 100); }
+      else { input.style.display = "none"; }
+      $$cr("crModalCancel").style.display = (type === "alert") ? "none" : "block";
+      overlay.classList.add("show");
+      $$cr("crModalCancel").onclick  = () => { overlay.classList.remove("show"); resolve(null); };
+      $$cr("crModalConfirm").onclick = () => { overlay.classList.remove("show"); resolve(type === "prompt" ? input.value : true); };
+    });
+  }
+
+  // ── Status ──
+  function crSetStatus(id, msg, type = "ok") {
+    const el = $$cr(id); if (!el) return;
+    const icon = type === "warn" ? "⚠️" : type === "err" ? "❌" : "✅";
+    el.innerHTML = `<div>${icon}</div><div>${msg}</div>`;
+    el.className = "cr-status " + type;
+  }
+  function crClearStatus(id) { const el = $$cr(id); if (el) { el.innerHTML = ""; el.className = "cr-status"; } }
+
+  // ── Lot Breakdown ──
+  function crRenderLotBreakdown(rows) {
+    const unit = $$cr("crMasterUnit").textContent;
+    if (!rows || !rows.length) { $$cr("crTotalQty").textContent = "0"; $$cr("crLotBreakdown").style.display = "none"; return; }
+    const total = rows.reduce((s, r) => s + r.Qty, 0);
+    $$cr("crTotalQty").textContent = total;
+    let html = `<div style="margin-bottom:6px;font-weight:700;border-bottom:1px solid rgba(255,255,255,.2);padding-bottom:4px;">แยกตามรอบวันที่ผลิต:</div>`;
+    html += rows.map(r => `
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-top:4px;">
+        <span>🔸 MFG ${isoToDdmmyy(r.MFG)} (EXP ${isoToDdmmyy(r.EXP)})</span>
+        <div><span style="margin-right:8px;"><b>${r.Qty}</b> ${unit}</span>
+          <button class="cr-btn btn-primary" style="padding:4px 8px;font-size:10px;border-radius:4px;" onclick="crSelectLot('${r.MFG}','${r.EXP}',${r.Qty})">เลือก</button>
+        </div>
+      </div>`).join("");
+    $$cr("crLotBreakdown").innerHTML = html;
+    $$cr("crLotBreakdown").style.display = "block";
+  }
+
+  function crSelectLot(mfgIso, expIso, qty) {
+    $$cr("crMfg").value = isoToDdmmyy(mfgIso);
+    $$cr("crExp").value = isoToDdmmyy(expIso);
+    $$cr("crNewQty").focus();
+    showToast(`เลือกรอบผลิต ${isoToDdmmyy(mfgIso)} แล้ว!`);
+  }
+
+  // ── Lookup ──
+  async function crLookupBarcode() {
+    const term = $$cr("crBarcode").value.trim();
+    if (!term) return;
+    const res = await crCallServer("getProductAndBalances", { barcode: term });
+    if (!res.found) {
+      if (/^\d+$/.test(term.replace(/\s+/g,""))) $$cr("crNewBarcode").value = term.replace(/\s+/g,"");
+      crSwitchTab("newproduct");
+      crSetStatus("crNewProductStatus","ไม่พบสินค้าในระบบ กรุณาขึ้นทะเบียนใหม่ 👇","warn");
+      return;
+    }
+    crCurrentProduct = res.product;
+    $$cr("crBarcode").value     = res.product.Barcode;
+    $$cr("crProductName").value = res.product.ProductName;
+    $$cr("crMasterUnit").textContent = res.product.DefaultUnit;
+    crRenderLotBreakdown(res.balances);
+    crSetStatus("crMainStatus", res.balances.length ? "พบข้อมูลสต๊อก กรุณาเลือกรอบผลิตเพื่ออัปเดตยอด" : "ไม่มียอดคงเหลือ กรุณาระบุรายละเอียดเพื่อรับเข้า", "ok");
+    const editBtn = document.getElementById("crBtnEditProductInline");
+    if (editBtn) editBtn.style.display = "inline-flex";
+  }
+
+  // ── Overview ──
+  async function crLoadOverview() {
+    const res = await crCallServer("getStartupOverview");
+    if (!res.ok) return;
+    window.crAllLotsData = res.allLots;
+    $$cr("crSumProducts").textContent = res.summary.totalProducts;
+    $$cr("crSumLots").textContent     = res.summary.totalLots;
+    $$cr("crSumExpiring").textContent = res.summary.expiringLots;
+    $$cr("crSumExpired").textContent  = res.summary.expiredLots;
+
+    $$cr("crTotalBody").innerHTML = res.totalByProduct.map(x =>
+      `<tr><td data-label="ชื่อสินค้า">${x.ProductName}</td><td data-label="ยอดรวม"><b>${x.TotalQty}</b></td><td data-label="หน่วย">${x.Unit}</td><td data-label="รอบผลิต">${x.LotCount}</td></tr>`).join("");
+
+    $$cr("crExpiringBody").innerHTML = res.expiringLots.map(x =>
+      `<tr><td data-label="ชื่อ">${x.ProductName}</td><td data-label="MFG"><b>${isoToDdmmyy(x.MFG)}</b></td><td data-label="EXP">${isoToDdmmyy(x.EXP)}</td><td data-label="เหลือ(วัน)" style="color:var(--warn)">${x.ExpireDays}</td><td data-label="จำนวน"><b>${x.Qty}</b></td></tr>`).join("");
+
+    $$cr("crExpiredBody").innerHTML = res.expiredLots.map(x =>
+      `<tr><td data-label="ชื่อ">${x.ProductName}</td><td data-label="MFG"><b>${isoToDdmmyy(x.MFG)}</b></td><td data-label="EXP">${isoToDdmmyy(x.EXP)}</td><td data-label="เลย(วัน)" style="color:var(--danger)">${Math.abs(x.ExpireDays)} วัน</td><td data-label="จำนวน"><b>${x.Qty}</b></td></tr>`).join("");
+
+    const b = $$cr("crBalanceBody");
+    if (!res.allLots || !res.allLots.length) {
+      b.innerHTML = '<tr><td colspan="9" style="text-align:center;padding:20px;">ไม่มีข้อมูลสต๊อก</td></tr>';
+    } else {
+      b.innerHTML = res.allLots.map((r, i) => `
+        <tr>
+          <td data-label="จัดการ"><div style="display:flex;gap:5px;flex-wrap:wrap;">
+            <button class="cr-btn btn-primary" style="padding:6px;font-size:11px;" onclick="crSelectGlobal(${i})">เลือก</button>
+            <button class="cr-btn btn-light"   style="padding:6px;font-size:11px;" onclick="crOpenEditProduct('${r.Barcode}')">✏️แก้ไข</button>
+            <button class="cr-btn btn-light"   style="padding:6px;font-size:11px;color:var(--danger);" onclick="crAskClearGlobal(${i})">🗑️นำออก</button>
+          </div></td>
+          <td data-label="บาร์โค้ด" style="font-size:12px;color:var(--muted);">${escapeHtml(r.Barcode)}</td>
+          <td data-label="ชื่อสินค้า"><b>${escapeHtml(r.ProductName)}</b></td>
+          <td data-label="MFG"><b>${isoToDdmmyy(r.MFG)}</b></td>
+          <td data-label="EXP">${isoToDdmmyy(r.EXP)}</td>
+          <td data-label="จำนวน" style="color:var(--primary);font-weight:700;">${r.Qty} <span style="font-size:12px;color:var(--text);font-weight:normal;">${escapeHtml(r.Unit)}</span></td>
+          <td data-label="เหลือ(วัน)">${r.ExpireDays}</td>
+          <td data-label="สถานะ"><span class="pill ${r.ExpireStatus.includes('ปกติ') ? 'pill-ok' : 'pill-danger'}">${r.ExpireStatus}</span></td>
+          <td data-label="QC">${r.QcShelfLifeStatus}</td>
+        </tr>`).join("");
+    }
+
+    // 🚨 แจ้งเตือน Cold Room
+    crCheckCritical(res);
+  }
+
+  async function crSelectGlobal(i) {
+    const r = window.crAllLotsData[i]; if (!r) return;
+    crSwitchTab("stock"); $$cr("crBarcode").value = r.Barcode; await crLookupBarcode();
+    $$cr("crMfg").value = isoToDdmmyy(r.MFG); $$cr("crExp").value = isoToDdmmyy(r.EXP);
+    $$cr("crNewQty").focus(); showToast(`เลือกรอบผลิต ${isoToDdmmyy(r.MFG)} เรียบร้อย!`);
+  }
+
+  async function crAskClearGlobal(i) {
+    const row = window.crAllLotsData[i];
+    const emp = $$cr("crEmployee").value.trim();
+    if (!emp) { await crShowModal("alert","ไม่พบข้อมูลพนักงาน","กรุณาระบุชื่อผู้บันทึกก่อน"); crSwitchTab("stock"); $$cr("crEmployee").focus(); return; }
+    const reason = await crShowModal("prompt","🗑️ นำสินค้าออก",`รอบผลิต ${isoToDdmmyy(row.MFG)} ของ ${row.ProductName}\nกรุณาระบุเหตุผล:`);
+    if (!reason) return;
+    const conf = await crShowModal("confirm","ยืนยัน","ยืนยันการปรับยอดเป็น 0 ใช่หรือไม่?");
+    if (conf) {
+      const res = await crCallServer("clearLotStock",{ barcode:row.Barcode, mfg:row.MFG, reason, employeeName:emp });
+      if (res.ok) { if(navigator.vibrate) navigator.vibrate([100,50,100]); showToast("ดำเนินการเรียบร้อย"); crClearAll(); crLoadOverview(); }
+    }
+  }
+
+  // ── Auto EXP ──
+  function crAutoExp(mfgStr) {
+    if (!/^\d{6}$/.test(mfgStr)) { crSetStatus("crMainStatus","❌ วันผลิตต้องเป็นตัวเลข 6 หลัก","err"); $$cr("crExp").value = ""; return; }
+    const dd = parseInt(mfgStr.slice(0,2)), mm = parseInt(mfgStr.slice(2,4)), yy = parseInt(mfgStr.slice(4,6)), yyyy = 2000+yy;
+    const d = new Date(yyyy, mm-1, dd);
+    if (isNaN(d.getTime())) { crSetStatus("crMainStatus","❌ วันที่ไม่ถูกต้อง","err"); $$cr("crExp").value=""; return; }
+    if (!crCurrentProduct) return;
+    const sl = parseInt(crCurrentProduct.StandardShelfLifeDays);
+    if (!sl || sl <= 0) { crSetStatus("crMainStatus","⚠️ ไม่พบอายุมาตรฐาน กรุณาระบุ EXP เอง","warn"); return; }
+    d.setDate(d.getDate() + sl);
+    $$cr("crExp").value = String(d.getDate()).padStart(2,"0") + String(d.getMonth()+1).padStart(2,"0") + String(d.getFullYear()).slice(2);
+    crSetStatus("crMainStatus",`✅ คำนวณ EXP อัตโนมัติ (+${sl} วัน)`,"ok");
+  }
+
+  function crEvalExpr(el) {
+    let v = String(el.value).trim().replace(/x/gi,"*");
+    if (/^[0-9+\-*/().\s]+$/.test(v)) { try { el.value = Math.round(new Function("return "+v)()*100)/100; } catch(e){} }
+  }
+
+  // ── Save Count ──
+  async function crSaveCount() {
+    crEvalExpr($$cr("crNewQty"));
+    const pl = {
+      barcode:      $$cr("crBarcode").value.trim(),
+      employeeName: $$cr("crEmployee").value.trim(),
+      mfg:          $$cr("crMfg").value.trim(),
+      exp:          $$cr("crExp").value.trim(),
+      newQty:       $$cr("crNewQty").value.trim(),
+      note:         $$cr("crNote").value.trim()
+    };
+    if (!pl.employeeName || !pl.mfg || !pl.exp || pl.newQty === "" || isNaN(pl.newQty)) {
+      await crShowModal("alert","ข้อมูลไม่ครบ","กรุณาระบุ: ชื่อพนักงาน, วันผลิต, วันหมดอายุ, จำนวน"); return;
+    }
+    const qty = Number(pl.newQty);
+    if (qty === 0 && !pl.note) {
+      const reason = await crShowModal("prompt","สินค้าหมดแล้ว?","จำนวนเป็น 0 กรุณาระบุเหตุผล:");
+      if (!reason) return; pl.note = reason; $$cr("crNote").value = reason;
+    }
+    const res = await crCallServer("saveOrUpdateCount", pl);
+    if (res.ok) {
+      if (navigator.vibrate) navigator.vibrate([100,50,100]);
+      showToast(qty === 0 ? "ปรับยอดเป็น 0 เรียบร้อย" : "บันทึกเข้าสต๊อกเรียบร้อย!");
+      const bc = $$cr("crBarcode").value.trim();
+      crClearAll(); $$cr("crBarcode").value = bc; crLookupBarcode(); crLoadOverview();
+    }
+  }
+
+  async function crSaveNewProduct() {
+    const pl = {
+      barcode:             $$cr("crNewBarcode").value.trim(),
+      productName:         $$cr("crNewName").value.trim(),
+      sku:                 $$cr("crNewSku").value.trim(),
+      defaultUnit:         $$cr("crNewUnit").value,
+      standardShelfLifeDays: $$cr("crNewShelfLife").value,
+      warningPercentage:   $$cr("crNewWarnPct").value,
+      warningDays:         $$cr("crNewWarnDays").value,
+      setName:             $$cr("crNewSetName").value.trim(),
+      unitsPerSet:         Number($$cr("crNewUnitsPerSet").value) || 1
+    };
+    const res = await crCallServer("saveNewProduct", pl);
+    if (res.ok) { showToast("ขึ้นทะเบียนสำเร็จ!"); $$cr("crBarcode").value = pl.barcode; crSwitchTab("stock"); crLookupBarcode(); }
+    else showToast(res.message || "เกิดข้อผิดพลาด","err");
+  }
+
+  // ── Edit Product Tab ──
+  let crEditProductCache = []; // cache รายการสินค้าทั้งหมด
+
+  async function crLoadEditProductList() {
+    crSetStatus("crEditProductStatus","⏳ กำลังโหลดรายการสินค้า...","");
+    const res = await crCallServer("getColdRoomProducts", {});
+    if (!res.ok) { crSetStatus("crEditProductStatus","❌ โหลดไม่ได้ กรุณาลองใหม่","err"); return; }
+    crEditProductCache = res.products || [];
+    crWoProducts = crEditProductCache; // แชร์ cache กับ Work Order
+    const sel = document.getElementById("crEditProductSelect");
+    sel.innerHTML = `<option value="">-- เลือกสินค้า (${crEditProductCache.length} รายการ) --</option>`;
+    crEditProductCache.forEach((p, i) => {
+      const opt = document.createElement("option");
+      opt.value = i;
+      opt.textContent = `${p.ProductName}  [${p.Barcode}]`;
+      sel.appendChild(opt);
+    });
+    crClearStatus("crEditProductStatus");
+    if (crEditProductCache.length === 0) crSetStatus("crEditProductStatus","⚠️ ยังไม่มีสินค้าในระบบ","warn");
+  }
+
+  function crSelectEditProduct() {
+    const idx = document.getElementById("crEditProductSelect").value;
+    const fields = document.getElementById("crEditProductFields");
+    if (idx === "" || idx === null) { fields.style.display = "none"; return; }
+    const prod = crEditProductCache[Number(idx)];
+    if (!prod) return;
+
+    document.getElementById("crEditBarcode").value                    = prod.Barcode || "";
+    document.getElementById("crEditBarcodeDisplay").textContent       = prod.Barcode || "";
+    document.getElementById("crEditName").value                       = prod.ProductName || "";
+    document.getElementById("crEditSku").value                        = prod.SKU || "";
+    document.getElementById("crEditShelfLife").value                  = prod.StandardShelfLifeDays || "";
+    document.getElementById("crEditWarnPct").value                    = prod.WarningPercentage || "";
+    document.getElementById("crEditWarnDays").value                   = prod.WarningDays || "";
+    document.getElementById("crEditSetName").value                    = prod.SetName || "";
+    document.getElementById("crEditUnitsPerSet").value                = prod.UnitsPerSet || "";
+    document.getElementById("crEditSetNamePreview").textContent       = prod.DefaultUnit || "หน่วยนับ";
+
+    const sel = document.getElementById("crEditUnit");
+    const unitVal = prod.DefaultUnit || "";
+    let found = false;
+    for (let opt of sel.options) { if (opt.value === unitVal) { sel.value = unitVal; found = true; break; } }
+    if (!found && unitVal) { const o = new Option(unitVal, unitVal); sel.add(o); sel.value = unitVal; }
+
+    fields.style.display = "block";
+    crClearStatus("crEditProductStatus");
+  }
+
+  // เรียกจากปุ่ม ✏️แก้ไข ในตาราง คงเหลือ — สวิตช์ไปยัง tab แก้ไขสินค้า แล้วเลือกสินค้าทันที
+  async function crOpenEditProduct(barcode) {
+    crSwitchTab("editproduct");
+    if (crEditProductCache.length === 0) await crLoadEditProductList();
+    const idx = crEditProductCache.findIndex(p => String(p.Barcode) === String(barcode));
+    if (idx < 0) { crSetStatus("crEditProductStatus","❌ ไม่พบสินค้านี้ในรายการ","err"); return; }
+    const sel = document.getElementById("crEditProductSelect");
+    sel.value = idx;
+    crSelectEditProduct();
+  }
+
+  function crOpenEditProductFromCurrent() {
+    if (!crCurrentProduct) return;
+    crOpenEditProduct(crCurrentProduct.Barcode);
+  }
+
+  function crResetEditProductForm() {
+    document.getElementById("crEditProductSelect").value = "";
+    document.getElementById("crEditProductFields").style.display = "none";
+    document.getElementById("crEditBarcode").value = "";
+    crClearStatus("crEditProductStatus");
+  }
+
+  async function crSubmitEditProduct() {
+    const pl = {
+      barcode:               document.getElementById("crEditBarcode").value.trim(),
+      productName:           document.getElementById("crEditName").value.trim(),
+      sku:                   document.getElementById("crEditSku").value.trim(),
+      defaultUnit:           document.getElementById("crEditUnit").value,
+      standardShelfLifeDays: document.getElementById("crEditShelfLife").value,
+      warningPercentage:     document.getElementById("crEditWarnPct").value,
+      warningDays:           document.getElementById("crEditWarnDays").value,
+      setName:               document.getElementById("crEditSetName").value.trim(),
+      unitsPerSet:           Number(document.getElementById("crEditUnitsPerSet").value) || 1
+    };
+    if (!pl.barcode || !pl.productName) { crSetStatus("crEditProductStatus","❌ กรุณากรอกชื่อสินค้า","err"); return; }
+    crSetStatus("crEditProductStatus","⏳ กำลังบันทึก...","");
+    const res = await crCallServer("updateProduct", pl);
+    if (res.ok) {
+      showToast("✅ แก้ไขข้อมูลสินค้าเรียบร้อย");
+      crClearStatus("crEditProductStatus");
+      // อัปเดต cache ด้วย
+      const idx = crEditProductCache.findIndex(p => String(p.Barcode) === String(pl.barcode));
+      if (idx >= 0) {
+        Object.assign(crEditProductCache[idx], { ProductName: pl.productName, SKU: pl.sku, DefaultUnit: pl.defaultUnit,
+          StandardShelfLifeDays: pl.standardShelfLifeDays, WarningPercentage: pl.warningPercentage,
+          WarningDays: pl.warningDays, SetName: pl.setName, UnitsPerSet: pl.unitsPerSet });
+        // อัปเดตชื่อใน dropdown ด้วย
+        const sel = document.getElementById("crEditProductSelect");
+        if (sel.options[idx+1]) sel.options[idx+1].textContent = `${pl.productName}  [${pl.barcode}]`;
+      }
+      // อัปเดต crCurrentProduct ถ้าตรงกัน
+      if (crCurrentProduct && String(crCurrentProduct.Barcode) === String(pl.barcode)) {
+        Object.assign(crCurrentProduct, { ProductName: pl.productName, DefaultUnit: pl.defaultUnit,
+          StandardShelfLifeDays: pl.standardShelfLifeDays, WarningPercentage: pl.warningPercentage,
+          WarningDays: pl.warningDays, SetName: pl.setName, UnitsPerSet: pl.unitsPerSet });
+        $$cr("crProductName").value = pl.productName;
+      }
+      crLoadOverview();
+    } else {
+      crSetStatus("crEditProductStatus","❌ "+(res.message||"เกิดข้อผิดพลาด"),"err");
+    }
+  }
+
+  async function crSaveSettings() {
+    const pl = { telegramBotName:$$cr("crTgBotName").value, telegramBotToken:$$cr("crTgToken").value, telegramChatIds:$$cr("crTgChatIds").value, enableTelegramStockUpdate:$$cr("crTgEnable").value };
+    const res = await crCallServer("saveAlertSettings", pl);
+    if (res.ok) showToast("บันทึกการตั้งค่าสำเร็จ");
+  }
+
+  // ── Clear ──
+  function crClearLotOnly() {
+    ["crMfg","crExp","crNewQty","crNote"].forEach(id => { if ($$cr(id)) $$cr(id).value = ""; });
+    showToast("ล้างฟอร์มอัปเดตยอดเรียบร้อย");
+  }
+  function crClearAll() {
+    ["crBarcode","crMfg","crExp","crNewQty","crNote","crProductName","crNewBarcode","crNewName","crNewSku"].forEach(id => { if($$cr(id)) $$cr(id).value=""; });
+    $$cr("crTotalQty").textContent = "0"; $$cr("crMasterUnit").textContent = "-";
+    $$cr("crLotBreakdown").style.display = "none"; $$cr("crLotBreakdown").innerHTML = "";
+    crCurrentProduct = null; crClearStatus("crMainStatus"); $$cr("crBarcode").focus();
+    const editBtn = document.getElementById("crBtnEditProductInline");
+    if (editBtn) editBtn.style.display = "none";
+  }
+
+  // ── Export ──
+  function crExport(format) {
+    if (!window.crAllLotsData || !window.crAllLotsData.length) { showToast("ไม่พบข้อมูลสำหรับส่งออก","warn"); return; }
+    const sorted = [...window.crAllLotsData].sort((a,b) => new Date(b.MFG)-new Date(a.MFG));
+    if (format === "csv") {
+      let csv = "\uFEFFบาร์โค้ด,ชื่อสินค้า,วันที่ผลิต(MFG),วันหมดอายุ(EXP),จำนวน,หน่วย,เหลือ(วัน),สถานะ\n";
+      sorted.forEach(r => { csv += `="${r.Barcode}","${r.ProductName}",${isoToDdmmyy(r.MFG)},${isoToDdmmyy(r.EXP)},${r.Qty},${r.Unit},${r.ExpireDays},${r.ExpireStatus}\n`; });
+      const a = document.createElement("a"); a.href = URL.createObjectURL(new Blob([csv],{type:"text/csv;charset=utf-8;"}));
+      a.download = `ColdRoom_${new Date().toISOString().slice(0,10)}.csv`; a.click();
+      showToast("ดาวน์โหลด CSV เรียบร้อย");
+    } else {
+      const w = window.open("","","width=900,height=600");
+      w.document.write(`<!DOCTYPE html><html><head><title>รายงาน</title><style>@import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@400;700');body{font-family:Sarabun,sans-serif;padding:20px}table{width:100%;border-collapse:collapse;font-size:14px}th,td{border:1px solid #cbd5e1;padding:8px;text-align:left}th{background:#f1f5f9;font-weight:700}</style></head><body><h2>รายงานสต๊อกคงเหลือ ❄️ SQF</h2><p>อัปเดต: ${new Date().toLocaleString("th-TH")}</p><table><thead><tr><th>ชื่อสินค้า</th><th>MFG</th><th>จำนวน</th><th>เหลือ(วัน)</th><th>สถานะ</th><th>QC</th></tr></thead><tbody>${sorted.map(r=>`<tr><td>${escapeHtml(r.ProductName)}</td><td>${isoToDdmmyy(r.MFG)}</td><td>${r.Qty} ${escapeHtml(r.Unit)}</td><td>${r.ExpireDays}</td><td>${r.ExpireStatus}</td><td>${r.QcShelfLifeStatus}</td></tr>`).join("")}</tbody></table></body></html>`);
+      w.document.close(); setTimeout(()=>{ w.focus(); w.print(); },500);
+    }
+  }
+
+  // ── Scanner ──
+  function crStopScanner() {
+    crScannerRunning = false;
+    if (crScannerLoopHandle) clearTimeout(crScannerLoopHandle);
+    if (crScannerStream) { crScannerStream.getTracks().forEach(t=>t.stop()); crScannerStream=null; }
+    $$cr("crScannerBoxStock")?.classList.add("hide");
+    $$cr("crScannerBoxNew")?.classList.add("hide");
+  }
+
+  async function crStartScanner(mode) {
+    crScannerMode = mode;
+    const box = mode==="stock"?"crScannerBoxStock":"crScannerBoxNew";
+    const vid = mode==="stock"?"crVideoStock":"crVideoNew";
+    if (!("BarcodeDetector" in window)) { await crShowModal("alert","แจ้งเตือน","เบราว์เซอร์ไม่รองรับสแกนผ่านกล้อง"); return; }
+    try {
+      crStopScanner();
+      crBarcodeDetector = new BarcodeDetector({ formats:["ean_13","ean_8","upc_a","code_128","code_39","itf"] });
+      crScannerStream = await navigator.mediaDevices.getUserMedia({ video:{ facingMode:"environment" },audio:false });
+      $$cr(vid).srcObject = crScannerStream; $$cr(box).classList.remove("hide"); await $$cr(vid).play();
+      crScannerRunning = true; crScanLoop();
+    } catch(e) { await crShowModal("alert","ข้อผิดพลาด","ไม่สามารถเปิดกล้อง: "+e.message); }
+  }
+
+  async function crScanLoop() {
+    if (!crScannerRunning) return;
+    const vid = crScannerMode==="stock"?"crVideoStock":"crVideoNew";
+    try {
+      const bc = await crBarcodeDetector.detect($$cr(vid));
+      if (bc && bc.length) {
+        if (navigator.vibrate) navigator.vibrate([50,50,50]);
+        crStopScanner();
+        if (crScannerMode==="stock") { $$cr("crBarcode").value=bc[0].rawValue; crLookupBarcode(); }
+        else $$cr("crNewBarcode").value=bc[0].rawValue;
+        return;
+      }
+    } catch(e) {}
+    crScannerLoopHandle = setTimeout(crScanLoop, 250);
+  }
+
+  // ── Init ──
+  function initColdroom() {
+    crInitDone = true;
+    crCallServer("getAlertSettings").then(res => {
+      if (res.ok) {
+        const s = res.settings;
+        $$cr("crTgBotName").value = s.telegramBotName;
+        $$cr("crTgToken").value   = s.telegramBotToken;
+        $$cr("crTgChatIds").value = s.telegramChatIds;
+        $$cr("crTgEnable").value  = s.enableTelegramStockUpdate;
+      }
+    });
+    crLoadOverview();
+    // pre-fill employee name
+    if ($$cr("crEmployee") && currentUser) $$cr("crEmployee").value = currentUser;
+    $$cr("crBarcode").focus();
+
+    $$cr("crMfg").addEventListener("input", function() {
+      this.value = this.value.replace(/\D/g,"");
+      if (this.value.length === 6) crAutoExp(this.value); else $$cr("crExp").value = "";
+    });
+    $$cr("crNewQty").addEventListener("blur",  function() { crEvalExpr(this); });
+    $$cr("crNewQty").addEventListener("keypress", function(e) { if (e.key==="Enter") { crEvalExpr(this); this.blur(); } });
+
+    // ── Autocomplete: crBarcode (ค้นหาสินค้า Cold Room) ──
+    const barcodeEl = $$cr("crBarcode");
+    buildAutocomplete(
+      barcodeEl,
+      () => crEditProductCache.map(p => ({
+        label: p.ProductName,
+        sub:   `บาร์โค้ด: ${p.Barcode}${p.SKU ? " · SKU: " + p.SKU : ""}${p.SetName ? " · " + p.SetName : ""}`,
+        badge: p.DefaultUnit || "",
+        value: p.Barcode
+      })),
+      async (item) => {
+        barcodeEl.value = item.value;
+        await crLookupBarcode();
+      }
+    );
+    // โหลด product cache ครั้งแรกเมื่อ focus (lazy load)
+    barcodeEl.addEventListener("focus", function handler() {
+      barcodeEl.removeEventListener("focus", handler);
+      if (crEditProductCache.length === 0) crLoadEditProductList();
+    });
+
+    // ── Autocomplete: crNewBarcode (ขึ้นทะเบียนสินค้าใหม่ — แจ้งถ้ามีอยู่แล้ว) ──
+    const newBarcodeEl = $$cr("crNewBarcode");
+    buildAutocomplete(
+      newBarcodeEl,
+      () => crEditProductCache.map(p => ({
+        label: p.ProductName,
+        sub:   `บาร์โค้ด: ${p.Barcode} — มีในระบบแล้ว คลิกเพื่อแก้ไข`,
+        badge: "มีแล้ว",
+        value: p.Barcode
+      })),
+      (item) => {
+        newBarcodeEl.value = item.value;
+        $$cr("crNewName").value = "";
+        showToast(`⚠️ "${item.label}" มีในระบบแล้ว — ไปที่แก้ไขสินค้าแทน`,"warn");
+        crSwitchTab("editproduct");
+        crOpenEditProduct(item.value);
+      }
+    );
+    newBarcodeEl.addEventListener("focus", function handler() {
+      newBarcodeEl.removeEventListener("focus", handler);
+      if (crEditProductCache.length === 0) crLoadEditProductList();
+    });
+  }
+
+  // ═══════════════════════════════════════════════
+  // 🏭 RAW MATERIALS MODULE (SQF & MLM)
+  // ═══════════════════════════════════════════════
+
+  let rawCurrentModule  = "MLM";
+  let rawLastData       = [];
+  let rawCurrentFilter  = "all";
+  let rawNextSku        = "";
+  let rawHtml5QrCode    = null;
+  let rawVerifyTarget   = "";
+  let rawBarChart       = null;
+  let rawDonutChart     = null;
+  let rawCurrentQrSku   = "";
+  let rawCurrentQrName  = "";
+
+  const MODULE_META = {
+    SQF: { title:"วัตถุดิบ SQF<span class='text-orange-500'>V.1.0</span>", subtitle:"สุพรรณคิวฟู้ดส์", subtitleClass:"text-orange-600 bg-orange-100", headerBorder:"border-orange-500", skuPrefix:"SQF-" },
+    MLM: { title:"วัตถุดิบ MLM<span class='text-blue-600'>V.1.0</span>",   subtitle:"แม่ละมาย",        subtitleClass:"text-blue-600 bg-blue-100",   headerBorder:"border-blue-500",   skuPrefix:"MLM-" }
+  };
+
+  function updateRawHeader(mod) {
+    const m = MODULE_META[mod];
+    document.getElementById("rawModuleTitle").innerHTML       = m.title;
+    document.getElementById("rawModuleSubtitle").textContent  = m.subtitle;
+    document.getElementById("rawModuleSubtitle").className    = `text-sm font-black inline-block px-3 py-1 rounded-lg uppercase ${m.subtitleClass}`;
+  }
+
+  async function rawFetch(payload) {
+    const res = await fetch(GAS_URL, { method:"POST", body: JSON.stringify({ ...payload, module: rawCurrentModule }) });
+    return await res.json();
+  }
+
+  let _rawSearchAcInit = false;
+  async function rawLoadData(startup = false) {
+    try {
+      showLoading("กำลังโหลดข้อมูล...");
+      const data = await (await fetch(`${GAS_URL}?module=${rawCurrentModule}`)).json();
+      hideLoading();
+      if (data.status && data.status !== "success") { showToast(data.message || "โหลดข้อมูลไม่สำเร็จ","error"); return; }
+      rawLastData = Array.isArray(data.materials) ? data.materials : [];
+      rawNextSku  = data.nextSku || MODULE_META[rawCurrentModule].skuPrefix + "0001";
+      renderRawInventory(rawLastData);
+      renderRawHistory(data.recentHistory || []);
+      renderRawStats(rawLastData, data.discontinued || []);
+      renderRawCharts(rawLastData);
+      rawCheckCritical(rawLastData, rawCurrentModule, startup);
+
+      // ── Autocomplete: rawSearch (ค้นหาวัตถุดิบ SQF/MLM) — ตั้งค่าครั้งเดียว ──
+      if (!_rawSearchAcInit) {
+        _rawSearchAcInit = true;
+        const searchEl = document.getElementById("rawSearch");
+        buildAutocomplete(
+          searchEl,
+          () => (rawLastData || []).map(m => {
+            const daysLeft = m.ExpiryDate
+              ? Math.round((new Date(m.ExpiryDate) - new Date()) / 86400000) : null;
+            const expBadge = daysLeft !== null && daysLeft <= 7  ? "⚠️ " + daysLeft + "วัน"
+                           : daysLeft !== null && daysLeft <= 30 ? "🗓️ " + daysLeft + "วัน" : "";
+            return {
+              label: m.Name || m.SKU,
+              sub:   `${m.SKU} · คงเหลือ: ${m.Qty} ${m.Unit || ""}${m.Qty <= m.Min && m.Min > 0 ? " 🔴ต่ำ" : ""}`,
+              badge: expBadge,
+              value: m.SKU
+            };
+          }),
+          (item) => {
+            // เปิด edit modal ให้เลย
+            searchEl.value = "";
+            renderRawInventory(rawLastData);
+            openRawEdit(item.value);
+          }
+        );
+      }
+    } catch(err) { hideLoading(); showToast("เชื่อมต่อฐานข้อมูลล้มเหลว ❌","error"); }
+  }
+
+  // ── Charts ──
+  function renderRawCharts(items) {
+    const sorted = [...items].sort((a,b)=>Number(b.Qty||0)-Number(a.Qty||0)).slice(0,12);
+    const labels = sorted.map(i => { const n = String(i.Name||"-"); return n.length>18?n.slice(0,18)+"…":n; });
+    const values = sorted.map(i => Number(i.Qty||0));
+    const ctx1 = document.getElementById("rawBarChart").getContext("2d");
+    if (rawBarChart) rawBarChart.destroy();
+    rawBarChart = new Chart(ctx1, { type:"bar", data:{ labels, datasets:[{ label:"ยอดคงเหลือ", data:values, borderWidth:2, borderRadius:12 }] }, options:{ responsive:true, maintainAspectRatio:false, plugins:{ legend:{labels:{font:{family:"Sarabun",weight:"bold"}}}, tooltip:{titleFont:{family:"Sarabun",weight:"bold"},bodyFont:{family:"Sarabun"}} }, scales:{ x:{ticks:{font:{family:"Sarabun",weight:"bold"}}}, y:{beginAtZero:true,ticks:{font:{family:"Sarabun",weight:"bold"}}} } } });
+
+    const today = new Date(); today.setHours(0,0,0,0);
+    let safe=0, low=0, exp=0;
+    items.forEach(i => {
+      const isLow = Number(i.Qty) <= Number(i.Min);
+      const ed = rawParseDate(i.ExpiryDate);
+      const isExp = ed && ed < today;
+      if (isExp) exp++; else if (isLow) low++; else safe++;
+    });
+    const ctx2 = document.getElementById("rawDonutChart").getContext("2d");
+    if (rawDonutChart) rawDonutChart.destroy();
+    rawDonutChart = new Chart(ctx2, { type:"doughnut", data:{ labels:["ปลอดภัย","สต๊อกต่ำ","หมดอายุ"], datasets:[{ data:[safe,low,exp], borderWidth:2, hoverOffset:8 }] }, options:{ responsive:true, maintainAspectRatio:false, cutout:"62%", plugins:{ legend:{position:"bottom",labels:{font:{family:"Sarabun",weight:"bold"},padding:18}}, tooltip:{titleFont:{family:"Sarabun",weight:"bold"},bodyFont:{family:"Sarabun"}} } } });
+  }
+
+  // ── Date helpers ──
+  function rawForceThaiDate(str) {
+    if (!str || ["","---","ยังไม่ระบุ"].includes(str)) return "ยังไม่ระบุ";
+    try {
+      const d = new Date(str); if (isNaN(d.getTime())) return str;
+      let y = d.getFullYear(); if (y < 2400) y+=543; while(y>2600)y-=543;
+      return `${String(d.getDate()).padStart(2,"0")}/${String(d.getMonth()+1).padStart(2,"0")}/${y}`;
+    } catch(e) { return str; }
+  }
+  function rawParseDate(str) {
+    const s = rawForceThaiDate(str);
+    const p = s.split("/"); if (p.length!==3) return null;
+    const d=parseInt(p[0]),m=parseInt(p[1]),y=parseInt(p[2]);
+    if (isNaN(d)||isNaN(m)||isNaN(y)) return null;
+    return new Date(y-543, m-1, d);
+  }
+  function rawNearExpiry(item, days) {
+    const today=new Date(); today.setHours(0,0,0,0);
+    const ed=rawParseDate(item.ExpiryDate); if(!ed) return false;
+    const diff=Math.ceil((ed-today)/(1000*60*60*24));
+    return diff>=0 && diff<=days;
+  }
+  function rawFormatDateInput(v) {
+    if (!v||v==="ยังไม่ระบุ") return "";
+    if (typeof v==="string"&&/^\d{2}\/\d{2}\/\d{4}$/.test(v)) {
+      const [dd,mm,yyyy]=v.split("/"); const y=parseInt(yyyy)>2400?parseInt(yyyy)-543:parseInt(yyyy);
+      return `${y}-${mm}-${dd}`;
+    }
+    const d=new Date(v); if(isNaN(d.getTime())) return "";
+    return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}`;
+  }
+
+  // ══════════════════════════════════════════════
+  // 🚨 UNIFIED STOCK ALERT SYSTEM
+  // ══════════════════════════════════════════════
+
+  const ALERT_META = {
+    COLDROOM: { label:"❄️ คลังสินค้า SQF",  headerBg:"bg-indigo-700",  icon:"❄️" },
+    SQF:      { label:"🏭 วัตถุดิบ SQF",    headerBg:"bg-orange-600",  icon:"🏭" },
+    MLM:      { label:"🏭 วัตถุดิบ MLM",    headerBg:"bg-blue-700",    icon:"🏭" }
+  };
+
+  // อัปเดต badge บน Nav
+  function updateNavBadge(module, count) {
+    const badge = document.getElementById("badge-" + module);
+    if (!badge) return;
+    if (count > 0) {
+      badge.textContent = count > 99 ? "99+" : count;
+      badge.style.display = "inline-flex";
+    } else {
+      badge.style.display = "none";
+    }
+  }
+
+  // แสดง Alert popup
+  function showStockAlert(module, expItems = [], lowItems = [], nearItems = []) {
+    const total = expItems.length + lowItems.length + nearItems.length;
+    if (total === 0) return;
+
+    const meta = ALERT_META[module] || ALERT_META.MLM;
+
+    // Header
+    document.getElementById("alertModalHeader").className = `p-6 text-white ${meta.headerBg}`;
+    document.getElementById("alertModalIcon").textContent  = total > 0 ? "🚨" : "✅";
+    document.getElementById("alertModalTitle").textContent = "แจ้งเตือนสต๊อก — " + meta.label;
+    document.getElementById("alertModalSubtitle").textContent =
+      `พบปัญหา ${total} รายการ • ${new Date().toLocaleString("th-TH")}`;
+
+    // Chips summary
+    const chips = [];
+    if (expItems.length)  chips.push(`<span class="bg-red-600    text-white text-xs font-black px-3 py-1 rounded-full">🔴 หมดอายุ ${expItems.length}</span>`);
+    if (lowItems.length)  chips.push(`<span class="bg-orange-500 text-white text-xs font-black px-3 py-1 rounded-full">🟠 สต๊อกต่ำ ${lowItems.length}</span>`);
+    if (nearItems.length) chips.push(`<span class="bg-amber-500  text-white text-xs font-black px-3 py-1 rounded-full">⏳ ใกล้หมดอายุ ${nearItems.length}</span>`);
+    document.getElementById("alertModalChips").innerHTML = chips.join("");
+
+    // Content
+    let html = "";
+    if (expItems.length) {
+      html += `<div class="font-black text-red-600 text-sm uppercase tracking-widest mb-3 pt-2">🔴 หมดอายุแล้ว</div>`;
+      html += expItems.map(i => `
+        <div class="alert-item">
+          <span class="font-bold text-slate-700">📦 ${escapeHtml(i.name||i.Name||i.ProductName)}</span>
+          <span class="text-red-500 font-black text-sm shrink-0">${i.expLabel || ""}</span>
+        </div>`).join("");
+    }
+    if (nearItems.length) {
+      html += `<div class="font-black text-amber-600 text-sm uppercase tracking-widest mb-3 mt-5">⏳ ใกล้หมดอายุ</div>`;
+      html += nearItems.map(i => `
+        <div class="alert-item">
+          <span class="font-bold text-slate-700">📦 ${escapeHtml(i.name||i.Name||i.ProductName)}</span>
+          <span class="text-amber-500 font-black text-sm shrink-0">เหลือ ${i.expLabel || ""}</span>
+        </div>`).join("");
+    }
+    if (lowItems.length) {
+      html += `<div class="font-black text-orange-600 text-sm uppercase tracking-widest mb-3 mt-5">🟠 สต๊อกต่ำกว่าจุดสั่งซื้อ</div>`;
+      html += lowItems.map(i => `
+        <div class="alert-item">
+          <span class="font-bold text-slate-700">📦 ${escapeHtml(i.name||i.Name)}</span>
+          <div class="text-right shrink-0">
+            <span class="text-orange-500 font-black">${Number(i.qty||i.Qty||0).toLocaleString()} ${escapeHtml(i.unit||i.Unit||"")}</span>
+            <span class="text-slate-400 text-xs block">min: ${Number(i.min||i.Min||0).toLocaleString()}</span>
+          </div>
+        </div>`).join("");
+    }
+    document.getElementById("alertModalContent").innerHTML = html;
+
+    // Vibrate
+    if (navigator.vibrate) navigator.vibrate([200, 100, 200]);
+
+    document.getElementById("stockAlertModal").classList.remove("hidden");
+    updateNavBadge(module, total);
+  }
+
+  function closeStockAlert(suppress = false) {
+    document.getElementById("stockAlertModal").classList.add("hidden");
+  }
+
+  // ── Raw Materials critical check (ใช้ unified) ──
+  function rawCheckCritical(items, module = rawCurrentModule, showPopup = true) {
+    const today = new Date(); today.setHours(0,0,0,0);
+
+    const exp  = items.filter(i => { const d=rawParseDate(i.ExpiryDate); return d && d < today; })
+                      .map(i => ({ name: i.Name, expLabel: rawForceThaiDate(i.ExpiryDate) }));
+    const near = items.filter(i => rawNearExpiry(i, 30) && !exp.find(e => e.name===i.Name))
+                      .map(i => ({ name: i.Name, expLabel: rawForceThaiDate(i.ExpiryDate) }));
+    const low  = items.filter(i => Number(i.Qty) <= Number(i.Min) && Number(i.Qty) >= 0)
+                      .map(i => ({ name: i.Name, qty: i.Qty, unit: i.Unit, min: i.Min }));
+
+    const total = exp.length + near.length + low.length;
+    updateNavBadge(module, total);
+    if (showPopup && total > 0) showStockAlert(module, exp, low, near);
+  }
+
+  // ── Cold Room critical check ──
+  function crCheckCritical(res) {
+    if (!res || !res.ok) return;
+
+    const exp  = (res.expiredLots  || []).map(l => ({ name: l.ProductName, expLabel: `EXP ${isoToDdmmyy(l.EXP)}` }));
+    const near = (res.expiringLots || []).map(l => ({ name: l.ProductName, expLabel: `${l.ExpireDays} วัน` }));
+
+    const total = exp.length + near.length;
+    updateNavBadge("COLDROOM", total);
+    if (total > 0) showStockAlert("COLDROOM", exp, [], near);
+  }
+
+  // backward compat
+  function closeRawAlert() { closeStockAlert(); }
+
+  // ── Render inventory ──
+  function renderRawInventory(items) {
+    const list   = document.getElementById("rawInventoryList");
+    const search = (document.getElementById("rawSearch")?.value||"").toLowerCase();
+    const today  = new Date(); today.setHours(0,0,0,0);
+
+    const filtered = items.filter(item => {
+      const name = (item.Name||"").toLowerCase(); const sku = (item.SKU||"").toLowerCase();
+      if (!name.includes(search) && !sku.includes(search)) return false;
+      const isLow = Number(item.Qty)<=Number(item.Min);
+      const ed=rawParseDate(item.ExpiryDate); const isExp=ed&&ed<today;
+      if (rawCurrentFilter==="low"   && !isLow)            return false;
+      if (rawCurrentFilter==="exp"   && !isExp)            return false;
+      if (rawCurrentFilter==="exp7"  && !rawNearExpiry(item,7))  return false;
+      if (rawCurrentFilter==="exp30" && !rawNearExpiry(item,30)) return false;
+      return true;
+    });
+
+    list.innerHTML = filtered.map(item => {
+      const isLow=Number(item.Qty)<=Number(item.Min);
+      const ed=rawParseDate(item.ExpiryDate); const isExp=ed&&ed<today;
+      const near7=rawNearExpiry(item,7); const near30=rawNearExpiry(item,30);
+      let bc="bg-emerald-600 text-white", bi="✅", bt="ปลอดภัย";
+      let rowBg="", rowBorder="";
+      if(isExp)        {bc="bg-red-600 text-white";   bi="🔴"; bt="หมดอายุ";   rowBg="bg-red-50";    rowBorder="border-l-4 border-red-500";}
+      else if(isLow)   {bc="bg-orange-500 text-white";bi="🟠"; bt="ต่ำ";        rowBg="bg-orange-50"; rowBorder="border-l-4 border-orange-500";}
+      else if(near7)   {bc="bg-amber-500 text-white"; bi="⏳"; bt="ใกล้หมด";   rowBg="bg-amber-50";  rowBorder="border-l-4 border-amber-400";}
+      else if(near30)  {bc="bg-sky-600 text-white";   bi="🗓️"; bt="30 วัน";   rowBg="bg-sky-50";    rowBorder="border-l-4 border-sky-400";}
+      return `<tr class="border-b transition-colors ${rowBg} ${rowBorder} hover:brightness-95">
+        <td class="p-8 text-center"><input type="checkbox" class="raw-checkbox" data-sku="${escapeAttr(item.SKU)}"></td>
+        <td class="p-8"><span class="badge-status ${bc} uppercase"><span>${bi}</span><span>${bt}</span></span></td>
+        <td class="p-8">
+          <div class="font-black text-slate-800 text-xl uppercase leading-none">${escapeHtml(item.Name||"-")}</div>
+          <div class="text-[12px] text-slate-400 font-mono font-black mt-3">📦 ${escapeHtml(item.SKU||"-")} • 📅 Exp: ${rawForceThaiDate(item.ExpiryDate)}</div>
+        </td>
+        <td class="p-8 text-right">
+          <div class="font-black text-4xl text-slate-900 tracking-tighter">${Number(item.Qty||0).toLocaleString()}</div>
+          <div class="text-[11px] font-black text-emerald-600 uppercase mt-2 tracking-widest">${escapeHtml(item.Unit||"-")}</div>
+        </td>
+        <td class="p-8 text-center">
+          <div class="text-[10px] font-black text-slate-300 uppercase leading-none mb-2">นับจริง: ${rawForceThaiDate(item.LastVerified)}</div>
+          <div class="flex gap-2 flex-wrap justify-center">
+            <button onclick="openRawAction('${escapeJs(item.SKU)}','${escapeJs(item.Name)}','${escapeJs(item.Unit)}')" class="bg-blue-600 text-white px-5 py-3 rounded-2xl text-[10px] font-black hover:bg-black uppercase">📥 รับ/เบิก</button>
+            <button onclick="openRawVerify('${escapeJs(item.SKU)}','${escapeJs(item.Name)}')"  class="bg-purple-600 text-white px-5 py-3 rounded-2xl text-[10px] font-black hover:bg-black uppercase">ตรวจยอด</button>
+            <button onclick="openRawEdit('${escapeJs(item.SKU)}')"                             class="bg-sky-600    text-white px-5 py-3 rounded-2xl text-[10px] font-black hover:bg-black uppercase">แก้ไข</button>
+            <button onclick="openRawQrByItem('${escapeJs(item.SKU)}','${escapeJs(item.Name)}')" class="bg-slate-900  text-white px-5 py-3 rounded-2xl text-[10px] font-black hover:bg-blue-600 uppercase">QR</button>
+            <button onclick="rawDelete('${escapeJs(item.SKU)}','${escapeJs(item.Name)}')"       class="bg-red-50 text-red-600 px-5 py-3 rounded-2xl text-[10px] font-black hover:bg-red-600 hover:text-white uppercase">ลบ</button>
+          </div>
+        </td>
+      </tr>`;
+    }).join("");
+  }
+
+  // ── Render history ──
+  function renderRawHistory(h) {
+    const list = document.getElementById("rawHistoryList");
+    list.innerHTML = (h||[]).map(x => {
+      const act=String(x[2]||"");
+      let color="bg-slate-800 border-slate-900 text-white",emj="ℹ️";
+      if(act.includes("เบิก"))  {color="bg-orange-500 border-orange-700 text-white";  emj="📤";}
+      else if(act.includes("รับ"))   {color="bg-emerald-600 border-emerald-800 text-white";emj="📥";}
+      else if(act.includes("สร้าง")) {color="bg-blue-600 border-blue-800 text-white";    emj="🆕";}
+      else if(act.includes("นับ")||act.includes("ตรวจ")){color="bg-purple-600 border-purple-800 text-white";emj="⚖️";}
+      else if(act.includes("ลบ")||act.includes("ยกเลิก")){color="bg-red-600 border-red-800 text-white";emj="🗑️";}
+      else if(act.includes("สำรอง")){color="bg-cyan-600 border-cyan-800 text-white";emj="☁️";}
+      else if(act.includes("แก้ไข")){color="bg-sky-600 border-sky-800 text-white";  emj="✏️";}
+      return `<div class="history-item border-l-[10px] ${color} shadow-lg">
+        <div class="history-text-main">${emj} ${escapeHtml(x[1]||"-")}</div>
+        <div class="font-black text-xl mt-1 leading-none">${escapeHtml(act)}: ${escapeHtml(String(x[3]||"-"))}</div>
+        <div class="history-text-sub">${rawForceThaiDate(x[0])} • โดย: ${escapeHtml(x[4]||"-")}</div>
+      </div>`;
+    }).join("");
+  }
+
+  // ── Render stats ──
+  function renderRawStats(items, discontinued) {
+    const today=new Date(); today.setHours(0,0,0,0);
+    const low = items.filter(i=>Number(i.Qty)<=Number(i.Min)&&Number(i.Qty)>0).length;
+    const exp = items.filter(i=>{ const d=rawParseDate(i.ExpiryDate); return d&&d<today; }).length;
+    document.getElementById("rawStatCards").innerHTML = `
+      <div class="bg-white p-8 rounded-[3.5rem] text-center shadow-lg border-b-8 border-blue-500"><p class="text-[11px] font-black text-slate-400 mb-2">📦 รายการทั้งหมด</p><p class="text-5xl font-black text-slate-800">${items.length}</p></div>
+      <div class="bg-white p-8 rounded-[3.5rem] text-center shadow-lg border-b-8 border-orange-500"><p class="text-[11px] font-black text-slate-400 mb-2">🟠 สต๊อกต่ำ</p><p class="text-5xl font-black text-orange-600">${low}</p></div>
+      <div class="bg-white p-8 rounded-[3.5rem] text-center shadow-lg border-b-8 border-red-500"><p class="text-[11px] font-black text-slate-400 mb-2">🔴 หมดอายุ</p><p class="text-5xl font-black text-red-600">${exp}</p></div>
+      <div class="bg-white p-8 rounded-[3.5rem] text-center shadow-lg border-b-8 border-slate-900"><p class="text-[11px] font-black text-slate-400 mb-2">🗑️ ยกเลิก</p><p class="text-5xl font-black text-slate-800">${Array.isArray(discontinued)?discontinued.length:0}</p></div>`;
+  }
+
+  // ── Filter ──
+  function setRawFilter(t) {
+    rawCurrentFilter = t;
+    document.querySelectorAll('[id^="rawFilter-"]').forEach(b => b.classList.remove("filter-active"));
+    const btn = document.getElementById("rawFilter-"+t);
+    if (btn) btn.classList.add("filter-active");
+    renderRawInventory(rawLastData);
+  }
+  function rawToggleAll() {
+    const checked = document.getElementById("rawSelectAll").checked;
+    document.querySelectorAll(".raw-checkbox").forEach(cb => cb.checked=checked);
+  }
+
+  // ── Export ──
+  function rawExportSelected() {
+    const skus = Array.from(document.querySelectorAll(".raw-checkbox:checked")).map(cb=>cb.getAttribute("data-sku"));
+    if (!skus.length) { showToast("กรุณาเลือกรายการ","warn"); return; }
+    const data = rawLastData.filter(i=>skus.includes(String(i.SKU)));
+    let csv = "\uFEFFSKU,ชื่อวัตถุดิบ,คงเหลือ,หน่วย,วันหมดอายุ,ตรวจนับล่าสุด\n";
+    data.forEach(i=>{ csv+=`"${String(i.SKU||"").replace(/"/g,'""')}","${String(i.Name||"").replace(/"/g,'""')}","${i.Qty||""}","${String(i.Unit||"").replace(/"/g,'""')}","${rawForceThaiDate(i.ExpiryDate)}","${rawForceThaiDate(i.LastVerified)}"\n`; });
+    const a=document.createElement("a"); a.href=URL.createObjectURL(new Blob([csv],{type:"text/csv;charset=utf-8;"}));
+    a.download=`สต๊อก_${rawCurrentModule}_${new Date().toLocaleDateString("th-TH").replace(/\//g,"-")}.csv`; a.click();
+    showToast("ส่งออกไฟล์สำเร็จ","success");
+  }
+
+  // ── Export PDF ──
+  function rawExportPdf() {
+    const today = new Date(); today.setHours(0,0,0,0);
+    const factoryName = rawCurrentModule === "SQF" ? "สุพรรณคิวฟู้ดส์ (SQF)" : "แม่ละมาย (MLM)";
+    const dateStr = new Date().toLocaleDateString("th-TH",{year:"numeric",month:"long",day:"numeric"});
+    const rows = rawLastData.map(item => {
+      const isLow = Number(item.Qty) <= Number(item.Min);
+      const ed = rawParseDate(item.ExpiryDate); const isExp = ed && ed < today;
+      const near7 = rawNearExpiry(item,7); const near30 = rawNearExpiry(item,30);
+      let rowStyle = "", statusText = "ปลอดภัย", statusColor = "#059669";
+      if(isExp)       { rowStyle="background:#fee2e2;"; statusText="หมดอายุ";   statusColor="#dc2626"; }
+      else if(isLow)  { rowStyle="background:#ffedd5;"; statusText="ต่ำ";        statusColor="#ea580c"; }
+      else if(near7)  { rowStyle="background:#fef9c3;"; statusText="ใกล้หมด";   statusColor="#d97706"; }
+      else if(near30) { rowStyle="background:#e0f2fe;"; statusText="30 วัน";     statusColor="#0284c7"; }
+      return `<tr style="${rowStyle}">
+        <td style="padding:8px 12px;border:1px solid #e2e8f0;">${escapeHtml(item.SKU||"-")}</td>
+        <td style="padding:8px 12px;border:1px solid #e2e8f0;font-weight:700;">${escapeHtml(item.Name||"-")}</td>
+        <td style="padding:8px 12px;border:1px solid #e2e8f0;text-align:right;font-weight:700;">${Number(item.Qty||0).toLocaleString()}</td>
+        <td style="padding:8px 12px;border:1px solid #e2e8f0;text-align:right;">${Number(item.Min||0).toLocaleString()}</td>
+        <td style="padding:8px 12px;border:1px solid #e2e8f0;">${escapeHtml(item.Unit||"-")}</td>
+        <td style="padding:8px 12px;border:1px solid #e2e8f0;">${rawForceThaiDate(item.ExpiryDate)||"-"}</td>
+        <td style="padding:8px 12px;border:1px solid #e2e8f0;text-align:center;font-weight:700;color:${statusColor};">${statusText}</td>
+      </tr>`;
+    }).join("");
+    const w = window.open("","","width=1000,height=700");
+    w.document.write(`<!DOCTYPE html><html lang="th"><head><meta charset="UTF-8">
+    <title>รายงานสต๊อกวัตถุดิบ — ${factoryName}</title>
+    <style>
+      body{font-family:'Sarabun',sans-serif;font-size:13px;color:#1e293b;padding:32px;}
+      h1{font-size:22px;font-weight:900;margin-bottom:4px;}
+      h2{font-size:15px;font-weight:700;color:#64748b;margin-bottom:24px;}
+      table{width:100%;border-collapse:collapse;margin-top:16px;}
+      thead tr{background:#1e293b;color:#fff;}
+      th{padding:10px 12px;border:1px solid #334155;text-align:left;font-size:12px;font-weight:700;}
+      td{font-size:12px;}
+      .footer{margin-top:32px;font-size:11px;color:#94a3b8;text-align:right;}
+      @media print{body{padding:16px;}}
+    </style></head><body>
+    <h1>📦 รายงานสต๊อกวัตถุดิบ</h1>
+    <h2>🏭 โรงงาน: ${factoryName} &nbsp;|&nbsp; 📅 วันที่พิมพ์: ${dateStr} &nbsp;|&nbsp; 👤 ผู้พิมพ์: ${currentUser}</h2>
+    <table>
+      <thead><tr><th>รหัส SKU</th><th>ชื่อวัตถุดิบ</th><th style="text-align:right">คงเหลือ</th><th style="text-align:right">ขั้นต่ำ</th><th>หน่วย</th><th>วันหมดอายุ</th><th style="text-align:center">สถานะ</th></tr></thead>
+      <tbody>${rows}</tbody>
+    </table>
+    <div class="footer">รวมทั้งหมด ${rawLastData.length} รายการ &nbsp;|&nbsp; พิมพ์โดยระบบจัดการสต๊อก SQF & MLM</div>
+    <script>window.onload=function(){window.print();}<\/script>
+    </body></html>`);
+    w.document.close();
+  }
+
+  // ── ใบขอซื้อ ──
+  function openPurchaseRequest() {
+    const today = new Date(); today.setHours(0,0,0,0);
+    const checkedSkus = Array.from(document.querySelectorAll(".raw-checkbox:checked")).map(cb=>cb.getAttribute("data-sku"));
+    // ถ้าเลือกไว้ใช้เฉพาะที่เลือก, ถ้าไม่เลือกกรองเฉพาะที่สต๊อกต่ำ/หมดอายุ
+    const lowItems = checkedSkus.length > 0
+      ? rawLastData.filter(i => checkedSkus.includes(String(i.SKU)))
+      : rawLastData.filter(item => {
+          const isLow = Number(item.Qty) <= Number(item.Min);
+          const ed = rawParseDate(item.ExpiryDate); const isExp = ed && ed < today;
+          return isLow || isExp;
+        });
+    if (!lowItems.length) { showToast("ไม่มีรายการที่ต้องสั่งซื้อ ✅","success"); return; }
+
+    const factoryName = rawCurrentModule === "SQF" ? "สุพรรณคิวฟู้ดส์ (SQF)" : "แม่ละมาย (MLM)";
+    const dateStr = new Date().toLocaleDateString("th-TH",{year:"numeric",month:"long",day:"numeric"});
+    const rows = lowItems.map((item,idx) => {
+      const isLow = Number(item.Qty) <= Number(item.Min);
+      const ed = rawParseDate(item.ExpiryDate); const isExp = ed && ed < today;
+      let reason = [];
+      if(isExp) reason.push("หมดอายุ");
+      if(isLow) reason.push(`สต๊อกต่ำ`);
+      const qty       = Number(item.Qty||0);
+      const minQty    = Number(item.Min||0);
+      const daily     = Number(item.DailyUsage||0);
+      // วันคงเหลือ = qty / daily (ถ้าไม่มี dailyUsage แสดง "-")
+      const daysLeft  = (daily > 0) ? Math.floor(qty / daily) : null;
+      // ปริมาณแนะนำ = ขั้นต่ำ - คงเหลือ หรือ 30 วัน หรืออย่างน้อย 1
+      const suggestQty = daily > 0 ? Math.ceil(daily * 30) : Math.max(0, minQty - qty) || "-";
+      const daysText   = daysLeft !== null ? `${daysLeft} วัน` : "-";
+      return `<tr style="${isExp?"background:#fee2e2":"background:#ffedd5"}">
+        <td style="padding:8px 12px;border:1px solid #e2e8f0;text-align:center;">${idx+1}</td>
+        <td style="padding:8px 12px;border:1px solid #e2e8f0;font-size:11px;color:#64748b;">${escapeHtml(item.SKU||"-")}</td>
+        <td style="padding:8px 12px;border:1px solid #e2e8f0;font-weight:700;">${escapeHtml(item.Name||"-")}</td>
+        <td style="padding:8px 12px;border:1px solid #e2e8f0;text-align:right;">${qty.toLocaleString()}</td>
+        <td style="padding:8px 12px;border:1px solid #e2e8f0;text-align:right;color:#64748b;">${daily > 0 ? daily.toLocaleString() : "-"}</td>
+        <td style="padding:8px 12px;border:1px solid #e2e8f0;text-align:center;font-weight:700;color:${daysLeft!==null&&daysLeft<=7?"#dc2626":daysLeft!==null&&daysLeft<=14?"#ea580c":"#475569"};">${daysText}</td>
+        <td style="padding:8px 12px;border:1px solid #e2e8f0;text-align:right;font-weight:700;color:#0f766e;">${suggestQty !== "-" ? Number(suggestQty).toLocaleString() : "-"}</td>
+        <td style="padding:8px 12px;border:1px solid #e2e8f0;">${escapeHtml(item.Unit||"-")}</td>
+        <td style="padding:8px 12px;border:1px solid #e2e8f0;color:#ea580c;font-weight:700;">${reason.join(", ")}</td>
+        <td style="padding:8px 12px;border:1px solid #e2e8f0;"></td>
+      </tr>`;
+    }).join("");
+
+    const w = window.open("","","width=1050,height=750");
+    w.document.write(`<!DOCTYPE html><html lang="th"><head><meta charset="UTF-8">
+    <title>ใบขอซื้อวัตถุดิบ — ${factoryName}</title>
+    <style>
+      body{font-family:'Sarabun',sans-serif;font-size:13px;color:#1e293b;padding:32px 40px;}
+      .header{display:flex;justify-content:space-between;align-items:flex-start;border-bottom:3px solid #1e293b;padding-bottom:16px;margin-bottom:24px;}
+      h1{font-size:24px;font-weight:900;margin:0 0 4px;}
+      .sub{font-size:13px;color:#475569;}
+      .doc-no{text-align:right;font-size:12px;color:#64748b;line-height:1.8;}
+      table{width:100%;border-collapse:collapse;margin-top:8px;}
+      thead tr{background:#1e293b;color:#fff;}
+      th{padding:10px 12px;border:1px solid #334155;font-size:12px;font-weight:700;text-align:left;}
+      td{font-size:12px;}
+      .sign-section{margin-top:60px;display:flex;gap:60px;}
+      .sign-box{flex:1;text-align:center;border-top:2px solid #94a3b8;padding-top:8px;font-size:12px;color:#64748b;}
+      .footer{margin-top:24px;font-size:11px;color:#94a3b8;text-align:center;}
+      @media print{body{padding:16px 24px;}}
+    </style></head><body>
+    <div class="header">
+      <div>
+        <h1>📋 ใบขอซื้อวัตถุดิบ</h1>
+        <div class="sub">🏭 โรงงาน: <b>${factoryName}</b></div>
+      </div>
+      <div class="doc-no">
+        <div>วันที่: <b>${dateStr}</b></div>
+        <div>ผู้จัดทำ: <b>${currentUser}</b></div>
+        <div>รายการทั้งหมด: <b>${lowItems.length} รายการ</b></div>
+      </div>
+    </div>
+    <table>
+      <thead><tr>
+        <th style="width:36px;text-align:center">ลำดับ</th>
+        <th style="width:90px">รหัส SKU</th>
+        <th>ชื่อวัตถุดิบ</th>
+        <th style="text-align:right;width:80px">คงเหลือ</th>
+        <th style="text-align:right;width:80px">ใช้/วัน</th>
+        <th style="text-align:center;width:80px">วันคงเหลือ</th>
+        <th style="text-align:right;width:90px">แนะนำสั่ง</th>
+        <th style="width:60px">หน่วย</th>
+        <th style="width:120px">เหตุผล</th>
+        <th style="width:120px">หมายเหตุ</th>
+      </tr></thead>
+      <tbody>${rows}</tbody>
+    </table>
+    <div class="sign-section">
+      <div class="sign-box">ผู้จัดทำ<br><br>( ${currentUser} )</div>
+      <div class="sign-box">ผู้ตรวจสอบ<br><br>( .......................... )</div>
+      <div class="sign-box">ผู้อนุมัติ<br><br>( .......................... )</div>
+    </div>
+    <div class="footer">พิมพ์โดยระบบจัดการสต๊อก SQF & MLM &nbsp;|&nbsp; ${new Date().toLocaleString("th-TH")}</div>
+    <script>window.onload=function(){window.print();}<\/script>
+    </body></html>`);
+    w.document.close();
+  }
+
+  // ── ใบรายงานสต๊อก ──
+  function openStockReport() {
+    // ดึง SKU ที่ติ๊กถูก — ถ้าไม่เลือกเลยให้ใช้ทั้งหมด
+    const checkedSkus = Array.from(document.querySelectorAll(".raw-checkbox:checked")).map(cb=>cb.getAttribute("data-sku"));
+    const sourceData  = checkedSkus.length > 0
+      ? rawLastData.filter(i => checkedSkus.includes(String(i.SKU)))
+      : rawLastData;
+    if (!sourceData.length) { showToast("ไม่มีข้อมูล","warn"); return; }
+
+    const today = new Date(); today.setHours(0,0,0,0);
+    const factoryName = rawCurrentModule === "SQF" ? "สุพรรณคิวฟู้ดส์ (SQF)" : "แม่ละมาย (MLM)";
+    const dateStr = new Date().toLocaleDateString("th-TH",{year:"numeric",month:"long",day:"numeric"});
+    const timeStr = new Date().toLocaleTimeString("th-TH",{hour:"2-digit",minute:"2-digit"});
+    const scopeLabel = checkedSkus.length > 0 ? `เฉพาะที่เลือก (${checkedSkus.length} รายการ)` : "ทั้งหมด";
+
+    // แยกกลุ่มจาก sourceData
+    const expItems   = sourceData.filter(i => { const d=rawParseDate(i.ExpiryDate); return d&&d<today; });
+    const lowItems   = sourceData.filter(i => !expItems.includes(i) && Number(i.Qty)<=Number(i.Min));
+    const near7      = sourceData.filter(i => !expItems.includes(i) && rawNearExpiry(i,7));
+    const near30     = sourceData.filter(i => !expItems.includes(i) && !near7.includes(i) && rawNearExpiry(i,30));
+    const okItems    = sourceData.filter(i => !expItems.includes(i) && !lowItems.includes(i) && !near7.includes(i) && !near30.includes(i));
+
+    const total    = sourceData.length;
+
+    function buildSection(title, color, bgColor, items, showDaily=false) {
+      if(!items.length) return "";
+      const rows = items.map((item,idx) => {
+        const qty      = Number(item.Qty||0);
+        const daily    = Number(item.DailyUsage||0);
+        const daysLeft = daily > 0 ? Math.floor(qty/daily) : null;
+        const daysText = daysLeft !== null ? `<span style="font-weight:700;color:${daysLeft<=7?"#dc2626":daysLeft<=14?"#ea580c":"#475569"}">${daysLeft} วัน</span>` : "-";
+        return `<tr style="background:${idx%2===0?"#fff":bgColor}">
+          <td style="padding:7px 10px;border:1px solid #e2e8f0;text-align:center;font-size:11px;">${idx+1}</td>
+          <td style="padding:7px 10px;border:1px solid #e2e8f0;font-size:11px;color:#64748b;">${escapeHtml(item.SKU||"-")}</td>
+          <td style="padding:7px 10px;border:1px solid #e2e8f0;font-weight:700;">${escapeHtml(item.Name||"-")}</td>
+          <td style="padding:7px 10px;border:1px solid #e2e8f0;text-align:right;font-weight:700;">${qty.toLocaleString()}</td>
+          <td style="padding:7px 10px;border:1px solid #e2e8f0;text-align:right;">${Number(item.Min||0).toLocaleString()}</td>
+          <td style="padding:7px 10px;border:1px solid #e2e8f0;text-align:right;color:#0284c7;">${daily>0?daily.toLocaleString():"-"}</td>
+          <td style="padding:7px 10px;border:1px solid #e2e8f0;text-align:center;">${daysText}</td>
+          <td style="padding:7px 10px;border:1px solid #e2e8f0;">${escapeHtml(item.Unit||"-")}</td>
+          <td style="padding:7px 10px;border:1px solid #e2e8f0;">${rawForceThaiDate(item.ExpiryDate)||"-"}</td>
+          <td style="padding:7px 10px;border:1px solid #e2e8f0;">${rawForceThaiDate(item.LastVerified)||"-"}</td>
+        </tr>`;
+      }).join("");
+      return `<div style="margin-bottom:28px">
+        <div style="background:${bgColor};border-left:6px solid ${color};padding:10px 16px;border-radius:6px 6px 0 0;font-weight:900;font-size:13px;color:${color};letter-spacing:0.5px;">${title} (${items.length} รายการ)</div>
+        <table style="width:100%;border-collapse:collapse;font-size:12px;">
+          <thead><tr style="background:#1e293b;color:#fff;">
+            <th style="padding:7px 10px;border:1px solid #334155;text-align:center;width:30px">ลำดับ</th>
+            <th style="padding:7px 10px;border:1px solid #334155;width:85px">รหัส SKU</th>
+            <th style="padding:7px 10px;border:1px solid #334155;">ชื่อวัตถุดิบ</th>
+            <th style="padding:7px 10px;border:1px solid #334155;text-align:right;width:70px">คงเหลือ</th>
+            <th style="padding:7px 10px;border:1px solid #334155;text-align:right;width:70px">ขั้นต่ำ</th>
+            <th style="padding:7px 10px;border:1px solid #334155;text-align:right;width:70px">ใช้/วัน</th>
+            <th style="padding:7px 10px;border:1px solid #334155;text-align:center;width:80px">วันคงเหลือ</th>
+            <th style="padding:7px 10px;border:1px solid #334155;width:55px">หน่วย</th>
+            <th style="padding:7px 10px;border:1px solid #334155;width:90px">วันหมดอายุ</th>
+            <th style="padding:7px 10px;border:1px solid #334155;width:100px">ตรวจนับล่าสุด</th>
+          </tr></thead>
+          <tbody>${rows}</tbody>
+        </table></div>`;
+    }
+
+    const w = window.open("","","width=1100,height=800");
+    w.document.write(`<!DOCTYPE html><html lang="th"><head><meta charset="UTF-8">
+    <title>ใบรายงานสต๊อกวัตถุดิบ — ${factoryName}</title>
+    <style>
+      body{font-family:'Sarabun',sans-serif;font-size:13px;color:#1e293b;padding:28px 36px;}
+      .report-header{display:flex;justify-content:space-between;align-items:flex-start;padding-bottom:16px;margin-bottom:20px;border-bottom:3px solid #1e293b;}
+      h1{font-size:22px;font-weight:900;margin:0 0 4px;}
+      .sub{font-size:12px;color:#475569;}
+      .summary{display:flex;gap:12px;margin-bottom:24px;flex-wrap:wrap;}
+      .sum-card{flex:1;min-width:120px;background:#f8fafc;border:2px solid #e2e8f0;border-radius:10px;padding:12px 16px;text-align:center;}
+      .sum-card .num{font-size:26px;font-weight:900;line-height:1;}
+      .sum-card .lbl{font-size:10px;font-weight:700;color:#94a3b8;margin-top:4px;text-transform:uppercase;}
+      .sign-section{margin-top:48px;display:flex;gap:48px;}
+      .sign-box{flex:1;text-align:center;border-top:2px solid #94a3b8;padding-top:8px;font-size:11px;color:#64748b;}
+      .footer{margin-top:20px;font-size:10px;color:#94a3b8;text-align:center;border-top:1px solid #e2e8f0;padding-top:12px;}
+      @media print{body{padding:12px 20px;} .no-print{display:none;}}
+    </style></head><body>
+    <div class="report-header">
+      <div>
+        <h1>📑 ใบรายงานสต๊อกวัตถุดิบ</h1>
+        <div class="sub">🏭 โรงงาน: <b>${factoryName}</b> &nbsp;|&nbsp; 📅 <b>${dateStr}</b> เวลา <b>${timeStr} น.</b></div>
+        <div class="sub" style="margin-top:4px;">👤 ผู้จัดทำ: <b>${currentUser}</b> &nbsp;|&nbsp; 📋 ขอบเขต: <b>${scopeLabel}</b></div>
+      </div>
+      <div style="text-align:right;">
+        <button class="no-print" onclick="window.print()" style="background:#1e293b;color:#fff;border:none;padding:10px 24px;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;">🖨️ พิมพ์</button>
+      </div>
+    </div>
+
+    <div class="summary">
+      <div class="sum-card"><div class="num" style="color:#1e293b">${total}</div><div class="lbl">รายการทั้งหมด</div></div>
+      <div class="sum-card"><div class="num" style="color:#dc2626">${expItems.length}</div><div class="lbl">🔴 หมดอายุ</div></div>
+      <div class="sum-card"><div class="num" style="color:#ea580c">${lowItems.length}</div><div class="lbl">🟠 สต๊อกต่ำ</div></div>
+      <div class="sum-card"><div class="num" style="color:#d97706">${near7.length}</div><div class="lbl">⏳ ใกล้หมด 7 วัน</div></div>
+      <div class="sum-card"><div class="num" style="color:#0284c7">${near30.length}</div><div class="lbl">🗓️ ใกล้หมด 30 วัน</div></div>
+      <div class="sum-card"><div class="num" style="color:#059669">${okItems.length}</div><div class="lbl">✅ ปกติ</div></div>
+    </div>
+
+    ${buildSection("🔴 หมดอายุ — ต้องดำเนินการทันที","#dc2626","#fee2e2",expItems)}
+    ${buildSection("🟠 สต๊อกต่ำกว่าจุดสั่งซื้อ","#ea580c","#fff7ed",lowItems)}
+    ${buildSection("⏳ ใกล้หมดอายุ ภายใน 7 วัน","#d97706","#fefce8",near7)}
+    ${buildSection("🗓️ ใกล้หมดอายุ ภายใน 30 วัน","#0284c7","#f0f9ff",near30)}
+    ${buildSection("✅ สต๊อกปกติ","#059669","#f0fdf4",okItems)}
+
+    <div class="sign-section">
+      <div class="sign-box">ผู้จัดทำรายงาน<br><br>( ${currentUser} )</div>
+      <div class="sign-box">ผู้ตรวจสอบ<br><br>( .......................... )</div>
+      <div class="sign-box">ผู้จัดการ / ผู้อนุมัติ<br><br>( .......................... )</div>
+    </div>
+    <div class="footer">พิมพ์โดยระบบจัดการสต๊อก SQF & MLM &nbsp;|&nbsp; ${new Date().toLocaleString("th-TH")} &nbsp;|&nbsp; รวมทั้งหมด ${total} รายการ</div>
+    </body></html>`);
+    w.document.close();
+  }
+
+  // ── Backup ──
+  async function rawRunBackup() {
+    if (!confirm("สำรองข้อมูลลง Drive? ☁️")) return;
+    showLoading("กำลังสำรองข้อมูล...");
+    const r = await rawFetch({ action:"BACKUP", user:currentUser });
+    hideLoading();
+    if (r.status==="success") { showToast("Backup สำเร็จ ☁️","success"); rawLoadData(); }
+    else showToast(r.message||"Backup ไม่สำเร็จ","error");
+  }
+
+  // ── Modals ──
+  function openRawCreate() {
+    document.getElementById("rawNewSku").value        = rawNextSku;
+    document.getElementById("rawNewName").value       = "";
+    document.getElementById("rawNewQty").value        = "0";
+    document.getElementById("rawNewUnit").value       = "";
+    document.getElementById("rawNewMin").value        = "0";
+    document.getElementById("rawNewDailyUsage").value = "0";
+    document.getElementById("rawNewExpiry").value     = "";
+    document.getElementById("rawCreateModal").classList.remove("hidden");
+  }
+  function closeRawCreate() { document.getElementById("rawCreateModal").classList.add("hidden"); }
+
+  function openRawEdit(sku) {
+    const item = rawLastData.find(i=>String(i.SKU)===String(sku));
+    if (!item) { showToast("ไม่พบข้อมูล","error"); return; }
+    document.getElementById("rawEditSku").value        = item.SKU||"";
+    document.getElementById("rawEditName").value       = item.Name||"";
+    document.getElementById("rawEditUnit").value       = item.Unit||"";
+    document.getElementById("rawEditMin").value        = Number(item.Min||0);
+    document.getElementById("rawEditDailyUsage").value = Number(item.DailyUsage||0);
+    document.getElementById("rawEditExpiry").value     = rawFormatDateInput(item.ExpiryDate);
+    document.getElementById("rawEditModal").classList.remove("hidden");
+  }
+  function closeRawEdit() { document.getElementById("rawEditModal").classList.add("hidden"); }
+
+  function openRawVerify(sku, name) {
+    rawVerifyTarget = sku;
+    document.getElementById("rawVerifyTitle").innerText = `${name} (${sku})`;
+    document.getElementById("rawVerifyQty").value = "";
+    document.getElementById("rawVerifyModal").classList.remove("hidden");
+  }
+  function closeRawVerify() { document.getElementById("rawVerifyModal").classList.add("hidden"); }
+
+  function openRawAction(sku, name, unit) {
+    document.getElementById("rawModalSkuVal").value = sku;
+    document.getElementById("rawModalSku").innerText  = `ID: ${sku}`;
+    document.getElementById("rawModalUnit").innerText = `หน่วยนับ: ${unit||"-"}`;
+    document.getElementById("rawModalTitle").innerText= name;
+    document.getElementById("rawModalQty").value = "1";
+    document.getElementById("rawActionModal").classList.remove("hidden");
+    setRawType("OUT");
+  }
+  function closeRawAction() { document.getElementById("rawActionModal").classList.add("hidden"); }
+
+  function setRawType(t) {
+    document.getElementById("rawModalType").value = t;
+    document.getElementById("rawBtnOut").className = t==="OUT"
+      ? "flex-1 py-5 rounded-[2.5rem] font-black text-lg bg-white shadow-xl text-orange-600 uppercase"
+      : "flex-1 py-5 rounded-[2.5rem] font-black text-lg text-slate-400 uppercase";
+    document.getElementById("rawBtnIn").className = t==="IN"
+      ? "flex-1 py-5 rounded-[2.5rem] font-black text-lg bg-white shadow-xl text-emerald-600 uppercase"
+      : "flex-1 py-5 rounded-[2.5rem] font-black text-lg text-slate-400 uppercase";
+  }
+
+  function openRawQr() {
+    if (!rawLastData.length) { showToast("ยังไม่มีข้อมูล","warn"); return; }
+    openRawQrByItem(rawLastData[0].SKU, rawLastData[0].Name);
+  }
+  function openRawQrByItem(sku, name) {
+    rawCurrentQrSku = sku; rawCurrentQrName = name||sku;
+    document.getElementById("rawQrTitle").innerText = `${rawCurrentQrName} (${sku})`;
+    document.getElementById("rawQrcode").innerHTML  = "";
+    document.getElementById("rawQrModal").classList.remove("hidden");
+    new QRCode(document.getElementById("rawQrcode"), { text:String(sku), width:220, height:220 });
+  }
+  function closeRawQr() { document.getElementById("rawQrModal").classList.add("hidden"); }
+
+  function downloadRawQr() {
+    const img=document.querySelector("#rawQrcode img"), canvas=document.querySelector("#rawQrcode canvas");
+    const src = img?img.src : canvas?canvas.toDataURL("image/png"):null;
+    if (!src) { showToast("ไม่พบ QR","error"); return; }
+    const a=document.createElement("a"); a.href=src; a.download=`QR_${rawCurrentQrSku||"item"}.png`; a.click();
+    showToast("ดาวน์โหลด QR สำเร็จ","success");
+  }
+
+  function closeRawAlert() { document.getElementById("rawAlertModal").classList.add("hidden"); }
+
+  // ── Submit actions ──
+  async function rawSubmitNew() {
+    const sku=document.getElementById("rawNewSku").value.trim(), name=document.getElementById("rawNewName").value.trim(),
+          unit=document.getElementById("rawNewUnit").value.trim(), qty=Number(document.getElementById("rawNewQty").value),
+          min=Number(document.getElementById("rawNewMin").value),
+          dailyUsage=Number(document.getElementById("rawNewDailyUsage").value||0),
+          expiry=document.getElementById("rawNewExpiry").value;
+    if (!sku)  return showToast("ไม่พบ SKU","error");
+    if (!name) return showToast("กรุณาระบุชื่อ","warn");
+    if (!unit) return showToast("กรุณาระบุหน่วยนับ","warn");
+    setRawBusy("rawBtnCreate",true,"กำลังสร้าง...");
+    showLoading("กำลังสร้างรายการ...");
+    const r = await rawFetch({ action:"CREATE", sku, name, unit, qty, min, dailyUsage, expiryDate:expiry, user:currentUser });
+    hideLoading(); setRawBusy("rawBtnCreate",false);
+    if (r.status==="success") { closeRawCreate(); showToast("สร้างรายการสำเร็จ ✅","success"); rawLoadData(); }
+    else showToast(r.message||"ไม่สำเร็จ","error");
+  }
+
+  async function rawSubmitEdit() {
+    const sku=document.getElementById("rawEditSku").value.trim(), name=document.getElementById("rawEditName").value.trim(),
+          unit=document.getElementById("rawEditUnit").value.trim(), min=Number(document.getElementById("rawEditMin").value),
+          dailyUsage=Number(document.getElementById("rawEditDailyUsage").value||0),
+          expiry=document.getElementById("rawEditExpiry").value;
+    if (!sku)  return showToast("ไม่พบ SKU","error");
+    if (!name) return showToast("กรุณาระบุชื่อ","warn");
+    if (!unit) return showToast("กรุณาระบุหน่วย","warn");
+    setRawBusy("rawBtnEdit",true,"กำลังบันทึก...");
+    showLoading("กำลังบันทึกการแก้ไข...");
+    const r = await rawFetch({ action:"EDIT", sku, name, unit, min, dailyUsage, expiryDate:expiry, user:currentUser });
+    hideLoading(); setRawBusy("rawBtnEdit",false);
+    if (r.status==="success") { closeRawEdit(); showToast("แก้ไขเรียบร้อย ✏️","success"); rawLoadData(); }
+    else showToast(r.message||"ไม่สำเร็จ","error");
+  }
+
+  async function rawSubmitAction() {
+    const sku=document.getElementById("rawModalSkuVal").value, type=document.getElementById("rawModalType").value,
+          qty=Number(document.getElementById("rawModalQty").value);
+    if (!sku)           return showToast("ไม่พบ SKU","error");
+    if (isNaN(qty)||qty<=0) return showToast("ระบุจำนวนให้ถูกต้อง","warn");
+    setRawBusy("rawBtnSubmit",true,"กำลังบันทึก...");
+    showLoading(type==="IN"?"กำลังบันทึกรับเข้า...":"กำลังบันทึกการเบิก...");
+    const r = await rawFetch({ action:"UPDATE", sku, type, qty, user:currentUser });
+    hideLoading(); setRawBusy("rawBtnSubmit",false);
+    if (r.status==="success") { closeRawAction(); showToast("บันทึกสำเร็จ ✔️","success"); rawLoadData(); }
+    else showToast(r.message||"ไม่สำเร็จ","error");
+  }
+
+  async function rawSubmitVerify() {
+    const q=Number(document.getElementById("rawVerifyQty").value);
+    if (!rawVerifyTarget) return showToast("ไม่พบ SKU","error");
+    if (isNaN(q)||q<0)    return showToast("ระบุยอดให้ถูกต้อง","warn");
+    setRawBusy("rawBtnVerify",true,"กำลังบันทึก...");
+    showLoading("กำลังบันทึกยอดตรวจนับ...");
+    const r = await rawFetch({ action:"VERIFY", sku:rawVerifyTarget, qty:q, user:currentUser });
+    hideLoading(); setRawBusy("rawBtnVerify",false);
+    if (r.status==="success") { closeRawVerify(); showToast("บันทึกยอดจริงสำเร็จ ✅","success"); rawLoadData(); }
+    else showToast(r.message||"ไม่สำเร็จ","error");
+  }
+
+  async function rawDelete(sku, name) {
+    if (!confirm(`ยกเลิกการใช้ "${name}" ?`)) return;
+    showLoading("กำลังลบ...");
+    const r = await rawFetch({ action:"DELETE", sku, user:currentUser });
+    hideLoading();
+    if (r.status==="success") { showToast("ลบสำเร็จ 🗑️","success"); rawLoadData(); }
+    else showToast(r.message||"ลบไม่สำเร็จ","error");
+  }
+
+  // ── Scanner ──
+  async function openRawScanner() {
+    document.getElementById("rawScannerModal").classList.remove("hidden");
+    try {
+      rawHtml5QrCode = new Html5Qrcode("rawReader");
+      await rawHtml5QrCode.start({ facingMode:"environment" }, { fps:10, qrbox:250 }, txt => {
+        const val = String(txt||"").trim();
+        const item = rawLastData.find(i=>String(i.SKU)===val);
+        closeRawScanner();
+        if (item) openRawAction(item.SKU, item.Name, item.Unit);
+        else showToast("ไม่พบรหัสนี้ ❌","error");
+      });
+    } catch(err) { showToast("เปิดกล้องไม่สำเร็จ ❌","error"); closeRawScanner(true); }
+  }
+
+  async function closeRawScanner(forceHide=false) {
+    if (forceHide) { document.getElementById("rawScannerModal").classList.add("hidden"); return; }
+    try { if (rawHtml5QrCode?.isScanning) { await rawHtml5QrCode.stop(); await rawHtml5QrCode.clear(); } }
+    catch(e) {} finally { rawHtml5QrCode=null; document.getElementById("rawScannerModal").classList.add("hidden"); }
+  }
+
+  // ── Button busy ──
+  function setRawBusy(id, busy, txt="กำลังบันทึก...") {
+    const btn=document.getElementById(id); if (!btn) return;
+    if (!btn.dataset.orig) btn.dataset.orig = btn.innerHTML;
+    btn.classList.toggle("btn-disabled", busy);
+    btn.innerHTML = busy ? txt : btn.dataset.orig;
+  }
+
+  // ══════════════════════════════════════════════
+  // ⚙️ UNIFIED TELEGRAM SETTINGS (ทุกโรงงาน)
+  // ══════════════════════════════════════════════
+  async function openUnifiedSettings() {
+    showLoading("กำลังโหลดการตั้งค่า...");
+    try {
+      const r = await (await fetch(GAS_URL, {
+        method: "POST",
+        body: JSON.stringify({ module: "COLDROOM", action: "getAlertSettings", payload: {} })
+      })).json();
+      hideLoading();
+      if (r.ok) {
+        const s = r.settings;
+        document.getElementById("uniTgBotName").value = s.telegramBotName           || "";
+        document.getElementById("uniTgToken").value   = s.telegramBotToken           || "";
+        document.getElementById("uniTgChatIds").value = s.telegramChatIds            || "";
+        document.getElementById("uniTgEnable").value  = s.enableTelegramStockUpdate  || "true";
+      }
+    } catch(e) { hideLoading(); showToast("โหลดการตั้งค่าไม่สำเร็จ","error"); return; }
+    document.getElementById("unifiedSettingsModal").classList.remove("hidden");
+  }
+
+  function closeUnifiedSettings() {
+    document.getElementById("unifiedSettingsModal").classList.add("hidden");
+  }
+
+  async function saveUnifiedSettings() {
+    const payload = {
+      telegramBotName:           document.getElementById("uniTgBotName").value.trim(),
+      telegramBotToken:          document.getElementById("uniTgToken").value.trim(),
+      telegramChatIds:           document.getElementById("uniTgChatIds").value.trim(),
+      enableTelegramStockUpdate: document.getElementById("uniTgEnable").value
+    };
+    const btn = document.getElementById("uniBtnSave");
+    btn.disabled = true; btn.textContent = "กำลังบันทึก...";
+    showLoading("กำลังบันทึก...");
+    try {
+      const r = await (await fetch(GAS_URL, {
+        method: "POST",
+        body: JSON.stringify({ module: "COLDROOM", action: "saveAlertSettings", payload })
+      })).json();
+      hideLoading();
+      if (r.ok) {
+        showToast("บันทึกการตั้งค่าสำเร็จ ✅  ใช้กับทุกโรงงานแล้ว", "success");
+        closeUnifiedSettings();
+        // sync ไปที่ Cold Room tab ด้วย (ถ้ามีอยู่)
+        ["crTgBotName","crTgToken","crTgChatIds","crTgEnable"].forEach((id, i) => {
+          const srcIds = ["uniTgBotName","uniTgToken","uniTgChatIds","uniTgEnable"];
+          const el = document.getElementById(id);
+          if (el) el.value = document.getElementById(srcIds[i]).value;
+        });
+      } else { showToast("บันทึกไม่สำเร็จ","error"); }
+    } catch(e) { hideLoading(); showToast("เกิดข้อผิดพลาด: "+e.message,"error"); }
+    btn.disabled = false; btn.textContent = "💾 บันทึกการตั้งค่า";
+  }
+
+  async function testTelegram() {
+    const token   = document.getElementById("uniTgToken").value.trim();
+    const chatIds = document.getElementById("uniTgChatIds").value.trim().split(",").map(s=>s.trim()).filter(Boolean);
+    if (!token || !chatIds.length) { showToast("กรุณาใส่ Token และ Chat ID ก่อน","warn"); return; }
+    showLoading("กำลังส่งข้อความทดสอบ...");
+    try {
+      const ts  = new Date().toLocaleString("th-TH");
+      const msg = `✅ ทดสอบการแจ้งเตือน\n\n❄️ Cold Room SQF\n🏭 วัตถุดิบ SQF\n🏭 วัตถุดิบ MLM\n\n🕐 ${ts}\n👤 ${currentUser}`;
+      let ok = 0;
+      for (const chatId of chatIds) {
+        const res = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
+          method: "POST", headers: {"Content-Type":"application/json"},
+          body: JSON.stringify({ chat_id: chatId, text: msg })
+        });
+        const data = await res.json();
+        if (data.ok) ok++;
+      }
+      hideLoading();
+      showToast(`ส่งสำเร็จ ${ok}/${chatIds.length} Chat ID`, ok>0?"success":"error");
+    } catch(e) { hideLoading(); showToast("ส่งไม่สำเร็จ: "+e.message,"error"); }
+  }
+
+  // ── Raw Settings (legacy — ใช้ unified แทน) ──────
+  async function openRawSettings() { openUnifiedSettings(); }
+  function closeRawSettings()      { closeUnifiedSettings(); }
+  async function saveRawSettings() { await saveUnifiedSettings(); }
+
+  // ── Raw Settings (ใช้ร่วมกันทุก Module) ──────
+  async function openRawSettings_OLD() {
+    showLoading("กำลังโหลดการตั้งค่า...");
+    try {
+      const r = await (await fetch(GAS_URL, {
+        method: "POST",
+        body: JSON.stringify({ module: "COLDROOM", action: "getAlertSettings", payload: {} })
+      })).json();
+      hideLoading();
+      if (r.ok) {
+        const s = r.settings;
+        document.getElementById("rawTgBotName").value  = s.telegramBotName  || "";
+        document.getElementById("rawTgToken").value    = s.telegramBotToken  || "";
+        document.getElementById("rawTgChatIds").value  = s.telegramChatIds   || "";
+        document.getElementById("rawTgEnable").value   = s.enableTelegramStockUpdate || "true";
+      }
+    } catch(e) { hideLoading(); showToast("โหลดการตั้งค่าไม่สำเร็จ","error"); return; }
+    document.getElementById("rawSettingsModal").classList.remove("hidden");
+  }
+
+  function closeRawSettings() {
+    document.getElementById("rawSettingsModal").classList.add("hidden");
+  }
+
+  async function saveRawSettings() {
+    setRawBusy("rawBtnSaveSettings", true, "กำลังบันทึก...");
+    showLoading("กำลังบันทึกการตั้งค่า...");
+    try {
+      const r = await (await fetch(GAS_URL, {
+        method: "POST",
+        body: JSON.stringify({
+          module: "COLDROOM", action: "saveAlertSettings",
+          payload: {
+            telegramBotName:           document.getElementById("rawTgBotName").value,
+            telegramBotToken:          document.getElementById("rawTgToken").value,
+            telegramChatIds:           document.getElementById("rawTgChatIds").value,
+            enableTelegramStockUpdate: document.getElementById("rawTgEnable").value
+          }
+        })
+      })).json();
+      hideLoading();
+      if (r.ok) {
+        showToast("บันทึกการตั้งค่าสำเร็จ ✅","success");
+        closeRawSettings();
+        // sync to Cold Room tab ด้วย
+        if (document.getElementById("crTgBotName")) {
+          document.getElementById("crTgBotName").value  = document.getElementById("rawTgBotName").value;
+          document.getElementById("crTgToken").value    = document.getElementById("rawTgToken").value;
+          document.getElementById("crTgChatIds").value  = document.getElementById("rawTgChatIds").value;
+          document.getElementById("crTgEnable").value   = document.getElementById("rawTgEnable").value;
+        }
+      } else { showToast("บันทึกไม่สำเร็จ","error"); }
+    } catch(e) { hideLoading(); showToast("เกิดข้อผิดพลาด: "+e.message,"error"); }
+    setRawBusy("rawBtnSaveSettings", false);
+  }
+
+  // ─────────────────────────────────────────────
+  // INIT
+  // ─────────────────────────────────────────────
+  window.onload = checkAuth;
+
+  // ─────────────────────────────────────────────
+  // PWA — Service Worker Registration
+  // ─────────────────────────────────────────────
+  if ("serviceWorker" in navigator) {
+    window.addEventListener("load", () => {
+      navigator.serviceWorker.register("./sw.js")
+        .then(reg => {
+          // เช็คอัปเดตใหม่
+          reg.addEventListener("updatefound", () => {
+            const newSW = reg.installing;
+            newSW.addEventListener("statechange", () => {
+              if (newSW.state === "installed" && navigator.serviceWorker.controller) {
+                // มี version ใหม่ → แจ้ง user
+                if (confirm("🔄 มีอัปเดตใหม่! กด OK เพื่อโหลด version ล่าสุด")) {
+                  newSW.postMessage({ type: "SKIP_WAITING" });
+                  location.reload();
+                }
+              }
+            });
+          });
+        })
+        .catch(err => console.warn("SW register failed:", err));
+    });
+  }
+  </script>
+</body>
+</html>

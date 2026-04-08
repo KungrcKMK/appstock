@@ -1,0 +1,568 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>🔄 ย้ายข้อมูล → GAS ใหม่</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Sarabun:wght@400;600;800&display=swap" rel="stylesheet">
+  <style>
+    body { font-family: 'Sarabun', sans-serif; }
+    .spinner { width:20px;height:20px;border:3px solid #e2e8f0;border-top-color:#2563eb;border-radius:50%;animation:spin .7s linear infinite;display:inline-block; }
+    @keyframes spin { to { transform:rotate(360deg); } }
+    .log-ok   { color:#059669; }
+    .log-err  { color:#dc2626; }
+    .log-warn { color:#ea580c; }
+    .log-info { color:#2563eb; }
+  </style>
+</head>
+<body class="bg-slate-100 min-h-screen p-6">
+
+  <div class="max-w-3xl mx-auto">
+
+    <!-- Header -->
+    <div class="bg-slate-900 text-white rounded-[2.5rem] p-8 mb-8 text-center shadow-2xl">
+      <div class="text-5xl mb-3">🔄</div>
+      <h1 class="text-3xl font-black uppercase italic tracking-tighter">ย้ายข้อมูลเข้า GAS ใหม่</h1>
+      <p class="text-slate-400 font-bold mt-2 text-sm">ดึงจากระบบเก่า → ส่งเข้าระบบรวม SQF & MLM</p>
+    </div>
+
+    <!-- GAS URLs -->
+    <div class="bg-white rounded-[2rem] shadow-xl p-8 mb-6 border-4 border-white">
+      <h2 class="text-xl font-black mb-6 uppercase tracking-tight text-slate-700">⚙️ กำหนด URL ระบบ</h2>
+
+      <div class="space-y-4">
+        <div>
+          <label class="text-xs font-black uppercase text-slate-400 ml-1 mb-1 block">🆕 GAS ใหม่ (ปลายทาง)</label>
+          <input id="newGasUrl" type="text" class="w-full bg-slate-50 border-2 border-slate-200 p-4 rounded-2xl font-mono text-sm outline-none focus:border-blue-600"
+            value="https://script.google.com/macros/s/AKfycbx72vWVvUgaOgZEnzAc8ltaV-a7Rfx_CL9DK1c-B5nAIOxtrlnbi8_b6bmfnDeAZ_xeaw/exec">
+        </div>
+        <div>
+          <label class="text-xs font-black uppercase text-slate-400 ml-1 mb-1 block">❄️ GAS เก่า — คลังสินค้า Cold Room (SQF)</label>
+          <input id="oldColdUrl" type="text" class="w-full bg-slate-50 border-2 border-slate-200 p-4 rounded-2xl font-mono text-sm outline-none focus:border-blue-600"
+            value="https://script.google.com/macros/s/AKfycbz2AONFYOHEl9lckjwHcwp8DeW8gboWDDBHcptGd82lT6iJeA7SjO63LC_TJaNILAw/exec">
+        </div>
+        <div>
+          <label class="text-xs font-black uppercase text-slate-400 ml-1 mb-1 block">🏭 GAS เก่า — วัตถุดิบ MLM (แม่ละมาย)</label>
+          <input id="oldMlmUrl" type="text" class="w-full bg-slate-50 border-2 border-slate-200 p-4 rounded-2xl font-mono text-sm outline-none focus:border-blue-600"
+            value="https://script.google.com/macros/s/AKfycbyO5VSdItYuxzWO5yaRFAjkMXNDEIvvOSmGkyOJgzI-in3KV6mvh-ELrvWTVagQCm4/exec">
+        </div>
+        <div>
+          <label class="text-xs font-black uppercase text-slate-400 ml-1 mb-1 block">👤 ชื่อผู้ดำเนินการ (บันทึกใน Log)</label>
+          <input id="migUser" type="text" class="w-full bg-slate-50 border-2 border-slate-200 p-4 rounded-2xl font-black text-lg outline-none focus:border-blue-600" placeholder="ระบุชื่อ...">
+        </div>
+      </div>
+    </div>
+
+    <!-- Step cards -->
+    <div class="space-y-4 mb-8">
+
+      <!-- Step 1: MLM -->
+      <div class="bg-white rounded-[2rem] shadow-xl border-4 border-white overflow-hidden">
+        <div class="bg-blue-600 p-6 text-white flex justify-between items-center">
+          <div>
+            <div class="font-black text-xl uppercase italic">🏭 ขั้นที่ 1 — วัตถุดิบ MLM</div>
+            <div class="text-blue-200 text-sm font-bold mt-1">ดึงจาก GAS เก่า → ส่งเข้า module: MLM</div>
+          </div>
+          <div id="step1-badge" class="bg-blue-800 text-white px-4 py-2 rounded-full font-black text-sm">รอดำเนินการ</div>
+        </div>
+        <div class="p-6">
+          <div id="step1-preview" class="hidden mb-4">
+            <div class="bg-slate-50 rounded-2xl p-4 text-sm font-bold" id="step1-preview-content"></div>
+          </div>
+          <div class="flex gap-3">
+            <button onclick="previewMlm()" id="btn-preview-mlm" class="flex-1 bg-slate-100 text-slate-700 py-4 rounded-2xl font-black hover:bg-slate-200 transition-all uppercase text-sm">
+              🔍 ดูตัวอย่างข้อมูล
+            </button>
+            <button onclick="migrateMlm()" id="btn-migrate-mlm" class="flex-1 bg-blue-600 text-white py-4 rounded-2xl font-black hover:bg-black transition-all uppercase text-sm disabled:opacity-50">
+              🚀 ย้ายข้อมูล MLM
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Step 2: Cold Room Stock -->
+      <div class="bg-white rounded-[2rem] shadow-xl border-4 border-white overflow-hidden">
+        <div class="bg-indigo-600 p-6 text-white flex justify-between items-center">
+          <div>
+            <div class="font-black text-xl uppercase italic">❄️ ขั้นที่ 2 — สต๊อกคงเหลือ Cold Room</div>
+            <div class="text-indigo-200 text-sm font-bold mt-1">ดึง lot ทั้งหมดจาก GAS เก่า → ส่งเข้า module: COLDROOM</div>
+          </div>
+          <div id="step2-badge" class="bg-indigo-800 text-white px-4 py-2 rounded-full font-black text-sm">รอดำเนินการ</div>
+        </div>
+        <div class="p-6">
+          <div id="step2-preview" class="hidden mb-4">
+            <div class="bg-slate-50 rounded-2xl p-4 text-sm font-bold" id="step2-preview-content"></div>
+          </div>
+          <div class="flex gap-3">
+            <button onclick="previewColdroom()" id="btn-preview-cold" class="flex-1 bg-slate-100 text-slate-700 py-4 rounded-2xl font-black hover:bg-slate-200 transition-all uppercase text-sm">
+              🔍 ดูตัวอย่างข้อมูล
+            </button>
+            <button onclick="migrateColdroom()" id="btn-migrate-cold" class="flex-1 bg-indigo-600 text-white py-4 rounded-2xl font-black hover:bg-black transition-all uppercase text-sm">
+              🚀 ย้ายข้อมูล Cold Room
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Step 3: Cold Room Products -->
+      <div class="bg-white rounded-[2rem] shadow-xl border-4 border-white overflow-hidden">
+        <div class="bg-purple-600 p-6 text-white flex justify-between items-center">
+          <div>
+            <div class="font-black text-xl uppercase italic">📦 ขั้นที่ 3 — Master Data สินค้า Cold Room</div>
+            <div class="text-purple-200 text-sm font-bold mt-1">ดึง product master จากสต๊อก → ขึ้นทะเบียนใน GAS ใหม่</div>
+          </div>
+          <div id="step3-badge" class="bg-purple-800 text-white px-4 py-2 rounded-full font-black text-sm">รอดำเนินการ</div>
+        </div>
+        <div class="p-6">
+          <div id="step3-preview" class="hidden mb-4">
+            <div class="bg-slate-50 rounded-2xl p-4 text-sm font-bold" id="step3-preview-content"></div>
+          </div>
+          <div class="flex gap-3">
+            <button onclick="previewProducts()" id="btn-preview-prod" class="flex-1 bg-slate-100 text-slate-700 py-4 rounded-2xl font-black hover:bg-slate-200 transition-all uppercase text-sm">
+              🔍 ดูตัวอย่างข้อมูล
+            </button>
+            <button onclick="migrateProducts()" id="btn-migrate-prod" class="flex-1 bg-purple-600 text-white py-4 rounded-2xl font-black hover:bg-black transition-all uppercase text-sm">
+              🚀 ย้าย Master Data
+            </button>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- Step 4: Fix MQ- → MLM- -->
+    <div class="bg-white rounded-[2rem] shadow-xl border-4 border-amber-400 overflow-hidden mb-4">
+      <div class="bg-amber-500 p-6 text-white flex justify-between items-center">
+        <div>
+          <div class="font-black text-xl uppercase italic">🔧 แก้ไข SKU เดิม MQ- → MLM-</div>
+          <div class="text-amber-100 text-sm font-bold mt-1">สำหรับข้อมูลที่ migrate ไปแล้วด้วย prefix MQ- ใน GAS ใหม่</div>
+        </div>
+        <div id="step4-badge" class="bg-amber-700 text-white px-4 py-2 rounded-full font-black text-sm">รอดำเนินการ</div>
+      </div>
+      <div class="p-6">
+        <div id="step4-preview" class="hidden mb-4">
+          <div class="bg-slate-50 rounded-2xl p-4 text-sm font-bold" id="step4-preview-content"></div>
+        </div>
+        <div class="flex gap-3">
+          <button onclick="previewFixSku()" id="btn-preview-fix" class="flex-1 bg-slate-100 text-slate-700 py-4 rounded-2xl font-black hover:bg-slate-200 transition-all uppercase text-sm">
+            🔍 ตรวจสอบ MQ- ที่มีอยู่
+          </button>
+          <button onclick="fixSkuPrefix()" id="btn-fix-sku" class="flex-1 bg-amber-500 text-white py-4 rounded-2xl font-black hover:bg-black transition-all uppercase text-sm">
+            🔧 แก้ไข MQ- → MLM-
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Run All -->
+    <button onclick="runAll()" class="w-full bg-slate-900 text-white py-6 rounded-[2rem] font-black text-xl shadow-2xl hover:bg-blue-700 transition-all uppercase mb-8">
+      ⚡ ย้ายข้อมูลทั้งหมดทีเดียว
+    </button>
+
+    <!-- Log -->
+    <div class="bg-slate-900 rounded-[2rem] shadow-2xl p-6">
+      <div class="flex justify-between items-center mb-4">
+        <h3 class="text-white font-black uppercase text-sm tracking-widest">📋 Log การทำงาน</h3>
+        <button onclick="clearLog()" class="text-slate-500 text-xs font-black hover:text-white">ล้าง Log</button>
+      </div>
+      <div id="logBox" class="font-mono text-sm space-y-1 max-h-80 overflow-y-auto pr-2" style="scrollbar-width:thin;scrollbar-color:#334155 transparent;">
+        <div class="text-slate-500">// รอดำเนินการ...</div>
+      </div>
+    </div>
+
+    <!-- Summary -->
+    <div id="summaryBox" class="hidden mt-6 bg-emerald-600 text-white rounded-[2rem] p-8 text-center shadow-2xl">
+      <div class="text-5xl mb-3">✅</div>
+      <h2 class="text-2xl font-black uppercase">ย้ายข้อมูลเสร็จสมบูรณ์!</h2>
+      <p id="summaryText" class="text-emerald-200 font-bold mt-2"></p>
+      <a href="index.html" class="mt-6 inline-block bg-white text-emerald-700 px-10 py-4 rounded-2xl font-black hover:bg-slate-100 transition-all uppercase">
+        → เปิดระบบหลัก
+      </a>
+    </div>
+
+  </div>
+
+  <script>
+  // ── helpers ──────────────────────────────────
+  const getUrl = id => document.getElementById(id).value.trim();
+
+  let logLines = [];
+  function log(msg, type="info") {
+    const box = document.getElementById("logBox");
+    const ts  = new Date().toLocaleTimeString("th-TH");
+    const icon = {info:"ℹ️",ok:"✅",err:"❌",warn:"⚠️"}[type]||"•";
+    const line = document.createElement("div");
+    line.className = `log-${type}`;
+    line.textContent = `[${ts}] ${icon} ${msg}`;
+    box.appendChild(line);
+    box.scrollTop = box.scrollHeight;
+    logLines.push(`[${ts}] ${msg}`);
+  }
+  function clearLog() {
+    document.getElementById("logBox").innerHTML = '<div class="text-slate-500">// ล้าง Log แล้ว</div>';
+    logLines = [];
+  }
+  function setBadge(id, text, color="bg-slate-600") {
+    const el = document.getElementById(id);
+    el.textContent = text;
+    el.className = `${color} text-white px-4 py-2 rounded-full font-black text-sm`;
+  }
+  function setBusy(btnId, busy) {
+    const btn = document.getElementById(btnId);
+    if (!btn) return;
+    btn.disabled = busy;
+    btn.classList.toggle("opacity-50", busy);
+    btn.classList.toggle("pointer-events-none", busy);
+  }
+
+  async function postNew(payload) {
+    const url  = getUrl("newGasUrl");
+    const resp = await fetch(url, { method:"POST", body: JSON.stringify(payload) });
+    return await resp.json();
+  }
+  async function getOld(url, params="") {
+    const resp = await fetch(url + (params ? "?" + params : ""));
+    return await resp.json();
+  }
+  async function postOld(url, payload) {
+    const resp = await fetch(url, { method:"POST", headers:{"Content-Type":"text/plain;charset=utf-8"}, body: JSON.stringify(payload) });
+    return await resp.json();
+  }
+
+  // ── counters ──────────────────────────────────
+  let counts = { mlm:0, cold:0, prod:0, err:0 };
+
+  // ════════════════════════════════
+  // 🏭 MLM PREVIEW & MIGRATE
+  // ════════════════════════════════
+  async function previewMlm() {
+    setBusy("btn-preview-mlm", true);
+    log("กำลังดึงข้อมูล MLM จาก GAS เก่า...", "info");
+    try {
+      const data = await getOld(getUrl("oldMlmUrl"));
+      const items = Array.isArray(data.materials) ? data.materials : [];
+      document.getElementById("step1-preview").classList.remove("hidden");
+      document.getElementById("step1-preview-content").innerHTML =
+        `<div class="text-blue-700 font-black mb-2">พบ ${items.length} รายการ</div>` +
+        items.slice(0,5).map(i =>
+          `<div class="flex justify-between py-1 border-b border-slate-100">
+            <span>${i.SKU} — ${i.Name}</span>
+            <span class="text-emerald-600 font-black">${i.Qty} ${i.Unit||""}</span>
+           </div>`
+        ).join("") +
+        (items.length>5 ? `<div class="text-slate-400 text-xs mt-2">...และอีก ${items.length-5} รายการ</div>`:"");
+      log(`MLM: พบ ${items.length} รายการ`, "ok");
+    } catch(e) { log("MLM Preview ล้มเหลว: "+e.message, "err"); }
+    setBusy("btn-preview-mlm", false);
+  }
+
+  async function migrateMlm() {
+    const user = document.getElementById("migUser").value.trim() || "Migration";
+    setBusy("btn-migrate-mlm", true);
+    setBadge("step1-badge", "กำลังย้าย...", "bg-yellow-500");
+    log("── เริ่มย้าย MLM Materials ──", "info");
+    try {
+      const data = await getOld(getUrl("oldMlmUrl"));
+      const items = Array.isArray(data.materials) ? data.materials : [];
+      if (!items.length) { log("MLM: ไม่มีข้อมูล", "warn"); setBadge("step1-badge","ไม่มีข้อมูล","bg-slate-500"); setBusy("btn-migrate-mlm",false); return; }
+
+      let ok=0, skip=0, fail=0;
+      for (const item of items) {
+        if (!item.SKU || !item.Name) { skip++; continue; }
+        // ✅ แปลง MQ-xxxx → MLM-xxxx อัตโนมัติ
+        const newSku = String(item.SKU).replace(/^MQ-/i, "MLM-");
+        const skuChanged = newSku !== String(item.SKU);
+        try {
+          const r = await postNew({
+            module: "MLM", action: "CREATE",
+            sku:        newSku,
+            name:       item.Name,
+            unit:       item.Unit   || "",
+            qty:        Number(item.Qty)  || 0,
+            min:        Number(item.Min)  || 0,
+            expiryDate: item.ExpiryDate || "",
+            user:       user
+          });
+          if (r.status === "success") { ok++; log(`✓ MLM: ${newSku}${skuChanged?" (แปลงจาก "+item.SKU+")":""} — ${item.Name} (${item.Qty} ${item.Unit||""})`, "ok"); }
+          else if ((r.message||"").includes("มีอยู่แล้ว")) { skip++; log(`↷ MLM: ${newSku} มีอยู่แล้ว (ข้าม)`, "warn"); }
+          else { fail++; log(`✗ MLM: ${newSku} — ${r.message||"Error"}`, "err"); }
+        } catch(e) { fail++; log(`✗ MLM: ${newSku} — ${e.message}`, "err"); }
+        await delay(300);
+      }
+      counts.mlm = ok;
+      counts.err += fail;
+      log(`── MLM เสร็จ: สำเร็จ ${ok} | ข้าม ${skip} | ผิดพลาด ${fail} ──`, ok>0?"ok":"warn");
+      setBadge("step1-badge", `✅ ${ok}/${items.length}`, "bg-emerald-600");
+    } catch(e) { log("MLM Migration ล้มเหลว: "+e.message, "err"); setBadge("step1-badge","❌ ล้มเหลว","bg-red-600"); }
+    setBusy("btn-migrate-mlm", false);
+  }
+
+  // ════════════════════════════════
+  // ❄️ COLDROOM STOCK PREVIEW & MIGRATE
+  // ════════════════════════════════
+  let cachedColdLots = [];
+
+  async function previewColdroom() {
+    setBusy("btn-preview-cold", true);
+    log("กำลังดึงสต๊อก Cold Room จาก GAS เก่า...", "info");
+    try {
+      const data = await postOld(getUrl("oldColdUrl"), { action:"getStartupOverview", payload:{} });
+      cachedColdLots = Array.isArray(data.allLots) ? data.allLots.filter(l => l.Qty > 0) : [];
+      document.getElementById("step2-preview").classList.remove("hidden");
+      document.getElementById("step2-preview-content").innerHTML =
+        `<div class="text-indigo-700 font-black mb-2">พบ ${cachedColdLots.length} lot ที่มียอดคงเหลือ</div>` +
+        cachedColdLots.slice(0,5).map(l =>
+          `<div class="flex justify-between py-1 border-b border-slate-100">
+            <span>${l.ProductName} MFG:${isoToDdmmyy(l.MFG)}</span>
+            <span class="text-indigo-600 font-black">${l.Qty} ${l.Unit||""}</span>
+           </div>`
+        ).join("") +
+        (cachedColdLots.length>5 ? `<div class="text-slate-400 text-xs mt-2">...และอีก ${cachedColdLots.length-5} lot</div>`:"");
+      log(`Cold Room: พบ ${cachedColdLots.length} lot ที่มีสต๊อก`, "ok");
+    } catch(e) { log("ColdRoom Preview ล้มเหลว: "+e.message, "err"); }
+    setBusy("btn-preview-cold", false);
+  }
+
+  async function migrateColdroom() {
+    const user = document.getElementById("migUser").value.trim() || "Migration";
+    if (!cachedColdLots.length) {
+      log("ยังไม่ได้ดูตัวอย่าง กำลังโหลดข้อมูลก่อน...", "warn");
+      await previewColdroom();
+    }
+    if (!cachedColdLots.length) { log("Cold Room: ไม่มี lot ที่มีสต๊อก", "warn"); return; }
+
+    setBusy("btn-migrate-cold", true);
+    setBadge("step2-badge","กำลังย้าย...","bg-yellow-500");
+    log("── เริ่มย้าย Cold Room Stock lots ──", "info");
+
+    let ok=0, skip=0, fail=0;
+    for (const lot of cachedColdLots) {
+      if (!lot.Barcode || !lot.MFG || !lot.EXP) { skip++; continue; }
+      try {
+        const mfg = isoToDdmmyy(lot.MFG);
+        const exp = isoToDdmmyy(lot.EXP);
+        const r = await postNew({
+          module: "COLDROOM", action: "saveOrUpdateCount",
+          payload: {
+            barcode:      lot.Barcode,
+            employeeName: user,
+            mfg:          mfg,
+            exp:          exp,
+            newQty:       String(lot.Qty),
+            note:         "ย้ายจากระบบเก่า"
+          }
+        });
+        if (r.ok) { ok++; log(`✓ COLD: ${lot.ProductName} MFG:${mfg} QTY:${lot.Qty}`, "ok"); }
+        else { fail++; log(`✗ COLD: ${lot.ProductName} — ${r.message||"Error"}`, "err"); }
+      } catch(e) { fail++; log(`✗ COLD: ${lot.ProductName} — ${e.message}`, "err"); }
+      await delay(400);
+    }
+    counts.cold = ok;
+    counts.err += fail;
+    log(`── Cold Room Stock เสร็จ: สำเร็จ ${ok} | ข้าม ${skip} | ผิดพลาด ${fail} ──`, ok>0?"ok":"warn");
+    setBadge("step2-badge", `✅ ${ok}/${cachedColdLots.length}`, "bg-emerald-600");
+    setBusy("btn-migrate-cold", false);
+  }
+
+  // ════════════════════════════════
+  // 📦 COLDROOM PRODUCTS PREVIEW & MIGRATE
+  // ════════════════════════════════
+  let cachedProducts = [];
+
+  async function previewProducts() {
+    setBusy("btn-preview-prod", true);
+    log("กำลังดึง Master Data สินค้า Cold Room...", "info");
+    try {
+      const data = await postOld(getUrl("oldColdUrl"), { action:"getStartupOverview", payload:{} });
+      const lots = Array.isArray(data.allLots) ? data.allLots : [];
+      // สร้าง unique products จาก lots
+      const map = {};
+      lots.forEach(l => {
+        if (l.Barcode && !map[l.Barcode]) {
+          map[l.Barcode] = { Barcode: l.Barcode, ProductName: l.ProductName, Unit: l.Unit || "" };
+        }
+      });
+      cachedProducts = Object.values(map);
+      document.getElementById("step3-preview").classList.remove("hidden");
+      document.getElementById("step3-preview-content").innerHTML =
+        `<div class="text-purple-700 font-black mb-2">พบ ${cachedProducts.length} ชนิดสินค้า</div>` +
+        cachedProducts.slice(0,5).map(p =>
+          `<div class="flex justify-between py-1 border-b border-slate-100">
+            <span>${p.Barcode}</span>
+            <span class="text-purple-600 font-black">${p.ProductName}</span>
+           </div>`
+        ).join("") +
+        (cachedProducts.length>5 ? `<div class="text-slate-400 text-xs mt-2">...และอีก ${cachedProducts.length-5} รายการ</div>`:"");
+      log(`Products: พบ ${cachedProducts.length} ชนิดสินค้า`, "ok");
+    } catch(e) { log("Products Preview ล้มเหลว: "+e.message, "err"); }
+    setBusy("btn-preview-prod", false);
+  }
+
+  async function migrateProducts() {
+    const user = document.getElementById("migUser").value.trim() || "Migration";
+    if (!cachedProducts.length) {
+      log("ยังไม่ได้ดูตัวอย่าง กำลังโหลดก่อน...", "warn");
+      await previewProducts();
+    }
+    if (!cachedProducts.length) { log("Products: ไม่พบข้อมูล", "warn"); return; }
+
+    setBusy("btn-migrate-prod", true);
+    setBadge("step3-badge","กำลังย้าย...","bg-yellow-500");
+    log("── เริ่มย้าย Master Data สินค้า ──", "info");
+
+    let ok=0, skip=0, fail=0;
+    for (const p of cachedProducts) {
+      if (!p.Barcode || !p.ProductName) { skip++; continue; }
+      try {
+        const r = await postNew({
+          module: "COLDROOM", action: "saveNewProduct",
+          payload: {
+            barcode:               p.Barcode,
+            productName:           p.ProductName,
+            sku:                   "",
+            defaultUnit:           p.Unit || "ถ้วย",
+            standardShelfLifeDays: "10",
+            warningPercentage:     "20",
+            warningDays:           ""
+          }
+        });
+        if (r.ok) { ok++; log(`✓ PROD: ${p.Barcode} — ${p.ProductName}`, "ok"); }
+        else if ((r.message||"").includes("มีอยู่แล้ว")) { skip++; log(`↷ PROD: ${p.Barcode} มีอยู่แล้ว (ข้าม)`, "warn"); }
+        else { fail++; log(`✗ PROD: ${p.Barcode} — ${r.message||"Error"}`, "err"); }
+      } catch(e) { fail++; log(`✗ PROD: ${p.Barcode} — ${e.message}`, "err"); }
+      await delay(400);
+    }
+    counts.prod = ok;
+    counts.err += fail;
+    log(`── Master Data เสร็จ: สำเร็จ ${ok} | ข้าม ${skip} | ผิดพลาด ${fail} ──`, ok>0?"ok":"warn");
+    setBadge("step3-badge", `✅ ${ok}/${cachedProducts.length}`, "bg-emerald-600");
+    setBusy("btn-migrate-prod", false);
+  }
+
+  // ════════════════════════════════
+  // ⚡ RUN ALL
+  // ════════════════════════════════
+  async function runAll() {
+    const user = document.getElementById("migUser").value.trim();
+    if (!user) { alert("กรุณาระบุชื่อผู้ดำเนินการก่อน"); document.getElementById("migUser").focus(); return; }
+
+    counts = { mlm:0, cold:0, prod:0, err:0 };
+    log("════ เริ่มย้ายข้อมูลทั้งหมด ════", "info");
+
+    await migrateMlm();
+    await delay(500);
+    await previewProducts();
+    await migrateProducts();
+    await delay(500);
+    await migrateColdroom();
+
+    log("════ ย้ายข้อมูลทั้งหมดเสร็จสิ้น ════", "ok");
+
+    const summary = document.getElementById("summaryBox");
+    summary.classList.remove("hidden");
+    document.getElementById("summaryText").textContent =
+      `MLM: ${counts.mlm} รายการ | Cold Room Stock: ${counts.cold} lot | Master Data: ${counts.prod} ชนิด` +
+      (counts.err > 0 ? ` | ⚠️ ผิดพลาด: ${counts.err} รายการ` : "");
+    summary.scrollIntoView({ behavior:"smooth" });
+  }
+
+  // ════════════════════════════════
+  // 🔧 FIX SKU: MQ- → MLM-
+  // ════════════════════════════════
+  let cachedMqItems = [];
+
+  async function previewFixSku() {
+    setBusy("btn-preview-fix", true);
+    log("กำลังดึงข้อมูล MLM จาก GAS ใหม่เพื่อตรวจสอบ MQ-...", "info");
+    try {
+      const data = await getOld(getUrl("newGasUrl") + "?module=MLM");
+      const items = (Array.isArray(data.materials) ? data.materials : [])
+        .filter(i => String(i.SKU).toUpperCase().startsWith("MQ-"));
+      cachedMqItems = items;
+      document.getElementById("step4-preview").classList.remove("hidden");
+      if (!items.length) {
+        document.getElementById("step4-preview-content").innerHTML =
+          `<div class="text-emerald-600 font-black">✅ ไม่พบ MQ- ใน GAS ใหม่ — ไม่ต้องแก้ไข</div>`;
+        log("ไม่พบ SKU ที่ขึ้นต้นด้วย MQ- ใน GAS ใหม่", "ok");
+      } else {
+        document.getElementById("step4-preview-content").innerHTML =
+          `<div class="text-amber-600 font-black mb-2">พบ ${items.length} รายการที่ยังเป็น MQ-</div>` +
+          items.slice(0,5).map(i =>
+            `<div class="flex justify-between py-1 border-b border-slate-100">
+              <span class="text-red-500">${i.SKU}</span>
+              <span class="text-slate-400">→</span>
+              <span class="text-emerald-600 font-black">${String(i.SKU).replace(/^MQ-/i,"MLM-")}</span>
+              <span class="text-slate-500 text-xs">${i.Name}</span>
+             </div>`
+          ).join("") +
+          (items.length>5 ? `<div class="text-slate-400 text-xs mt-2">...และอีก ${items.length-5} รายการ</div>`:"");
+        log(`พบ ${items.length} รายการที่ยังเป็น MQ- ต้องแก้ไข`, "warn");
+      }
+    } catch(e) { log("ตรวจสอบล้มเหลว: "+e.message, "err"); }
+    setBusy("btn-preview-fix", false);
+  }
+
+  async function fixSkuPrefix() {
+    const user = document.getElementById("migUser").value.trim() || "Migration";
+    if (!cachedMqItems.length) {
+      log("กำลังโหลดรายการ MQ- ก่อน...", "warn");
+      await previewFixSku();
+    }
+    if (!cachedMqItems.length) {
+      log("ไม่พบ MQ- ที่ต้องแก้ไข ✅", "ok");
+      setBadge("step4-badge", "✅ ไม่มีต้องแก้", "bg-emerald-600");
+      return;
+    }
+
+    setBusy("btn-fix-sku", true);
+    setBadge("step4-badge", "กำลังแก้ไข...", "bg-yellow-500");
+    log(`── เริ่มแก้ไข ${cachedMqItems.length} รายการ MQ- → MLM- ──`, "info");
+
+    let ok=0, fail=0;
+    for (const item of cachedMqItems) {
+      const newSku = String(item.SKU).replace(/^MQ-/i, "MLM-");
+      try {
+        // 1. สร้าง record ใหม่ด้วย MLM-xxxx
+        const rCreate = await postNew({
+          module:"MLM", action:"CREATE",
+          sku: newSku, name: item.Name, unit: item.Unit||"",
+          qty: Number(item.Qty)||0, min: Number(item.Min)||0,
+          expiryDate: item.ExpiryDate||"", user
+        });
+        if (rCreate.status === "success" || (rCreate.message||"").includes("มีอยู่แล้ว")) {
+          // 2. ลบ record เก่า MQ-xxxx
+          const rDelete = await postNew({ module:"MLM", action:"DELETE", sku: item.SKU, user });
+          if (rDelete.status === "success") {
+            ok++;
+            log(`✓ แก้ไข: ${item.SKU} → ${newSku} (${item.Name})`, "ok");
+          } else {
+            fail++;
+            log(`✗ ลบเก่าไม่สำเร็จ: ${item.SKU} — ${rDelete.message||"Error"}`, "err");
+          }
+        } else {
+          fail++;
+          log(`✗ สร้างใหม่ไม่สำเร็จ: ${newSku} — ${rCreate.message||"Error"}`, "err");
+        }
+      } catch(e) { fail++; log(`✗ ${item.SKU} — ${e.message}`, "err"); }
+      await delay(400);
+    }
+
+    log(`── แก้ไข SKU เสร็จ: สำเร็จ ${ok} | ผิดพลาด ${fail} ──`, ok>0?"ok":"warn");
+    setBadge("step4-badge", `✅ ${ok}/${cachedMqItems.length}`, "bg-emerald-600");
+    cachedMqItems = [];
+    setBusy("btn-fix-sku", false);
+  }
+
+  // ── utilities ──────────────────────────────────
+  function delay(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+  function isoToDdmmyy(iso) {
+    if (!iso || typeof iso !== "string" || !iso.includes("-")) return iso;
+    const p = iso.split("-");
+    if (p.length < 3) return iso;
+    return p[2].substring(0,2) + p[1] + p[0].substring(2,4);
+  }
+  </script>
+</body>
+</html>

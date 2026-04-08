@@ -1,0 +1,14 @@
+# ไฟล์ที่ไม่ต้องขึ้น GitHub
+node_modules/
+.env
+*.log
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ไฟล์ GAS (deploy ผ่าน Apps Script โดยตรง ไม่ใช่ GitHub)
+gas_code.js
+
+# ไฟล์ dev tools
+.claude/
+*.jsonl

@@ -1014,17 +1014,25 @@
   // LOGIN / LOGOUT
   // ─────────────────────────────────────────────
   function login() {
-    const user = document.getElementById("usernameInput").value.trim();
-    if (!user) { showToast("กรุณาระบุชื่อพนักงาน", "warn"); return; }
-    const dev = loadDevice();
-    if (!dev.name) {
-      // ครั้งแรก — ต้องตั้งชื่ออุปกรณ์
-      const devName = (document.getElementById("deviceNameInput")?.value || "").trim();
-      if (!devName) { showToast("📱 กรุณาตั้งชื่ออุปกรณ์นี้ก่อนเข้าสู่ระบบ", "warn"); document.getElementById("deviceNameInput")?.focus(); return; }
-      localStorage.setItem("appstock_device_name", devName);
+    try {
+      const user = (document.getElementById("usernameInput")?.value || "").trim();
+      if (!user) { alert("กรุณาระบุชื่อพนักงาน"); return; }
+      const dev = loadDevice();
+      if (!dev.name) {
+        // ครั้งแรก — ต้องตั้งชื่ออุปกรณ์
+        const devName = (document.getElementById("deviceNameInput")?.value || "").trim();
+        if (!devName) {
+          alert("📱 กรุณาตั้งชื่ออุปกรณ์นี้ก่อนเข้าสู่ระบบ\n(เช่น iPad ห้องเย็น, มือถือพี่นก)");
+          document.getElementById("deviceNameInput")?.focus();
+          return;
+        }
+        localStorage.setItem("appstock_device_name", devName);
+      }
+      localStorage.setItem("unified_stock_user", user);
+      location.reload();
+    } catch(e) {
+      alert("เกิดข้อผิดพลาดใน login: " + e.message);
     }
-    localStorage.setItem("unified_stock_user", user);
-    location.reload();
   }
 
   function logout() {
@@ -1761,20 +1769,35 @@
   async function crAskClearGlobal(i) {
     try {
       const row = window.crAllLotsData?.[i];
-      if (!row) { showToast("ไม่พบข้อมูล lot นี้ กรุณากด 'โหลดข้อมูล' ใหม่","warn"); return; }
-      // ใช้ currentUser เป็น fallback ถ้า employee input ว่าง
+      if (!row) {
+        alert("ไม่พบข้อมูล lot นี้\nกรุณากดโหลดข้อมูลใหม่ก่อน");
+        return;
+      }
       const emp = ($$cr("crEmployee")?.value?.trim()) || currentUser;
-      if (!emp) { await crShowModal("alert","ไม่พบข้อมูลพนักงาน","กรุณาเข้าสู่ระบบก่อนใช้งาน"); return; }
-      const reason = await crShowModal("prompt","🗑️ นำสินค้าออก",`รอบผลิต ${isoToDdmmyy(row.MFG)} ของ ${row.ProductName}\nกรุณาระบุเหตุผล:`);
-      if (!reason?.trim()) return;
-      const conf = await crShowModal("confirm","ยืนยันการนำออก",`สินค้า: ${row.ProductName}\nMFG: ${isoToDdmmyy(row.MFG)}\nเหตุผล: ${reason}\n\n⚠️ ยอดคงเหลือจะถูกตั้งเป็น 0`);
+      if (!emp) {
+        alert("ไม่พบข้อมูลพนักงาน\nกรุณาเข้าสู่ระบบก่อนใช้งาน");
+        return;
+      }
+      // ใช้ native prompt/confirm ที่ทำงานได้ทุกเบราว์เซอร์
+      const reason = window.prompt(
+        `🗑️ นำสินค้าออก\nสินค้า: ${row.ProductName}\nMFG: ${isoToDdmmyy(row.MFG)}\n\nกรุณาระบุเหตุผล:`
+      );
+      if (!reason || !reason.trim()) return;
+      const conf = window.confirm(
+        `ยืนยันการนำออก?\n\nสินค้า: ${row.ProductName}\nMFG: ${isoToDdmmyy(row.MFG)}\nเหตุผล: ${reason}\n\n⚠️ ยอดคงเหลือจะถูกตั้งเป็น 0`
+      );
       if (conf) {
-        const res = await crCallServer("clearLotStock",{ barcode:row.Barcode, mfg:row.MFG, reason, employeeName:emp });
-        if (res?.ok) { if(navigator.vibrate) navigator.vibrate([100,50,100]); showToast("✅ นำสินค้าออกเรียบร้อย"); crLoadOverview(); }
-        else { showToast("❌ " + (res?.message || res?.error || "เกิดข้อผิดพลาด"),"err"); }
+        const res = await crCallServer("clearLotStock",{ barcode:row.Barcode, mfg:row.MFG, reason: reason.trim(), employeeName:emp });
+        if (res?.ok) {
+          if (navigator.vibrate) navigator.vibrate([100,50,100]);
+          showToast("✅ นำสินค้าออกเรียบร้อย");
+          crLoadOverview();
+        } else {
+          alert("เกิดข้อผิดพลาด: " + (res?.message || res?.error || "ไม่ทราบสาเหตุ"));
+        }
       }
     } catch(e) {
-      showToast("❌ เกิดข้อผิดพลาด: " + e.message, "err");
+      alert("เกิดข้อผิดพลาด: " + e.message);
       console.error("crAskClearGlobal error:", e);
     }
   }

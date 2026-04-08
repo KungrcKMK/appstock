@@ -275,23 +275,23 @@
     </datalist>
   </nav>
 
+  <!-- WMS Custom Modal (ต้องอยู่นอก module เพื่อให้ position:fixed ทำงานถูกต้อง) -->
+  <div id="crModal" class="cr-modal-overlay">
+    <div class="cr-modal-box">
+      <h3 id="crModalTitle">Title</h3>
+      <p  id="crModalMessage">Message</p>
+      <input type="text" id="crModalInput" style="display:none;width:100%;padding:12px;border:1px solid #e2e8f0;border-radius:12px;font-size:16px;margin-bottom:4px;" autocomplete="off">
+      <div class="cr-modal-actions">
+        <button class="cr-btn btn-light" id="crModalCancel">ยกเลิก</button>
+        <button class="cr-btn btn-primary" id="crModalConfirm">ตกลง</button>
+      </div>
+    </div>
+  </div>
+
   <!-- ════════════════════════════════════════════
        ❄️ MODULE: COLDROOM
   ════════════════════════════════════════════ -->
   <div id="module-COLDROOM" class="module-section hide" style="padding-top:60px;">
-
-    <!-- WMS Custom Modal -->
-    <div id="crModal" class="cr-modal-overlay">
-      <div class="cr-modal-box">
-        <h3 id="crModalTitle">Title</h3>
-        <p  id="crModalMessage">Message</p>
-        <input type="text" id="crModalInput" style="display:none;width:100%;padding:12px;border:1px solid #e2e8f0;border-radius:12px;font-size:16px;margin-bottom:4px;" autocomplete="off">
-        <div class="cr-modal-actions">
-          <button class="cr-btn btn-light" id="crModalCancel">ยกเลิก</button>
-          <button class="cr-btn btn-primary" id="crModalConfirm">ตกลง</button>
-        </div>
-      </div>
-    </div>
 
 
     <div class="cr-wrap">
@@ -1692,18 +1692,23 @@
   }
 
   async function crAskClearGlobal(i) {
-    const row = window.crAllLotsData?.[i];
-    if (!row) { showToast("ไม่พบข้อมูล lot นี้ กรุณาโหลดใหม่","warn"); crLoadOverview(); return; }
-    // ใช้ currentUser เป็น fallback ถ้า employee input ว่าง
-    const emp = ($$cr("crEmployee")?.value?.trim()) || currentUser;
-    if (!emp) { await crShowModal("alert","ไม่พบข้อมูลพนักงาน","กรุณาเข้าสู่ระบบหรือระบุชื่อผู้บันทึกก่อน"); return; }
-    const reason = await crShowModal("prompt","🗑️ นำสินค้าออก",`รอบผลิต ${isoToDdmmyy(row.MFG)} ของ ${row.ProductName}\nกรุณาระบุเหตุผล:`);
-    if (!reason) return;
-    const conf = await crShowModal("confirm","ยืนยัน",`ยืนยันการนำออก Lot นี้?\n(ยอดคงเหลือจะถูกตั้งเป็น 0)`);
-    if (conf) {
-      const res = await crCallServer("clearLotStock",{ barcode:row.Barcode, mfg:row.MFG, reason, employeeName:emp });
-      if (res?.ok) { if(navigator.vibrate) navigator.vibrate([100,50,100]); showToast("ดำเนินการเรียบร้อย"); crClearAll(); crLoadOverview(); }
-      else { showToast(res?.error || "เกิดข้อผิดพลาด กรุณาลองใหม่","err"); }
+    try {
+      const row = window.crAllLotsData?.[i];
+      if (!row) { showToast("ไม่พบข้อมูล lot นี้ กรุณากด 'โหลดข้อมูล' ใหม่","warn"); return; }
+      // ใช้ currentUser เป็น fallback ถ้า employee input ว่าง
+      const emp = ($$cr("crEmployee")?.value?.trim()) || currentUser;
+      if (!emp) { await crShowModal("alert","ไม่พบข้อมูลพนักงาน","กรุณาเข้าสู่ระบบก่อนใช้งาน"); return; }
+      const reason = await crShowModal("prompt","🗑️ นำสินค้าออก",`รอบผลิต ${isoToDdmmyy(row.MFG)} ของ ${row.ProductName}\nกรุณาระบุเหตุผล:`);
+      if (!reason?.trim()) return;
+      const conf = await crShowModal("confirm","ยืนยันการนำออก",`สินค้า: ${row.ProductName}\nMFG: ${isoToDdmmyy(row.MFG)}\nเหตุผล: ${reason}\n\n⚠️ ยอดคงเหลือจะถูกตั้งเป็น 0`);
+      if (conf) {
+        const res = await crCallServer("clearLotStock",{ barcode:row.Barcode, mfg:row.MFG, reason, employeeName:emp });
+        if (res?.ok) { if(navigator.vibrate) navigator.vibrate([100,50,100]); showToast("✅ นำสินค้าออกเรียบร้อย"); crLoadOverview(); }
+        else { showToast("❌ " + (res?.message || res?.error || "เกิดข้อผิดพลาด"),"err"); }
+      }
+    } catch(e) {
+      showToast("❌ เกิดข้อผิดพลาด: " + e.message, "err");
+      console.error("crAskClearGlobal error:", e);
     }
   }
 

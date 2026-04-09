@@ -180,7 +180,8 @@ function verifyUser(payload) {
 
       _clearRateLimit(username); // reset นับหลังล็อกอินสำเร็จ
       const role = String(data[i][h.indexOf("Role")] || "user");
-      const needsToken = (role === "admin" || role === "approver") && storedPwd;
+      // ออก token ให้ admin/approver ทุกคนที่ผ่าน login (มี password หรือไม่ก็ตาม)
+      const needsToken = (role === "admin" || role === "approver");
       const adminToken = needsToken ? _issueToken(username, role) : null;
 
       return { ok: true, role, adminToken };

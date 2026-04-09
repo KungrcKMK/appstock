@@ -2533,10 +2533,16 @@
     $$cr("crBarcode").value     = res.product.Barcode;
     $$cr("crProductName").value = res.product.ProductName;
     $$cr("crMasterUnit").textContent = res.product.DefaultUnit;
+    // sync dropdown ให้แสดงสินค้าที่ถูกเลือก
+    const dd = $$cr("crProductDropdown");
+    if (dd && res.product.Barcode) dd.value = res.product.Barcode;
     crRenderLotBreakdown(res.balances);
     crSetStatus("crMainStatus", res.balances.length ? "พบข้อมูลสต๊อก กรุณาเลือกรอบผลิตเพื่ออัปเดตยอด" : "ไม่มียอดคงเหลือ กรุณาระบุรายละเอียดเพื่อรับเข้า", "ok");
     const editBtn = document.getElementById("crBtnEditProductInline");
     if (editBtn) editBtn.style.display = "inline-flex";
+    // ถ้าช่อง MFG มี 6 หลักอยู่แล้ว → คำนวณ EXP ทันที
+    const mfgVal = ($$cr("crMfg")?.value || "").trim();
+    if (mfgVal.length === 6) crAutoExp(mfgVal);
   }
 
   // ── Overview ──
@@ -2713,9 +2719,12 @@
     const dd = parseInt(mfgStr.slice(0,2)), mm = parseInt(mfgStr.slice(2,4)), yy = parseInt(mfgStr.slice(4,6)), yyyy = 2000+yy;
     const d = new Date(yyyy, mm-1, dd);
     if (isNaN(d.getTime())) { crSetStatus("crMainStatus","❌ วันที่ไม่ถูกต้อง","err"); $$cr("crExp").value=""; return; }
-    if (!crCurrentProduct) return;
+    if (!crCurrentProduct) {
+      crSetStatus("crMainStatus","⚠️ กรุณาเลือกสินค้าก่อน จึงจะคำนวณ EXP อัตโนมัติได้","warn");
+      return;
+    }
     const sl = parseInt(crCurrentProduct.StandardShelfLifeDays);
-    if (!sl || sl <= 0) { crSetStatus("crMainStatus","⚠️ ไม่พบอายุมาตรฐาน กรุณาระบุ EXP เอง","warn"); return; }
+    if (!sl || sl <= 0) { crSetStatus("crMainStatus","⚠️ สินค้านี้ไม่ได้ตั้งอายุมาตรฐาน กรุณาระบุ EXP เอง","warn"); return; }
     d.setDate(d.getDate() + sl);
     $$cr("crExp").value = String(d.getDate()).padStart(2,"0") + String(d.getMonth()+1).padStart(2,"0") + String(d.getFullYear()).slice(2);
     crSetStatus("crMainStatus",`✅ คำนวณ EXP อัตโนมัติ (+${sl} วัน)`,"ok");

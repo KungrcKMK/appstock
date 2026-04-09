@@ -474,6 +474,7 @@ function doPost(e) {
     if (action === "getDeliveries")   return jsonResponse(getDeliveries(payload));
     if (action === "approveDelivery") return jsonResponse(approveDelivery(payload));
     if (action === "rejectDelivery")  return jsonResponse(rejectDelivery(payload));
+    if (action === "testEmail")       return jsonResponse(crTestEmail(payload));
 
     if (module === "COLDROOM") {
       return jsonResponse(handleColdroom(action, payload));
@@ -845,15 +846,18 @@ function crGetAlertSettings() {
   const map   = {};
   for (let i = 1; i < data.length; i++) { map[data[i][0]] = data[i][1]; }
   return { ok: true, settings: {
-    telegramBotName:          map.telegramBotName          || "",
-    telegramBotToken:         map.telegramBotToken         || "",
-    telegramChatIds:          map.telegramChatIds          || "",
-    enableTelegramStockUpdate: map.enableTelegramStockUpdate || "true"
+    telegramBotName:           map.telegramBotName           || "",
+    telegramBotToken:          map.telegramBotToken          || "",
+    telegramChatIds:           map.telegramChatIds           || "",
+    enableTelegramStockUpdate: map.enableTelegramStockUpdate || "true",
+    enableEmailLowStock:       map.enableEmailLowStock       || "false",
+    emailRecipients:           map.emailRecipients           || ""
   }};
 }
 
 function crSaveAlertSettings(payload) {
-  const keys  = ["telegramBotName","telegramBotToken","telegramChatIds","enableTelegramStockUpdate"];
+  const keys  = ["telegramBotName","telegramBotToken","telegramChatIds","enableTelegramStockUpdate",
+                  "enableEmailLowStock","emailRecipients"];
   const sheet = getSheet("Config");
   const data  = sheet.getDataRange().getValues();
 
@@ -883,6 +887,50 @@ function crSendTelegram(message) {
       });
     });
   } catch (e) { Logger.log("Telegram error: " + e.toString()); }
+}
+
+// ── Email แจ้งเตือนสต๊อกต่ำ ──
+function _sendEmailLowStock(name, sku, qty, unit, minQty, module) {
+  try {
+    const s = crGetAlertSettings().settings;
+    if (s.enableEmailLowStock !== "true") return;
+    const recipients = String(s.emailRecipients || "").split(",").map(e => e.trim()).filter(Boolean);
+    if (!recipients.length) return;
+    const factoryName = { COLDROOM: "❄️ คลังสินค้า SQF", SQF: "🏭 วัตถุดิบ SQF", MLM: "🏭 วัตถุดิบ MLM" }[module] || module;
+    const ts = new Date().toLocaleString("th-TH", { timeZone: "Asia/Bangkok" });
+    const subject = `⚠️ สต๊อกต่ำ — ${name} [${factoryName}]`;
+    const body =
+      "แจ้งเตือน: สต๊อกวัตถุดิบต่ำกว่าขั้นต่ำ\r\n\r\n" +
+      "โรงงาน  : " + factoryName + "\r\n" +
+      "รายการ  : " + name + " (SKU: " + sku + ")\r\n" +
+      "คงเหลือ : " + qty + " " + unit + "\r\n" +
+      "ขั้นต่ำ  : " + minQty + " " + unit + "\r\n" +
+      "เวลา    : " + ts + "\r\n\r\n" +
+      "กรุณาสั่งซื้อหรือเติมสต๊อกโดยด่วน\r\n";
+    recipients.forEach(function(email) {
+      MailApp.sendEmail({ to: email, subject: subject, body: body });
+    });
+  } catch (e) { Logger.log("Email error: " + e.toString()); }
+}
+
+function crTestEmail(payload) {
+  try {
+    const s = crGetAlertSettings().settings;
+    if (s.enableEmailLowStock !== "true") return { ok: false, message: "การแจ้งเตือน Email ยังไม่ได้เปิดใช้งาน" };
+    const recipients = String(s.emailRecipients || "").split(",").map(e => e.trim()).filter(Boolean);
+    if (!recipients.length) return { ok: false, message: "ยังไม่ได้ระบุ Email ผู้รับ" };
+    const ts = new Date().toLocaleString("th-TH", { timeZone: "Asia/Bangkok" });
+    const subject = "✅ ทดสอบการแจ้งเตือน Email — AppStock";
+    const body =
+      "นี่คือการทดสอบระบบแจ้งเตือน Email จาก AppStock\r\n\r\n" +
+      "ระบบจะส่ง Email นี้โดยอัตโนมัติเมื่อสต๊อกวัตถุดิบต่ำกว่าขั้นต่ำ\r\n\r\n" +
+      "เวลาทดสอบ: " + ts + "\r\n" +
+      "ผู้ทดสอบ : " + (payload.username || "-") + "\r\n";
+    recipients.forEach(function(email) {
+      MailApp.sendEmail({ to: email, subject: subject, body: body });
+    });
+    return { ok: true, message: "ส่ง Email ทดสอบสำเร็จ (" + recipients.length + " ผู้รับ)" };
+  } catch (e) { return { ok: false, message: "ส่งไม่สำเร็จ: " + e.toString() }; }
 }
 
 // ============================================================
@@ -1244,11 +1292,16 @@ function rmUpdate(data, module) {
       const newQty = type === "IN" ? cur + q : Math.max(0, cur - q);
       const name   = rows[i][h.indexOf("Name")];
       const unit_  = rows[i][h.indexOf("Unit")] || "";
+      const minQty = Number(rows[i][h.indexOf("Min")] || 0);
       sheet.getRange(i + 1, h.indexOf("Qty") + 1).setValue(newQty);
       const userWithDevice1 = _reqDeviceName ? `${user||"-"} (📱 ${_reqDeviceName})` : (user||"");
       getSheet(module + "_History").appendRow([new Date().toISOString(), name, type === "IN" ? "รับเข้า" : "เบิกออก", q, userWithDevice1]);
       const emoji = type === "IN" ? "📥 รับเข้า" : "📤 เบิกออก";
       sendAlert(`${emoji}\n📦 ${name} (${sku})\n🔢 ${q} ${unit_}  →  คงเหลือ: ${newQty} ${unit_}\n👤 ${user||"-"}${deviceTag()}`, module);
+      // ⚠️ ส่ง Email เตือนสต๊อกต่ำ (เฉพาะ OUT หรือหลังปรับยอด)
+      if (type !== "IN" && minQty > 0 && newQty < minQty) {
+        _sendEmailLowStock(name, sku, newQty, unit_, minQty, module);
+      }
       return { status: "success" };
     }
   }
@@ -1263,13 +1316,19 @@ function rmVerify(data, module) {
 
   for (let i = 1; i < rows.length; i++) {
     if (String(rows[i][0]) === String(sku)) {
-      const name  = rows[i][h.indexOf("Name")];
-      const unit_ = rows[i][h.indexOf("Unit")] || "";
-      sheet.getRange(i + 1, h.indexOf("Qty")          + 1).setValue(Number(qty));
+      const name   = rows[i][h.indexOf("Name")];
+      const unit_  = rows[i][h.indexOf("Unit")] || "";
+      const minQty = Number(rows[i][h.indexOf("Min")] || 0);
+      const newQty = Number(qty);
+      sheet.getRange(i + 1, h.indexOf("Qty")          + 1).setValue(newQty);
       sheet.getRange(i + 1, h.indexOf("LastVerified") + 1).setValue(new Date().toISOString());
       const userWithDevice2 = _reqDeviceName ? `${user||"-"} (📱 ${_reqDeviceName})` : (user||"");
-      getSheet(module + "_History").appendRow([new Date().toISOString(), name, "ตรวจนับ/ปรับยอด", Number(qty), userWithDevice2]);
-      sendAlert(`⚖️ ตรวจนับ/ปรับยอด\n📦 ${name} (${sku})\n🔢 ยอดจริง: ${Number(qty)} ${unit_}\n👤 ${user||"-"}${deviceTag()}`, module);
+      getSheet(module + "_History").appendRow([new Date().toISOString(), name, "ตรวจนับ/ปรับยอด", newQty, userWithDevice2]);
+      sendAlert(`⚖️ ตรวจนับ/ปรับยอด\n📦 ${name} (${sku})\n🔢 ยอดจริง: ${newQty} ${unit_}\n👤 ${user||"-"}${deviceTag()}`, module);
+      // ⚠️ ส่ง Email เตือนสต๊อกต่ำ หลังตรวจนับ
+      if (minQty > 0 && newQty < minQty) {
+        _sendEmailLowStock(name, sku, newQty, unit_, minQty, module);
+      }
       return { status: "success" };
     }
   }

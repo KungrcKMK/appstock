@@ -171,13 +171,13 @@
   <!-- ═══ TOAST ═══ -->
   <div id="toastContainer" class="toast-container"></div>
 
-  <!-- ═══ UNIFIED TELEGRAM SETTINGS ═══ -->
+  <!-- ═══ UNIFIED NOTIFICATION SETTINGS ═══ -->
   <div id="unifiedSettingsModal" class="hidden fixed inset-0 bg-black/80 backdrop-blur-md z-[400] flex items-center justify-center p-4">
-    <div class="bg-white w-full max-w-lg rounded-[3rem] shadow-2xl overflow-hidden border-8 border-slate-800">
+    <div class="bg-white w-full max-w-lg rounded-[3rem] shadow-2xl overflow-hidden border-8 border-slate-800" style="max-height:92vh;display:flex;flex-direction:column;">
       <!-- Header -->
-      <div class="bg-slate-900 p-8 text-white">
+      <div class="bg-slate-900 p-8 text-white flex-shrink-0">
         <div class="flex justify-between items-center mb-2">
-          <h2 class="text-2xl font-black uppercase italic tracking-tighter">⚙️ ตั้งค่า Telegram</h2>
+          <h2 class="text-2xl font-black uppercase italic tracking-tighter">⚙️ ตั้งค่าการแจ้งเตือน</h2>
           <button onclick="closeUnifiedSettings()" class="text-3xl hover:text-red-400 transition-colors">✕</button>
         </div>
         <div class="flex gap-2 flex-wrap mt-3">
@@ -188,46 +188,82 @@
         </div>
       </div>
 
-      <!-- Body -->
-      <div class="p-8 space-y-5">
-        <div class="grid grid-cols-2 gap-4">
-          <div>
-            <label class="text-xs font-black uppercase text-slate-400 mb-1 block">🤖 ชื่อบอท</label>
-            <input type="text" id="uniTgBotName"
-              class="w-full bg-slate-50 border-2 border-slate-200 p-4 rounded-2xl font-bold outline-none focus:border-slate-800 transition-colors"
-              placeholder="@MyStockBot">
+      <!-- Scrollable Body -->
+      <div class="p-8 space-y-5 overflow-y-auto flex-1">
+
+        <!-- ─── TELEGRAM SECTION ─── -->
+        <div class="bg-blue-50 border-2 border-blue-200 rounded-3xl p-5 space-y-4">
+          <h3 class="text-base font-black text-blue-800 uppercase tracking-wide">📲 Telegram</h3>
+
+          <div class="grid grid-cols-2 gap-4">
+            <div>
+              <label class="text-xs font-black uppercase text-slate-400 mb-1 block">🤖 ชื่อบอท</label>
+              <input type="text" id="uniTgBotName"
+                class="w-full bg-white border-2 border-slate-200 p-3 rounded-2xl font-bold outline-none focus:border-blue-500 transition-colors text-sm"
+                placeholder="@MyStockBot">
+            </div>
+            <div>
+              <label class="text-xs font-black uppercase text-slate-400 mb-1 block">สถานะ</label>
+              <select id="uniTgEnable"
+                class="w-full bg-white border-2 border-slate-200 p-3 rounded-2xl font-bold outline-none focus:border-blue-500 transition-colors text-sm">
+                <option value="true">✅ เปิดใช้งาน</option>
+                <option value="false">❌ ปิดใช้งาน</option>
+              </select>
+            </div>
           </div>
+
           <div>
-            <label class="text-xs font-black uppercase text-slate-400 mb-1 block">📲 สถานะแจ้งเตือน</label>
-            <select id="uniTgEnable"
-              class="w-full bg-slate-50 border-2 border-slate-200 p-4 rounded-2xl font-bold outline-none focus:border-slate-800 transition-colors">
-              <option value="true">✅ เปิดใช้งาน</option>
+            <label class="text-xs font-black uppercase text-slate-400 mb-1 block">🔑 Bot Token</label>
+            <input type="password" id="uniTgToken"
+              class="w-full bg-white border-2 border-slate-200 p-3 rounded-2xl font-bold outline-none focus:border-blue-500 transition-colors text-sm"
+              placeholder="1234567890:ABC-xxxxxxxxxxxxx">
+          </div>
+
+          <div>
+            <label class="text-xs font-black uppercase text-slate-400 mb-1 block">💬 Chat ID
+              <span class="text-slate-300 font-normal normal-case">(คั่นหลาย ID ด้วยคอมม่า)</span>
+            </label>
+            <textarea id="uniTgChatIds" rows="2"
+              class="w-full bg-white border-2 border-slate-200 p-3 rounded-2xl font-bold outline-none focus:border-blue-500 transition-colors resize-none text-sm"
+              placeholder="-100xxxxxxxxx, -100yyyyyyyyy"></textarea>
+          </div>
+
+          <button onclick="testTelegram()"
+            class="w-full bg-blue-100 text-blue-800 py-3 rounded-2xl font-black hover:bg-blue-200 transition-all uppercase text-sm">
+            📨 ทดสอบ Telegram
+          </button>
+        </div>
+
+        <!-- ─── EMAIL SECTION ─── -->
+        <div class="bg-amber-50 border-2 border-amber-200 rounded-3xl p-5 space-y-4">
+          <div class="flex items-center justify-between">
+            <h3 class="text-base font-black text-amber-800 uppercase tracking-wide">📧 Email แจ้งเตือนสต๊อกต่ำ</h3>
+            <span class="bg-amber-200 text-amber-800 text-xs font-black px-2 py-1 rounded-full">เฉพาะ qty &lt; min</span>
+          </div>
+
+          <div>
+            <label class="text-xs font-black uppercase text-slate-400 mb-1 block">สถานะ Email</label>
+            <select id="uniEmailEnable"
+              class="w-full bg-white border-2 border-slate-200 p-3 rounded-2xl font-bold outline-none focus:border-amber-500 transition-colors text-sm">
               <option value="false">❌ ปิดใช้งาน</option>
+              <option value="true">✅ เปิดใช้งาน</option>
             </select>
           </div>
-        </div>
 
-        <div>
-          <label class="text-xs font-black uppercase text-slate-400 mb-1 block">🔑 Bot Token</label>
-          <input type="password" id="uniTgToken"
-            class="w-full bg-slate-50 border-2 border-slate-200 p-4 rounded-2xl font-bold outline-none focus:border-slate-800 transition-colors"
-            placeholder="1234567890:ABC-xxxxxxxxxxxxx">
-        </div>
+          <div>
+            <label class="text-xs font-black uppercase text-slate-400 mb-1 block">📮 Email ผู้รับ
+              <span class="text-slate-300 font-normal normal-case">(คั่นหลาย Email ด้วยคอมม่า)</span>
+            </label>
+            <textarea id="uniEmailRecipients" rows="2"
+              class="w-full bg-white border-2 border-slate-200 p-3 rounded-2xl font-bold outline-none focus:border-amber-500 transition-colors resize-none text-sm"
+              placeholder="manager@company.com, admin@company.com"></textarea>
+          </div>
 
-        <div>
-          <label class="text-xs font-black uppercase text-slate-400 mb-1 block">💬 Chat ID
-            <span class="text-slate-300 font-normal normal-case">(คั่นหลาย ID ด้วยคอมม่า)</span>
-          </label>
-          <textarea id="uniTgChatIds" rows="3"
-            class="w-full bg-slate-50 border-2 border-slate-200 p-4 rounded-2xl font-bold outline-none focus:border-slate-800 transition-colors resize-none"
-            placeholder="-100xxxxxxxxx, -100yyyyyyyyy"></textarea>
+          <button onclick="testEmail()"
+            class="w-full bg-amber-100 text-amber-800 py-3 rounded-2xl font-black hover:bg-amber-200 transition-all uppercase text-sm">
+            📧 ทดสอบส่ง Email
+          </button>
         </div>
-
-        <!-- Test Button -->
-        <button onclick="testTelegram()"
-          class="w-full bg-slate-100 text-slate-700 py-4 rounded-2xl font-black hover:bg-slate-200 transition-all uppercase text-sm">
-          📨 ทดสอบส่งข้อความ
-        </button>
 
         <!-- Save Button -->
         <button onclick="saveUnifiedSettings()" id="uniBtnSave"
@@ -4201,10 +4237,12 @@
       hideLoading();
       if (r.ok) {
         const s = r.settings;
-        document.getElementById("uniTgBotName").value = s.telegramBotName           || "";
-        document.getElementById("uniTgToken").value   = s.telegramBotToken           || "";
-        document.getElementById("uniTgChatIds").value = s.telegramChatIds            || "";
-        document.getElementById("uniTgEnable").value  = s.enableTelegramStockUpdate  || "true";
+        document.getElementById("uniTgBotName").value        = s.telegramBotName           || "";
+        document.getElementById("uniTgToken").value          = s.telegramBotToken           || "";
+        document.getElementById("uniTgChatIds").value        = s.telegramChatIds            || "";
+        document.getElementById("uniTgEnable").value         = s.enableTelegramStockUpdate  || "true";
+        document.getElementById("uniEmailEnable").value      = s.enableEmailLowStock        || "false";
+        document.getElementById("uniEmailRecipients").value  = s.emailRecipients            || "";
       }
     } catch(e) { hideLoading(); showToast("โหลดการตั้งค่าไม่สำเร็จ","error"); return; }
     document.getElementById("unifiedSettingsModal").classList.remove("hidden");
@@ -4219,7 +4257,9 @@
       telegramBotName:           document.getElementById("uniTgBotName").value.trim(),
       telegramBotToken:          document.getElementById("uniTgToken").value.trim(),
       telegramChatIds:           document.getElementById("uniTgChatIds").value.trim(),
-      enableTelegramStockUpdate: document.getElementById("uniTgEnable").value
+      enableTelegramStockUpdate: document.getElementById("uniTgEnable").value,
+      enableEmailLowStock:       document.getElementById("uniEmailEnable").value,
+      emailRecipients:           document.getElementById("uniEmailRecipients").value.trim()
     };
     const btn = document.getElementById("uniBtnSave");
     btn.disabled = true; btn.textContent = "กำลังบันทึก...";
@@ -4264,6 +4304,23 @@
       hideLoading();
       showToast(`ส่งสำเร็จ ${ok}/${chatIds.length} Chat ID`, ok>0?"success":"error");
     } catch(e) { hideLoading(); showToast("ส่งไม่สำเร็จ: "+e.message,"error"); }
+  }
+
+  async function testEmail() {
+    const enable = document.getElementById("uniEmailEnable").value;
+    const emails = document.getElementById("uniEmailRecipients").value.trim();
+    if (enable !== "true") { showToast("กรุณาเปิดใช้งาน Email ก่อนทดสอบ","warn"); return; }
+    if (!emails) { showToast("กรุณาระบุ Email ผู้รับก่อน","warn"); return; }
+    showLoading("กำลังส่ง Email ทดสอบ...");
+    try {
+      const r = await (await fetch(GAS_URL, {
+        method: "POST",
+        body: JSON.stringify({ module: "COLDROOM", action: "testEmail", payload: { username: currentUser } })
+      })).json();
+      hideLoading();
+      if (r.ok) showToast(r.message || "ส่ง Email ทดสอบสำเร็จ ✅","success");
+      else showToast(r.message || "ส่ง Email ไม่สำเร็จ","error");
+    } catch(e) { hideLoading(); showToast("เกิดข้อผิดพลาด: "+e.message,"error"); }
   }
 
   // ── Raw Settings (legacy — ใช้ unified แทน) ──────

@@ -3,7 +3,7 @@
 // Cache static assets สำหรับใช้งาน offline บางส่วน
 // =====================================================
 
-const CACHE_NAME = "appstock-v8";
+const CACHE_NAME = "appstock-v9";
 
 // ไฟล์ที่ cache ไว้ใช้ offline
 const STATIC_ASSETS = [

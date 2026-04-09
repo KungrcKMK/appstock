@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>AppStock v2.7 — ระบบจัดการสต๊อก SQF & MLM</title>
+  <title>AppStock v2.8 — ระบบจัดการสต๊อก SQF & MLM</title>
 
   <!-- PWA -->
   <link rel="manifest" href="manifest.json">
@@ -1593,6 +1593,10 @@
     _loginNeedsPassword = false;
     // ล้าง localStorage ทุก key
     ["unified_stock_user","unified_stock_role","appstock_device_name"].forEach(k => localStorage.removeItem(k));
+    // ล้าง sensitive input fields
+    ["passwordInput","usernameInput","uniTgToken"].forEach(id => {
+      const el = document.getElementById(id); if (el) el.value = "";
+    });
     // หมายเหตุ: เก็บ appstock_device_id ไว้ เพื่อ device fingerprint ยังคงเดิม
     location.reload();
   }
@@ -2694,7 +2698,7 @@
       <div style="display:flex;justify-content:space-between;align-items:center;margin-top:4px;">
         <span>🔸 MFG ${isoToDdmmyy(r.MFG)} (EXP ${isoToDdmmyy(r.EXP)})</span>
         <div><span style="margin-right:8px;"><b>${r.Qty}</b> ${unit}</span>
-          <button class="cr-btn btn-primary" style="padding:4px 8px;font-size:10px;border-radius:4px;" onclick="crSelectLot('${r.MFG}','${r.EXP}',${r.Qty})">เลือก</button>
+          <button class="cr-btn btn-primary" style="padding:4px 8px;font-size:10px;border-radius:4px;" onclick="crSelectLot('${escapeJs(String(r.MFG||""))}','${escapeJs(String(r.EXP||""))}',${Number(r.Qty)||0})">เลือก</button>
         </div>
       </div>`).join("");
     $$cr("crLotBreakdown").innerHTML = html;
@@ -2995,12 +2999,10 @@
     try {
     const barcode = document.getElementById("crEditProductSelect").value;
     const fields = document.getElementById("crEditProductFields");
-    console.log("[EditProduct] selected barcode=", barcode, "cache size=", crEditProductCache.length);
     if (!barcode) { fields.style.display = "none"; return; }
     const prod = crEditProductCache.find(p => String(p.Barcode) === String(barcode));
-    console.log("[EditProduct] found prod=", prod);
     if (!prod) {
-      crSetStatus("crEditProductStatus","❌ ไม่พบข้อมูลสินค้า (cache:"+crEditProductCache.length+") กรุณากด 'โหลดรายการ' ใหม่","err");
+      crSetStatus("crEditProductStatus","❌ ไม่พบข้อมูลสินค้า กรุณากด 'โหลดรายการ' ใหม่","err");
       return;
     }
 
@@ -3023,7 +3025,6 @@
     fields.style.display = "block";
     crClearStatus("crEditProductStatus");
     } catch(e) {
-      console.error("[EditProduct] ERROR:", e);
       crSetStatus("crEditProductStatus","❌ เกิดข้อผิดพลาด: " + e.message,"err");
     }
   }

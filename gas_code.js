@@ -67,13 +67,54 @@ function jsonResponse(data) {
 }
 
 // ============================================================
+// SECURITY HELPERS
+// ============================================================
+
+// ── Password Hashing (SHA-256) ──
+function _hashPwd(pwd) {
+  if (!pwd) return "";
+  var raw = Utilities.computeDigest(Utilities.DigestAlgorithm.SHA_256, String(pwd), Utilities.Charset.UTF_8);
+  return raw.map(function(b){ return ("0" + (b < 0 ? b + 256 : b).toString(16)).slice(-2); }).join("");
+}
+
+// ── ตรวจว่าเป็น hash (64 hex chars) หรือ plaintext ──
+function _isHashed(s) { return /^[0-9a-f]{64}$/.test(s); }
+
+// ── Rate Limiting (max 5 ครั้ง / 15 นาที ต่อ username) ──
+function _isRateLimited(username) {
+  var key = "rl_" + username.toLowerCase();
+  var val = CacheService.getScriptCache().get(key);
+  var count = val ? Number(val) : 0;
+  if (count >= 5) return true;
+  CacheService.getScriptCache().put(key, String(count + 1), 900);
+  return false;
+}
+function _clearRateLimit(username) {
+  CacheService.getScriptCache().remove("rl_" + username.toLowerCase());
+}
+
+// ── Sanitize device name (ป้องกัน Telegram injection) ──
+function _sanitizeDeviceName(name) {
+  return String(name || "ไม่ระบุ").slice(0, 50).replace(/[*_[\]()~`\\]/g, "");
+}
+
+// ── Validate quantity (ป้องกัน negative / overflow) ──
+function _validateQty(v, allowDecimal) {
+  var n = Number(v);
+  if (isNaN(n) || !isFinite(n)) return 0;
+  if (n < 0) return 0;
+  if (n > 9999999) return 9999999;
+  return allowDecimal ? Math.round(n * 1000) / 1000 : Math.floor(n);
+}
+
+// ============================================================
 // SYSTEM — verifyUser
 // ============================================================
 
-// ── Generalized Token (CacheService — TTL 8 ชั่วโมง) ──
+// ── Generalized Token (CacheService — TTL 30 นาที) ──
 function _issueToken(username, role) {
   var token = Utilities.getUuid();
-  CacheService.getScriptCache().put("tk_" + token, JSON.stringify({ u: username.toLowerCase(), r: role }), 28800);
+  CacheService.getScriptCache().put("tk_" + token, JSON.stringify({ u: username.toLowerCase(), r: role }), 1800);
   return token;
 }
 function _issueAdminToken(username) { return _issueToken(username, "admin"); }
@@ -102,6 +143,11 @@ function verifyUser(payload) {
   const password = String(payload.password || "").trim();
   if (!username) return { ok: false, message: "กรุณาระบุชื่อผู้ใช้" };
 
+  // Rate limiting — ป้องกัน brute force
+  if (_isRateLimited(username)) {
+    return { ok: false, message: "⛔ พยายามเข้าสู่ระบบหลายครั้งเกินไป กรุณารอ 15 นาที" };
+  }
+
   const sheet = getSheet("AppUsers");
   ensureColumns(sheet, ["Password"]);
   const data  = sheet.getDataRange().getValues();
@@ -119,16 +165,22 @@ function verifyUser(payload) {
         return { ok: false, message: "บัญชีนี้ถูกระงับ กรุณาติดต่อ Admin" };
       }
 
-      // ตรวจสอบรหัสผ่าน (ถ้าตั้งไว้)
+      // ตรวจสอบรหัสผ่าน (รองรับทั้ง hash และ plaintext เพื่อ migration)
       const storedPwd = passwordCol >= 0 ? String(data[i][passwordCol] || "").trim() : "";
       if (storedPwd) {
         if (!password) return { ok: false, requirePassword: true, message: "กรุณาระบุรหัสผ่าน" };
-        if (password !== storedPwd) return { ok: false, message: "รหัสผ่านไม่ถูกต้อง ❌" };
+        const inputHash = _hashPwd(password);
+        const pwdOk = _isHashed(storedPwd) ? (inputHash === storedPwd) : (password === storedPwd);
+        if (!pwdOk) return { ok: false, message: "รหัสผ่านไม่ถูกต้อง ❌" };
+        // Auto-upgrade plaintext → hash เมื่อล็อกอินสำเร็จ
+        if (!_isHashed(storedPwd)) {
+          sheet.getRange(i+1, passwordCol+1).setValue(inputHash);
+        }
       }
 
+      _clearRateLimit(username); // reset นับหลังล็อกอินสำเร็จ
       const role = String(data[i][h.indexOf("Role")] || "user");
-      // ออก admin token เฉพาะ admin ที่ผ่านรหัสผ่าน
-      const needsToken = (role === "admin" || role === "approver") && storedPwd && password === storedPwd;
+      const needsToken = (role === "admin" || role === "approver") && storedPwd;
       const adminToken = needsToken ? _issueToken(username, role) : null;
 
       return { ok: true, role, adminToken };
@@ -404,8 +456,8 @@ function doPost(e) {
     const payload = data.payload || data;
 
     // บันทึก device info สำหรับใช้ใน Telegram/log
-    _reqDeviceId   = data.deviceId   || "";
-    _reqDeviceName = data.deviceName || "ไม่ระบุ";
+    _reqDeviceId   = String(data.deviceId   || "").slice(0, 50);
+    _reqDeviceName = _sanitizeDeviceName(data.deviceName);
 
     // SYSTEM actions (ไม่ขึ้นกับ module)
     if (action === "verifyUser")      return jsonResponse(verifyUser(payload));
@@ -500,7 +552,10 @@ function crGetProductAndBalances(payload) {
 }
 
 function crSaveOrUpdateCount(payload) {
-  const { barcode, employeeName, mfg, exp, newQty, note } = payload;
+  const { barcode, employeeName, mfg, exp, note } = payload;
+  const newQty = _validateQty(payload.newQty, true); // ป้องกัน negative/overflow
+  if (!barcode) return { ok: false, message: "ไม่ระบุบาร์โค้ด" };
+  if (!mfg || !exp) return { ok: false, message: "กรุณาระบุวันผลิตและวันหมดอายุ" };
   const mfgIso = ddmmyyToIso(mfg);
   const expIso = ddmmyyToIso(exp);
 
@@ -718,8 +773,15 @@ function crClearLotStock(payload) {
 // ══════════════════════════════════════════
 
 function crSaveWorkOrder(payload) {
-  const { orderId, date, items, note, createdBy } = payload;
-  if (!orderId || !items || !items.length) return { ok: false, message: "ข้อมูลไม่ครบ" };
+  const { orderId, date, note, createdBy } = payload;
+  const items = payload.items;
+  if (!orderId || !Array.isArray(items) || !items.length) return { ok: false, message: "ข้อมูลไม่ครบ" };
+  // Validate items
+  for (var k = 0; k < items.length; k++) {
+    var it = items[k];
+    if (!it.barcode || !it.name) return { ok: false, message: "รายการสินค้าไม่ครบ (ข้อ " + (k+1) + ")" };
+    if (_validateQty(it.qty, true) <= 0) return { ok: false, message: "จำนวนต้องมากกว่า 0 (ข้อ " + (k+1) + ")" };
+  }
   const sheet    = getSheet("ColdRoom_WorkOrders");
   ensureColumns(sheet, ["Status"]);
   const itemsJson = JSON.stringify(items);
@@ -982,7 +1044,8 @@ function _addDeliveryToStock(item, submittedBy, approvedBy) {
   var barcode = String(item.barcode || "").trim();
   var mfg = String(item.mfg || "").trim();
   var exp = String(item.exp || "").trim();
-  var qty = Number(item.qty || 0);
+  var qty = _validateQty(item.qty, true);
+  if (!barcode || qty <= 0) return;
   var note = "ส่งยอดโดย: " + submittedBy + " | อนุมัติ: " + approvedBy;
   var mfgIso = mfg.includes("-") ? mfg : ddmmyyToIso(mfg);
   var expIso = exp.includes("-") ? exp : ddmmyyToIso(exp);
@@ -1046,7 +1109,10 @@ function setUserRole(payload) {
   for (var i = 1; i < data.length; i++) {
     if (String(data[i][h.indexOf("Username")]).trim().toLowerCase() === username.toLowerCase()) {
       sheet.getRange(i+1, h.indexOf("Role")+1).setValue(newRole);
-      if (newPassword !== undefined) sheet.getRange(i+1, h.indexOf("Password")+1).setValue(newPassword);
+      if (newPassword !== undefined) {
+        var hashed = newPassword ? _hashPwd(newPassword) : "";
+        sheet.getRange(i+1, h.indexOf("Password")+1).setValue(hashed);
+      }
       return { ok: true };
     }
   }

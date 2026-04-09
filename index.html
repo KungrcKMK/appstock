@@ -640,7 +640,7 @@
               <thead>
                 <tr style="background:#1e293b;color:#fff;font-size:11px;font-weight:700;text-transform:uppercase;">
                   <th style="padding:10px 12px;text-align:left;width:36px;">#</th>
-                  <th style="padding:10px 12px;text-align:left;">สินค้า</th>
+                  <th style="padding:10px 12px;text-align:left;width:220px;max-width:220px;">สินค้า</th>
                   <th style="padding:10px 12px;text-align:center;width:110px;">MFG (6 หลัก)</th>
                   <th style="padding:10px 12px;text-align:center;width:90px;">EXP</th>
                   <th style="padding:10px 12px;text-align:left;width:200px;">ชุด × UPS = จำนวน</th>
@@ -1121,6 +1121,11 @@
   function showLoginView() {
     document.getElementById("registerPanel").style.display = "none";
     document.getElementById("loginPanel").style.display    = "";
+    // reset two-step login state
+    _loginNeedsPassword = false;
+    document.getElementById("passwordSection").style.display = "none";
+    document.getElementById("usernameInput").readOnly = false;
+    _setLoginBtn("เข้าสู่ระบบ 🚀", false);
   }
 
   async function submitRegister() {
@@ -1171,7 +1176,7 @@
         method: "POST",
         headers: { "Content-Type": "text/plain;charset=utf-8" },
         body: JSON.stringify({ module: "SYSTEM", action: "getPendingUsers",
-          payload: { requester: currentUser } })
+          payload: { adminToken: _adminToken } })
       }).then(r => r.json());
 
       if (!res.ok) { listEl.innerHTML = `<p class="text-red-500 text-center text-sm font-bold py-8">❌ ${res.message}</p>`; return; }
@@ -1212,7 +1217,7 @@
         method: "POST",
         headers: { "Content-Type": "text/plain;charset=utf-8" },
         body: JSON.stringify({ module: "SYSTEM", action: "approveUser",
-          payload: { requester: currentUser, username } })
+          payload: { adminToken: _adminToken, username } })
       }).then(r => r.json());
       if (res.ok) { showToast("✅ อนุมัติ " + username + " แล้ว"); loadPendingUsers(); }
       else alert("❌ " + res.message);
@@ -1226,7 +1231,7 @@
         method: "POST",
         headers: { "Content-Type": "text/plain;charset=utf-8" },
         body: JSON.stringify({ module: "SYSTEM", action: "rejectUser",
-          payload: { requester: currentUser, username } })
+          payload: { adminToken: _adminToken, username } })
       }).then(r => r.json());
       if (res.ok) { showToast("🚫 ปฏิเสธ " + username + " แล้ว"); loadPendingUsers(); }
       else alert("❌ " + res.message);
@@ -1292,7 +1297,7 @@
         method: "POST",
         headers: { "Content-Type": "text/plain;charset=utf-8" },
         body: JSON.stringify({ module: "SYSTEM", action: "getActivityLog",
-          payload: { requester: currentUser } })
+          payload: { adminToken: _adminToken } })
       }).then(r => r.json());
       if (!res.ok) { listEl.innerHTML = `<p class="text-red-500 text-center text-sm font-bold py-8">❌ ${res.message}</p>`; return; }
       _activityData = res.list || [];
@@ -1306,6 +1311,7 @@
   // LOGIN / LOGOUT
   // ─────────────────────────────────────────────
   let _loginNeedsPassword = false;
+  let _adminToken = null; // อยู่ใน memory เท่านั้น — reload หาย (by design)
 
   function _setLoginBtn(text, disabled) {
     const btn = document.getElementById("loginBtn");
@@ -1341,7 +1347,7 @@
         alert("❌ " + (res.message || "ไม่พบชื่อผู้ใช้ กรุณาสมัครใช้งานก่อน"));
         return;
       }
-      _loginSuccess(user, res.role);
+      _loginSuccess(user, res.role, res.adminToken);
     } catch(e) {
       alert("เกิดข้อผิดพลาด: " + e.message);
     } finally {
@@ -1367,15 +1373,16 @@
         _setLoginBtn("เข้าสู่ระบบ 🔑", false);
         return;
       }
-      _loginSuccess(user, res.role);
+      _loginSuccess(user, res.role, res.adminToken);
     } catch(e) {
       alert("เกิดข้อผิดพลาด: " + e.message);
       _setLoginBtn("เข้าสู่ระบบ 🔑", false);
     }
   }
 
-  function _loginSuccess(user, role) {
+  function _loginSuccess(user, role, adminToken) {
     _loginNeedsPassword = false;
+    _adminToken = adminToken || null; // เก็บ token ใน memory
     document.getElementById("passwordSection").style.display = "none";
     document.getElementById("usernameInput").readOnly = false;
     _setLoginBtn("เข้าสู่ระบบ 🚀", false);
@@ -1386,8 +1393,18 @@
   }
 
   function logout() {
-    localStorage.removeItem("unified_stock_user");
-    localStorage.removeItem("unified_stock_role");
+    // Revoke admin token ฝั่ง server
+    if (_adminToken) {
+      fetch(GAS_URL, { method: "POST", headers: { "Content-Type": "text/plain;charset=utf-8" },
+        body: JSON.stringify({ module: "SYSTEM", action: "logoutAdmin", payload: { adminToken: _adminToken } })
+      }).catch(() => {});
+    }
+    // ล้าง memory
+    _adminToken = null;
+    _loginNeedsPassword = false;
+    // ล้าง localStorage ทุก key
+    ["unified_stock_user","unified_stock_role","appstock_device_name"].forEach(k => localStorage.removeItem(k));
+    // หมายเหตุ: เก็บ appstock_device_id ไว้ เพื่อ device fingerprint ยังคงเดิม
     location.reload();
   }
 
@@ -1559,9 +1576,9 @@
     row.style.cssText = "border-bottom:1px solid #e2e8f0;";
     row.innerHTML = `
       <td style="padding:8px;text-align:center;font-size:12px;color:#94a3b8;font-weight:700;">${idx+1}</td>
-      <td style="padding:8px;">
+      <td style="padding:8px;width:220px;max-width:220px;">
         <select id="crWoSel-${idx}" onchange="crWoOnSelectProduct(${idx})"
-          style="width:100%;padding:8px 10px;border:2px solid #e2e8f0;border-radius:8px;font-family:inherit;font-size:13px;font-weight:700;outline:none;background:#fff;">
+          style="width:100%;padding:8px 10px;border:2px solid #e2e8f0;border-radius:8px;font-family:inherit;font-size:13px;font-weight:700;outline:none;background:#fff;overflow:hidden;text-overflow:ellipsis;">
           <option value="">— เลือกสินค้า —</option>
           ${options}
         </select>
@@ -2077,13 +2094,13 @@
     $$cr("crSumExpired").textContent  = res.summary.expiredLots;
 
     $$cr("crTotalBody").innerHTML = res.totalByProduct.map(x =>
-      `<tr><td data-label="ชื่อสินค้า">${x.ProductName}</td><td data-label="ยอดรวม"><b>${x.TotalQty}</b></td><td data-label="หน่วย">${x.Unit}</td><td data-label="รอบผลิต">${x.LotCount}</td></tr>`).join("");
+      `<tr><td data-label="ชื่อสินค้า">${escapeHtml(x.ProductName)}</td><td data-label="ยอดรวม"><b>${x.TotalQty}</b></td><td data-label="หน่วย">${escapeHtml(x.Unit)}</td><td data-label="รอบผลิต">${x.LotCount}</td></tr>`).join("");
 
     $$cr("crExpiringBody").innerHTML = res.expiringLots.map(x =>
-      `<tr><td data-label="ชื่อ">${x.ProductName}</td><td data-label="MFG"><b>${isoToDdmmyy(x.MFG)}</b></td><td data-label="EXP">${isoToDdmmyy(x.EXP)}</td><td data-label="เหลือ(วัน)" style="color:var(--warn)">${x.ExpireDays}</td><td data-label="จำนวน"><b>${x.Qty}</b></td></tr>`).join("");
+      `<tr><td data-label="ชื่อ">${escapeHtml(x.ProductName)}</td><td data-label="MFG"><b>${isoToDdmmyy(x.MFG)}</b></td><td data-label="EXP">${isoToDdmmyy(x.EXP)}</td><td data-label="เหลือ(วัน)" style="color:var(--warn)">${x.ExpireDays}</td><td data-label="จำนวน"><b>${x.Qty}</b></td></tr>`).join("");
 
     $$cr("crExpiredBody").innerHTML = res.expiredLots.map(x =>
-      `<tr><td data-label="ชื่อ">${x.ProductName}</td><td data-label="MFG"><b>${isoToDdmmyy(x.MFG)}</b></td><td data-label="EXP">${isoToDdmmyy(x.EXP)}</td><td data-label="เลย(วัน)" style="color:var(--danger)">${Math.abs(x.ExpireDays)} วัน</td><td data-label="จำนวน"><b>${x.Qty}</b></td></tr>`).join("");
+      `<tr><td data-label="ชื่อ">${escapeHtml(x.ProductName)}</td><td data-label="MFG"><b>${isoToDdmmyy(x.MFG)}</b></td><td data-label="EXP">${isoToDdmmyy(x.EXP)}</td><td data-label="เลย(วัน)" style="color:var(--danger)">${Math.abs(x.ExpireDays)} วัน</td><td data-label="จำนวน"><b>${x.Qty}</b></td></tr>`).join("");
 
     const b = $$cr("crBalanceBody");
     crSelectedRows.clear();

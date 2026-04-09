@@ -294,7 +294,7 @@
       </div>
       <button id="adminNavBtn" onclick="openAdminPanel()" class="nav-btn" style="display:none;background:rgba(234,179,8,0.2);color:#fbbf24;">👑 Admin<span id="adminNavBadge" class="nav-badge" style="display:none;background:#f59e0b;"></span></button>
       <button id="activityNavBtn" onclick="openActivityPanel()" class="nav-btn" style="display:none;background:rgba(16,185,129,0.2);color:#34d399;">📈 ความเคลื่อนไหว</button>
-      <button onclick="openUnifiedSettings()" class="nav-btn" style="background:rgba(255,255,255,0.1);color:#fff;">⚙️ Telegram</button>
+      <button id="telegramNavBtn" onclick="openUnifiedSettings()" class="nav-btn" style="display:none;background:rgba(255,255,255,0.1);color:#fff;">⚙️ Telegram</button>
       <button onclick="logout()" class="text-red-400 font-black text-xs hover:text-red-300 shrink-0 nav-btn">🔴 ออก</button>
     </div>
 
@@ -1336,6 +1336,8 @@
       if (adminBtn) adminBtn.style.display = isAdmin ? "" : "none";
       const actBtn = document.getElementById("activityNavBtn");
       if (actBtn) actBtn.style.display = isAdmin ? "" : "none";
+      const tgBtn = document.getElementById("telegramNavBtn");
+      if (tgBtn) tgBtn.style.display = isAdmin ? "" : "none";
       switchModule("COLDROOM");
     }
   }

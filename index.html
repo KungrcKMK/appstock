@@ -274,6 +274,50 @@
     </div>
   </div>
 
+  <!-- ═══ MODE PICKER ═══ -->
+  <div id="modePicker" style="display:none" class="fixed inset-0 bg-slate-900/98 z-[210] flex flex-col items-center justify-center p-6 backdrop-blur-md">
+    <div class="w-full max-w-sm">
+      <div class="text-center mb-8">
+        <div class="text-5xl mb-3">👋</div>
+        <h2 class="text-2xl font-black text-white">สวัสดี, <span id="modePickerUser" class="text-indigo-400"></span></h2>
+        <p class="text-slate-400 text-sm mt-2">เลือกประเภทอุปกรณ์ที่ใช้งาน</p>
+      </div>
+
+      <!-- Mobile button -->
+      <div id="modeRecommendEl" style="display:none" class="text-center mb-1">
+        <span id="modeRecommend" class="bg-indigo-600 text-white text-xs font-black px-3 py-1 rounded-full">แนะนำสำหรับอุปกรณ์นี้</span>
+      </div>
+      <button id="modeBtnMobile" onclick="selectMode('mobile', document.getElementById('modeRemember').checked)"
+        class="w-full bg-slate-800 border-2 border-slate-700 text-white rounded-3xl p-6 text-left mb-3 active:brightness-75 transition-all">
+        <div class="flex items-center gap-4">
+          <div class="text-5xl">📱</div>
+          <div>
+            <div class="text-xl font-black">โหมดมือถือ</div>
+            <div class="text-slate-400 text-sm mt-0.5">UI เรียบง่าย · สแกนบาร์โค้ด · เบิก/รับเร็ว</div>
+          </div>
+        </div>
+      </button>
+
+      <!-- Desktop button -->
+      <button id="modeBtnDesktop" onclick="selectMode('desktop', document.getElementById('modeRemember').checked)"
+        class="w-full bg-slate-800 border-2 border-slate-700 text-white rounded-3xl p-6 text-left mb-5 active:brightness-75 transition-all">
+        <div class="flex items-center gap-4">
+          <div class="text-5xl">💻</div>
+          <div>
+            <div class="text-xl font-black">โหมดคอมพิวเตอร์</div>
+            <div class="text-slate-400 text-sm mt-0.5">ฟีเจอร์ครบ · จัดการระบบ · รายงาน</div>
+          </div>
+        </div>
+      </button>
+
+      <!-- Remember -->
+      <label class="flex items-center justify-center gap-2 cursor-pointer text-slate-400 text-sm font-bold">
+        <input type="checkbox" id="modeRemember" class="w-4 h-4 accent-indigo-600">
+        จดจำการเลือกนี้ (สามารถเปลี่ยนได้ใน ⚙️ ตั้งค่า)
+      </label>
+    </div>
+  </div>
+
   <!-- ═══ LOGIN ═══ -->
   <div id="loginOverlay" class="fixed inset-0 bg-slate-900/95 z-[200] flex items-center justify-center p-6 text-center backdrop-blur-md">
     <div class="bg-white p-10 rounded-[4rem] shadow-2xl w-full max-w-sm border-t-[12px] border-indigo-600">
@@ -341,6 +385,7 @@
       <button id="execDashNavBtn" onclick="openExecDashboard()" class="nav-btn" style="display:none;background:rgba(99,102,241,0.25);color:#a5b4fc;">📊 ภาพรวมผู้บริหาร</button>
       <button id="activityNavBtn" onclick="openActivityPanel()" class="nav-btn" style="display:none;background:rgba(16,185,129,0.2);color:#34d399;">📈 ความเคลื่อนไหว</button>
       <button id="telegramNavBtn" onclick="openUnifiedSettings()" class="nav-btn" style="display:none;background:rgba(255,255,255,0.1);color:#fff;">⚙️ Telegram</button>
+      <button onclick="switchToMobile()" class="nav-btn" style="background:rgba(99,102,241,0.15);color:#a5b4fc;" title="เปลี่ยนเป็นโหมดมือถือ">📱</button>
       <button onclick="forceRefresh()" title="อัปเดตแอปล่าสุด (ล้าง cache)" class="nav-btn" style="color:rgba(255,255,255,.4);font-size:15px;padding:6px 10px;">🔄</button>
       <button onclick="logout()" class="text-red-400 font-black text-xs hover:text-red-300 shrink-0 nav-btn">🔴 ออก</button>
     </div>
@@ -1611,14 +1656,49 @@
 
   function _loginSuccess(user, role, adminToken) {
     _loginNeedsPassword = false;
-    _adminToken = adminToken || null; // เก็บ token ใน memory
+    _adminToken = adminToken || null;
     document.getElementById("passwordSection").style.display = "none";
     document.getElementById("usernameInput").readOnly = false;
     _setLoginBtn("เข้าสู่ระบบ 🚀", false);
     localStorage.setItem("unified_stock_user", user);
     localStorage.setItem("unified_stock_role", role || "user");
     loadDevice();
-    checkAuth();
+    // ถ้าเคยเลือก desktop ไว้ → ข้ามหน้าเลือก
+    const pref = localStorage.getItem("appstock_mode_pref");
+    if (pref === "desktop") { checkAuth(); return; }
+    if (pref === "mobile")  { window.location.href = "mobile.html"; return; }
+    // ครั้งแรก → แสดงหน้าเลือกอุปกรณ์
+    showModePicker(user);
+  }
+
+  function showModePicker(user) {
+    const isMobile = /Mobi|Android|iPhone|iPad/i.test(navigator.userAgent) || window.innerWidth < 768;
+    document.getElementById("modePicker").style.display = "flex";
+    document.getElementById("modePickerUser").textContent = user || currentUser ||
+      localStorage.getItem("unified_stock_user") || "";
+    // Highlight recommended option
+    document.getElementById("modeBtnMobile").classList.toggle("ring-4", isMobile);
+    document.getElementById("modeBtnMobile").classList.toggle("ring-indigo-400", isMobile);
+    document.getElementById("modeBtnDesktop").classList.toggle("ring-4", !isMobile);
+    document.getElementById("modeBtnDesktop").classList.toggle("ring-indigo-400", !isMobile);
+    if (isMobile) {
+      document.getElementById("modeRecommend").textContent = "แนะนำสำหรับอุปกรณ์นี้";
+      document.getElementById("modeRecommendEl").style.display = "block";
+    } else {
+      document.getElementById("modeRecommendEl").style.display = "none";
+    }
+  }
+
+  function selectMode(mode, remember) {
+    if (remember) localStorage.setItem("appstock_mode_pref", mode);
+    document.getElementById("modePicker").style.display = "none";
+    if (mode === "mobile") { window.location.href = "mobile.html"; }
+    else                   { checkAuth(); }
+  }
+
+  function switchToMobile() {
+    localStorage.setItem("appstock_mode_pref", "mobile");
+    window.location.href = "mobile.html";
   }
 
   function logout() {
@@ -1830,6 +1910,10 @@
     loadDevice();
     const saved = localStorage.getItem("unified_stock_user");
     if (saved) {
+      // ถ้าไม่มี mode preference → แสดง mode picker ก่อน (เฉพาะกรณี reload หน้า)
+      const pref = localStorage.getItem("appstock_mode_pref");
+      if (!pref) { showModePicker(saved); return; }
+      if (pref === "mobile") { window.location.href = "mobile.html"; return; }
       currentUser = saved;
       document.getElementById("loginOverlay").style.display = "none";
       document.getElementById("mainNav").style.display      = "block";

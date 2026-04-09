@@ -79,7 +79,16 @@
     <div class="text-cyan-200 text-sm mt-1">SQF · ดูสต๊อกเท่านั้น</div>
   </button>
 
-  <button onclick="doLogout()" class="text-slate-600 text-sm font-black mt-2 py-2">ออกจากระบบ</button>
+  <div class="flex gap-3 mt-2">
+    <button onclick="switchToDesktop()"
+      class="flex-1 bg-slate-800 text-slate-300 py-3 rounded-2xl text-sm font-black active:brightness-75">
+      💻 โหมดคอมพิวเตอร์
+    </button>
+    <button onclick="doLogout()"
+      class="flex-1 bg-slate-800 text-red-400 py-3 rounded-2xl text-sm font-black active:brightness-75">
+      ออกจากระบบ
+    </button>
+  </div>
 </div>
 
 <!-- ══════════════════════════════════════════
@@ -273,7 +282,9 @@ const GAS_URL = "https://script.google.com/macros/s/AKfycbx72vWVvUgaOgZEnzAc8lta
 // ─────────────────────────────────────────────
 // STATE
 // ─────────────────────────────────────────────
-let user = null, role = null;
+// Auto-login จาก localStorage (shared กับ index.html)
+let user = localStorage.getItem("unified_stock_user") || null;
+let role = localStorage.getItem("unified_stock_role") || null;
 let mod  = null;           // "SQF" | "MLM" | "COLDROOM"
 let data = [];             // full material list
 let filt = [];             // filtered list
@@ -337,6 +348,19 @@ function daysColor(d) {
 // ─────────────────────────────────────────────
 // LOGIN
 // ─────────────────────────────────────────────
+// ─────────────────────────────────────────────
+// INIT — auto-login if session exists
+// ─────────────────────────────────────────────
+window.addEventListener("DOMContentLoaded", () => {
+  if (user) {
+    $("mGreet").textContent = user;
+    $("sModule").style.display = "";
+    showScreens("sModule");
+  } else {
+    showScreens("sLogin");
+  }
+});
+
 $("lPass").addEventListener("keydown", e => { if (e.key === "Enter") doLogin(); });
 $("lUser").addEventListener("keydown", e => { if (e.key === "Enter") $("lPass").focus(); });
 
@@ -353,10 +377,13 @@ async function doLogin() {
     setLoading(false); $("lBtn").textContent = "เข้าสู่ระบบ →"; $("lBtn").disabled = false;
     if (r.ok) {
       user = u; role = r.role;
+      // บันทึก session เดียวกับ index.html
+      localStorage.setItem("unified_stock_user", u);
+      localStorage.setItem("unified_stock_role",  r.role || "user");
+      localStorage.setItem("appstock_mode_pref",  "mobile");
       $("mGreet").textContent = u;
       $("lPass").value = "";
       hide("lErr");
-      // restore flex-col for sModule
       $("sModule").style.display = "";
       showScreens("sModule");
     } else {
@@ -369,9 +396,15 @@ async function doLogin() {
 }
 
 function doLogout() {
+  // ล้าง session และ mode pref → กลับ index.html
+  ["unified_stock_user","unified_stock_role","appstock_mode_pref"].forEach(k => localStorage.removeItem(k));
   user = null; role = null; mod = null; data = [];
-  $("lUser").value = ""; $("lPass").value = ""; hide("lErr");
-  showScreens("sLogin");
+  window.location.href = "index.html";
+}
+
+function switchToDesktop() {
+  localStorage.setItem("appstock_mode_pref", "desktop");
+  window.location.href = "index.html";
 }
 
 // ─────────────────────────────────────────────

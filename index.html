@@ -636,16 +636,16 @@
           <!-- ตารางรายการ SKU -->
           <div style="margin:16px 0 8px;font-size:12px;font-weight:700;color:#64748b;text-transform:uppercase;">📦 รายการสินค้าที่สั่งผลิต</div>
           <div class="table-wrap" style="overflow-x:auto;">
-            <table id="crWoItemsTable" style="width:100%;border-collapse:collapse;min-width:700px;">
+            <table id="crWoItemsTable" style="width:100%;border-collapse:collapse;min-width:800px;table-layout:fixed;">
               <thead>
                 <tr style="background:#1e293b;color:#fff;font-size:11px;font-weight:700;text-transform:uppercase;">
-                  <th style="padding:10px 12px;text-align:left;width:36px;">#</th>
-                  <th style="padding:10px 12px;text-align:left;width:220px;max-width:220px;">สินค้า</th>
-                  <th style="padding:10px 12px;text-align:center;width:110px;">MFG (6 หลัก)</th>
-                  <th style="padding:10px 12px;text-align:center;width:90px;">EXP</th>
-                  <th style="padding:10px 12px;text-align:left;width:200px;">ชุด × UPS = จำนวน</th>
-                  <th style="padding:10px 12px;text-align:left;width:70px;">หน่วย</th>
-                  <th style="padding:10px 12px;text-align:center;width:40px;">ลบ</th>
+                  <th style="padding:10px 8px;text-align:left;width:36px;">#</th>
+                  <th style="padding:10px 8px;text-align:left;width:26%;">สินค้า</th>
+                  <th style="padding:10px 8px;text-align:center;width:110px;">MFG (6 หลัก)</th>
+                  <th style="padding:10px 8px;text-align:center;width:88px;">EXP</th>
+                  <th style="padding:10px 8px;text-align:left;">ชุด × UPS = จำนวน</th>
+                  <th style="padding:10px 8px;text-align:left;width:68px;">หน่วย</th>
+                  <th style="padding:10px 8px;text-align:center;width:40px;">ลบ</th>
                 </tr>
               </thead>
               <tbody id="crWoItemsBody"></tbody>
@@ -1576,9 +1576,9 @@
     row.style.cssText = "border-bottom:1px solid #e2e8f0;";
     row.innerHTML = `
       <td style="padding:8px;text-align:center;font-size:12px;color:#94a3b8;font-weight:700;">${idx+1}</td>
-      <td style="padding:8px;width:220px;max-width:220px;">
+      <td style="padding:6px 8px;overflow:hidden;">
         <select id="crWoSel-${idx}" onchange="crWoOnSelectProduct(${idx})"
-          style="width:100%;padding:8px 10px;border:2px solid #e2e8f0;border-radius:8px;font-family:inherit;font-size:13px;font-weight:700;outline:none;background:#fff;overflow:hidden;text-overflow:ellipsis;">
+          style="width:100%;padding:7px 8px;border:2px solid #e2e8f0;border-radius:8px;font-family:inherit;font-size:13px;font-weight:700;outline:none;background:#fff;overflow:hidden;text-overflow:ellipsis;">
           <option value="">— เลือกสินค้า —</option>
           ${options}
         </select>
@@ -1592,12 +1592,12 @@
         <input type="text" id="crWoExp-${idx}" readonly
           style="width:100%;padding:8px;border:2px solid #f0fdf4;border-radius:8px;text-align:center;font-size:13px;font-weight:900;color:#059669;background:#f0fdf4;font-family:monospace;">
       </td>
-      <td id="crWoQtyTd-${idx}" style="padding:8px;min-width:200px;">
+      <td id="crWoQtyTd-${idx}" style="padding:6px 8px;">
         <div style="color:#94a3b8;font-size:12px;text-align:center;">← เลือกสินค้าก่อน</div>
       </td>
-      <td style="padding:8px;">
+      <td style="padding:6px 8px;">
         <input type="text" id="crWoUnit-${idx}" readonly
-          style="width:60px;padding:8px;border:2px solid #f1f5f9;border-radius:8px;font-size:13px;background:#f8fafc;color:#64748b;font-weight:700;">
+          style="width:100%;padding:7px;border:2px solid #f1f5f9;border-radius:8px;font-size:13px;background:#f8fafc;color:#64748b;font-weight:700;">
       </td>
       <td style="padding:8px;text-align:center;">
         <button onclick="crWoRemoveRow(${idx})" style="background:#fee2e2;border:none;color:#dc2626;border-radius:6px;padding:6px 10px;cursor:pointer;font-size:14px;font-weight:900;">✕</button>
@@ -1637,13 +1637,13 @@
           <div style="display:flex;gap:4px;align-items:center;">
             <input type="number" id="crWoSets-${idx}" min="0" step="0.5" placeholder="${label}"
               oninput="crWoCalcQtyFromSets(${idx})"
-              style="width:65px;padding:8px;border:2px solid #c7d2fe;border-radius:8px;text-align:right;font-size:14px;font-weight:900;outline:none;background:#eff6ff;">
+              style="width:60px;padding:6px 8px;border:2px solid #c7d2fe;border-radius:8px;text-align:right;font-size:14px;font-weight:900;outline:none;background:#eff6ff;">
             <span style="font-size:11px;color:#6366f1;font-weight:700;white-space:nowrap;">${label}</span>
             <span style="font-size:12px;color:#94a3b8;">×</span>
-            <span style="font-size:12px;color:#4338ca;font-weight:800;">${ups}</span>
+            <span style="font-size:12px;color:#4338ca;font-weight:800;white-space:nowrap;">${ups}</span>
             <span style="font-size:11px;color:#64748b;">=</span>
             <input type="number" id="crWoQty-${idx}" min="0" placeholder="จำนวน"
-              style="width:70px;padding:8px;border:2px solid #bbf7d0;border-radius:8px;text-align:right;font-size:14px;font-weight:900;outline:none;background:#f0fdf4;color:#15803d;">
+              style="width:90px;padding:6px 8px;border:2px solid #bbf7d0;border-radius:8px;text-align:right;font-size:14px;font-weight:900;outline:none;background:#f0fdf4;color:#15803d;">
           </div>
           <div style="font-size:10px;color:#64748b;padding:0 2px;">1 ${label} = ${ups} ${unit}</div>
         </div>`;

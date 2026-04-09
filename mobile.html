@@ -259,32 +259,67 @@
       </button>
     </div>
 
-    <!-- Cold Room lot list + count section -->
+    <!-- Cold Room lot list + update section -->
     <div id="aCrSection" class="hidden">
       <p class="text-slate-500 text-xs font-black uppercase tracking-widest px-5 pt-3">รายการ Lot</p>
-      <div id="aCrLots" class="px-4 pt-2 space-y-2 pb-2"></div>
+      <div id="aCrLots" class="px-4 pt-2 space-y-2"></div>
 
-      <!-- Qty input (แสดงเมื่อเลือก lot) -->
+      <!-- ปุ่มรับเข้า Lot ใหม่ -->
+      <div class="px-4 pt-2 pb-2">
+        <button onclick="crOpenNewLot()"
+          class="btn-tap w-full bg-emerald-700/80 text-white py-3 rounded-2xl font-black text-sm">
+          📥 รับเข้า Lot ใหม่
+        </button>
+      </div>
+
+      <!-- Qty input (เบิก / นับ) -->
       <div id="aCrCountRow" class="hidden px-4 pt-1 pb-2">
         <div class="bg-slate-900 rounded-2xl p-3">
           <p id="aCrLotLabel" class="text-cyan-400 text-xs text-center font-black mb-2"></p>
           <div class="flex items-center gap-2">
             <button onclick="adjCrQty(-1)"
-              class="btn-tap w-12 h-12 text-3xl text-slate-400 font-black flex items-center justify-center">−</button>
+              class="btn-tap flex-shrink-0 w-12 h-12 text-3xl text-slate-400 font-black flex items-center justify-center">−</button>
             <input id="aCrQtyIn" type="text" inputmode="numeric" pattern="[0-9]*" value="0"
               class="flex-1 min-w-0 w-0 bg-transparent text-white text-4xl font-black text-center outline-none py-1">
             <button onclick="adjCrQty(1)"
-              class="btn-tap w-12 h-12 text-3xl text-slate-400 font-black flex items-center justify-center">+</button>
+              class="btn-tap flex-shrink-0 w-12 h-12 text-3xl text-slate-400 font-black flex items-center justify-center">+</button>
           </div>
         </div>
       </div>
 
-      <!-- Confirm count -->
+      <!-- New Lot form (รับเข้า) -->
+      <div id="aCrInRow" class="hidden px-4 pt-1 pb-2">
+        <div class="bg-slate-900 rounded-2xl p-4 space-y-3">
+          <p class="text-emerald-400 text-xs font-black text-center">📥 รับเข้า Lot ใหม่</p>
+          <div class="grid grid-cols-2 gap-2">
+            <div>
+              <label class="text-slate-500 text-xs font-black block mb-1">📅 MFG</label>
+              <input id="aCrMfg" type="date"
+                class="w-full bg-slate-800 text-white text-sm font-bold p-2 rounded-xl border border-slate-700 outline-none focus:border-emerald-500">
+            </div>
+            <div>
+              <label class="text-slate-500 text-xs font-black block mb-1">📅 EXP</label>
+              <input id="aCrExp" type="date"
+                class="w-full bg-slate-800 text-white text-sm font-bold p-2 rounded-xl border border-slate-700 outline-none focus:border-emerald-500">
+            </div>
+          </div>
+          <div class="flex items-center gap-2 bg-slate-800 rounded-2xl px-2 py-1">
+            <button onclick="adjCrQty(-1)"
+              class="btn-tap flex-shrink-0 w-11 h-11 text-3xl text-slate-400 font-black flex items-center justify-center">−</button>
+            <input id="aCrQtyIn2" type="text" inputmode="numeric" pattern="[0-9]*" value="1"
+              class="flex-1 min-w-0 w-0 bg-transparent text-white text-3xl font-black text-center outline-none py-1">
+            <button onclick="adjCrQty(1)"
+              class="btn-tap flex-shrink-0 w-11 h-11 text-3xl text-slate-400 font-black flex items-center justify-center">+</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Confirm -->
       <div id="aCrConfirmRow" class="hidden px-4 pb-5 pt-2 sticky bottom-0 bg-slate-800"
            style="padding-bottom:max(20px,env(safe-area-inset-bottom))">
         <button onclick="confirmCrCount()" id="aCrConfirm"
           class="btn-tap w-full py-4 rounded-2xl font-black text-lg bg-cyan-600 text-white shadow-lg">
-          📊 บันทึกการนับสต๊อก
+          📊 บันทึก
         </button>
       </div>
     </div>
@@ -599,8 +634,8 @@ function pickItem(sku) {
     // Cold Room — lot list + count
     hide("aTypeRow"); hide("aInputRow"); hide("aConfirmRow");
     show("aCrSection");
-    hide("aCrCountRow"); hide("aCrConfirmRow");
-    crLotSel = null;
+    hide("aCrCountRow"); hide("aCrInRow"); hide("aCrConfirmRow");
+    crLotSel = null; crAction = null;
     renderCrLots();
   } else {
     show("aTypeRow"); show("aInputRow"); show("aConfirmRow");
@@ -617,7 +652,8 @@ function pickItem(sku) {
 // ─────────────────────────────────────────────
 // COLD ROOM — LOT COUNT
 // ─────────────────────────────────────────────
-let crLotSel = null;  // { mfg, exp, qty, unit, expDays, expStatus }
+let crLotSel = null;   // lot ที่เลือก
+let crAction  = null;  // "count" | "out" | "in"
 
 function fmtDate(iso) {
   if (!iso) return "-";
@@ -630,9 +666,13 @@ function isoToDdmmyy(iso) {
   return d + m + (y ? y.slice(2) : "");
 }
 function expColor(status) {
-  if (status === "หมดอายุ")    return "#ef4444";
+  if (status === "หมดอายุ")     return "#ef4444";
   if (status === "ใกล้หมดอายุ") return "#f97316";
   return "#22c55e";
+}
+
+function _hideCrInputs() {
+  hide("aCrCountRow"); hide("aCrInRow"); hide("aCrConfirmRow");
 }
 
 function renderCrLots() {
@@ -649,67 +689,121 @@ function renderCrLots() {
       : `<span style="color:${col}">เหลือ ${lot.expDays} วัน</span>`;
     return `
     <div class="bg-slate-900 rounded-2xl p-3">
-      <div class="flex items-center gap-3">
-        <div class="flex-1 text-xs">
-          <div class="text-slate-400">MFG: <span class="text-white font-black">${fmtDate(lot.mfg)}</span>
-            &nbsp;EXP: <span class="text-white font-black">${fmtDate(lot.exp)}</span></div>
+      <div class="flex items-start gap-2">
+        <div class="flex-1 min-w-0 text-xs">
+          <div class="text-slate-400">MFG <span class="text-white font-black">${fmtDate(lot.mfg)}</span>
+            · EXP <span class="text-white font-black">${fmtDate(lot.exp)}</span></div>
           <div class="mt-0.5 font-bold">${daysLabel}</div>
+          <div class="text-cyan-400 font-black text-base mt-1">${lot.qty} <span class="text-slate-500 text-xs font-normal">${lot.unit}</span></div>
         </div>
-        <div class="text-right mr-2">
-          <div class="text-xl font-black text-cyan-400">${lot.qty}</div>
-          <div class="text-slate-500 text-xs">${lot.unit}</div>
+        <div class="flex flex-col gap-1.5 flex-shrink-0">
+          <button onclick="crSelectLot(${i},'out')"
+            class="btn-tap bg-orange-600 text-white px-3 py-1.5 rounded-xl font-black text-xs">📤 เบิก</button>
+          <button onclick="crSelectLot(${i},'count')"
+            class="btn-tap bg-cyan-700 text-white px-3 py-1.5 rounded-xl font-black text-xs">📊 นับ</button>
         </div>
-        <button onclick="crCountLot(${i})"
-          class="btn-tap bg-cyan-700 text-white px-3 py-2 rounded-xl font-black text-xs flex-shrink-0">
-          📊 นับ
-        </button>
       </div>
     </div>`;
   }).join("");
 }
 
-function crCountLot(i) {
+function crSelectLot(i, action) {
   crLotSel = sel.lots[i];
+  crAction  = action;
+  _hideCrInputs();
+  hide("aCrInRow");
+
+  const isOut   = action === "out";
+  const labelColor = isOut ? "text-orange-400" : "text-cyan-400";
+  const prefix  = isOut ? "📤 เบิกจาก" : "📊 นับสต๊อก";
+
+  $("aCrLotLabel").className = `${labelColor} text-xs text-center font-black mb-2`;
   $("aCrLotLabel").textContent =
-    `MFG ${fmtDate(crLotSel.mfg)}  →  EXP ${fmtDate(crLotSel.exp)}  ·  ปัจจุบัน ${crLotSel.qty} ${crLotSel.unit}`;
-  $("aCrQtyIn").value = crLotSel.qty;
+    `${prefix} · MFG ${fmtDate(crLotSel.mfg)} · ปัจจุบัน ${crLotSel.qty} ${crLotSel.unit}`;
+  $("aCrQtyIn").value = isOut ? 1 : crLotSel.qty;
+
+  const confirmBtn = $("aCrConfirm");
+  confirmBtn.className = `btn-tap w-full py-4 rounded-2xl font-black text-lg text-white shadow-lg ${isOut ? "bg-orange-600" : "bg-cyan-600"}`;
+  confirmBtn.textContent = isOut ? "📤 ยืนยันการเบิก" : "📊 บันทึกการนับ";
+
   show("aCrCountRow"); show("aCrConfirmRow");
   $("aCrQtyIn").focus();
 }
 
+function crOpenNewLot() {
+  crLotSel = null;
+  crAction  = "in";
+  _hideCrInputs();
+
+  // Default MFG = today, EXP = today+7
+  const today = new Date();
+  const toISO = d => d.toISOString().split("T")[0];
+  $("aCrMfg").value = toISO(today);
+  const exp7 = new Date(today); exp7.setDate(exp7.getDate() + 7);
+  $("aCrExp").value = toISO(exp7);
+  $("aCrQtyIn2").value = 1;
+
+  const confirmBtn = $("aCrConfirm");
+  confirmBtn.className = "btn-tap w-full py-4 rounded-2xl font-black text-lg bg-emerald-600 text-white shadow-lg";
+  confirmBtn.textContent = "📥 บันทึกรับเข้า";
+
+  show("aCrInRow"); show("aCrConfirmRow");
+}
+
 function adjCrQty(d) {
-  const el = $("aCrQtyIn");
-  el.value = Math.max(0, (Number(el.value) || 0) + d);
+  const el = crAction === "in" ? $("aCrQtyIn2") : $("aCrQtyIn");
+  const min = crAction === "count" ? 0 : 1;
+  el.value = Math.max(min, (Number(el.value) || min) + d);
 }
 
 async function confirmCrCount() {
-  if (!sel || !crLotSel) return;
-  const newQty = Number($("aCrQtyIn").value);
-  if (isNaN(newQty) || newQty < 0) { toast("ระบุจำนวนให้ถูกต้อง", "warn"); return; }
+  if (!sel) return;
   const btn = $("aCrConfirm");
+
+  let payload, loadMsg, successMsg;
+
+  if (crAction === "in") {
+    const mfgIso = $("aCrMfg").value;
+    const expIso = $("aCrExp").value;
+    const qty    = Number($("aCrQtyIn2").value) || 0;
+    if (!mfgIso || !expIso) { toast("กรุณาระบุ MFG และ EXP", "warn"); return; }
+    if (qty <= 0)            { toast("ระบุจำนวนมากกว่า 0", "warn"); return; }
+    if (mfgIso > expIso)     { toast("MFG ต้องไม่เกิน EXP", "warn"); return; }
+    payload = { barcode: sel.sku, employeeName: user,
+                mfg: isoToDdmmyy(mfgIso), exp: isoToDdmmyy(expIso),
+                newQty: qty, note: "รับเข้า (Mobile)" };
+    loadMsg   = "กำลังบันทึกรับเข้า...";
+    successMsg = `📥 รับเข้า ${qty} ${sel.unit || ""} · MFG ${fmtDate(mfgIso)}`;
+
+  } else {
+    if (!crLotSel) return;
+    let newQty = Number($("aCrQtyIn").value);
+    if (isNaN(newQty) || newQty < 0) { toast("ระบุจำนวนให้ถูกต้อง", "warn"); return; }
+    if (crAction === "out") {
+      if (newQty > crLotSel.qty) { toast(`⚠️ เบิกเกินยอด Lot (มี ${crLotSel.qty})`, "err"); return; }
+      newQty = crLotSel.qty - newQty;  // เบิก = ลดจากยอดเดิม
+    }
+    payload = { barcode: sel.sku, employeeName: user,
+                mfg: isoToDdmmyy(crLotSel.mfg), exp: isoToDdmmyy(crLotSel.exp),
+                newQty, note: crAction === "out" ? "เบิกออก (Mobile)" : "นับสต๊อก (Mobile)" };
+    loadMsg   = crAction === "out" ? "กำลังบันทึกการเบิก..." : "กำลังบันทึกการนับ...";
+    successMsg = crAction === "out"
+      ? `📤 เบิก · ${sel.name} Lot ${fmtDate(crLotSel.mfg)} → เหลือ ${newQty} ${crLotSel.unit}`
+      : `📊 นับแล้ว · ${sel.name} Lot ${fmtDate(crLotSel.mfg)} = ${newQty} ${crLotSel.unit}`;
+  }
+
   btn.disabled = true; btn.textContent = "กำลังบันทึก...";
-  setLoading(true, "กำลังบันทึกการนับ...");
+  setLoading(true, loadMsg);
   try {
-    const r = await gasPost({
-      module: "COLDROOM",
-      action: "saveOrUpdateCount",
-      payload: {
-        barcode:      sel.sku,
-        employeeName: user,
-        mfg:          isoToDdmmyy(crLotSel.mfg),
-        exp:          isoToDdmmyy(crLotSel.exp),
-        newQty:       newQty,
-        note:         "นับสต๊อก (Mobile)"
-      }
-    });
-    setLoading(false); btn.disabled = false; btn.textContent = "📊 บันทึกการนับสต๊อก";
+    const r = await gasPost({ module: "COLDROOM", action: "saveOrUpdateCount", payload });
+    setLoading(false); btn.disabled = false;
     if (r.ok) {
-      toast(`✅ บันทึกแล้ว · ${sel.name} Lot ${fmtDate(crLotSel.mfg)} = ${newQty} ${crLotSel.unit}`);
+      toast(`✅ ${successMsg}`);
       closeAction();
       await loadData();
     } else { toast(r.message || "บันทึกไม่สำเร็จ", "err"); }
   } catch(e) {
-    setLoading(false); btn.disabled = false; btn.textContent = "📊 บันทึกการนับสต๊อก";
+    setLoading(false); btn.disabled = false;
     toast("เกิดข้อผิดพลาด: " + e.message, "err");
   }
 }

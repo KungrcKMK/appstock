@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>AppStock v2.6 — ระบบจัดการสต๊อก SQF & MLM</title>
+  <title>AppStock v2.7 — ระบบจัดการสต๊อก SQF & MLM</title>
 
   <!-- PWA -->
   <link rel="manifest" href="manifest.json">
@@ -302,6 +302,7 @@
         <button id="navBtn-MLM"      class="nav-btn" onclick="switchModule('MLM')">🏭 วัตถุดิบ MLM<span id="badge-MLM" class="nav-badge" style="display:none"></span></button>
       </div>
       <button id="adminNavBtn" onclick="openAdminPanel()" class="nav-btn" style="display:none;background:rgba(234,179,8,0.2);color:#fbbf24;">👑 Admin<span id="adminNavBadge" class="nav-badge" style="display:none;background:#f59e0b;"></span></button>
+      <button id="execDashNavBtn" onclick="openExecDashboard()" class="nav-btn" style="display:none;background:rgba(99,102,241,0.25);color:#a5b4fc;">📊 ภาพรวมผู้บริหาร</button>
       <button id="activityNavBtn" onclick="openActivityPanel()" class="nav-btn" style="display:none;background:rgba(16,185,129,0.2);color:#34d399;">📈 ความเคลื่อนไหว</button>
       <button id="telegramNavBtn" onclick="openUnifiedSettings()" class="nav-btn" style="display:none;background:rgba(255,255,255,0.1);color:#fff;">⚙️ Telegram</button>
       <button onclick="forceRefresh()" title="อัปเดตแอปล่าสุด (ล้าง cache)" class="nav-btn" style="color:rgba(255,255,255,.4);font-size:15px;padding:6px 10px;">🔄</button>
@@ -350,6 +351,29 @@
         <button onclick="loadUsers()" class="mt-4 w-full bg-slate-100 text-slate-700 py-3 rounded-2xl font-black text-sm hover:bg-slate-200 transition-all">
           🔄 โหลดรายชื่อผู้ใช้
         </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ EXECUTIVE DASHBOARD ═══ -->
+  <div id="execDashModal" class="hidden fixed inset-0 bg-black/80 backdrop-blur-md z-[500] flex items-center justify-center p-4">
+    <div class="bg-white w-full max-w-4xl rounded-[3rem] shadow-2xl overflow-hidden border-8 border-indigo-500" style="max-height:92vh;display:flex;flex-direction:column;">
+      <!-- Header -->
+      <div class="bg-gradient-to-r from-indigo-700 to-slate-900 p-6 text-white flex justify-between items-center shrink-0">
+        <div>
+          <h2 class="text-xl font-black uppercase tracking-tight">📊 ภาพรวมผู้บริหาร</h2>
+          <p class="text-indigo-300 text-xs font-bold mt-1" id="execDashTimestamp">—</p>
+        </div>
+        <div class="flex items-center gap-3">
+          <button onclick="loadExecDashboard()" class="text-xs font-black text-indigo-300 hover:text-white transition-colors px-3 py-2 rounded-xl bg-white/10">🔄 รีเฟรช</button>
+          <button onclick="closeExecDashboard()" class="text-3xl hover:text-red-400 transition-colors">✕</button>
+        </div>
+      </div>
+      <!-- Body -->
+      <div class="overflow-y-auto flex-1 p-6 bg-slate-50">
+        <div id="execDashContent">
+          <p class="text-slate-400 text-center text-sm font-bold py-16">⏳ กำลังโหลดข้อมูล...</p>
+        </div>
       </div>
     </div>
   </div>
@@ -1592,6 +1616,172 @@
     location.reload(true);
   }
 
+  // ══════════════════════════════════════════════════
+  // 📊 EXECUTIVE DASHBOARD
+  // ══════════════════════════════════════════════════
+  function openExecDashboard() {
+    document.getElementById("execDashModal").classList.remove("hidden");
+    loadExecDashboard();
+  }
+  function closeExecDashboard() {
+    document.getElementById("execDashModal").classList.add("hidden");
+  }
+
+  async function loadExecDashboard() {
+    const el = document.getElementById("execDashContent");
+    el.innerHTML = '<p class="text-slate-400 text-center text-sm font-bold py-16">⏳ กำลังโหลดข้อมูล...</p>';
+    document.getElementById("execDashTimestamp").textContent = "กำลังดึงข้อมูล...";
+
+    // ดึงข้อมูลพร้อมกัน 3 endpoint
+    const [stockRes, woRes, dlvRes] = await Promise.all([
+      crCallServer("getStartupOverview"),
+      crCallServer("getWorkOrders", {}),
+      crCallServer("getDeliveries", { username: currentUser, adminToken: _adminToken, filterStatus: "" })
+    ]);
+
+    // ── Stock KPIs ──
+    const stock   = stockRes.ok ? stockRes.summary : {};
+    const lots    = stockRes.ok ? (stockRes.allLots || []) : [];
+    const topProds= stockRes.ok ? (stockRes.totalByProduct || []) : [];
+    const expiring= stockRes.ok ? (stockRes.expiringLots || []) : [];
+    const expired = stockRes.ok ? (stockRes.expiredLots || []) : [];
+
+    // ── Work Order KPIs ──
+    const wos = woRes.ok ? (woRes.orders || []) : [];
+    const woStatusCount = {};
+    wos.forEach(w => { const s = w.Status||"รอดำเนินการ"; woStatusCount[s] = (woStatusCount[s]||0)+1; });
+
+    // ── Delivery KPIs ──
+    const dlvs = dlvRes.ok ? (dlvRes.deliveries || []) : [];
+    const dlvPending  = dlvs.filter(d => d.Status === "รออนุมัติ").length;
+    const dlvApproved = dlvs.filter(d => d.Status === "อนุมัติแล้ว").length;
+    const dlvRejected = dlvs.filter(d => d.Status === "ส่งกลับแก้ไข").length;
+
+    const now = new Date().toLocaleString("th-TH", { dateStyle:"medium", timeStyle:"short" });
+    document.getElementById("execDashTimestamp").textContent = "อัปเดตล่าสุด: " + now;
+
+    el.innerHTML = `
+      <!-- ══ KPI GRID ══ -->
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px;margin-bottom:20px;">
+        ${kpiCard("📦","ชนิดสินค้า", stock.totalProducts||0, "#6366f1")}
+        ${kpiCard("🗃️","รอบผลิตทั้งหมด", stock.totalLots||0, "#0ea5e9")}
+        ${kpiCard("⚠️","ใกล้หมดอายุ", stock.expiringLots||0, "#f59e0b")}
+        ${kpiCard("❌","หมดอายุแล้ว", stock.expiredLots||0, "#dc2626")}
+        ${kpiCard("📋","ใบสั่งผลิตรอดำเนินการ", woStatusCount["รอดำเนินการ"]||0, "#8b5cf6")}
+        ${kpiCard("✅","อนุมัติแล้ว (ส่งยอด)", dlvApproved, "#059669")}
+        ${kpiCard("🕐","รออนุมัติ (ส่งยอด)", dlvPending, dlvPending>0?"#dc2626":"#94a3b8")}
+        ${kpiCard("↩️","ส่งกลับแก้ไข", dlvRejected, dlvRejected>0?"#ea580c":"#94a3b8")}
+      </div>
+
+      <!-- ══ สองคอลัมน์ ══ -->
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;">
+
+        <!-- Work Order Status -->
+        <div style="background:#fff;border-radius:20px;padding:20px;box-shadow:0 2px 8px rgba(0,0,0,.06);border:1px solid #e2e8f0;">
+          <h3 style="margin:0 0 14px;font-size:15px;font-weight:800;color:#0f172a;">📋 ใบสั่งผลิต (${wos.length} ใบ)</h3>
+          ${wos.length === 0
+            ? '<p style="color:#94a3b8;font-size:13px;text-align:center;padding:16px 0;">ยังไม่มีใบสั่งผลิต</p>'
+            : Object.entries(woStatusCount).map(([s,c]) =>
+                `<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px dashed #f1f5f9;">
+                  <span style="font-size:13px;font-weight:700;color:#334155;">${escapeHtml(s)}</span>
+                  <span style="background:${woStatusColor(s)};color:#fff;border-radius:999px;padding:2px 12px;font-size:12px;font-weight:800;">${c}</span>
+                </div>`).join("")
+          }
+        </div>
+
+        <!-- Stock ยอดรวมตามสินค้า Top 8 -->
+        <div style="background:#fff;border-radius:20px;padding:20px;box-shadow:0 2px 8px rgba(0,0,0,.06);border:1px solid #e2e8f0;">
+          <h3 style="margin:0 0 14px;font-size:15px;font-weight:800;color:#0f172a;">🏆 ยอดคงเหลือสูงสุด</h3>
+          ${topProds.length === 0
+            ? '<p style="color:#94a3b8;font-size:13px;text-align:center;padding:16px 0;">ยังไม่มีข้อมูลสต๊อก</p>'
+            : topProds.slice(0,8).map(p =>
+                `<div style="display:flex;justify-content:space-between;align-items:center;padding:7px 0;border-bottom:1px dashed #f1f5f9;">
+                  <span style="font-size:12px;font-weight:700;color:#334155;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding-right:8px;">${escapeHtml(p.ProductName)}</span>
+                  <span style="font-size:13px;font-weight:900;color:#6366f1;white-space:nowrap;">${p.TotalQty} <span style="font-size:11px;font-weight:600;color:#94a3b8;">${escapeHtml(p.Unit||"")}</span></span>
+                </div>`).join("")
+          }
+        </div>
+      </div>
+
+      <!-- ══ ใกล้หมดอายุ ══ -->
+      ${expiring.length > 0 ? `
+      <div style="background:#fffbeb;border:2px solid #fcd34d;border-radius:20px;padding:20px;margin-bottom:16px;">
+        <h3 style="margin:0 0 12px;font-size:15px;font-weight:800;color:#92400e;">⚠️ สินค้าใกล้หมดอายุ (${expiring.length} รายการ)</h3>
+        <div style="overflow-x:auto;">
+          <table style="width:100%;border-collapse:collapse;font-size:13px;">
+            <thead><tr style="color:#92400e;font-size:11px;font-weight:800;text-transform:uppercase;">
+              <th style="text-align:left;padding:6px 8px;">ชื่อสินค้า</th>
+              <th style="text-align:center;padding:6px 8px;">EXP</th>
+              <th style="text-align:center;padding:6px 8px;">เหลือ(วัน)</th>
+              <th style="text-align:right;padding:6px 8px;">จำนวน</th>
+            </tr></thead>
+            <tbody>${expiring.slice(0,10).map(x => `
+              <tr style="border-top:1px dashed #fde68a;">
+                <td style="padding:6px 8px;font-weight:700;">${escapeHtml(x.ProductName)}</td>
+                <td style="padding:6px 8px;text-align:center;color:#b45309;">${isoToDdmmyy(x.EXP)}</td>
+                <td style="padding:6px 8px;text-align:center;"><span style="background:#f59e0b;color:#fff;border-radius:999px;padding:2px 8px;font-weight:800;">${x.ExpireDays} วัน</span></td>
+                <td style="padding:6px 8px;text-align:right;font-weight:700;">${x.Qty}</td>
+              </tr>`).join("")}
+            </tbody>
+          </table>
+          ${expiring.length > 10 ? `<p style="text-align:center;font-size:11px;color:#92400e;margin-top:8px;">...และอีก ${expiring.length-10} รายการ</p>` : ""}
+        </div>
+      </div>` : ""}
+
+      <!-- ══ หมดอายุแล้ว ══ -->
+      ${expired.length > 0 ? `
+      <div style="background:#fff1f2;border:2px solid #fca5a5;border-radius:20px;padding:20px;margin-bottom:16px;">
+        <h3 style="margin:0 0 12px;font-size:15px;font-weight:800;color:#991b1b;">❌ สินค้าหมดอายุ (${expired.length} รายการ) — ต้องดำเนินการ!</h3>
+        <div style="overflow-x:auto;">
+          <table style="width:100%;border-collapse:collapse;font-size:13px;">
+            <thead><tr style="color:#991b1b;font-size:11px;font-weight:800;text-transform:uppercase;">
+              <th style="text-align:left;padding:6px 8px;">ชื่อสินค้า</th>
+              <th style="text-align:center;padding:6px 8px;">EXP</th>
+              <th style="text-align:center;padding:6px 8px;">เลย(วัน)</th>
+              <th style="text-align:right;padding:6px 8px;">จำนวน</th>
+            </tr></thead>
+            <tbody>${expired.slice(0,10).map(x => `
+              <tr style="border-top:1px dashed #fca5a5;">
+                <td style="padding:6px 8px;font-weight:700;">${escapeHtml(x.ProductName)}</td>
+                <td style="padding:6px 8px;text-align:center;color:#dc2626;">${isoToDdmmyy(x.EXP)}</td>
+                <td style="padding:6px 8px;text-align:center;"><span style="background:#dc2626;color:#fff;border-radius:999px;padding:2px 8px;font-weight:800;">${Math.abs(x.ExpireDays)} วัน</span></td>
+                <td style="padding:6px 8px;text-align:right;font-weight:700;">${x.Qty}</td>
+              </tr>`).join("")}
+            </tbody>
+          </table>
+          ${expired.length > 10 ? `<p style="text-align:center;font-size:11px;color:#991b1b;margin-top:8px;">...และอีก ${expired.length-10} รายการ</p>` : ""}
+        </div>
+      </div>` : ""}
+
+      <!-- ══ ส่งยอด/อนุมัติ รอดำเนินการ ══ -->
+      ${dlvPending > 0 ? `
+      <div style="background:#eff6ff;border:2px solid #93c5fd;border-radius:20px;padding:20px;margin-bottom:16px;">
+        <h3 style="margin:0 0 12px;font-size:15px;font-weight:800;color:#1d4ed8;">🕐 รออนุมัติยอดเข้าคลัง (${dlvPending} รายการ)</h3>
+        ${dlvs.filter(d=>d.Status==="รออนุมัติ").slice(0,5).map(d=>
+          `<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px dashed #bfdbfe;">
+            <span style="font-size:13px;font-weight:700;color:#1e40af;">${escapeHtml(d.WorkOrderID||d.DeliveryID||"-")}</span>
+            <span style="font-size:12px;color:#3b82f6;">โดย ${escapeHtml(d.SubmittedBy||"-")}</span>
+          </div>`).join("")}
+        ${dlvPending > 5 ? `<p style="font-size:11px;color:#1d4ed8;margin-top:8px;text-align:center;">...และอีก ${dlvPending-5} รายการ</p>` : ""}
+      </div>` : ""}
+    `;
+  }
+
+  function kpiCard(icon, label, value, color) {
+    return `<div style="background:#fff;border-radius:18px;padding:18px 12px;text-align:center;box-shadow:0 2px 8px rgba(0,0,0,.06);border:1px solid #e2e8f0;border-top:4px solid ${color};">
+      <div style="font-size:22px;margin-bottom:4px;">${icon}</div>
+      <div style="font-size:28px;font-weight:900;color:${color};line-height:1;">${value}</div>
+      <div style="font-size:11px;font-weight:700;color:#64748b;margin-top:4px;">${label}</div>
+    </div>`;
+  }
+
+  function woStatusColor(s) {
+    return {
+      "รอดำเนินการ":"#8b5cf6","กำลังผลิต":"#0ea5e9","เสร็จสิ้น":"#059669",
+      "ยกเลิก":"#94a3b8","ส่งกลับแก้ไข":"#ea580c"
+    }[s] || "#94a3b8";
+  }
+
   function checkAuth() {
     loadDevice();
     const saved = localStorage.getItem("unified_stock_user");
@@ -1608,6 +1798,8 @@
       const isApprover = currentRole === "admin" || currentRole === "approver";
       const adminBtn = document.getElementById("adminNavBtn");
       if (adminBtn) adminBtn.style.display = isAdmin ? "" : "none";
+      const execBtn = document.getElementById("execDashNavBtn");
+      if (execBtn) execBtn.style.display = isApprover ? "" : "none";
       const actBtn = document.getElementById("activityNavBtn");
       if (actBtn) actBtn.style.display = isAdmin ? "" : "none";
       const tgBtn = document.getElementById("telegramNavBtn");

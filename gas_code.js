@@ -1214,7 +1214,21 @@ function setUserRole(payload) {
 // ── Shared Telegram สำหรับทุก Module ──
 const FACTORY_NAME = { COLDROOM: "❄️ คลังสินค้า SQF", SQF: "🏭 วัตถุดิบ SQF", MLM: "🏭 วัตถุดิบ MLM" };
 function sendAlert(message, module) {
-  crSendTelegram(`[${FACTORY_NAME[module] || module}]\n${message}`);
+  crSendTelegram("[" + (FACTORY_NAME[module] || module) + "]\n" + message);
+}
+
+// ── สร้างบรรทัดสรุปยอด + เตือนสต๊อกต่ำ + วันที่ใช้ได้ ──
+function _stockSummaryLines(newQty, unit_, minQty, dailyUsage) {
+  var lines = [];
+  if (dailyUsage > 0) {
+    var days = Math.floor(newQty / dailyUsage);
+    var dayIcon = days === 0 ? "🔴" : days <= 7 ? "🔴" : days <= 14 ? "🟠" : days <= 30 ? "🟡" : "🟢";
+    lines.push(dayIcon + " ใช้ได้อีกประมาณ " + days + " วัน  (ใช้/วัน: " + dailyUsage + " " + unit_ + ")");
+  }
+  if (minQty > 0 && newQty <= minQty) {
+    lines.push("⚠️ สต๊อกต่ำกว่าขั้นต่ำ!  (ขั้นต่ำ: " + minQty + " " + unit_ + ")");
+  }
+  return lines.length ? "\n" + lines.join("\n") : "";
 }
 
 // ── Generic Telegram (ใช้ config เดียวกับ ColdRoom) ──
@@ -1339,12 +1353,19 @@ function rmUpdate(data, module) {
       if (type === "OUT" && q > cur) {
         return { status: "error", message: "⚠️ สต๊อกไม่เพียงพอ — มีอยู่ " + cur + " " + unit_ + " ไม่สามารถเบิก " + q + " " + unit_ + " ได้" };
       }
-      const newQty = type === "IN" ? cur + q : cur - q;
+      const newQty     = type === "IN" ? cur + q : cur - q;
+      const dailyUsage = Number(rows[i][h.indexOf("DailyUsage")] || 0);
       sheet.getRange(i + 1, h.indexOf("Qty") + 1).setValue(newQty);
-      const userWithDevice1 = _reqDeviceName ? `${user||"-"} (📱 ${_reqDeviceName})` : (user||"");
+      const userWithDevice1 = _reqDeviceName ? (user||"-") + " (📱 " + _reqDeviceName + ")" : (user||"-");
       getSheet(module + "_History").appendRow([new Date().toISOString(), name, type === "IN" ? "รับเข้า" : "เบิกออก", q, userWithDevice1]);
-      const emoji = type === "IN" ? "📥 รับเข้า" : "📤 เบิกออก";
-      sendAlert(`${emoji}\n📦 ${name} (${sku})\n🔢 ${q} ${unit_}  →  คงเหลือ: ${newQty} ${unit_}\n👤 ${user||"-"}${deviceTag()}`, module);
+      var emoji   = type === "IN" ? "📥 รับเข้า" : "📤 เบิกออก";
+      var summary = _stockSummaryLines(newQty, unit_, minQty, dailyUsage);
+      var msg = emoji + "\n📦 " + name + " (" + sku + ")" +
+                "\n🔢 " + (type === "IN" ? "+" : "-") + q + " " + unit_ +
+                "  →  คงเหลือ: " + newQty + " " + unit_ +
+                summary +
+                "\n👤 " + (user||"-") + deviceTag();
+      sendAlert(msg, module);
       // ⚠️ ส่ง Email เตือนสต๊อกต่ำ (เฉพาะ OUT หรือหลังปรับยอด)
       if (type !== "IN" && minQty > 0 && newQty < minQty) {
         _sendEmailLowStock(name, sku, newQty, unit_, minQty, module);
@@ -1363,15 +1384,21 @@ function rmVerify(data, module) {
 
   for (let i = 1; i < rows.length; i++) {
     if (String(rows[i][0]) === String(sku)) {
-      const name   = rows[i][h.indexOf("Name")];
-      const unit_  = rows[i][h.indexOf("Unit")] || "";
-      const minQty = Number(rows[i][h.indexOf("Min")] || 0);
-      const newQty = Number(qty);
+      const name       = rows[i][h.indexOf("Name")];
+      const unit_      = rows[i][h.indexOf("Unit")] || "";
+      const minQty     = Number(rows[i][h.indexOf("Min")] || 0);
+      const dailyUsage = Number(rows[i][h.indexOf("DailyUsage")] || 0);
+      const newQty     = Number(qty);
       sheet.getRange(i + 1, h.indexOf("Qty")          + 1).setValue(newQty);
       sheet.getRange(i + 1, h.indexOf("LastVerified") + 1).setValue(new Date().toISOString());
-      const userWithDevice2 = _reqDeviceName ? `${user||"-"} (📱 ${_reqDeviceName})` : (user||"");
+      const userWithDevice2 = _reqDeviceName ? (user||"-") + " (📱 " + _reqDeviceName + ")" : (user||"-");
       getSheet(module + "_History").appendRow([new Date().toISOString(), name, "ตรวจนับ/ปรับยอด", newQty, userWithDevice2]);
-      sendAlert(`⚖️ ตรวจนับ/ปรับยอด\n📦 ${name} (${sku})\n🔢 ยอดจริง: ${newQty} ${unit_}\n👤 ${user||"-"}${deviceTag()}`, module);
+      var summary2 = _stockSummaryLines(newQty, unit_, minQty, dailyUsage);
+      var msg2 = "⚖️ ตรวจนับ/ปรับยอด\n📦 " + name + " (" + sku + ")" +
+                 "\n🔢 ยอดจริง: " + newQty + " " + unit_ +
+                 summary2 +
+                 "\n👤 " + (user||"-") + deviceTag();
+      sendAlert(msg2, module);
       // ⚠️ ส่ง Email เตือนสต๊อกต่ำ หลังตรวจนับ
       if (minQty > 0 && newQty < minQty) {
         _sendEmailLowStock(name, sku, newQty, unit_, minQty, module);

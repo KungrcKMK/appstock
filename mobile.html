@@ -81,7 +81,7 @@
     <div class="text-3xl">❄️</div>
     <div>
       <div class="text-lg font-black">คลังสินค้า Cold Room</div>
-      <div class="text-cyan-200 text-sm">SQF · ดูสต๊อกเท่านั้น</div>
+      <div class="text-cyan-200 text-sm">SQF · เบิก / รับเข้า / นับสต๊อก</div>
     </div>
   </button>
 
@@ -294,7 +294,7 @@
           <div class="grid grid-cols-2 gap-2">
             <div>
               <label class="text-slate-500 text-xs font-black block mb-1">📅 MFG</label>
-              <input id="aCrMfg" type="date"
+              <input id="aCrMfg" type="date" onchange="crCalcExp()"
                 class="w-full bg-slate-800 text-white text-sm font-bold p-2 rounded-xl border border-slate-700 outline-none focus:border-emerald-500">
             </div>
             <div>
@@ -303,6 +303,7 @@
                 class="w-full bg-slate-800 text-white text-sm font-bold p-2 rounded-xl border border-slate-700 outline-none focus:border-emerald-500">
             </div>
           </div>
+          <p id="aCrExpHint" class="text-emerald-400 text-xs text-center font-bold -mt-1"></p>
           <div class="flex items-center gap-2 bg-slate-800 rounded-2xl px-2 py-1">
             <button onclick="adjCrQty(-1)"
               class="btn-tap flex-shrink-0 w-11 h-11 text-3xl text-slate-400 font-black flex items-center justify-center">−</button>
@@ -483,7 +484,7 @@ function switchToDesktop() {
 const MOD_CFG = {
   SQF:      { title: "วัตถุดิบ SQF",         sub: "สุพรรณคิวฟู้ดส์", canEdit: true },
   MLM:      { title: "วัตถุดิบ MLM",         sub: "แม่ละมาย",        canEdit: true },
-  COLDROOM: { title: "❄️ Cold Room",          sub: "ดูสต๊อกเท่านั้น", canEdit: false }
+  COLDROOM: { title: "❄️ Cold Room",          sub: "เบิก / รับเข้า / นับสต๊อก", canEdit: true }
 };
 
 async function selectModule(m) {
@@ -514,8 +515,13 @@ async function loadData() {
       const byBc = {};
       (r.allLots || []).forEach(lot => {
         const bc = String(lot.Barcode || "");
-        if (!byBc[bc]) byBc[bc] = { sku: bc, name: lot.ProductName || "", qty: 0, unit: lot.Unit || "", min: 0, daily: 0, cr: true, lots: [] };
+        if (!byBc[bc]) byBc[bc] = { sku: bc, name: lot.ProductName || "", qty: 0, unit: lot.Unit || "", min: 0, daily: 0, cr: true, lots: [], shelfDays: 0 };
         byBc[bc].qty += Number(lot.Qty || 0);
+        // คำนวณ shelf life จาก MFG-EXP ของ lot แรก
+        if (!byBc[bc].shelfDays && lot.MFG && lot.EXP) {
+          const sd = Math.round((new Date(lot.EXP) - new Date(lot.MFG)) / 86400000);
+          if (sd > 0) byBc[bc].shelfDays = sd;
+        }
         byBc[bc].lots.push({
           mfg: lot.MFG || "", exp: lot.EXP || "",
           qty: Number(lot.Qty || 0), unit: lot.Unit || "",
@@ -730,18 +736,38 @@ function crSelectLot(i, action) {
   $("aCrQtyIn").focus();
 }
 
+function crCalcExp() {
+  const mfgVal = $("aCrMfg").value;
+  if (!mfgVal || !sel) return;
+  const shelf = sel.shelfDays || 0;
+  if (shelf <= 0) return;
+  const exp = new Date(mfgVal);
+  exp.setDate(exp.getDate() + shelf);
+  $("aCrExp").value = exp.toISOString().split("T")[0];
+  $("aCrExpHint").textContent = `คำนวณอัตโนมัติ (+${shelf} วัน)`;
+}
+
 function crOpenNewLot() {
   crLotSel = null;
   crAction  = "in";
   _hideCrInputs();
 
-  // Default MFG = today, EXP = today+7
   const today = new Date();
   const toISO = d => d.toISOString().split("T")[0];
   $("aCrMfg").value = toISO(today);
-  const exp7 = new Date(today); exp7.setDate(exp7.getDate() + 7);
-  $("aCrExp").value = toISO(exp7);
   $("aCrQtyIn2").value = 1;
+
+  // Auto-calc EXP จาก shelf life
+  const shelf = sel ? sel.shelfDays : 0;
+  if (shelf > 0) {
+    const exp = new Date(today);
+    exp.setDate(exp.getDate() + shelf);
+    $("aCrExp").value = toISO(exp);
+    $("aCrExpHint").textContent = `คำนวณอัตโนมัติ (+${shelf} วัน)`;
+  } else {
+    $("aCrExp").value = "";
+    $("aCrExpHint").textContent = "ระบุเอง (ไม่มีข้อมูลอายุมาตรฐาน)";
+  }
 
   const confirmBtn = $("aCrConfirm");
   confirmBtn.className = "btn-tap w-full py-4 rounded-2xl font-black text-lg bg-emerald-600 text-white shadow-lg";

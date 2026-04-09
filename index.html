@@ -266,6 +266,7 @@
           📝 ยังไม่มีบัญชี? สมัครใช้งาน →
         </p>
         <p style="font-size:10px;color:#94a3b8;margin-top:6px;font-weight:600;">v.1020</p>
+        <p onclick="forceRefresh()" style="font-size:11px;color:#cbd5e1;margin-top:10px;font-weight:700;cursor:pointer;" title="ล้าง cache และโหลดแอปใหม่">🔄 อัปเดตแอป / แก้หน้าค้าง</p>
       </div>
 
       <!-- ── แผง Register ── -->
@@ -303,6 +304,7 @@
       <button id="adminNavBtn" onclick="openAdminPanel()" class="nav-btn" style="display:none;background:rgba(234,179,8,0.2);color:#fbbf24;">👑 Admin<span id="adminNavBadge" class="nav-badge" style="display:none;background:#f59e0b;"></span></button>
       <button id="activityNavBtn" onclick="openActivityPanel()" class="nav-btn" style="display:none;background:rgba(16,185,129,0.2);color:#34d399;">📈 ความเคลื่อนไหว</button>
       <button id="telegramNavBtn" onclick="openUnifiedSettings()" class="nav-btn" style="display:none;background:rgba(255,255,255,0.1);color:#fff;">⚙️ Telegram</button>
+      <button onclick="forceRefresh()" title="อัปเดตแอปล่าสุด (ล้าง cache)" class="nav-btn" style="color:rgba(255,255,255,.4);font-size:15px;padding:6px 10px;">🔄</button>
       <button onclick="logout()" class="text-red-400 font-black text-xs hover:text-red-300 shrink-0 nav-btn">🔴 ออก</button>
     </div>
 
@@ -318,20 +320,35 @@
 
   <!-- ═══ ADMIN PANEL ═══ -->
   <div id="adminPanelModal" class="hidden fixed inset-0 bg-black/80 backdrop-blur-md z-[500] flex items-center justify-center p-4">
-    <div class="bg-white w-full max-w-lg rounded-[3rem] shadow-2xl overflow-hidden border-8 border-yellow-500">
-      <div class="bg-slate-900 p-6 text-white flex justify-between items-center">
+    <div class="bg-white w-full max-w-xl rounded-[3rem] shadow-2xl overflow-hidden border-8 border-yellow-500" style="max-height:90vh;display:flex;flex-direction:column;">
+      <div class="bg-slate-900 p-6 text-white flex justify-between items-center shrink-0">
         <div>
           <h2 class="text-xl font-black uppercase tracking-tight">👑 Admin Panel</h2>
-          <p class="text-yellow-400 text-xs font-bold mt-1">คำขอสมัครใช้งาน</p>
         </div>
         <button onclick="closeAdminPanel()" class="text-3xl hover:text-red-400 transition-colors">✕</button>
       </div>
-      <div class="p-6">
-        <div id="adminPendingList" class="space-y-3 max-h-80 overflow-y-auto">
+      <!-- Tab bar -->
+      <div class="bg-slate-800 px-4 py-2 flex gap-2 shrink-0 overflow-x-auto">
+        <button onclick="adminSwitchTab('pending')" id="adminTab-pending" style="padding:6px 14px;border-radius:8px;font-size:12px;font-weight:800;background:#f59e0b;color:#1e293b;border:none;cursor:pointer;">📝 คำขอสมัคร</button>
+        <button onclick="adminSwitchTab('users')"   id="adminTab-users"   style="padding:6px 14px;border-radius:8px;font-size:12px;font-weight:800;background:transparent;color:#94a3b8;border:none;cursor:pointer;">👥 จัดการผู้ใช้</button>
+      </div>
+      <!-- Pending users tab -->
+      <div id="adminTabContent-pending" class="p-6 overflow-y-auto flex-1">
+        <div id="adminPendingList" class="space-y-3">
           <p class="text-slate-400 text-center text-sm font-bold py-8">กำลังโหลด...</p>
         </div>
         <button onclick="loadPendingUsers()" class="mt-4 w-full bg-slate-100 text-slate-700 py-3 rounded-2xl font-black text-sm hover:bg-slate-200 transition-all">
           🔄 โหลดใหม่
+        </button>
+      </div>
+      <!-- User management tab -->
+      <div id="adminTabContent-users" class="p-6 overflow-y-auto flex-1" style="display:none;">
+        <p class="text-xs text-slate-400 font-bold mb-3">ตั้ง Role: <b style="color:#1e293b;">user</b> = ใช้งานทั่วไป &nbsp;|&nbsp; <b style="color:#0ea5e9;">approver</b> = อนุมัติใบส่งยอด &nbsp;|&nbsp; <b style="color:#f59e0b;">admin</b> = เต็มสิทธิ์</p>
+        <div id="adminUserList" class="space-y-2">
+          <p class="text-slate-400 text-center text-sm font-bold py-8">กดโหลดเพื่อดูรายชื่อ</p>
+        </div>
+        <button onclick="loadUsers()" class="mt-4 w-full bg-slate-100 text-slate-700 py-3 rounded-2xl font-black text-sm hover:bg-slate-200 transition-all">
+          🔄 โหลดรายชื่อผู้ใช้
         </button>
       </div>
     </div>
@@ -396,6 +413,8 @@
         <button class="cr-tab-btn"        id="crTabBtn-newproduct" onclick="crSwitchTab('newproduct')">➕ สินค้าใหม่</button>
         <button class="cr-tab-btn"        id="crTabBtn-editproduct" onclick="crSwitchTab('editproduct')">✏️ แก้ไขสินค้า</button>
         <button class="cr-tab-btn"        id="crTabBtn-workorder"  onclick="crSwitchTab('workorder')">📋 ใบสั่งผลิต</button>
+        <button class="cr-tab-btn"        id="crTabBtn-delivery"  onclick="crSwitchTab('delivery')">📦 ส่งยอด</button>
+        <button class="cr-tab-btn"        id="crTabBtn-approval"  onclick="crSwitchTab('approval')" style="display:none;">✅ อนุมัติ<span id="crApprovalBadge" style="display:none;background:#dc2626;color:#fff;border-radius:999px;font-size:10px;font-weight:900;padding:1px 6px;margin-left:4px;vertical-align:middle;"></span></button>
         <button class="cr-tab-btn"        id="crTabBtn-report"     onclick="crSwitchTab('report')">📈 แดชบอร์ด</button>
       </div>
 
@@ -680,9 +699,72 @@
             <button class="cr-btn btn-light" onclick="crLoadWorkOrders()" style="padding:8px 12px;font-size:12px;">🔄 โหลด</button>
           </div>
           <div class="table-wrap">
-            <table><thead><tr><th>เลขที่</th><th>วันที่</th><th>สินค้า</th><th>MFG</th><th>EXP</th><th>สั่งผลิต</th><th>ผู้สั่ง</th><th>พิมพ์</th><th>ใบรายงาน</th></tr></thead>
+            <table><thead><tr><th>เลขที่</th><th>วันที่</th><th>สินค้า</th><th>MFG</th><th>EXP</th><th>สั่งผลิต</th><th>ผู้สั่ง</th><th>สถานะ</th><th>ส่งยอด</th><th>พิมพ์</th><th>ใบรายงาน</th></tr></thead>
             <tbody id="crWoListBody"></tbody></table>
           </div>
+        </div>
+      </div>
+
+      <!-- Tab: ส่งยอดเข้าห้องเย็น -->
+      <div class="cr-tab-panel" id="cr-tab-delivery">
+        <div class="card">
+          <h2>📦 ส่งยอดเข้าห้องเย็น</h2>
+          <p style="font-size:12px;color:#64748b;margin-bottom:12px;">เลือกใบสั่งผลิต → ระบุยอดจริงที่ผลิตได้ → ส่งรอผู้อนุมัติ</p>
+          <div class="cr-status" id="crDlvStatus"></div>
+          <div class="row">
+            <div class="field full">
+              <label>📋 เลือกใบสั่งผลิต</label>
+              <select id="crDlvWoSelect" onchange="crSelectDeliveryWO(this.value)" style="width:100%;padding:10px;border-radius:8px;border:2px solid #e2e8f0;font-family:inherit;font-size:14px;background:#fff;">
+                <option value="">-- กรุณาเลือกใบสั่งผลิต --</option>
+              </select>
+            </div>
+          </div>
+          <div id="crDlvForm" style="display:none;">
+            <div id="crDlvWoInfo" style="background:#eff6ff;padding:12px 16px;border-radius:10px;margin:12px 0;font-size:13px;border-left:4px solid #3b82f6;"></div>
+            <div style="margin:12px 0 8px;font-size:12px;font-weight:700;color:#64748b;text-transform:uppercase;">✏️ ระบุยอดจริง (แก้ไขได้ทุกช่อง)</div>
+            <div class="table-wrap" style="overflow-x:auto;">
+              <table id="crDlvItemsTable" style="width:100%;border-collapse:collapse;min-width:640px;">
+                <thead><tr style="background:#1e293b;color:#fff;font-size:11px;font-weight:700;">
+                  <th style="padding:8px 10px;text-align:center;width:30px">#</th>
+                  <th style="padding:8px 10px;text-align:left;">สินค้า</th>
+                  <th style="padding:8px 10px;text-align:center;width:90px">MFG จริง</th>
+                  <th style="padding:8px 10px;text-align:center;width:90px">EXP จริง</th>
+                  <th style="padding:8px 10px;text-align:right;width:70px">ที่สั่ง</th>
+                  <th style="padding:8px 10px;text-align:right;width:90px">จริง ✏️</th>
+                  <th style="padding:8px 10px;text-align:left;width:55px">หน่วย</th>
+                </tr></thead>
+                <tbody id="crDlvItemsBody"></tbody>
+              </table>
+            </div>
+            <div class="row" style="margin-top:12px;">
+              <div class="field full">
+                <label>💬 หมายเหตุ</label>
+                <textarea id="crDlvNote" rows="2" placeholder="ระบุเหตุผลถ้ายอดต่างจากที่สั่ง หรือข้อมูลเพิ่มเติม" style="width:100%;padding:10px;border-radius:8px;border:2px solid #e2e8f0;font-family:inherit;resize:vertical;box-sizing:border-box;"></textarea>
+              </div>
+            </div>
+            <button class="cr-btn btn-primary" onclick="crSubmitDelivery()" style="width:100%;margin-top:12px;padding:14px;font-size:15px;font-weight:900;">
+              📨 ส่งยอดเพื่อรออนุมัติ
+            </button>
+          </div>
+        </div>
+        <div class="card">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+            <h2 style="margin:0;">📋 ประวัติใบส่งยอดของฉัน</h2>
+            <button class="cr-btn btn-light" onclick="crLoadMyDeliveries()" style="padding:8px 12px;font-size:12px;">🔄 โหลด</button>
+          </div>
+          <div id="crMyDlvList"><p style="text-align:center;color:#94a3b8;padding:20px;font-size:13px;">กดโหลดเพื่อดูประวัติ</p></div>
+        </div>
+      </div>
+
+      <!-- Tab: อนุมัติ (approver/admin เท่านั้น) -->
+      <div class="cr-tab-panel" id="cr-tab-approval">
+        <div class="card">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+            <h2 style="margin:0;">✅ รายการรออนุมัติ</h2>
+            <button class="cr-btn btn-light" onclick="crLoadPendingDeliveries()" style="padding:8px 12px;font-size:12px;">🔄 โหลด</button>
+          </div>
+          <div class="cr-status" id="crApprovalStatus"></div>
+          <div id="crApprovalList"><p style="text-align:center;color:#94a3b8;padding:20px;font-size:13px;">กำลังโหลด...</p></div>
         </div>
       </div>
 
@@ -1247,6 +1329,71 @@
     } catch(e) { alert("เกิดข้อผิดพลาด: " + e.message); }
   }
 
+  function adminSwitchTab(tab) {
+    ["pending","users"].forEach(t => {
+      const btn = document.getElementById("adminTab-" + t);
+      const pane = document.getElementById("adminTabContent-" + t);
+      const isActive = t === tab;
+      if (btn)  { btn.style.background = isActive ? "#f59e0b" : "transparent"; btn.style.color = isActive ? "#1e293b" : "#94a3b8"; }
+      if (pane) pane.style.display = isActive ? "" : "none";
+    });
+    if (tab === "users") loadUsers();
+  }
+
+  async function loadUsers() {
+    const listEl = document.getElementById("adminUserList");
+    listEl.innerHTML = '<p class="text-slate-400 text-center text-sm font-bold py-4">กำลังโหลด...</p>';
+    try {
+      const res = await fetch(GAS_URL, {
+        method: "POST",
+        headers: { "Content-Type": "text/plain;charset=utf-8" },
+        body: JSON.stringify({ module: "SYSTEM", action: "getUsers", payload: { adminToken: _adminToken } })
+      }).then(r => r.json());
+      if (!res.ok) { listEl.innerHTML = `<p class="text-red-500 text-center text-sm font-bold py-4">❌ ${res.message}</p>`; return; }
+      const roleColors = { admin: "#f59e0b", approver: "#0ea5e9", user: "#64748b" };
+      listEl.innerHTML = res.users.map(u => `
+        <div class="flex items-center justify-between bg-slate-50 rounded-2xl p-3 border border-slate-200 gap-3 flex-wrap">
+          <div>
+            <p class="font-black text-slate-800 text-sm">👤 ${u.username}</p>
+            <p class="text-xs text-slate-400 font-bold">
+              <span style="color:${roleColors[u.role]||"#64748b"};font-weight:900;">${u.role}</span>
+              ${u.hasPassword ? " &nbsp;🔒 มีรหัสผ่าน" : " &nbsp;🔓 ไม่มีรหัสผ่าน"}
+            </p>
+          </div>
+          <div class="flex gap-2 items-center flex-wrap">
+            <select id="roleSelect-${u.username}" style="padding:5px 8px;border-radius:8px;border:2px solid #e2e8f0;font-size:12px;font-weight:800;">
+              <option value="user"     ${u.role==="user"?"selected":""}>user</option>
+              <option value="approver" ${u.role==="approver"?"selected":""}>approver</option>
+              <option value="admin"    ${u.role==="admin"?"selected":""}>admin</option>
+            </select>
+            <input type="password" id="pwdInput-${u.username}" placeholder="รหัสผ่านใหม่ (ถ้าต้องการตั้ง)" style="padding:5px 8px;border-radius:8px;border:2px solid #e2e8f0;font-size:12px;width:130px;">
+            <button onclick="saveUserRole('${u.username}')" class="bg-indigo-500 text-white px-3 py-1.5 rounded-xl font-black text-xs hover:bg-indigo-600 transition-all">💾 บันทึก</button>
+          </div>
+        </div>`).join("");
+    } catch(e) {
+      listEl.innerHTML = `<p class="text-red-500 text-center text-sm font-bold py-4">เกิดข้อผิดพลาด: ${e.message}</p>`;
+    }
+  }
+
+  async function saveUserRole(username) {
+    const roleEl = document.getElementById("roleSelect-" + username);
+    const pwdEl  = document.getElementById("pwdInput-" + username);
+    if (!roleEl) return;
+    const newRole = roleEl.value;
+    const newPwd  = pwdEl ? pwdEl.value.trim() : "";
+    const payload = { adminToken: _adminToken, username, role: newRole };
+    if (newPwd) payload.password = newPwd;
+    try {
+      const res = await fetch(GAS_URL, {
+        method: "POST",
+        headers: { "Content-Type": "text/plain;charset=utf-8" },
+        body: JSON.stringify({ module: "SYSTEM", action: "setUserRole", payload })
+      }).then(r => r.json());
+      if (res.ok) { showToast(`✅ บันทึก ${username} → ${newRole}${newPwd?" + รหัสผ่านใหม่":""}`); if(pwdEl) pwdEl.value=""; }
+      else alert("❌ " + res.message);
+    } catch(e) { alert("เกิดข้อผิดพลาด: " + e.message); }
+  }
+
   // ─────────────────────────────────────────────
   // ACTIVITY PANEL
   // ─────────────────────────────────────────────
@@ -1417,6 +1564,25 @@
     location.reload();
   }
 
+  // ── Force Refresh — ล้าง SW cache + reload ──
+  async function forceRefresh() {
+    if (!confirm("🔄 อัปเดตแอปใหม่?\n\nจะล้าง cache ทั้งหมดและโหลดหน้าใหม่\n(ข้อมูลที่กรอกไว้จะหาย)")) return;
+    try {
+      // ยกเลิก Service Worker ทุกตัว
+      if ("serviceWorker" in navigator) {
+        const regs = await navigator.serviceWorker.getRegistrations();
+        await Promise.all(regs.map(r => r.unregister()));
+      }
+      // ลบ Cache Storage ทุก cache
+      if ("caches" in window) {
+        const keys = await caches.keys();
+        await Promise.all(keys.map(k => caches.delete(k)));
+      }
+    } catch(e) { /* ถ้า browser ไม่รองรับบางอย่างก็ reload ต่อได้เลย */ }
+    // Reload แบบ bypass cache
+    location.reload(true);
+  }
+
   function checkAuth() {
     loadDevice();
     const saved = localStorage.getItem("unified_stock_user");
@@ -1427,14 +1593,19 @@
       document.getElementById("navUser").innerText          = currentUser;
       document.getElementById("navDevice").innerText        = "";
       document.getElementById("rawCurrentUser").innerText   = currentUser;
-      // แสดงปุ่ม Admin และ Activity เฉพาะ Kungrc1020
-      const isAdmin = (currentUser === "Kungrc1020");
+      // แสดงปุ่มตาม Role
+      const currentRole = localStorage.getItem("unified_stock_role") || "user";
+      const isAdmin    = currentRole === "admin";
+      const isApprover = currentRole === "admin" || currentRole === "approver";
       const adminBtn = document.getElementById("adminNavBtn");
       if (adminBtn) adminBtn.style.display = isAdmin ? "" : "none";
       const actBtn = document.getElementById("activityNavBtn");
       if (actBtn) actBtn.style.display = isAdmin ? "" : "none";
       const tgBtn = document.getElementById("telegramNavBtn");
       if (tgBtn) tgBtn.style.display = isAdmin ? "" : "none";
+      // approval tab button
+      const approvalTabBtn = document.getElementById("crTabBtn-approval");
+      if (approvalTabBtn) approvalTabBtn.style.display = isApprover ? "" : "none";
       switchModule("COLDROOM");
     }
   }
@@ -1528,13 +1699,15 @@
   }
 
   function crSwitchTab(tab) {
-    ["stock","balance","newproduct","editproduct","workorder","report","settings"].forEach(n => {
+    ["stock","balance","newproduct","editproduct","workorder","delivery","approval","report","settings"].forEach(n => {
       $$cr("cr-tab-" + n)?.classList.toggle("active", n === tab);
       $$cr("crTabBtn-" + n)?.classList.toggle("active", n === tab);
     });
     crStopScanner(false);
     if (tab === "workorder")    crInitWorkOrder();
     if (tab === "editproduct" && crEditProductCache.length === 0) crLoadEditProductList();
+    if (tab === "delivery")  crInitDelivery();
+    if (tab === "approval")  crInitApproval();
   }
 
   // ══════════════════════════════════════
@@ -1754,7 +1927,7 @@
     const res = await crCallServer("getWorkOrders", {});
     if (!res.ok || !res.orders) return;
     const body = $$cr("crWoListBody");
-    if (!res.orders.length) { body.innerHTML=`<tr><td colspan="9" style="text-align:center;color:#94a3b8;padding:20px;">ยังไม่มีใบสั่งผลิต</td></tr>`; return; }
+    if (!res.orders.length) { body.innerHTML=`<tr><td colspan="11" style="text-align:center;color:#94a3b8;padding:20px;">ยังไม่มีใบสั่งผลิต</td></tr>`; return; }
     body.innerHTML = res.orders.map(o => {
       const items = crWoParseItems(o.Items);
       const summary = items.length > 1
@@ -1762,6 +1935,9 @@
         : (items[0]?.name || o.ProductName || "-");
       const totalQty = items.reduce((s,i)=>s+Number(i.qty||0),0);
       const mfgList  = [...new Set(items.map(i=>isoToDdmmyy(ddmmyyToIsoWo(i.mfg)||i.mfg)||i.mfg))].join(", ");
+      const woStatus = o.Status || "รอดำเนินการ";
+      const statusColor = { "รอดำเนินการ":"#f59e0b","รอยืนยันรับ":"#3b82f6","ส่งกลับแก้ไข":"#dc2626","เสร็จสิ้น":"#059669","ยกเลิก":"#94a3b8" }[woStatus] || "#94a3b8";
+      const canSend = woStatus !== "เสร็จสิ้น" && woStatus !== "ยกเลิก";
       return `<tr>
         <td style="font-size:11px;font-weight:700;color:#6366f1;">${escapeHtml(o.OrderID)}</td>
         <td style="font-size:11px;">${o.Date||"-"}</td>
@@ -1770,6 +1946,8 @@
         <td style="font-size:11px;">${items.map(i=>isoToDdmmyy(ddmmyyToIsoWo(i.exp)||i.exp)||i.exp).join(", ")||"-"}</td>
         <td style="font-weight:700;">${totalQty.toLocaleString()}</td>
         <td style="font-size:11px;">${escapeHtml(o.CreatedBy||"-")}</td>
+        <td><span style="background:${statusColor};color:#fff;border-radius:999px;padding:2px 8px;font-size:10px;font-weight:900;white-space:nowrap;">${escapeHtml(woStatus)}</span></td>
+        <td>${canSend ? `<button class="cr-btn btn-primary" style="padding:5px 10px;font-size:11px;background:#0ea5e9;white-space:nowrap;" onclick='crGoDeliverWO(${JSON.stringify(o.OrderID)})'>📦 ส่งยอด</button>` : `<span style="font-size:10px;color:#94a3b8;">-</span>`}</td>
         <td><button class="cr-btn btn-light" style="padding:5px 10px;font-size:11px;" onclick='crReprintWorkOrder(${JSON.stringify(o)})'>🖨️</button></td>
         <td><button class="cr-btn btn-primary" style="padding:5px 10px;font-size:11px;background:#0f766e;" onclick='crPrintActualReport(${JSON.stringify(o)})'>📊</button></td>
       </tr>`;
@@ -1779,6 +1957,240 @@
   function crWoParseItems(raw) {
     if (!raw) return [];
     try { return typeof raw === "string" ? JSON.parse(raw) : raw; } catch(e) { return []; }
+  }
+
+  // ══════════════════════════════════════
+  // 📦 ส่งยอดเข้าห้องเย็น (Delivery)
+  // ══════════════════════════════════════
+  let _crDlvCurrentWO = null; // WO object currently selected
+
+  function crGoDeliverWO(orderId) {
+    crSwitchTab("delivery");
+    setTimeout(async () => {
+      await crLoadDeliveryWOList();
+      const sel = $$cr("crDlvWoSelect");
+      if (sel) { sel.value = orderId; await crSelectDeliveryWO(orderId); }
+    }, 200);
+  }
+
+  async function crInitDelivery() {
+    await crLoadDeliveryWOList();
+    crLoadMyDeliveries();
+  }
+
+  async function crLoadDeliveryWOList() {
+    const res = await crCallServer("getWorkOrders", {});
+    if (!res.ok) return;
+    const sel = $$cr("crDlvWoSelect");
+    if (!sel) return;
+    const validOrders = (res.orders || []).filter(o => {
+      const s = o.Status || "รอดำเนินการ";
+      return s !== "เสร็จสิ้น" && s !== "ยกเลิก";
+    });
+    sel.innerHTML = '<option value="">-- กรุณาเลือกใบสั่งผลิต --</option>' +
+      validOrders.map(o => {
+        const s = o.Status || "รอดำเนินการ";
+        const label = s === "รอยืนยันรับ" ? " [รอการอนุมัติ]" : s === "ส่งกลับแก้ไข" ? " [ส่งกลับแก้ไข]" : "";
+        return `<option value="${escapeAttr(o.OrderID)}">${escapeHtml(o.OrderID)} — ${o.Date||""}${label}</option>`;
+      }).join("");
+  }
+
+  async function crSelectDeliveryWO(woId) {
+    const form = $$cr("crDlvForm");
+    const info = $$cr("crDlvWoInfo");
+    const body = $$cr("crDlvItemsBody");
+    if (!woId) { if(form) form.style.display="none"; return; }
+
+    // ดึงข้อมูล WO
+    const res = await crCallServer("getWorkOrders", {});
+    if (!res.ok) return;
+    const wo = (res.orders||[]).find(o => o.OrderID === woId);
+    if (!wo) return;
+    _crDlvCurrentWO = wo;
+
+    const items = crWoParseItems(wo.Items);
+    if (info) {
+      const statusColor = { "รอดำเนินการ":"#f59e0b","รอยืนยันรับ":"#3b82f6","ส่งกลับแก้ไข":"#dc2626" }[wo.Status||"รอดำเนินการ"] || "#64748b";
+      info.innerHTML = `<b style="color:#1e293b;">📋 ${escapeHtml(wo.OrderID)}</b> &nbsp;|&nbsp; 📅 ${wo.Date||"-"} &nbsp;|&nbsp; 👤 ${escapeHtml(wo.CreatedBy||"-")} &nbsp;|&nbsp; <span style="color:${statusColor};font-weight:900;">${escapeHtml(wo.Status||"รอดำเนินการ")}</span>`;
+    }
+
+    // ตรวจสอบว่ามี DN อยู่แล้วหรือเปล่า (getDeliveries)
+    let existingItems = null;
+    try {
+      const dlvRes = await crCallServer("getDeliveries", { username: currentUser, adminToken: _adminToken, filterStatus: "" });
+      if (dlvRes.ok) {
+        const myDn = (dlvRes.deliveries||[]).find(d => d.WorkOrderID === woId && d.Status !== "อนุมัติแล้ว");
+        if (myDn) {
+          existingItems = crWoParseItems(myDn.Items);
+          $$cr("crDlvNote").value = myDn.Note || "";
+        }
+      }
+    } catch(e) {}
+
+    if (body) {
+      body.innerHTML = items.map((item, i) => {
+        const ex = existingItems ? existingItems[i] : null;
+        const actualMfg = ex ? (ex.mfg||item.mfg||"") : (item.mfg||"");
+        const actualExp = ex ? (ex.exp||item.exp||"") : (item.exp||"");
+        const actualQty = ex ? (ex.qty||item.qty||0) : (item.qty||0);
+        return `<tr style="background:${i%2===0?"#fff":"#f8fafc"}">
+          <td style="padding:8px 10px;text-align:center;font-size:12px;color:#94a3b8;">${i+1}</td>
+          <td style="padding:8px 10px;font-weight:700;font-size:13px;">${escapeHtml(item.name||"-")}</td>
+          <td style="padding:8px 6px;text-align:center;"><input type="text" class="cr-dlv-mfg" data-idx="${i}" value="${escapeAttr(actualMfg)}" maxlength="6" style="width:78px;padding:6px 8px;border:2px solid #e2e8f0;border-radius:6px;text-align:center;font-family:inherit;font-size:13px;font-weight:700;" placeholder="DDMMYY"></td>
+          <td style="padding:8px 6px;text-align:center;"><input type="text" class="cr-dlv-exp" data-idx="${i}" value="${escapeAttr(actualExp)}" maxlength="6" style="width:78px;padding:6px 8px;border:2px solid #e2e8f0;border-radius:6px;text-align:center;font-family:inherit;font-size:13px;font-weight:700;" placeholder="DDMMYY"></td>
+          <td style="padding:8px 10px;text-align:right;font-size:13px;color:#94a3b8;">${Number(item.qty||0).toLocaleString()}</td>
+          <td style="padding:8px 6px;text-align:center;"><input type="number" class="cr-dlv-qty" data-idx="${i}" value="${actualQty}" min="0" style="width:80px;padding:6px 8px;border:2px solid #6366f1;border-radius:6px;text-align:right;font-family:inherit;font-size:14px;font-weight:900;" data-barcode="${escapeAttr(item.barcode||"")}" data-name="${escapeAttr(item.name||"")}" data-unit="${escapeAttr(item.unit||"")}"></td>
+          <td style="padding:8px 10px;font-size:12px;color:#64748b;">${escapeHtml(item.unit||"")}</td>
+        </tr>`;
+      }).join("");
+    }
+
+    if (form) form.style.display = "";
+  }
+
+  async function crSubmitDelivery() {
+    if (!_crDlvCurrentWO) { showToast("กรุณาเลือกใบสั่งผลิตก่อน","warn"); return; }
+    const qtyEls  = document.querySelectorAll(".cr-dlv-qty");
+    const mfgEls  = document.querySelectorAll(".cr-dlv-mfg");
+    const expEls  = document.querySelectorAll(".cr-dlv-exp");
+    if (!qtyEls.length) { showToast("ไม่พบรายการสินค้า","warn"); return; }
+
+    const items = [];
+    let valid = true;
+    qtyEls.forEach((el, i) => {
+      const qty = Number(el.value||0);
+      const mfg = (mfgEls[i]?.value||"").trim();
+      const exp = (expEls[i]?.value||"").trim();
+      if (!mfg || !exp) { valid = false; return; }
+      items.push({
+        barcode: el.dataset.barcode || "",
+        name:    el.dataset.name    || "",
+        unit:    el.dataset.unit    || "",
+        mfg, exp, qty
+      });
+    });
+    if (!valid) { showToast("กรุณาระบุ MFG และ EXP ให้ครบทุกรายการ","warn"); return; }
+
+    const note = $$cr("crDlvNote").value.trim();
+    crSetStatus("crDlvStatus","กำลังส่งยอด...","");
+    const res = await crCallServer("submitDelivery", { username: currentUser, workOrderID: _crDlvCurrentWO.OrderID, items, note });
+    if (res.ok) {
+      crSetStatus("crDlvStatus","✅ ส่งยอดเรียบร้อยแล้ว รอผู้อนุมัติตรวจสอบ","ok");
+      showToast("📨 ส่งยอดแล้ว รอการอนุมัติ","");
+      crLoadMyDeliveries();
+      crLoadWorkOrders();
+    } else {
+      crSetStatus("crDlvStatus","❌ " + (res.message||"เกิดข้อผิดพลาด"),"err");
+    }
+  }
+
+  async function crLoadMyDeliveries() {
+    const listEl = $$cr("crMyDlvList");
+    if (!listEl) return;
+    listEl.innerHTML = '<p style="text-align:center;color:#94a3b8;padding:16px;font-size:12px;">กำลังโหลด...</p>';
+    const res = await crCallServer("getDeliveries", { username: currentUser, adminToken: _adminToken });
+    if (!res.ok || !res.deliveries?.length) {
+      listEl.innerHTML = '<p style="text-align:center;color:#94a3b8;padding:16px;font-size:12px;">ยังไม่มีใบส่งยอด</p>'; return;
+    }
+    const statusColor = { "รอการอนุมัติ":"#f59e0b","อนุมัติแล้ว":"#059669","ส่งกลับแก้ไข":"#dc2626" };
+    listEl.innerHTML = res.deliveries.map(d => {
+      const sc = statusColor[d.Status] || "#94a3b8";
+      const items = crWoParseItems(d.Items);
+      return `<div style="border:1px solid #e2e8f0;border-radius:12px;padding:12px 16px;margin-bottom:10px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:6px;">
+          <div>
+            <b style="color:#6366f1;">${escapeHtml(d.WorkOrderID)}</b>
+            <span style="font-size:11px;color:#94a3b8;margin-left:8px;">📋 ${escapeHtml(d.DeliveryID)}</span>
+          </div>
+          <span style="background:${sc};color:#fff;border-radius:999px;padding:2px 10px;font-size:11px;font-weight:900;">${escapeHtml(d.Status)}</span>
+        </div>
+        <div style="font-size:11px;color:#64748b;margin-top:6px;">
+          👤 ${escapeHtml(d.SubmittedBy)} &nbsp;|&nbsp; 🕐 ${d.SubmittedAtFmt||"-"}
+          ${d.ApprovedBy ? ` &nbsp;|&nbsp; ✅ ${escapeHtml(d.ApprovedBy)} ${d.ApprovedAtFmt||""}` : ""}
+        </div>
+        <div style="font-size:12px;color:#475569;margin-top:6px;">${items.map(it=>`${escapeHtml(it.name||"")} × ${Number(it.qty||0).toLocaleString()} ${escapeHtml(it.unit||"")}`).join(" &nbsp;|&nbsp; ")}</div>
+        ${d.Note ? `<div style="font-size:11px;color:#94a3b8;margin-top:4px;">💬 ${escapeHtml(d.Note)}</div>` : ""}
+        ${d.Status==="ส่งกลับแก้ไข" ? `<button class="cr-btn btn-primary" style="margin-top:8px;padding:6px 16px;font-size:12px;background:#0ea5e9;" onclick="crGoDeliverWO('${escapeJs(d.WorkOrderID)}')">✏️ แก้ไขและส่งใหม่</button>` : ""}
+      </div>`;
+    }).join("");
+  }
+
+  // ══════════════════════════════════════
+  // ✅ อนุมัติ (Approval)
+  // ══════════════════════════════════════
+  async function crInitApproval() {
+    await crLoadPendingDeliveries();
+  }
+
+  async function crLoadPendingDeliveries() {
+    const listEl = $$cr("crApprovalList");
+    if (!listEl) return;
+    listEl.innerHTML = '<p style="text-align:center;color:#94a3b8;padding:20px;">กำลังโหลด...</p>';
+    crSetStatus("crApprovalStatus","","");
+    const res = await crCallServer("getDeliveries", { username: currentUser, adminToken: _adminToken });
+    if (!res.ok) { listEl.innerHTML = `<p style="text-align:center;color:#dc2626;padding:20px;">❌ ${escapeHtml(res.message||"เกิดข้อผิดพลาด")}</p>`; return; }
+    const pending = (res.deliveries||[]).filter(d => d.Status === "รอการอนุมัติ");
+    // อัปเดต badge
+    const badge = document.getElementById("crApprovalBadge");
+    if (badge) { badge.textContent = pending.length; badge.style.display = pending.length ? "" : "none"; }
+    if (!pending.length) { listEl.innerHTML = '<p style="text-align:center;color:#059669;padding:20px;font-weight:900;">✅ ไม่มีรายการรออนุมัติ</p>'; return; }
+
+    listEl.innerHTML = pending.map(d => {
+      const items = crWoParseItems(d.Items);
+      const itemRows = items.map((it,i) => `<tr style="background:${i%2===0?"#fff":"#f8fafc"}">
+        <td style="padding:7px 10px;border:1px solid #e2e8f0;font-size:13px;font-weight:700;">${escapeHtml(it.name||"-")}</td>
+        <td style="padding:7px 10px;border:1px solid #e2e8f0;text-align:center;font-size:12px;font-weight:700;color:#6366f1;">${escapeHtml(it.mfg||"-")}</td>
+        <td style="padding:7px 10px;border:1px solid #e2e8f0;text-align:center;font-size:12px;color:#059669;">${escapeHtml(it.exp||"-")}</td>
+        <td style="padding:7px 10px;border:1px solid #e2e8f0;text-align:right;font-weight:900;font-size:14px;color:#1e293b;">${Number(it.qty||0).toLocaleString()} <span style="font-size:11px;font-weight:400;color:#64748b;">${escapeHtml(it.unit||"")}</span></td>
+      </tr>`).join("");
+      return `<div style="border:2px solid #e2e8f0;border-radius:14px;padding:16px;margin-bottom:16px;">
+        <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:8px;margin-bottom:10px;">
+          <div>
+            <div style="font-size:16px;font-weight:900;color:#6366f1;">${escapeHtml(d.WorkOrderID)}</div>
+            <div style="font-size:11px;color:#94a3b8;">${escapeHtml(d.DeliveryID)} &nbsp;|&nbsp; ส่งโดย: <b style="color:#1e293b;">${escapeHtml(d.SubmittedBy)}</b> &nbsp;|&nbsp; 🕐 ${d.SubmittedAtFmt||"-"}</div>
+          </div>
+          <span style="background:#f59e0b;color:#fff;border-radius:999px;padding:2px 10px;font-size:11px;font-weight:900;">รอการอนุมัติ</span>
+        </div>
+        ${d.Note ? `<div style="background:#fef9c3;padding:8px 12px;border-radius:8px;font-size:12px;margin-bottom:10px;">💬 ${escapeHtml(d.Note)}</div>` : ""}
+        <div class="table-wrap" style="overflow-x:auto;margin-bottom:12px;">
+          <table style="width:100%;border-collapse:collapse;min-width:360px;">
+            <thead><tr style="background:#1e293b;color:#fff;font-size:11px;">
+              <th style="padding:7px 10px;text-align:left;">สินค้า</th>
+              <th style="padding:7px 10px;text-align:center;">MFG</th>
+              <th style="padding:7px 10px;text-align:center;">EXP</th>
+              <th style="padding:7px 10px;text-align:right;">จำนวนจริง</th>
+            </tr></thead>
+            <tbody>${itemRows}</tbody>
+          </table>
+        </div>
+        <div style="display:flex;gap:10px;flex-wrap:wrap;">
+          <button class="cr-btn btn-primary" style="flex:1;min-width:120px;padding:10px;font-size:13px;font-weight:900;background:#059669;" onclick="crApproveDelivery('${escapeJs(d.DeliveryID)}','${escapeJs(d.WorkOrderID)}')">✅ อนุมัติ — ยอดเข้าคลัง</button>
+          <button class="cr-btn btn-light" style="flex:1;min-width:120px;padding:10px;font-size:13px;font-weight:900;color:#dc2626;border:2px solid #dc2626;" onclick="crRejectDelivery('${escapeJs(d.DeliveryID)}')">🔄 ส่งกลับแก้ไข</button>
+        </div>
+      </div>`;
+    }).join("");
+  }
+
+  async function crApproveDelivery(dnId, woId) {
+    if (!await crShowModal("confirm","✅ ยืนยันการอนุมัติ",`อนุมัติใบส่งยอด ${woId} และเพิ่มยอดเข้าคลังห้องเย็นอัตโนมัติ?`)) return;
+    crSetStatus("crApprovalStatus","กำลังอนุมัติ...","");
+    const res = await crCallServer("approveDelivery", { adminToken: _adminToken, deliveryID: dnId });
+    if (res.ok) {
+      showToast("✅ อนุมัติแล้ว ยอดเข้าคลังเรียบร้อย");
+      if (res.warnings?.length) showToast("⚠️ บางรายการมีปัญหา: " + res.warnings.join(", "),"warn");
+      crLoadPendingDeliveries();
+      crLoadWorkOrders();
+    } else {
+      crSetStatus("crApprovalStatus","❌ " + (res.message||"เกิดข้อผิดพลาด"),"err");
+    }
+  }
+
+  async function crRejectDelivery(dnId) {
+    const reason = await crShowModal("input","🔄 ส่งกลับแก้ไข","ระบุเหตุผล (ถ้ามี) :");
+    if (reason === null) return;
+    const res = await crCallServer("rejectDelivery", { adminToken: _adminToken, deliveryID: dnId, reason: reason || "" });
+    if (res.ok) { showToast("🔄 ส่งกลับแก้ไขแล้ว","warn"); crLoadPendingDeliveries(); }
+    else crSetStatus("crApprovalStatus","❌ " + (res.message||"เกิดข้อผิดพลาด"),"err");
   }
 
   function crPrintWorkOrder() {

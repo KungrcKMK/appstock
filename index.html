@@ -1691,6 +1691,7 @@
 
   function selectMode(mode, remember) {
     if (remember) localStorage.setItem("appstock_mode_pref", mode);
+    sessionStorage.setItem("appstock_mode_session", mode); // จดจำสำหรับ session นี้เสมอ
     document.getElementById("modePicker").style.display = "none";
     if (mode === "mobile") { window.location.href = "mobile.html"; }
     else                   { checkAuth(); }
@@ -1911,7 +1912,7 @@
     const saved = localStorage.getItem("unified_stock_user");
     if (saved) {
       // ถ้าไม่มี mode preference → แสดง mode picker ก่อน (เฉพาะกรณี reload หน้า)
-      const pref = localStorage.getItem("appstock_mode_pref");
+      const pref = localStorage.getItem("appstock_mode_pref") || sessionStorage.getItem("appstock_mode_session");
       if (!pref) { showModePicker(saved); return; }
       if (pref === "mobile") { window.location.href = "mobile.html"; return; }
       currentUser = saved;

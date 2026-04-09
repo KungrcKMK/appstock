@@ -525,8 +525,7 @@
             <div class="field"><label>⏳ อายุมาตรฐาน (วัน)</label><input type="number" id="crNewShelfLife" value="10" autocomplete="off"></div>
           </div>
           <div class="row">
-            <div class="field"><label>🔔 แจ้งเตือนใกล้หมด (%)</label><input type="number" id="crNewWarnPct" value="20" autocomplete="off"></div>
-            <div class="field"><label>🔔 แจ้งเตือนก่อน (วัน)</label><input type="number" id="crNewWarnDays" placeholder="ข้ามหากใช้ %" autocomplete="off"></div>
+            <div class="field"><label>🔔 แจ้งเตือนก่อนหมด (วัน)</label><input type="number" id="crNewWarnDays" placeholder="เช่น 7" autocomplete="off"></div>
           </div>
           <div class="row">
             <div class="field"><label>📦 ชื่อชุด / หน่วยสั่งผลิต</label>
@@ -587,8 +586,7 @@
               <div class="field"><label>⏳ อายุมาตรฐาน (วัน)</label><input type="number" id="crEditShelfLife" autocomplete="off"></div>
             </div>
             <div class="row">
-              <div class="field"><label>🔔 แจ้งเตือนใกล้หมด (%)</label><input type="number" id="crEditWarnPct" autocomplete="off"></div>
-              <div class="field"><label>🔔 แจ้งเตือนก่อน (วัน)</label><input type="number" id="crEditWarnDays" placeholder="ข้ามหากใช้ %" autocomplete="off"></div>
+              <div class="field"><label>🔔 แจ้งเตือนก่อนหมด (วัน)</label><input type="number" id="crEditWarnDays" placeholder="เช่น 7" autocomplete="off"></div>
             </div>
             <div class="row">
               <div class="field">
@@ -2769,7 +2767,7 @@
       sku:                 $$cr("crNewSku").value.trim(),
       defaultUnit:         $$cr("crNewUnit").value,
       standardShelfLifeDays: $$cr("crNewShelfLife").value,
-      warningPercentage:   $$cr("crNewWarnPct").value,
+      warningPercentage:   20,
       warningDays:         $$cr("crNewWarnDays").value,
       setName:             $$cr("crNewSetName").value.trim(),
       unitsPerSet:         Number($$cr("crNewUnitsPerSet").value) || 1
@@ -2858,7 +2856,7 @@
       sku:                   document.getElementById("crEditSku").value.trim(),
       defaultUnit:           document.getElementById("crEditUnit").value,
       standardShelfLifeDays: document.getElementById("crEditShelfLife").value,
-      warningPercentage:     document.getElementById("crEditWarnPct").value,
+      warningPercentage:     20,
       warningDays:           document.getElementById("crEditWarnDays").value,
       setName:               document.getElementById("crEditSetName").value.trim(),
       unitsPerSet:           Number(document.getElementById("crEditUnitsPerSet").value) || 1

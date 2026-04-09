@@ -237,17 +237,42 @@
   <!-- ═══ LOGIN ═══ -->
   <div id="loginOverlay" class="fixed inset-0 bg-slate-900/95 z-[200] flex items-center justify-center p-6 text-center backdrop-blur-md">
     <div class="bg-white p-10 rounded-[4rem] shadow-2xl w-full max-w-sm border-t-[12px] border-indigo-600">
-      <div class="text-6xl mb-4">🏭</div>
-      <h2 class="text-2xl font-black mb-1 text-slate-800">SQF & MLM</h2>
-      <p class="text-indigo-600 font-black mb-2 text-xs uppercase tracking-widest">ระบบจัดการสต๊อกรวม</p>
-      <p class="text-slate-400 font-bold mb-6 text-xs">สุพรรณคิวฟู้ดส์ | แม่ละมาย</p>
-      <input type="text" id="usernameInput" placeholder="👤 ระบุชื่อพนักงาน"
-        class="w-full bg-slate-50 border-2 border-slate-200 p-5 rounded-3xl mb-3 text-center outline-none focus:border-indigo-600 font-black text-xl"
-        onkeydown="if(event.key==='Enter') login()">
-      <button onclick="login()" class="w-full bg-indigo-600 text-white py-5 rounded-3xl font-black hover:bg-slate-900 transition-all shadow-xl text-lg uppercase">
-        เข้าสู่ระบบ 🚀
-      </button>
-      <p style="font-size:10px;color:#94a3b8;margin-top:10px;font-weight:600;">v.1020</p>
+
+      <!-- ── แผง Login ── -->
+      <div id="loginPanel">
+        <div class="text-6xl mb-4">🏭</div>
+        <h2 class="text-2xl font-black mb-1 text-slate-800">SQF & MLM</h2>
+        <p class="text-indigo-600 font-black mb-2 text-xs uppercase tracking-widest">ระบบจัดการสต๊อกรวม</p>
+        <p class="text-slate-400 font-bold mb-6 text-xs">สุพรรณคิวฟู้ดส์ | แม่ละมาย</p>
+        <input type="text" id="usernameInput" placeholder="👤 ระบุชื่อพนักงาน"
+          class="w-full bg-slate-50 border-2 border-slate-200 p-5 rounded-3xl mb-3 text-center outline-none focus:border-indigo-600 font-black text-xl"
+          onkeydown="if(event.key==='Enter') login()">
+        <button onclick="login()" class="w-full bg-indigo-600 text-white py-5 rounded-3xl font-black hover:bg-slate-900 transition-all shadow-xl text-lg uppercase">
+          เข้าสู่ระบบ 🚀
+        </button>
+        <p onclick="showRegisterView()" style="font-size:13px;color:#6366f1;margin-top:14px;font-weight:700;cursor:pointer;">
+          📝 ยังไม่มีบัญชี? สมัครใช้งาน →
+        </p>
+        <p style="font-size:10px;color:#94a3b8;margin-top:6px;font-weight:600;">v.1020</p>
+      </div>
+
+      <!-- ── แผง Register ── -->
+      <div id="registerPanel" style="display:none">
+        <div class="text-5xl mb-4">📝</div>
+        <h2 class="text-2xl font-black mb-1 text-slate-800">สมัครใช้งาน</h2>
+        <p class="text-slate-500 font-bold mb-1 text-sm">ระบุชื่อของคุณ (ภาษาไทยได้)</p>
+        <p class="text-slate-400 font-bold mb-6 text-xs">ผู้ควบคุมระบบจะตรวจสอบและอนุมัติ</p>
+        <input type="text" id="registerNameInput" placeholder="👤 ชื่อ-นามสกุล หรือชื่อเล่น"
+          class="w-full bg-slate-50 border-2 border-slate-200 p-5 rounded-3xl mb-3 text-center outline-none focus:border-emerald-500 font-black text-xl"
+          onkeydown="if(event.key==='Enter') submitRegister()">
+        <button onclick="submitRegister()" class="w-full bg-emerald-600 text-white py-5 rounded-3xl font-black hover:bg-emerald-700 transition-all shadow-xl text-lg uppercase">
+          ส่งคำขอ 📨
+        </button>
+        <p onclick="showLoginView()" style="font-size:13px;color:#94a3b8;margin-top:14px;font-weight:700;cursor:pointer;">
+          ← กลับเข้าสู่ระบบ
+        </p>
+      </div>
+
     </div>
   </div>
 
@@ -263,6 +288,7 @@
         <button id="navBtn-SQF"      class="nav-btn" onclick="switchModule('SQF')">🏭 วัตถุดิบ SQF<span id="badge-SQF" class="nav-badge" style="display:none"></span></button>
         <button id="navBtn-MLM"      class="nav-btn" onclick="switchModule('MLM')">🏭 วัตถุดิบ MLM<span id="badge-MLM" class="nav-badge" style="display:none"></span></button>
       </div>
+      <button id="adminNavBtn" onclick="openAdminPanel()" class="nav-btn" style="display:none;background:rgba(234,179,8,0.2);color:#fbbf24;">👑 Admin<span id="adminNavBadge" class="nav-badge" style="display:none;background:#f59e0b;"></span></button>
       <button onclick="openUnifiedSettings()" class="nav-btn" style="background:rgba(255,255,255,0.1);color:#fff;">⚙️ Telegram</button>
       <button onclick="logout()" class="text-red-400 font-black text-xs hover:text-red-300 shrink-0 nav-btn">🔴 ออก</button>
     </div>
@@ -276,6 +302,27 @@
       <option value="ซอง"><option value="ถัง"><option value="ตะกร้า"><option value="แกลลอน">
     </datalist>
   </nav>
+
+  <!-- ═══ ADMIN PANEL ═══ -->
+  <div id="adminPanelModal" class="hidden fixed inset-0 bg-black/80 backdrop-blur-md z-[500] flex items-center justify-center p-4">
+    <div class="bg-white w-full max-w-lg rounded-[3rem] shadow-2xl overflow-hidden border-8 border-yellow-500">
+      <div class="bg-slate-900 p-6 text-white flex justify-between items-center">
+        <div>
+          <h2 class="text-xl font-black uppercase tracking-tight">👑 Admin Panel</h2>
+          <p class="text-yellow-400 text-xs font-bold mt-1">คำขอสมัครใช้งาน</p>
+        </div>
+        <button onclick="closeAdminPanel()" class="text-3xl hover:text-red-400 transition-colors">✕</button>
+      </div>
+      <div class="p-6">
+        <div id="adminPendingList" class="space-y-3 max-h-80 overflow-y-auto">
+          <p class="text-slate-400 text-center text-sm font-bold py-8">กำลังโหลด...</p>
+        </div>
+        <button onclick="loadPendingUsers()" class="mt-4 w-full bg-slate-100 text-slate-700 py-3 rounded-2xl font-black text-sm hover:bg-slate-200 transition-all">
+          🔄 โหลดใหม่
+        </button>
+      </div>
+    </div>
+  </div>
 
   <!-- WMS Custom Modal (ต้องอยู่นอก module เพื่อให้ position:fixed ทำงานถูกต้อง) -->
   <div id="crModal" class="cr-modal-overlay">
@@ -1008,6 +1055,130 @@
   }
 
   // ─────────────────────────────────────────────
+  // REGISTER VIEW TOGGLE
+  // ─────────────────────────────────────────────
+  function showRegisterView() {
+    document.getElementById("loginPanel").style.display    = "none";
+    document.getElementById("registerPanel").style.display = "";
+    document.getElementById("registerNameInput").value     = "";
+    document.getElementById("registerNameInput").focus();
+  }
+  function showLoginView() {
+    document.getElementById("registerPanel").style.display = "none";
+    document.getElementById("loginPanel").style.display    = "";
+  }
+
+  async function submitRegister() {
+    const name = (document.getElementById("registerNameInput")?.value || "").trim();
+    if (!name) { alert("กรุณาระบุชื่อของคุณ"); return; }
+
+    const btn = document.querySelector("#registerPanel button");
+    if (btn) { btn.disabled = true; btn.textContent = "กำลังส่ง..."; }
+
+    try {
+      const res = await fetch(GAS_URL, {
+        method: "POST",
+        headers: { "Content-Type": "text/plain;charset=utf-8" },
+        body: JSON.stringify({ module: "SYSTEM", action: "registerUser",
+          payload: { username: name }, deviceName: getDeviceInfo() })
+      }).then(r => r.json());
+
+      if (res.ok) {
+        alert("✅ " + res.message + "\n\nชื่อ: " + name + "\nกรุณารอผู้ควบคุมระบบอนุมัติ แล้วกลับมาเข้าสู่ระบบใหม่");
+        showLoginView();
+        document.getElementById("usernameInput").value = name;
+      } else {
+        alert("❌ " + (res.message || "เกิดข้อผิดพลาด"));
+      }
+    } catch(e) {
+      alert("เกิดข้อผิดพลาด: " + e.message);
+    } finally {
+      if (btn) { btn.disabled = false; btn.textContent = "ส่งคำขอ 📨"; }
+    }
+  }
+
+  // ─────────────────────────────────────────────
+  // ADMIN PANEL
+  // ─────────────────────────────────────────────
+  function openAdminPanel() {
+    document.getElementById("adminPanelModal").classList.remove("hidden");
+    loadPendingUsers();
+  }
+  function closeAdminPanel() {
+    document.getElementById("adminPanelModal").classList.add("hidden");
+  }
+
+  async function loadPendingUsers() {
+    const listEl = document.getElementById("adminPendingList");
+    listEl.innerHTML = '<p class="text-slate-400 text-center text-sm font-bold py-8">กำลังโหลด...</p>';
+    try {
+      const res = await fetch(GAS_URL, {
+        method: "POST",
+        headers: { "Content-Type": "text/plain;charset=utf-8" },
+        body: JSON.stringify({ module: "SYSTEM", action: "getPendingUsers",
+          payload: { requester: currentUser } })
+      }).then(r => r.json());
+
+      if (!res.ok) { listEl.innerHTML = `<p class="text-red-500 text-center text-sm font-bold py-8">❌ ${res.message}</p>`; return; }
+      if (!res.list || res.list.length === 0) {
+        listEl.innerHTML = '<p class="text-slate-400 text-center text-sm font-bold py-8">✅ ไม่มีคำขอรอการอนุมัติ</p>';
+        // update badge
+        const badge = document.getElementById("adminNavBadge");
+        if (badge) badge.style.display = "none";
+        return;
+      }
+
+      // Update badge count
+      const badge = document.getElementById("adminNavBadge");
+      if (badge) { badge.style.display = ""; badge.textContent = res.list.length; }
+
+      listEl.innerHTML = res.list.map(u => `
+        <div class="flex items-center justify-between bg-slate-50 rounded-2xl p-4 border border-slate-200">
+          <div>
+            <p class="font-black text-slate-800 text-base">👤 ${u.username}</p>
+            <p class="text-xs text-slate-400 font-bold mt-0.5">📅 ${u.requestedAt}</p>
+          </div>
+          <div class="flex gap-2">
+            <button onclick="adminApprove('${u.username}')"
+              class="bg-emerald-500 text-white px-4 py-2 rounded-xl font-black text-sm hover:bg-emerald-600 transition-all">✅ อนุมัติ</button>
+            <button onclick="adminReject('${u.username}')"
+              class="bg-red-500 text-white px-4 py-2 rounded-xl font-black text-sm hover:bg-red-600 transition-all">❌ ปฏิเสธ</button>
+          </div>
+        </div>`).join("");
+    } catch(e) {
+      listEl.innerHTML = `<p class="text-red-500 text-center text-sm font-bold py-8">เกิดข้อผิดพลาด: ${e.message}</p>`;
+    }
+  }
+
+  async function adminApprove(username) {
+    if (!confirm(`อนุมัติ "${username}" เข้าใช้ระบบ?`)) return;
+    try {
+      const res = await fetch(GAS_URL, {
+        method: "POST",
+        headers: { "Content-Type": "text/plain;charset=utf-8" },
+        body: JSON.stringify({ module: "SYSTEM", action: "approveUser",
+          payload: { requester: currentUser, username } })
+      }).then(r => r.json());
+      if (res.ok) { showToast("✅ อนุมัติ " + username + " แล้ว"); loadPendingUsers(); }
+      else alert("❌ " + res.message);
+    } catch(e) { alert("เกิดข้อผิดพลาด: " + e.message); }
+  }
+
+  async function adminReject(username) {
+    if (!confirm(`ปฏิเสธคำขอของ "${username}"?`)) return;
+    try {
+      const res = await fetch(GAS_URL, {
+        method: "POST",
+        headers: { "Content-Type": "text/plain;charset=utf-8" },
+        body: JSON.stringify({ module: "SYSTEM", action: "rejectUser",
+          payload: { requester: currentUser, username } })
+      }).then(r => r.json());
+      if (res.ok) { showToast("🚫 ปฏิเสธ " + username + " แล้ว"); loadPendingUsers(); }
+      else alert("❌ " + res.message);
+    } catch(e) { alert("เกิดข้อผิดพลาด: " + e.message); }
+  }
+
+  // ─────────────────────────────────────────────
   // LOGIN / LOGOUT
   // ─────────────────────────────────────────────
   async function login() {
@@ -1015,11 +1186,9 @@
       const user = (document.getElementById("usernameInput")?.value || "").trim();
       if (!user) { alert("กรุณาระบุชื่อผู้ใช้"); return; }
 
-      // แสดง loading
-      const btn = document.querySelector("#loginOverlay button");
+      const btn = document.querySelector("#loginPanel button");
       if (btn) { btn.disabled = true; btn.textContent = "กำลังตรวจสอบ..."; }
 
-      // เรียก GAS ตรวจสอบ user
       const res = await fetch(GAS_URL, {
         method: "POST",
         headers: { "Content-Type": "text/plain;charset=utf-8" },
@@ -1028,15 +1197,16 @@
 
       if (!res.ok) {
         if (btn) { btn.disabled = false; btn.textContent = "เข้าสู่ระบบ 🚀"; }
-        alert("❌ " + (res.message || "ไม่พบชื่อผู้ใช้ กรุณาติดต่อ Admin"));
+        alert("❌ " + (res.message || "ไม่พบชื่อผู้ใช้ กรุณาสมัครใช้งานก่อน"));
         return;
       }
 
       localStorage.setItem("unified_stock_user", user);
-      loadDevice(); // ensure UUID exists
+      localStorage.setItem("unified_stock_role", res.role || "user");
+      loadDevice();
       checkAuth();
     } catch(e) {
-      const btn = document.querySelector("#loginOverlay button");
+      const btn = document.querySelector("#loginPanel button");
       if (btn) { btn.disabled = false; btn.textContent = "เข้าสู่ระบบ 🚀"; }
       alert("เกิดข้อผิดพลาด: " + e.message);
     }
@@ -1044,6 +1214,7 @@
 
   function logout() {
     localStorage.removeItem("unified_stock_user");
+    localStorage.removeItem("unified_stock_role");
     location.reload();
   }
 
@@ -1057,6 +1228,9 @@
       document.getElementById("navUser").innerText          = currentUser;
       document.getElementById("navDevice").innerText        = "";
       document.getElementById("rawCurrentUser").innerText   = currentUser;
+      // แสดงปุ่ม Admin เฉพาะ Kungrc1020
+      const adminBtn = document.getElementById("adminNavBtn");
+      if (adminBtn) adminBtn.style.display = (currentUser === "Kungrc1020") ? "" : "none";
       switchModule("COLDROOM");
     }
   }

@@ -251,8 +251,8 @@
       </div>
     </div>
 
-    <!-- Confirm -->
-    <div id="aConfirmRow" class="px-5 pt-3 pb-safe pb-5">
+    <!-- Confirm (sticky bottom so keyboard can't hide it) -->
+    <div id="aConfirmRow" class="px-5 pt-3 pb-5 sticky bottom-0 bg-slate-800" style="padding-bottom:max(20px,env(safe-area-inset-bottom))">
       <button onclick="confirmAction()" id="aConfirm"
         class="btn-tap w-full py-4 rounded-2xl font-black text-lg bg-indigo-600 text-white shadow-lg">
         ✅ ยืนยัน
@@ -260,7 +260,7 @@
     </div>
 
     <!-- Cold Room view-only note -->
-    <div id="aColdNote" class="hidden px-5 pb-safe pb-5">
+    <div id="aColdNote" class="hidden px-5 pb-5 sticky bottom-0 bg-slate-800" style="padding-bottom:max(20px,env(safe-area-inset-bottom))">
       <div class="bg-cyan-900/40 text-cyan-300 text-sm font-bold text-center py-3 rounded-2xl">
         ❄️ Cold Room — ดูข้อมูลเท่านั้น
       </div>
@@ -585,7 +585,18 @@ function pickItem(sku) {
 
 function closeAction() {
   $("actionSheet").classList.remove("open");
+  $("actionSheet").style.maxHeight = "";   // reset
   setTimeout(() => hide("actionOverlay"), 300);
+}
+
+// ── ปรับความสูง action sheet เมื่อ keyboard เปิด/ปิด ──
+function _adjustSheet() {
+  if ($("actionOverlay").classList.contains("hidden")) return;
+  const vvh = window.visualViewport ? window.visualViewport.height : window.innerHeight;
+  $("actionSheet").style.maxHeight = Math.round(vvh * 0.92) + "px";
+}
+if (window.visualViewport) {
+  window.visualViewport.addEventListener("resize", _adjustSheet);
 }
 
 function setType(t) {

@@ -4307,15 +4307,17 @@
   }
 
   async function testEmail() {
-    const enable = document.getElementById("uniEmailEnable").value;
     const emails = document.getElementById("uniEmailRecipients").value.trim();
-    if (enable !== "true") { showToast("กรุณาเปิดใช้งาน Email ก่อนทดสอบ","warn"); return; }
     if (!emails) { showToast("กรุณาระบุ Email ผู้รับก่อน","warn"); return; }
     showLoading("กำลังส่ง Email ทดสอบ...");
     try {
+      // ส่งค่าจาก form ไปด้วย ไม่ต้องบันทึกก่อนก็ทดสอบได้
       const r = await (await fetch(GAS_URL, {
         method: "POST",
-        body: JSON.stringify({ module: "COLDROOM", action: "testEmail", payload: { username: currentUser } })
+        body: JSON.stringify({
+          module: "COLDROOM", action: "testEmail",
+          payload: { username: currentUser, emailRecipients: emails }
+        })
       })).json();
       hideLoading();
       if (r.ok) showToast(r.message || "ส่ง Email ทดสอบสำเร็จ ✅","success");

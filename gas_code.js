@@ -915,9 +915,14 @@ function _sendEmailLowStock(name, sku, qty, unit, minQty, module) {
 
 function crTestEmail(payload) {
   try {
-    const s = crGetAlertSettings().settings;
-    if (s.enableEmailLowStock !== "true") return { ok: false, message: "การแจ้งเตือน Email ยังไม่ได้เปิดใช้งาน" };
-    const recipients = String(s.emailRecipients || "").split(",").map(e => e.trim()).filter(Boolean);
+    // รับ emailRecipients จาก payload โดยตรง (ทดสอบได้โดยไม่ต้องบันทึกก่อน)
+    // ถ้าไม่มีใน payload ให้อ่านจาก Config
+    var recipientStr = String(payload.emailRecipients || "").trim();
+    if (!recipientStr) {
+      const s = crGetAlertSettings().settings;
+      recipientStr = String(s.emailRecipients || "").trim();
+    }
+    const recipients = recipientStr.split(",").map(function(e){ return e.trim(); }).filter(Boolean);
     if (!recipients.length) return { ok: false, message: "ยังไม่ได้ระบุ Email ผู้รับ" };
     const ts = new Date().toLocaleString("th-TH", { timeZone: "Asia/Bangkok" });
     const subject = "✅ ทดสอบการแจ้งเตือน Email — AppStock";
@@ -929,7 +934,7 @@ function crTestEmail(payload) {
     recipients.forEach(function(email) {
       MailApp.sendEmail({ to: email, subject: subject, body: body });
     });
-    return { ok: true, message: "ส่ง Email ทดสอบสำเร็จ (" + recipients.length + " ผู้รับ)" };
+    return { ok: true, message: "ส่ง Email ทดสอบสำเร็จ ✅ (" + recipients.length + " ผู้รับ)" };
   } catch (e) { return { ok: false, message: "ส่งไม่สำเร็จ: " + e.toString() }; }
 }
 

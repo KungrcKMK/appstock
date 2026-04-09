@@ -261,6 +261,7 @@
       <button onclick="login()" class="w-full bg-indigo-600 text-white py-5 rounded-3xl font-black hover:bg-slate-900 transition-all shadow-xl text-lg uppercase">
         เข้าสู่ระบบ 🚀
       </button>
+      <p style="font-size:9px;color:#cbd5e1;margin-top:10px;">v2026-04-09c</p>
     </div>
   </div>
 
@@ -1019,7 +1020,6 @@
       if (!user) { alert("กรุณาระบุชื่อพนักงาน"); return; }
       const dev = loadDevice();
       if (!dev.name) {
-        // ครั้งแรก — ต้องตั้งชื่ออุปกรณ์
         const devName = (document.getElementById("deviceNameInput")?.value || "").trim();
         if (!devName) {
           alert("📱 กรุณาตั้งชื่ออุปกรณ์นี้ก่อนเข้าสู่ระบบ\n(เช่น iPad ห้องเย็น, มือถือพี่นก)");
@@ -1027,9 +1027,11 @@
           return;
         }
         localStorage.setItem("appstock_device_name", devName);
+        currentDevice.name = devName;
       }
       localStorage.setItem("unified_stock_user", user);
-      location.reload();
+      // ไม่ใช้ location.reload() — เรียก checkAuth() โดยตรงแทน
+      checkAuth();
     } catch(e) {
       alert("เกิดข้อผิดพลาดใน login: " + e.message);
     }
@@ -1045,10 +1047,23 @@
     const saved = localStorage.getItem("unified_stock_user");
     if (saved) {
       currentUser = saved;
+      // ถ้า login อยู่แต่ยังไม่ตั้งชื่ออุปกรณ์ (user เก่าก่อนมี feature นี้)
+      if (!currentDevice.name) {
+        const devName = prompt(
+          "📱 กรุณาตั้งชื่ออุปกรณ์นี้ก่อนใช้งาน\n(เช่น iPad ห้องเย็น, มือถือพี่นก)\nตั้งครั้งเดียว ไม่ต้องตั้งซ้ำ:"
+        );
+        if (!devName || !devName.trim()) {
+          alert("จำเป็นต้องตั้งชื่ออุปกรณ์ก่อนใช้งาน\nกรุณาออกจากระบบแล้วเข้าใหม่");
+          logout();
+          return;
+        }
+        localStorage.setItem("appstock_device_name", devName.trim());
+        currentDevice.name = devName.trim();
+      }
       document.getElementById("loginOverlay").style.display = "none";
       document.getElementById("mainNav").style.display      = "block";
       document.getElementById("navUser").innerText          = currentUser;
-      document.getElementById("navDevice").innerText        = currentDevice.name || "ไม่ระบุ";
+      document.getElementById("navDevice").innerText        = currentDevice.name;
       document.getElementById("rawCurrentUser").innerText   = currentUser;
       switchModule("COLDROOM");
     } else {

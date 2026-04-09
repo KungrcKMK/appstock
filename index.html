@@ -3709,8 +3709,8 @@
       const daysLeft  = (daily > 0) ? Math.floor(qty / daily) : null;
       // แนะนำสั่ง: ถ้ามี daily → 30 วัน, ถ้าไม่มี → Min - Qty
       const suggestQty = daily > 0 ? Math.ceil(daily * 30) : (Math.max(0, minQty - qty) || 0);
-      // ใช้ได้กี่วันหลังสั่ง (ถ้าสั่งตามแนะนำ)
-      const daysAfterSuggest = daily > 0 ? Math.floor((qty + suggestQty) / daily) : null;
+      // ใช้ได้กี่วันหลังสั่ง = สั่งจริง ÷ ใช้/วัน (ปัดลง)
+      const daysAfterSuggest = daily > 0 ? Math.floor(suggestQty / daily) : null;
       const daysText   = daysLeft !== null ? `${daysLeft} วัน` : "-";
       return `<tr style="${isExp?"background:#fee2e2":"background:#ffedd5"}" data-qty="${qty}" data-daily="${daily}">
         <td style="padding:8px 12px;border:1px solid #e2e8f0;text-align:center;">${idx+1}</td>
@@ -3777,7 +3777,7 @@
       💡 <b>วิธีคำนวณ "สั่งจริง" ที่ pre-fill ให้:</b>
       &nbsp;&nbsp;• ถ้ามีข้อมูล <b>ใช้/วัน</b> → สั่งจริง (เริ่มต้น) = <b>ใช้/วัน × 30 วัน</b>
       &nbsp;&nbsp;• ถ้าไม่มีข้อมูลใช้/วัน → สั่งจริง (เริ่มต้น) = <b>Stock ขั้นต่ำ − คงเหลือ</b>
-      &nbsp;&nbsp;• <b>ใช้ได้กี่วัน (หลังสั่ง)</b> = (คงเหลือ + สั่งจริง) ÷ ใช้/วัน
+      &nbsp;&nbsp;• <b>ใช้ได้กี่วัน (หลังสั่ง)</b> = สั่งจริง ÷ ใช้/วัน (ปัดลง — ไม่นับวันที่ใช้ไม่เต็ม)
     </div>
     <table>
       <thead><tr>
@@ -3810,7 +3810,7 @@
         if (printSpan) printSpan.textContent = order > 0 ? order.toLocaleString() : "-";
         const daysEl = tr.querySelector(".days-after");
         if (daily > 0) {
-          const d = Math.floor((qty + order) / daily);
+          const d = Math.floor(order / daily);
           daysEl.textContent = d + " วัน";
           daysEl.style.color = d <= 7 ? "#dc2626" : d <= 14 ? "#ea580c" : d <= 30 ? "#f59e0b" : "#059669";
         } else {

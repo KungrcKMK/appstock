@@ -446,13 +446,27 @@
         <div class="card">
           <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:15px;">
             <h2 style="margin:0;">📊 สต๊อกคงเหลือรายสินค้า</h2>
-            <div style="display:flex;gap:10px;">
-              <button class="cr-btn btn-light"    style="padding:8px 12px;font-size:12px;" onclick="crExport('csv')">📄 CSV</button>
-              <button class="cr-btn btn-primary"  style="padding:8px 12px;font-size:12px;background:#dc2626;" onclick="crExport('pdf')">🖨️ PDF</button>
+            <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+              <!-- Checkbox select all -->
+              <label style="display:flex;align-items:center;gap:6px;font-size:13px;font-weight:700;cursor:pointer;color:var(--muted);white-space:nowrap;">
+                <input type="checkbox" id="crSelectAllChk" onchange="crToggleSelectAll(this.checked)"
+                  style="width:17px;height:17px;cursor:pointer;accent-color:var(--primary);">
+                <span id="crSelectedCount">เลือกทั้งหมด</span>
+              </label>
+              <!-- Action buttons (แสดงเมื่อเลือกแล้ว) -->
+              <button id="crBtnBulkEdit"   class="cr-btn btn-light"  style="padding:6px 12px;font-size:12px;display:none;" onclick="crBulkEdit()">✏️ แก้ไข</button>
+              <button id="crBtnBulkRemove" class="cr-btn btn-light"  style="padding:6px 12px;font-size:12px;color:var(--danger);border-color:var(--danger);display:none;" onclick="crBulkRemove()">🗑️ นำออก</button>
+              <!-- Divider -->
+              <div style="width:1px;height:22px;background:#e2e8f0;margin:0 2px;"></div>
+              <button class="cr-btn btn-light"   style="padding:8px 12px;font-size:12px;" onclick="crExport('csv')">📄 CSV</button>
+              <button class="cr-btn btn-primary" style="padding:8px 12px;font-size:12px;background:#dc2626;" onclick="crExport('pdf')">🖨️ PDF</button>
             </div>
           </div>
           <div class="table-wrap">
-            <table><thead><tr><th>จัดการ</th><th>บาร์โค้ด</th><th>ชื่อสินค้า</th><th>MFG</th><th>EXP</th><th>จำนวน</th><th>เหลือ(วัน)</th><th>สถานะ</th><th>QC</th></tr></thead>
+            <table><thead><tr>
+              <th style="width:38px;text-align:center;">☑</th>
+              <th>บาร์โค้ด</th><th>ชื่อสินค้า</th><th>MFG</th><th>EXP</th><th>จำนวน</th><th>เหลือ(วัน)</th><th>สถานะ</th><th>QC</th>
+            </tr></thead>
             <tbody id="crBalanceBody"></tbody></table>
           </div>
         </div>
@@ -2015,16 +2029,18 @@
       `<tr><td data-label="ชื่อ">${x.ProductName}</td><td data-label="MFG"><b>${isoToDdmmyy(x.MFG)}</b></td><td data-label="EXP">${isoToDdmmyy(x.EXP)}</td><td data-label="เลย(วัน)" style="color:var(--danger)">${Math.abs(x.ExpireDays)} วัน</td><td data-label="จำนวน"><b>${x.Qty}</b></td></tr>`).join("");
 
     const b = $$cr("crBalanceBody");
+    crSelectedRows.clear();
+    crUpdateSelectionUI();
     if (!res.allLots || !res.allLots.length) {
       b.innerHTML = '<tr><td colspan="9" style="text-align:center;padding:20px;">ไม่มีข้อมูลสต๊อก</td></tr>';
     } else {
       b.innerHTML = res.allLots.map((r, i) => `
-        <tr>
-          <td data-label="จัดการ"><div style="display:flex;gap:5px;flex-wrap:wrap;">
-            <button class="cr-btn btn-primary" style="padding:6px;font-size:11px;" onclick="crSelectGlobal(${i})">เลือก</button>
-            <button class="cr-btn btn-light"   style="padding:6px;font-size:11px;" onclick="crOpenEditProduct('${r.Barcode}')">✏️แก้ไข</button>
-            <button class="cr-btn btn-light"   style="padding:6px;font-size:11px;color:var(--danger);" onclick="crAskClearGlobal(${i})">🗑️นำออก</button>
-          </div></td>
+        <tr id="crRow-${i}" onclick="crRowClick(event,${i})" style="cursor:pointer;">
+          <td data-label="☑" style="text-align:center;" onclick="event.stopPropagation()">
+            <input type="checkbox" class="cr-row-chk" data-idx="${i}"
+              onchange="crToggleRow(${i}, this.checked)"
+              style="width:17px;height:17px;cursor:pointer;accent-color:var(--primary);">
+          </td>
           <td data-label="บาร์โค้ด" style="font-size:12px;color:var(--muted);">${escapeHtml(r.Barcode)}</td>
           <td data-label="ชื่อสินค้า"><b>${escapeHtml(r.ProductName)}</b></td>
           <td data-label="MFG"><b>${isoToDdmmyy(r.MFG)}</b></td>
@@ -2038,6 +2054,84 @@
 
     // 🚨 แจ้งเตือน Cold Room
     crCheckCritical(res);
+  }
+
+  // ─── Checkbox Selection ───────────────────────
+  const crSelectedRows = new Set();
+
+  function crUpdateSelectionUI() {
+    const count   = crSelectedRows.size;
+    const total   = window.crAllLotsData?.length || 0;
+    const countEl = document.getElementById("crSelectedCount");
+    const editBtn = document.getElementById("crBtnBulkEdit");
+    const remBtn  = document.getElementById("crBtnBulkRemove");
+    const allChk  = document.getElementById("crSelectAllChk");
+
+    if (countEl) countEl.textContent = count > 0 ? `เลือก ${count} รายการ` : "เลือกทั้งหมด";
+    if (editBtn) editBtn.style.display = count > 0 ? "" : "none";
+    if (remBtn)  remBtn.style.display  = count > 0 ? "" : "none";
+    if (allChk)  {
+      allChk.checked       = total > 0 && count === total;
+      allChk.indeterminate = count > 0 && count < total;
+    }
+    // highlight selected rows
+    document.querySelectorAll("#crBalanceBody tr").forEach(tr => {
+      const chk = tr.querySelector(".cr-row-chk");
+      if (chk) tr.style.background = chk.checked ? "rgba(79,70,229,0.06)" : "";
+    });
+  }
+
+  function crToggleRow(i, checked) {
+    if (checked) crSelectedRows.add(i); else crSelectedRows.delete(i);
+    crUpdateSelectionUI();
+  }
+
+  function crToggleSelectAll(checked) {
+    const total = window.crAllLotsData?.length || 0;
+    crSelectedRows.clear();
+    if (checked) for (let i = 0; i < total; i++) crSelectedRows.add(i);
+    document.querySelectorAll(".cr-row-chk").forEach((chk, i) => { chk.checked = checked; });
+    crUpdateSelectionUI();
+  }
+
+  // คลิกแถว → toggle checkbox (ยกเว้นคลิก checkbox โดยตรง)
+  function crRowClick(event, i) {
+    const chk = document.querySelector(`.cr-row-chk[data-idx="${i}"]`);
+    if (!chk) return;
+    chk.checked = !chk.checked;
+    crToggleRow(i, chk.checked);
+  }
+
+  function crBulkEdit() {
+    if (crSelectedRows.size === 0) { alert("กรุณาเลือกสินค้าก่อน"); return; }
+    if (crSelectedRows.size > 1)  { alert("แก้ไขได้ครั้งละ 1 รายการ\nกรุณาเลือกเพียง 1 รายการ"); return; }
+    const i = [...crSelectedRows][0];
+    const r = window.crAllLotsData?.[i];
+    if (r) crOpenEditProduct(r.Barcode);
+  }
+
+  async function crBulkRemove() {
+    if (crSelectedRows.size === 0) { alert("กรุณาเลือกสินค้าก่อน"); return; }
+    const indices = [...crSelectedRows].sort((a,b) => b - a); // ลบจากหลังไปหน้า
+    const names   = indices.map(i => `• ${window.crAllLotsData[i]?.ProductName} (MFG: ${isoToDdmmyy(window.crAllLotsData[i]?.MFG)})`).join("\n");
+    const reason  = window.prompt(`🗑️ นำสินค้าออก ${indices.length} รายการ\n\n${names}\n\nกรุณาระบุเหตุผล:`);
+    if (!reason || !reason.trim()) return;
+    const conf = window.confirm(`ยืนยันนำออก ${indices.length} รายการ?\nเหตุผล: ${reason}\n\n⚠️ ยอดจะถูกตั้งเป็น 0 ทั้งหมด`);
+    if (!conf) return;
+    const emp = ($$cr("crEmployee")?.value?.trim()) || currentUser;
+    let ok = 0, fail = 0;
+    for (const i of indices) {
+      const row = window.crAllLotsData[i];
+      if (!row) { fail++; continue; }
+      try {
+        const res = await crCallServer("clearLotStock", { barcode: row.Barcode, mfg: row.MFG, reason: reason.trim(), employeeName: emp });
+        if (res?.ok) ok++; else fail++;
+      } catch(e) { fail++; }
+    }
+    if (navigator.vibrate) navigator.vibrate([100,50,100]);
+    showToast(fail === 0 ? `✅ นำออก ${ok} รายการเรียบร้อย` : `✅ ${ok} รายการ / ❌ ${fail} รายการผิดพลาด`);
+    crSelectedRows.clear();
+    crLoadOverview();
   }
 
   async function crSelectGlobal(i) {

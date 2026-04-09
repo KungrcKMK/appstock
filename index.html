@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
-  <title>AppStock — ระบบจัดการสต๊อก SQF & MLM</title>
+  <title>AppStock v2.6 — ระบบจัดการสต๊อก SQF & MLM</title>
 
   <!-- PWA -->
   <link rel="manifest" href="manifest.json">
@@ -2788,9 +2788,10 @@
     crWoProducts = crEditProductCache; // แชร์ cache กับ Work Order
     const sel = document.getElementById("crEditProductSelect");
     sel.innerHTML = `<option value="">-- เลือกสินค้า (${crEditProductCache.length} รายการ) --</option>`;
-    crEditProductCache.forEach((p, i) => {
+    const sorted = [...crEditProductCache].sort((a,b)=>String(a.ProductName||"").localeCompare(String(b.ProductName||""),"th"));
+    sorted.forEach((p) => {
       const opt = document.createElement("option");
-      opt.value = i;
+      opt.value = String(p.Barcode || "");
       opt.textContent = `${p.ProductName}  [${p.Barcode}]`;
       sel.appendChild(opt);
     });
@@ -2799,18 +2800,23 @@
   }
 
   function crSelectEditProduct() {
-    const idx = document.getElementById("crEditProductSelect").value;
+    try {
+    const barcode = document.getElementById("crEditProductSelect").value;
     const fields = document.getElementById("crEditProductFields");
-    if (idx === "" || idx === null) { fields.style.display = "none"; return; }
-    const prod = crEditProductCache[Number(idx)];
-    if (!prod) return;
+    console.log("[EditProduct] selected barcode=", barcode, "cache size=", crEditProductCache.length);
+    if (!barcode) { fields.style.display = "none"; return; }
+    const prod = crEditProductCache.find(p => String(p.Barcode) === String(barcode));
+    console.log("[EditProduct] found prod=", prod);
+    if (!prod) {
+      crSetStatus("crEditProductStatus","❌ ไม่พบข้อมูลสินค้า (cache:"+crEditProductCache.length+") กรุณากด 'โหลดรายการ' ใหม่","err");
+      return;
+    }
 
     document.getElementById("crEditBarcode").value                    = prod.Barcode || "";
     document.getElementById("crEditBarcodeDisplay").textContent       = prod.Barcode || "";
     document.getElementById("crEditName").value                       = prod.ProductName || "";
     document.getElementById("crEditSku").value                        = prod.SKU || "";
     document.getElementById("crEditShelfLife").value                  = prod.StandardShelfLifeDays || "";
-    document.getElementById("crEditWarnPct").value                    = prod.WarningPercentage || "";
     document.getElementById("crEditWarnDays").value                   = prod.WarningDays || "";
     document.getElementById("crEditSetName").value                    = prod.SetName || "";
     document.getElementById("crEditUnitsPerSet").value                = prod.UnitsPerSet || "";
@@ -2824,16 +2830,20 @@
 
     fields.style.display = "block";
     crClearStatus("crEditProductStatus");
+    } catch(e) {
+      console.error("[EditProduct] ERROR:", e);
+      crSetStatus("crEditProductStatus","❌ เกิดข้อผิดพลาด: " + e.message,"err");
+    }
   }
 
   // เรียกจากปุ่ม ✏️แก้ไข ในตาราง คงเหลือ — สวิตช์ไปยัง tab แก้ไขสินค้า แล้วเลือกสินค้าทันที
   async function crOpenEditProduct(barcode) {
     crSwitchTab("editproduct");
     if (crEditProductCache.length === 0) await crLoadEditProductList();
-    const idx = crEditProductCache.findIndex(p => String(p.Barcode) === String(barcode));
-    if (idx < 0) { crSetStatus("crEditProductStatus","❌ ไม่พบสินค้านี้ในรายการ","err"); return; }
+    const prod = crEditProductCache.find(p => String(p.Barcode) === String(barcode));
+    if (!prod) { crSetStatus("crEditProductStatus","❌ ไม่พบสินค้านี้ในรายการ","err"); return; }
     const sel = document.getElementById("crEditProductSelect");
-    sel.value = idx;
+    sel.value = String(barcode);
     crSelectEditProduct();
   }
 

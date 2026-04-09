@@ -241,13 +241,13 @@
 
     <!-- Qty -->
     <div id="aInputRow" class="px-5 pt-2">
-      <div class="flex items-center gap-2 bg-slate-900 rounded-2xl px-2 py-1">
+      <div class="flex items-center gap-2 bg-slate-900 rounded-2xl px-2 py-1 overflow-hidden">
         <button onclick="adjQty(-1)"
-          class="btn-tap w-12 h-12 text-3xl text-slate-400 font-black flex items-center justify-center">−</button>
+          class="btn-tap flex-shrink-0 w-12 h-12 text-3xl text-slate-400 font-black flex items-center justify-center">−</button>
         <input id="aQtyIn" type="number" inputmode="numeric" min="1" value="1"
-          class="flex-1 bg-transparent text-white text-4xl font-black text-center outline-none py-1">
+          class="flex-1 min-w-0 bg-transparent text-white text-4xl font-black text-center outline-none py-1">
         <button onclick="adjQty(1)"
-          class="btn-tap w-12 h-12 text-3xl text-slate-400 font-black flex items-center justify-center">+</button>
+          class="btn-tap flex-shrink-0 w-12 h-12 text-3xl text-slate-400 font-black flex items-center justify-center">+</button>
       </div>
     </div>
 

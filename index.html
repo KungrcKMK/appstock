@@ -1019,8 +1019,8 @@
       <div class="grid grid-cols-1 xl:grid-cols-3 gap-8 mb-10">
         <div class="xl:col-span-2 bg-white rounded-[3.5rem] shadow-xl border-4 border-white p-8">
           <div class="flex items-center justify-between mb-6">
-            <h3 class="font-black text-xl text-slate-800 uppercase tracking-tight">📊 กราฟยอดคงเหลือ</h3>
-            <span class="text-xs font-black text-slate-400 uppercase">Top 12</span>
+            <h3 class="font-black text-xl text-slate-800 uppercase tracking-tight">📅 วันที่ใช้งานได้คงเหลือ</h3>
+            <span class="text-xs font-black text-slate-400 uppercase">เฉพาะที่มีข้อมูล ใช้/วัน</span>
           </div>
           <div class="chart-wrap"><canvas id="rawBarChart"></canvas></div>
         </div>
@@ -3352,12 +3352,76 @@
 
   // ── Charts ──
   function renderRawCharts(items) {
-    const sorted = [...items].sort((a,b)=>Number(b.Qty||0)-Number(a.Qty||0)).slice(0,12);
-    const labels = sorted.map(i => { const n = String(i.Name||"-"); return n.length>18?n.slice(0,18)+"…":n; });
-    const values = sorted.map(i => Number(i.Qty||0));
+    // กราฟวันคงเหลือ — เฉพาะรายการที่มี DailyUsage > 0
+    const withDaily = items.filter(i => Number(i.DailyUsage||0) > 0);
+    const sorted = [...withDaily]
+      .map(i => ({ ...i, daysLeft: Math.floor(Number(i.Qty||0) / Number(i.DailyUsage||1)) }))
+      .sort((a,b) => a.daysLeft - b.daysLeft)  // เรียงน้อย→มาก (เร่งด่วนก่อน)
+      .slice(0, 12);
+
+    const labels = sorted.map(i => { const n = String(i.Name||"-"); return n.length>16?n.slice(0,16)+"…":n; });
+    const values = sorted.map(i => i.daysLeft);
+    const colors = sorted.map(i =>
+      i.daysLeft <= 7  ? "rgba(220,38,38,0.75)"  :   // 🔴 วิกฤต
+      i.daysLeft <= 14 ? "rgba(234,88,12,0.75)"  :   // 🟠 เร่งด่วน
+      i.daysLeft <= 30 ? "rgba(245,158,11,0.75)" :   // 🟡 ควรสั่ง
+                         "rgba(5,150,105,0.75)"       // 🟢 ปลอดภัย
+    );
+    const borders = sorted.map(i =>
+      i.daysLeft <= 7  ? "rgb(220,38,38)"  :
+      i.daysLeft <= 14 ? "rgb(234,88,12)"  :
+      i.daysLeft <= 30 ? "rgb(245,158,11)" :
+                         "rgb(5,150,105)"
+    );
+
     const ctx1 = document.getElementById("rawBarChart").getContext("2d");
     if (rawBarChart) rawBarChart.destroy();
-    rawBarChart = new Chart(ctx1, { type:"bar", data:{ labels, datasets:[{ label:"ยอดคงเหลือ", data:values, borderWidth:2, borderRadius:12 }] }, options:{ responsive:true, maintainAspectRatio:false, plugins:{ legend:{labels:{font:{family:"Sarabun",weight:"bold"}}}, tooltip:{titleFont:{family:"Sarabun",weight:"bold"},bodyFont:{family:"Sarabun"}} }, scales:{ x:{ticks:{font:{family:"Sarabun",weight:"bold"}}}, y:{beginAtZero:true,ticks:{font:{family:"Sarabun",weight:"bold"}}} } } });
+    rawBarChart = new Chart(ctx1, {
+      type: "bar",
+      data: {
+        labels,
+        datasets: [{
+          label: "วันที่ใช้งานได้ (วัน)",
+          data: values,
+          backgroundColor: colors,
+          borderColor: borders,
+          borderWidth: 2,
+          borderRadius: 10
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+          legend: { labels: { font: { family:"Sarabun", weight:"bold" } } },
+          tooltip: {
+            titleFont: { family:"Sarabun", weight:"bold" },
+            bodyFont:  { family:"Sarabun" },
+            callbacks: {
+              label: ctx => `${ctx.parsed.y} วัน`,
+              afterLabel: ctx => {
+                const d = ctx.parsed.y;
+                return d <= 7  ? "⚠️ วิกฤต — ต้องสั่งด่วน!" :
+                       d <= 14 ? "🟠 เร่งด่วน" :
+                       d <= 30 ? "🟡 ควรวางแผนสั่ง" : "✅ ปลอดภัย";
+              }
+            }
+          },
+          annotation: {}
+        },
+        scales: {
+          x: { ticks: { font: { family:"Sarabun", weight:"bold" } } },
+          y: {
+            beginAtZero: true,
+            title: { display: true, text: "วัน", font: { family:"Sarabun", weight:"bold" } },
+            ticks: {
+              font: { family:"Sarabun", weight:"bold" },
+              callback: v => v + " วัน"
+            }
+          }
+        }
+      }
+    });
 
     const today = new Date(); today.setHours(0,0,0,0);
     let safe=0, low=0, exp=0;

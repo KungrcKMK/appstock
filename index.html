@@ -71,6 +71,10 @@
     .ac-badge { display:inline-block;padding:1px 7px;border-radius:6px;font-size:10px;font-weight:800;margin-left:6px;background:#e0e7ff;color:#4338ca;vertical-align:middle; }
     .ac-empty { padding:14px 16px;color:#94a3b8;font-size:13px;text-align:center; }
 
+    /* ── Activity filter buttons ── */
+    .act-filter-btn { padding:5px 14px;border-radius:999px;font-size:11px;font-weight:800;background:rgba(255,255,255,0.1);color:rgba(255,255,255,0.5);border:none;cursor:pointer;white-space:nowrap;transition:all .2s; }
+    .act-filter-btn.active { background:rgba(52,211,153,0.3);color:#34d399; }
+
     /* ── Coldroom custom styles ── */
     :root { --bg:#f8fafc;--card:#fff;--line:#e2e8f0;--text:#0f172a;--muted:#64748b;--primary:#4f46e5;--primary-dark:#4338ca;--ok:#16a34a;--warn:#ea580c;--danger:#dc2626;--radius:20px;--radius-sm:12px;--shadow:0 10px 25px -5px rgba(0,0,0,.05); }
     #module-COLDROOM { background:var(--bg); }
@@ -289,6 +293,7 @@
         <button id="navBtn-MLM"      class="nav-btn" onclick="switchModule('MLM')">🏭 วัตถุดิบ MLM<span id="badge-MLM" class="nav-badge" style="display:none"></span></button>
       </div>
       <button id="adminNavBtn" onclick="openAdminPanel()" class="nav-btn" style="display:none;background:rgba(234,179,8,0.2);color:#fbbf24;">👑 Admin<span id="adminNavBadge" class="nav-badge" style="display:none;background:#f59e0b;"></span></button>
+      <button id="activityNavBtn" onclick="openActivityPanel()" class="nav-btn" style="display:none;background:rgba(16,185,129,0.2);color:#34d399;">📈 ความเคลื่อนไหว</button>
       <button onclick="openUnifiedSettings()" class="nav-btn" style="background:rgba(255,255,255,0.1);color:#fff;">⚙️ Telegram</button>
       <button onclick="logout()" class="text-red-400 font-black text-xs hover:text-red-300 shrink-0 nav-btn">🔴 ออก</button>
     </div>
@@ -320,6 +325,34 @@
         <button onclick="loadPendingUsers()" class="mt-4 w-full bg-slate-100 text-slate-700 py-3 rounded-2xl font-black text-sm hover:bg-slate-200 transition-all">
           🔄 โหลดใหม่
         </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══ ACTIVITY PANEL ═══ -->
+  <div id="activityPanelModal" class="hidden fixed inset-0 bg-black/80 backdrop-blur-md z-[500] flex items-center justify-center p-4">
+    <div class="bg-white w-full max-w-2xl rounded-[3rem] shadow-2xl overflow-hidden border-8 border-emerald-500" style="max-height:90vh;display:flex;flex-direction:column;">
+      <div class="bg-slate-900 p-6 text-white flex justify-between items-center shrink-0">
+        <div>
+          <h2 class="text-xl font-black uppercase tracking-tight">📈 ความเคลื่อนไหว</h2>
+          <p class="text-emerald-400 text-xs font-bold mt-1">กิจกรรมล่าสุดทุก Module</p>
+        </div>
+        <div class="flex items-center gap-3">
+          <button onclick="loadActivityLog()" class="text-xs font-black text-emerald-400 hover:text-white transition-colors">🔄 โหลดใหม่</button>
+          <button onclick="closeActivityPanel()" class="text-3xl hover:text-red-400 transition-colors">✕</button>
+        </div>
+      </div>
+      <!-- Filter bar -->
+      <div class="bg-slate-800 px-6 py-3 flex gap-2 shrink-0 overflow-x-auto">
+        <button onclick="filterActivity('ALL')"      id="actFilter-ALL"      class="act-filter-btn active">ทั้งหมด</button>
+        <button onclick="filterActivity('COLDROOM')" id="actFilter-COLDROOM" class="act-filter-btn">❄️ คลัง</button>
+        <button onclick="filterActivity('SQF')"      id="actFilter-SQF"      class="act-filter-btn">🏭 SQF</button>
+        <button onclick="filterActivity('MLM')"      id="actFilter-MLM"      class="act-filter-btn">🏭 MLM</button>
+      </div>
+      <div class="p-4 overflow-y-auto flex-1">
+        <div id="activityList" class="space-y-2">
+          <p class="text-slate-400 text-center text-sm font-bold py-8">กำลังโหลด...</p>
+        </div>
       </div>
     </div>
   </div>
@@ -1179,6 +1212,75 @@
   }
 
   // ─────────────────────────────────────────────
+  // ACTIVITY PANEL
+  // ─────────────────────────────────────────────
+  let _activityData = [];
+  let _activityFilter = "ALL";
+
+  function openActivityPanel() {
+    document.getElementById("activityPanelModal").classList.remove("hidden");
+    loadActivityLog();
+  }
+  function closeActivityPanel() {
+    document.getElementById("activityPanelModal").classList.add("hidden");
+  }
+
+  function filterActivity(mod) {
+    _activityFilter = mod;
+    document.querySelectorAll(".act-filter-btn").forEach(b => b.classList.remove("active"));
+    const btn = document.getElementById("actFilter-" + mod);
+    if (btn) btn.classList.add("active");
+    renderActivityList();
+  }
+
+  function renderActivityList() {
+    const listEl = document.getElementById("activityList");
+    const items = _activityFilter === "ALL" ? _activityData : _activityData.filter(a => a.module === _activityFilter);
+    if (!items.length) {
+      listEl.innerHTML = '<p class="text-slate-400 text-center text-sm font-bold py-8">ไม่มีข้อมูลในช่วงนี้</p>';
+      return;
+    }
+    const moduleColor = { COLDROOM: "bg-indigo-100 text-indigo-700", SQF: "bg-orange-100 text-orange-700", MLM: "bg-blue-100 text-blue-700" };
+    const moduleIcon  = { COLDROOM: "❄️", SQF: "🏭", MLM: "🏭" };
+    listEl.innerHTML = items.map(a => `
+      <div class="flex gap-3 items-start bg-slate-50 rounded-2xl p-3 border border-slate-100">
+        <span class="shrink-0 text-xl mt-0.5">${moduleIcon[a.module] || "📋"}</span>
+        <div class="flex-1 min-w-0">
+          <div class="flex items-center gap-2 flex-wrap">
+            <span class="text-xs font-black px-2 py-0.5 rounded-full ${moduleColor[a.module] || "bg-slate-100 text-slate-600"}">${a.module}</span>
+            <span class="text-xs font-black text-slate-700 truncate">${a.name}</span>
+            ${a.action ? `<span class="text-xs text-slate-500 font-bold">${a.action}</span>` : ""}
+            ${a.qty !== undefined && a.qty !== "" ? `<span class="text-xs font-black text-emerald-600">× ${a.qty}</span>` : ""}
+          </div>
+          <div class="flex gap-3 mt-1 flex-wrap">
+            <span class="text-xs text-slate-400">👤 ${a.user || "-"}</span>
+            ${a.device ? `<span class="text-xs text-slate-300">🖥️ ${a.device}</span>` : ""}
+            <span class="text-xs text-slate-400 ml-auto shrink-0">🕐 ${a.timestamp}</span>
+          </div>
+          ${a.note ? `<p class="text-xs text-slate-400 mt-0.5 italic">💬 ${a.note}</p>` : ""}
+        </div>
+      </div>`).join("");
+  }
+
+  async function loadActivityLog() {
+    const listEl = document.getElementById("activityList");
+    listEl.innerHTML = '<p class="text-slate-400 text-center text-sm font-bold py-8">กำลังโหลด...</p>';
+    try {
+      const res = await fetch(GAS_URL, {
+        method: "POST",
+        headers: { "Content-Type": "text/plain;charset=utf-8" },
+        body: JSON.stringify({ module: "SYSTEM", action: "getActivityLog",
+          payload: { requester: currentUser } })
+      }).then(r => r.json());
+      if (!res.ok) { listEl.innerHTML = `<p class="text-red-500 text-center text-sm font-bold py-8">❌ ${res.message}</p>`; return; }
+      _activityData = res.list || [];
+      renderActivityList();
+    } catch(e) {
+      listEl.innerHTML = `<p class="text-red-500 text-center text-sm font-bold py-8">เกิดข้อผิดพลาด: ${e.message}</p>`;
+    }
+  }
+
+  // ─────────────────────────────────────────────
   // LOGIN / LOGOUT
   // ─────────────────────────────────────────────
   async function login() {
@@ -1228,9 +1330,12 @@
       document.getElementById("navUser").innerText          = currentUser;
       document.getElementById("navDevice").innerText        = "";
       document.getElementById("rawCurrentUser").innerText   = currentUser;
-      // แสดงปุ่ม Admin เฉพาะ Kungrc1020
+      // แสดงปุ่ม Admin และ Activity เฉพาะ Kungrc1020
+      const isAdmin = (currentUser === "Kungrc1020");
       const adminBtn = document.getElementById("adminNavBtn");
-      if (adminBtn) adminBtn.style.display = (currentUser === "Kungrc1020") ? "" : "none";
+      if (adminBtn) adminBtn.style.display = isAdmin ? "" : "none";
+      const actBtn = document.getElementById("activityNavBtn");
+      if (actBtn) actBtn.style.display = isAdmin ? "" : "none";
       switchModule("COLDROOM");
     }
   }

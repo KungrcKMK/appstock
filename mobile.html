@@ -29,19 +29,19 @@
 <!-- ══════════════════════════════════════════
      SCREEN 1 : LOGIN
 ══════════════════════════════════════════ -->
-<div id="sLogin" class="dvh flex flex-col items-center justify-center p-6 gap-4">
-  <div class="text-center mb-2">
-    <div class="text-7xl mb-3">📦</div>
-    <h1 class="text-3xl font-black tracking-tight">AppStock</h1>
+<div id="sLogin" class="dvh flex flex-col items-center justify-center p-5 gap-3">
+  <div class="text-center mb-1">
+    <div class="text-5xl mb-2">📦</div>
+    <h1 class="text-2xl font-black tracking-tight">AppStock</h1>
     <p class="text-slate-400 text-sm mt-1">ระบบจัดการสต๊อก</p>
   </div>
   <div class="w-full max-w-xs space-y-3">
     <input id="lUser" type="text" inputmode="text" placeholder="👤 ชื่อพนักงาน" autocomplete="username"
-      class="w-full bg-slate-800 border-2 border-slate-700 text-white p-4 rounded-2xl text-center text-lg font-bold outline-none focus:border-indigo-500 transition-colors">
+      class="w-full bg-slate-800 border-2 border-slate-700 text-white p-3.5 rounded-2xl text-center text-base font-bold outline-none focus:border-indigo-500 transition-colors">
     <input id="lPass" type="password" placeholder="🔑 รหัสผ่าน" autocomplete="current-password"
-      class="w-full bg-slate-800 border-2 border-slate-700 text-white p-4 rounded-2xl text-center text-lg font-bold outline-none focus:border-indigo-500 transition-colors">
+      class="w-full bg-slate-800 border-2 border-slate-700 text-white p-3.5 rounded-2xl text-center text-base font-bold outline-none focus:border-indigo-500 transition-colors">
     <button onclick="doLogin()" id="lBtn"
-      class="btn-tap w-full bg-indigo-600 text-white p-4 rounded-2xl text-xl font-black shadow-lg">
+      class="btn-tap w-full bg-indigo-600 text-white p-4 rounded-2xl text-lg font-black shadow-lg">
       เข้าสู่ระบบ →
     </button>
     <p id="lErr" class="text-red-400 text-center text-sm font-bold hidden"></p>
@@ -51,38 +51,44 @@
 <!-- ══════════════════════════════════════════
      SCREEN 2 : MODULE SELECT
 ══════════════════════════════════════════ -->
-<div id="sModule" class="dvh hidden flex-col p-5 pt-safe gap-4">
-  <div class="pt-4">
+<div id="sModule" class="dvh hidden flex-col p-4 pt-safe gap-3 overflow-y-auto">
+  <div class="pt-2">
     <p class="text-slate-400 text-sm">สวัสดี 👋</p>
-    <h2 id="mGreet" class="text-2xl font-black"></h2>
+    <h2 id="mGreet" class="text-xl font-black"></h2>
   </div>
   <p class="text-slate-500 text-xs font-black uppercase tracking-widest">เลือกโมดูล</p>
 
   <button onclick="selectModule('SQF')"
-    class="btn-tap bg-orange-600/90 rounded-3xl p-6 text-left shadow-xl">
-    <div class="text-4xl mb-2">🏭</div>
-    <div class="text-xl font-black">วัตถุดิบ SQF</div>
-    <div class="text-orange-200 text-sm mt-1">สุพรรณคิวฟู้ดส์ · เบิก / รับเข้า</div>
+    class="btn-tap bg-orange-600/90 rounded-2xl p-4 text-left shadow-xl flex items-center gap-4">
+    <div class="text-3xl">🏭</div>
+    <div>
+      <div class="text-lg font-black">วัตถุดิบ SQF</div>
+      <div class="text-orange-200 text-sm">สุพรรณคิวฟู้ดส์ · เบิก / รับเข้า</div>
+    </div>
   </button>
 
   <button onclick="selectModule('MLM')"
-    class="btn-tap bg-blue-600/90 rounded-3xl p-6 text-left shadow-xl">
-    <div class="text-4xl mb-2">🏭</div>
-    <div class="text-xl font-black">วัตถุดิบ MLM</div>
-    <div class="text-blue-200 text-sm mt-1">แม่ละมาย · เบิก / รับเข้า</div>
+    class="btn-tap bg-blue-600/90 rounded-2xl p-4 text-left shadow-xl flex items-center gap-4">
+    <div class="text-3xl">🏭</div>
+    <div>
+      <div class="text-lg font-black">วัตถุดิบ MLM</div>
+      <div class="text-blue-200 text-sm">แม่ละมาย · เบิก / รับเข้า</div>
+    </div>
   </button>
 
   <button onclick="selectModule('COLDROOM')"
-    class="btn-tap bg-cyan-700/90 rounded-3xl p-6 text-left shadow-xl">
-    <div class="text-4xl mb-2">❄️</div>
-    <div class="text-xl font-black">คลังสินค้า Cold Room</div>
-    <div class="text-cyan-200 text-sm mt-1">SQF · ดูสต๊อกเท่านั้น</div>
+    class="btn-tap bg-cyan-700/90 rounded-2xl p-4 text-left shadow-xl flex items-center gap-4">
+    <div class="text-3xl">❄️</div>
+    <div>
+      <div class="text-lg font-black">คลังสินค้า Cold Room</div>
+      <div class="text-cyan-200 text-sm">SQF · ดูสต๊อกเท่านั้น</div>
+    </div>
   </button>
 
-  <div class="flex gap-3 mt-2">
+  <div class="flex gap-3 mt-1">
     <button onclick="switchToDesktop()"
       class="flex-1 bg-slate-800 text-slate-300 py-3 rounded-2xl text-sm font-black active:brightness-75">
-      💻 โหมดคอมพิวเตอร์
+      💻 คอมพิวเตอร์
     </button>
     <button onclick="doLogout()"
       class="flex-1 bg-slate-800 text-red-400 py-3 rounded-2xl text-sm font-black active:brightness-75">
@@ -107,12 +113,17 @@
     <button onclick="loadData()" class="text-slate-500 text-xl">↻</button>
   </div>
 
-  <!-- Scan button + Search -->
+  <!-- Scan button + Dropdown + Search -->
   <div class="flex-shrink-0 p-3 space-y-2 bg-slate-900">
     <button onclick="openScanner()"
       class="btn-tap w-full bg-indigo-600 py-4 rounded-2xl font-black text-lg flex items-center justify-center gap-2 shadow-lg">
       📷 สแกน Barcode / QR Code
     </button>
+    <select id="mDropdown" onchange="onDropdownChange()"
+      class="w-full bg-slate-800 text-white p-3 rounded-xl border border-slate-700 text-sm font-bold outline-none appearance-none"
+      style="background-image:url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='%2394a3b8' viewBox='0 0 16 16'%3E%3Cpath d='M7.247 11.14 2.451 5.658C1.885 5.013 2.345 4 3.204 4h9.592a1 1 0 0 1 .753 1.659l-4.796 5.48a1 1 0 0 1-1.506 0z'/%3E%3C/svg%3E\");background-repeat:no-repeat;background-position:right 12px center;padding-right:36px">
+      <option value="">📋 เลือกสินค้า / วัตถุดิบ...</option>
+    </select>
     <input id="mSearch" type="search" placeholder="🔍 ค้นหาชื่อหรือรหัส..." oninput="filterList()"
       class="w-full bg-slate-800 text-white p-3 rounded-xl outline-none border border-slate-700 focus:border-indigo-500 text-sm">
   </div>
@@ -195,60 +206,61 @@
 <div id="actionOverlay" class="hidden fixed inset-0 z-30">
   <div onclick="closeAction()" class="absolute inset-0 bg-black/60 backdrop-blur-sm"></div>
   <div id="actionSheet"
-       class="sheet absolute bottom-0 left-0 right-0 bg-slate-800 rounded-t-3xl overflow-hidden shadow-2xl">
+       class="sheet absolute bottom-0 left-0 right-0 bg-slate-800 rounded-t-3xl shadow-2xl overflow-y-auto"
+       style="max-height:85dvh">
     <!-- Handle -->
     <div class="flex justify-center pt-3 pb-1">
       <div class="w-10 h-1 bg-slate-600 rounded-full"></div>
     </div>
     <!-- Product Info -->
-    <div class="px-6 pt-2 pb-4 text-center border-b border-slate-700">
-      <h3 id="aName" class="text-xl font-black leading-tight"></h3>
-      <p  id="aSku"  class="text-slate-500 text-xs mt-1"></p>
-      <div class="flex justify-center items-end gap-6 mt-4">
+    <div class="px-5 pt-1 pb-3 text-center border-b border-slate-700">
+      <h3 id="aName" class="text-lg font-black leading-tight"></h3>
+      <p  id="aSku"  class="text-slate-500 text-xs mt-0.5"></p>
+      <div class="flex justify-center items-end gap-6 mt-3">
         <div class="text-center">
-          <div id="aQty"  class="text-5xl font-black text-indigo-400 leading-none"></div>
+          <div id="aQty"  class="text-4xl font-black text-indigo-400 leading-none"></div>
           <div id="aUnit" class="text-slate-400 text-xs mt-1">คงเหลือ</div>
         </div>
         <div id="aDaysWrap" class="text-center hidden">
-          <div id="aDays" class="text-5xl font-black leading-none"></div>
+          <div id="aDays" class="text-4xl font-black leading-none"></div>
           <div class="text-slate-400 text-xs mt-1">วันที่ใช้ได้</div>
         </div>
       </div>
-      <div id="aWarn" class="hidden mt-3 bg-red-500/20 text-red-400 text-xs font-black px-3 py-1.5 rounded-full inline-block">
+      <div id="aWarn" class="hidden mt-2 bg-red-500/20 text-red-400 text-xs font-black px-3 py-1.5 rounded-full inline-block">
         ⚠️ ต่ำกว่าขั้นต่ำ!
       </div>
     </div>
 
     <!-- IN/OUT Toggle -->
-    <div id="aTypeRow" class="flex gap-3 px-6 pt-4">
+    <div id="aTypeRow" class="flex gap-3 px-5 pt-3">
       <button onclick="setType('OUT')" id="aBtnOut"
-        class="flex-1 py-4 rounded-2xl font-black text-lg bg-orange-600 text-white">📤 เบิก</button>
+        class="flex-1 py-3 rounded-2xl font-black text-base bg-orange-600 text-white">📤 เบิก</button>
       <button onclick="setType('IN')"  id="aBtnIn"
-        class="flex-1 py-4 rounded-2xl font-black text-lg bg-slate-700 text-slate-400">📥 รับ</button>
+        class="flex-1 py-3 rounded-2xl font-black text-base bg-slate-700 text-slate-400">📥 รับ</button>
     </div>
 
     <!-- Qty -->
-    <div id="aInputRow" class="px-6 pt-3">
-      <div class="flex items-center gap-3 bg-slate-900 rounded-2xl px-3 py-2">
+    <div id="aInputRow" class="px-5 pt-2">
+      <div class="flex items-center gap-2 bg-slate-900 rounded-2xl px-2 py-1">
         <button onclick="adjQty(-1)"
-          class="btn-tap w-14 h-14 text-3xl text-slate-400 font-black flex items-center justify-center">−</button>
+          class="btn-tap w-12 h-12 text-3xl text-slate-400 font-black flex items-center justify-center">−</button>
         <input id="aQtyIn" type="number" inputmode="numeric" min="1" value="1"
-          class="flex-1 bg-transparent text-white text-5xl font-black text-center outline-none py-2">
+          class="flex-1 bg-transparent text-white text-4xl font-black text-center outline-none py-1">
         <button onclick="adjQty(1)"
-          class="btn-tap w-14 h-14 text-3xl text-slate-400 font-black flex items-center justify-center">+</button>
+          class="btn-tap w-12 h-12 text-3xl text-slate-400 font-black flex items-center justify-center">+</button>
       </div>
     </div>
 
     <!-- Confirm -->
-    <div id="aConfirmRow" class="px-6 pt-3 pb-safe pb-6">
+    <div id="aConfirmRow" class="px-5 pt-3 pb-safe pb-5">
       <button onclick="confirmAction()" id="aConfirm"
-        class="btn-tap w-full py-5 rounded-2xl font-black text-xl bg-indigo-600 text-white shadow-lg">
+        class="btn-tap w-full py-4 rounded-2xl font-black text-lg bg-indigo-600 text-white shadow-lg">
         ✅ ยืนยัน
       </button>
     </div>
 
     <!-- Cold Room view-only note -->
-    <div id="aColdNote" class="hidden px-6 pb-safe pb-6">
+    <div id="aColdNote" class="hidden px-5 pb-safe pb-5">
       <div class="bg-cyan-900/40 text-cyan-300 text-sm font-bold text-center py-3 rounded-2xl">
         ❄️ Cold Room — ดูข้อมูลเท่านั้น
       </div>
@@ -468,6 +480,7 @@ async function loadData() {
       qrCache[mod] = data.map(d => ({ sku: d.sku, name: d.name, qty: d.qty, unit: d.unit }));
     }
     filt = [...data];
+    populateDropdown();
     renderList();
     toast("โหลดข้อมูลสำเร็จ · " + data.length + " รายการ");
   } catch(e) { setLoading(false); toast("โหลดไม่สำเร็จ: " + e.message, "err"); }
@@ -480,6 +493,25 @@ function filterList() {
   const q = $("mSearch").value.trim().toLowerCase();
   filt = q ? data.filter(d => d.name.toLowerCase().includes(q) || d.sku.toLowerCase().includes(q)) : [...data];
   renderList();
+}
+
+function populateDropdown() {
+  const sel = $("mDropdown");
+  sel.innerHTML = '<option value="">📋 เลือกสินค้า / วัตถุดิบ...</option>';
+  data.forEach(item => {
+    const opt = document.createElement("option");
+    opt.value = item.sku;
+    const lowTag = (item.min > 0 && item.qty <= item.min) ? " ⚠️" : "";
+    opt.textContent = item.name + "  ·  " + item.qty + " " + item.unit + lowTag;
+    sel.appendChild(opt);
+  });
+}
+
+function onDropdownChange() {
+  const sku = $("mDropdown").value;
+  if (!sku) return;
+  $("mDropdown").value = "";   // reset ให้กลับเป็น placeholder
+  pickItem(sku);
 }
 
 function renderList() {
@@ -559,11 +591,11 @@ function closeAction() {
 function setType(t) {
   aType = t;
   $("aBtnOut").className = t === "OUT"
-    ? "flex-1 py-4 rounded-2xl font-black text-lg bg-orange-600 text-white"
-    : "flex-1 py-4 rounded-2xl font-black text-lg bg-slate-700 text-slate-400";
+    ? "flex-1 py-3 rounded-2xl font-black text-base bg-orange-600 text-white"
+    : "flex-1 py-3 rounded-2xl font-black text-base bg-slate-700 text-slate-400";
   $("aBtnIn").className  = t === "IN"
-    ? "flex-1 py-4 rounded-2xl font-black text-lg bg-emerald-600 text-white"
-    : "flex-1 py-4 rounded-2xl font-black text-lg bg-slate-700 text-slate-400";
+    ? "flex-1 py-3 rounded-2xl font-black text-base bg-emerald-600 text-white"
+    : "flex-1 py-3 rounded-2xl font-black text-base bg-slate-700 text-slate-400";
 }
 
 function adjQty(d) {

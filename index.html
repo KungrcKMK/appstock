@@ -2201,8 +2201,12 @@
         buildAutocomplete(
           searchEl,
           () => (rawLastData || []).map(m => {
-            const daysLeft = m.ExpiryDate
-              ? Math.round((new Date(m.ExpiryDate) - new Date()) / 86400000) : null;
+            const daysLeft = m.ExpiryDate ? (function() {
+              const ed = rawParseDate(m.ExpiryDate);
+              if (!ed) return null;
+              const tod = new Date(); tod.setHours(0,0,0,0);
+              return Math.round((ed - tod) / 86400000);
+            })() : null;
             const expBadge = daysLeft !== null && daysLeft <= 7  ? "⚠️ " + daysLeft + "วัน"
                            : daysLeft !== null && daysLeft <= 30 ? "🗓️ " + daysLeft + "วัน" : "";
             return {

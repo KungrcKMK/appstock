@@ -2890,7 +2890,7 @@
       if (!row) { fail++; continue; }
       try {
         const res = await crCallServer("clearLotStock", { barcode: row.Barcode, mfg: row.MFG, reason: reason.trim(), employeeName: emp });
-        if (res?.ok) ok++; else fail++;
+        if (res?.ok) { ok++; if (res.tgSent === false && res.tgError) Logger.warn?.("Telegram: " + res.tgError); } else fail++;
       } catch(e) { fail++; }
     }
     if (navigator.vibrate) navigator.vibrate([100,50,100]);
@@ -2930,7 +2930,11 @@
         const res = await crCallServer("clearLotStock",{ barcode:row.Barcode, mfg:row.MFG, reason: reason.trim(), employeeName:emp });
         if (res?.ok) {
           if (navigator.vibrate) navigator.vibrate([100,50,100]);
-          showToast("✅ นำสินค้าออกเรียบร้อย");
+          if (res.tgSent === false && res.tgError) {
+            showToast("✅ นำออกแล้ว ⚠️ Telegram: " + res.tgError, "warn");
+          } else {
+            showToast("✅ นำสินค้าออกเรียบร้อย");
+          }
           crLoadOverview();
         } else {
           alert("เกิดข้อผิดพลาด: " + (res?.message || res?.error || "ไม่ทราบสาเหตุ"));

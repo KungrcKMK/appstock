@@ -785,8 +785,8 @@ function crClearLotStock(payload) {
       sheet.getRange(i + 1, h.indexOf("EmployeeName") + 1).setValue(employeeName);
       sheet.getRange(i + 1, h.indexOf("DeviceInfo")   + 1).setValue(_reqDeviceName || "");
       sheet.getRange(i + 1, h.indexOf("UpdatedAt")    + 1).setValue(new Date().toISOString());
-      crSendTelegram(`🗑️ นำสินค้าออกสต๊อก ❄️\n📦 ${name}\n📅 MFG: ${mfg}\n💬 ${reason}\n👤 ${employeeName}${deviceTag()}`);
-      return { ok: true };
+      var tg = crSendTelegram("🗑️ นำสินค้าออกสต๊อก ❄️\n📦 " + name + "\n📅 MFG: " + mfg + "\n💬 " + (reason||"-") + "\n👤 " + (employeeName||"-") + deviceTag());
+      return { ok: true, tgSent: tg ? tg.sent : false, tgError: (tg && !tg.sent) ? tg.reason : null };
     }
   }
   return { ok: false, message: "ไม่พบรายการ" };
@@ -899,16 +899,32 @@ function crSaveAlertSettings(payload) {
 function crSendTelegram(message) {
   try {
     const s = crGetAlertSettings().settings;
-    if (s.enableTelegramStockUpdate !== "true") return;
-    const chatIds = String(s.telegramChatIds || "").split(",").map(c => c.trim()).filter(Boolean);
-    if (!s.telegramBotToken || !chatIds.length) return;
-    chatIds.forEach(chatId => {
-      UrlFetchApp.fetch(`https://api.telegram.org/bot${s.telegramBotToken}/sendMessage`, {
-        method: "post", contentType: "application/json",
-        payload: JSON.stringify({ chat_id: chatId, text: message })
-      });
+    // รองรับทั้ง string "true" และ boolean true จาก Google Sheets
+    const enabled = String(s.enableTelegramStockUpdate).toLowerCase();
+    if (enabled === "false" || enabled === "") return { sent: false, reason: "disabled" };
+    const token   = String(s.telegramBotToken || "").trim();
+    const chatIds = String(s.telegramChatIds  || "").split(",").map(c => c.trim()).filter(Boolean);
+    if (!token)           return { sent: false, reason: "no token" };
+    if (!chatIds.length)  return { sent: false, reason: "no chatId" };
+    var errors = [];
+    chatIds.forEach(function(chatId) {
+      try {
+        var resp = UrlFetchApp.fetch(
+          "https://api.telegram.org/bot" + token + "/sendMessage",
+          { method: "post", contentType: "application/json",
+            payload: JSON.stringify({ chat_id: chatId, text: message }),
+            muteHttpExceptions: true }
+        );
+        var result = JSON.parse(resp.getContentText());
+        if (!result.ok) errors.push(chatId + ": " + result.description);
+      } catch (ex) { errors.push(chatId + ": " + ex.toString()); }
     });
-  } catch (e) { Logger.log("Telegram error: " + e.toString()); }
+    if (errors.length) { Logger.log("Telegram errors: " + errors.join(" | ")); return { sent: false, reason: errors.join(", ") }; }
+    return { sent: true };
+  } catch (e) {
+    Logger.log("crSendTelegram fatal: " + e.toString());
+    return { sent: false, reason: e.toString() };
+  }
 }
 
 // ── Email แจ้งเตือนสต๊อกต่ำ ──

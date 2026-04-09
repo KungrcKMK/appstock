@@ -1331,11 +1331,15 @@ function rmUpdate(data, module) {
   for (let i = 1; i < rows.length; i++) {
     if (String(rows[i][0]) === String(sku)) {
       const cur    = Number(rows[i][h.indexOf("Qty")] || 0);
-      const q      = Number(qty);
-      const newQty = type === "IN" ? cur + q : Math.max(0, cur - q);
+      const q      = _validateQty(qty, true);
       const name   = rows[i][h.indexOf("Name")];
       const unit_  = rows[i][h.indexOf("Unit")] || "";
       const minQty = Number(rows[i][h.indexOf("Min")] || 0);
+      // ✅ ป้องกันเบิกเกินสต๊อก
+      if (type === "OUT" && q > cur) {
+        return { status: "error", message: "⚠️ สต๊อกไม่เพียงพอ — มีอยู่ " + cur + " " + unit_ + " ไม่สามารถเบิก " + q + " " + unit_ + " ได้" };
+      }
+      const newQty = type === "IN" ? cur + q : cur - q;
       sheet.getRange(i + 1, h.indexOf("Qty") + 1).setValue(newQty);
       const userWithDevice1 = _reqDeviceName ? `${user||"-"} (📱 ${_reqDeviceName})` : (user||"");
       getSheet(module + "_History").appendRow([new Date().toISOString(), name, type === "IN" ? "รับเข้า" : "เบิกออก", q, userWithDevice1]);

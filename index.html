@@ -920,9 +920,13 @@
       <div class="bg-white p-10 rounded-[5rem] shadow-2xl text-center border-b-[20px] border-orange-500 w-full max-w-sm">
         <h2 id="rawModalTitle" class="text-3xl font-black mb-2 uppercase text-slate-800 italic">📥 รับ/เบิก</h2>
         <p id="rawModalSku"  class="text-sm text-stone-400 font-black mb-2 tracking-widest uppercase"></p>
-        <p id="rawModalUnit" class="text-sm text-emerald-600 font-black mb-8 uppercase"></p>
+        <p id="rawModalUnit" class="text-sm text-emerald-600 font-black mb-2 uppercase"></p>
+        <div id="rawModalStockBox" class="bg-slate-100 rounded-2xl px-4 py-2 mb-6 text-sm font-black">
+          คงเหลือ: <span id="rawModalStock" class="text-blue-700">-</span>
+        </div>
         <input type="hidden" id="rawModalSkuVal">
         <input type="hidden" id="rawModalType" value="OUT">
+        <input type="hidden" id="rawModalCurrentQty" value="0">
         <div class="space-y-10">
           <div class="flex p-2 bg-slate-100 rounded-[3rem]">
             <button onclick="setRawType('OUT')" id="rawBtnOut" class="flex-1 py-5 rounded-[2.5rem] font-black text-lg bg-white shadow-xl text-orange-600 uppercase">เบิก 📤</button>
@@ -3666,7 +3670,7 @@
         <td class="p-8 text-center">
           <div class="text-[10px] font-black text-slate-300 uppercase leading-none mb-2">นับจริง: ${rawForceThaiDate(item.LastVerified)}</div>
           <div class="flex gap-2 flex-wrap justify-center">
-            <button onclick="openRawAction('${escapeJs(item.SKU)}','${escapeJs(item.Name)}','${escapeJs(item.Unit)}')" class="bg-blue-600 text-white px-5 py-3 rounded-2xl text-[10px] font-black hover:bg-black uppercase">📥 รับ/เบิก</button>
+            <button onclick="openRawAction('${escapeJs(item.SKU)}','${escapeJs(item.Name)}','${escapeJs(item.Unit)}',${Number(item.Qty)||0})" class="bg-blue-600 text-white px-5 py-3 rounded-2xl text-[10px] font-black hover:bg-black uppercase">📥 รับ/เบิก</button>
             <button onclick="openRawVerify('${escapeJs(item.SKU)}','${escapeJs(item.Name)}')"  class="bg-purple-600 text-white px-5 py-3 rounded-2xl text-[10px] font-black hover:bg-black uppercase">ตรวจยอด</button>
             <button onclick="openRawEdit('${escapeJs(item.SKU)}')"                             class="bg-sky-600    text-white px-5 py-3 rounded-2xl text-[10px] font-black hover:bg-black uppercase">แก้ไข</button>
             <button onclick="openRawQrByItem('${escapeJs(item.SKU)}','${escapeJs(item.Name)}')" class="bg-slate-900  text-white px-5 py-3 rounded-2xl text-[10px] font-black hover:bg-blue-600 uppercase">QR</button>
@@ -4087,12 +4091,16 @@
   }
   function closeRawVerify() { document.getElementById("rawVerifyModal").classList.add("hidden"); }
 
-  function openRawAction(sku, name, unit) {
-    document.getElementById("rawModalSkuVal").value = sku;
-    document.getElementById("rawModalSku").innerText  = `ID: ${sku}`;
-    document.getElementById("rawModalUnit").innerText = `หน่วยนับ: ${unit||"-"}`;
-    document.getElementById("rawModalTitle").innerText= name;
-    document.getElementById("rawModalQty").value = "1";
+  function openRawAction(sku, name, unit, currentQty) {
+    const qty = Number(currentQty) || 0;
+    document.getElementById("rawModalSkuVal").value      = sku;
+    document.getElementById("rawModalSku").innerText     = `ID: ${sku}`;
+    document.getElementById("rawModalUnit").innerText    = `หน่วยนับ: ${unit||"-"}`;
+    document.getElementById("rawModalTitle").innerText   = name;
+    document.getElementById("rawModalQty").value         = "1";
+    document.getElementById("rawModalCurrentQty").value  = qty;
+    document.getElementById("rawModalStock").textContent = qty + " " + (unit||"");
+    document.getElementById("rawModalStock").style.color = qty <= 0 ? "#dc2626" : qty < 10 ? "#ea580c" : "#1d4ed8";
     document.getElementById("rawActionModal").classList.remove("hidden");
     setRawType("OUT");
   }
@@ -4166,10 +4174,16 @@
   }
 
   async function rawSubmitAction() {
-    const sku=document.getElementById("rawModalSkuVal").value, type=document.getElementById("rawModalType").value,
-          qty=Number(document.getElementById("rawModalQty").value);
-    if (!sku)           return showToast("ไม่พบ SKU","error");
+    const sku  = document.getElementById("rawModalSkuVal").value;
+    const type = document.getElementById("rawModalType").value;
+    const qty  = Number(document.getElementById("rawModalQty").value);
+    const curQty = Number(document.getElementById("rawModalCurrentQty").value) || 0;
+    if (!sku)               return showToast("ไม่พบ SKU","error");
     if (isNaN(qty)||qty<=0) return showToast("ระบุจำนวนให้ถูกต้อง","warn");
+    // ✅ เช็คสต๊อกก่อนส่ง (เฉพาะ OUT)
+    if (type === "OUT" && qty > curQty) {
+      return showToast(`⚠️ สต๊อกไม่เพียงพอ — มีอยู่ ${curQty} ไม่สามารถเบิก ${qty} ได้`, "error");
+    }
     setRawBusy("rawBtnSubmit",true,"กำลังบันทึก...");
     showLoading(type==="IN"?"กำลังบันทึกรับเข้า...":"กำลังบันทึกการเบิก...");
     const r = await rawFetch({ action:"UPDATE", sku, type, qty, user:currentUser });
@@ -4208,7 +4222,7 @@
         const val = String(txt||"").trim();
         const item = rawLastData.find(i=>String(i.SKU)===val);
         closeRawScanner();
-        if (item) openRawAction(item.SKU, item.Name, item.Unit);
+        if (item) openRawAction(item.SKU, item.Name, item.Unit, item.Qty);
         else showToast("ไม่พบรหัสนี้ ❌","error");
       });
     } catch(err) { showToast("เปิดกล้องไม่สำเร็จ ❌","error"); closeRawScanner(true); }

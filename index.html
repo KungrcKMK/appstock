@@ -2927,7 +2927,7 @@
     if (!products) return;
     const sorted = [...products].sort((a, b) => String(a.ProductName||"").localeCompare(String(b.ProductName||""), "th"));
     sel.innerHTML = '<option value="">🔍 หรือเลือกจากรายการสินค้าทั้งหมด...</option>' +
-      sorted.map(p => `<option value="${escapeAttr(String(p.Barcode||""))}">${escapeHtml(String(p.ProductName||""))}${p.SetName ? " · " + escapeHtml(String(p.SetName)) : ""}</option>`).join("");
+      sorted.map(p => `<option value="${escapeAttr(String(p.Barcode||""))}">${escapeHtml(String(p.ProductName||""))}</option>`).join("");
   }
 
   function crSelectProductFromDropdown(barcode) {

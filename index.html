@@ -414,7 +414,7 @@
         <button class="cr-tab-btn"        id="crTabBtn-editproduct" onclick="crSwitchTab('editproduct')">✏️ แก้ไขสินค้า</button>
         <button class="cr-tab-btn"        id="crTabBtn-workorder"  onclick="crSwitchTab('workorder')">📋 ใบสั่งผลิต</button>
         <button class="cr-tab-btn"        id="crTabBtn-delivery"  onclick="crSwitchTab('delivery')">📦 ส่งยอด</button>
-        <button class="cr-tab-btn"        id="crTabBtn-approval"  onclick="crSwitchTab('approval')" style="display:none;">✅ อนุมัติ<span id="crApprovalBadge" style="display:none;background:#dc2626;color:#fff;border-radius:999px;font-size:10px;font-weight:900;padding:1px 6px;margin-left:4px;vertical-align:middle;"></span></button>
+        <button class="cr-tab-btn"        id="crTabBtn-approval"  onclick="crSwitchTab('approval')" style="display:none;">✅ อนุมัติยอดเข้าคลัง<span id="crApprovalBadge" style="display:none;background:#dc2626;color:#fff;border-radius:999px;font-size:10px;font-weight:900;padding:1px 6px;margin-left:4px;vertical-align:middle;"></span></button>
         <button class="cr-tab-btn"        id="crTabBtn-report"     onclick="crSwitchTab('report')">📈 แดชบอร์ด</button>
       </div>
 
@@ -447,11 +447,15 @@
           <div class="cr-status" id="crMainStatus"></div>
           <div class="row"><div class="field full"><label>👤 ผู้บันทึก *</label><input type="text" id="crEmployee" placeholder="ชื่อพนักงาน" autocomplete="off"></div></div>
           <div class="row"><div class="field full">
-            <div style="display:flex;justify-content:space-between;align-items:center;">
-              <label>📦 ชื่อสินค้า</label>
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
+              <label style="margin:0;">📦 ชื่อสินค้า</label>
               <button id="crBtnEditProductInline" class="cr-btn btn-light" style="display:none;padding:4px 10px;font-size:11px;" onclick="crOpenEditProductFromCurrent()">✏️ แก้ไขสินค้า</button>
             </div>
-            <input type="text" id="crProductName" readonly autocomplete="off">
+            <select id="crProductDropdown" onchange="crSelectProductFromDropdown(this.value)"
+              style="width:100%;padding:10px 12px;border-radius:8px;border:2px solid #e2e8f0;font-family:inherit;font-size:14px;font-weight:700;background:#fff;color:#1e293b;margin-bottom:6px;outline:none;cursor:pointer;">
+              <option value="">🔍 หรือเลือกจากรายการสินค้าทั้งหมด...</option>
+            </select>
+            <input type="text" id="crProductName" readonly autocomplete="off" placeholder="(จะแสดงหลังค้นหา / เลือกสินค้า)" style="font-weight:700;color:#6366f1;">
           </div></div>
           <div class="row">
             <div class="field"><label>📅 วันผลิต (MFG) 6 หลัก *</label><input type="text" id="crMfg" placeholder="เช่น 170326" maxlength="6" inputmode="numeric" autocomplete="off"></div>
@@ -699,7 +703,7 @@
             <button class="cr-btn btn-light" onclick="crLoadWorkOrders()" style="padding:8px 12px;font-size:12px;">🔄 โหลด</button>
           </div>
           <div class="table-wrap">
-            <table><thead><tr><th>เลขที่</th><th>วันที่</th><th>สินค้า</th><th>MFG</th><th>EXP</th><th>สั่งผลิต</th><th>ผู้สั่ง</th><th>สถานะ</th><th>ส่งยอด</th><th>พิมพ์</th><th>ใบรายงาน</th></tr></thead>
+            <table><thead><tr><th>เลขที่</th><th>วันที่</th><th>สินค้า</th><th>MFG</th><th>EXP</th><th>สั่งผลิต</th><th>ผู้สั่ง</th><th>สถานะ</th><th>ส่งยอด</th><th>พิมพ์</th><th>ใบรายงาน</th><th>ลบ</th></tr></thead>
             <tbody id="crWoListBody"></tbody></table>
           </div>
         </div>
@@ -1283,19 +1287,22 @@
       const badge = document.getElementById("adminNavBadge");
       if (badge) { badge.style.display = ""; badge.textContent = res.list.length; }
 
-      listEl.innerHTML = res.list.map(u => `
+      listEl.innerHTML = res.list.map(u => {
+        const safeU = escapeJs(u.username||"");
+        return `
         <div class="flex items-center justify-between bg-slate-50 rounded-2xl p-4 border border-slate-200">
           <div>
-            <p class="font-black text-slate-800 text-base">👤 ${u.username}</p>
-            <p class="text-xs text-slate-400 font-bold mt-0.5">📅 ${u.requestedAt}</p>
+            <p class="font-black text-slate-800 text-base">👤 ${escapeHtml(u.username||"")}</p>
+            <p class="text-xs text-slate-400 font-bold mt-0.5">📅 ${escapeHtml(u.requestedAt||"")}</p>
           </div>
           <div class="flex gap-2">
-            <button onclick="adminApprove('${u.username}')"
+            <button onclick="adminApprove('${safeU}')"
               class="bg-emerald-500 text-white px-4 py-2 rounded-xl font-black text-sm hover:bg-emerald-600 transition-all">✅ อนุมัติ</button>
-            <button onclick="adminReject('${u.username}')"
+            <button onclick="adminReject('${safeU}')"
               class="bg-red-500 text-white px-4 py-2 rounded-xl font-black text-sm hover:bg-red-600 transition-all">❌ ปฏิเสธ</button>
           </div>
-        </div>`).join("");
+        </div>`;
+      }).join("");
     } catch(e) {
       listEl.innerHTML = `<p class="text-red-500 text-center text-sm font-bold py-8">เกิดข้อผิดพลาด: ${e.message}</p>`;
     }
@@ -1349,29 +1356,33 @@
         headers: { "Content-Type": "text/plain;charset=utf-8" },
         body: JSON.stringify({ module: "SYSTEM", action: "getUsers", payload: { adminToken: _adminToken } })
       }).then(r => r.json());
-      if (!res.ok) { listEl.innerHTML = `<p class="text-red-500 text-center text-sm font-bold py-4">❌ ${res.message}</p>`; return; }
+      if (!res.ok) { listEl.innerHTML = `<p class="text-red-500 text-center text-sm font-bold py-4">❌ ${escapeHtml(res.message||"")}</p>`; return; }
       const roleColors = { admin: "#f59e0b", approver: "#0ea5e9", user: "#64748b" };
-      listEl.innerHTML = res.users.map(u => `
+      listEl.innerHTML = res.users.map(u => {
+        const safeU = escapeJs(u.username||""); // ป้องกัน onclick injection
+        const safeId = escapeAttr(u.username||""); // ป้องกัน HTML injection ใน id attribute
+        return `
         <div class="flex items-center justify-between bg-slate-50 rounded-2xl p-3 border border-slate-200 gap-3 flex-wrap">
           <div>
-            <p class="font-black text-slate-800 text-sm">👤 ${u.username}</p>
+            <p class="font-black text-slate-800 text-sm">👤 ${escapeHtml(u.username||"")}</p>
             <p class="text-xs text-slate-400 font-bold">
-              <span style="color:${roleColors[u.role]||"#64748b"};font-weight:900;">${u.role}</span>
+              <span style="color:${roleColors[u.role]||"#64748b"};font-weight:900;">${escapeHtml(u.role||"")}</span>
               ${u.hasPassword ? " &nbsp;🔒 มีรหัสผ่าน" : " &nbsp;🔓 ไม่มีรหัสผ่าน"}
             </p>
           </div>
           <div class="flex gap-2 items-center flex-wrap">
-            <select id="roleSelect-${u.username}" style="padding:5px 8px;border-radius:8px;border:2px solid #e2e8f0;font-size:12px;font-weight:800;">
+            <select id="roleSelect-${safeId}" style="padding:5px 8px;border-radius:8px;border:2px solid #e2e8f0;font-size:12px;font-weight:800;">
               <option value="user"     ${u.role==="user"?"selected":""}>user</option>
               <option value="approver" ${u.role==="approver"?"selected":""}>approver</option>
               <option value="admin"    ${u.role==="admin"?"selected":""}>admin</option>
             </select>
-            <input type="password" id="pwdInput-${u.username}" placeholder="รหัสผ่านใหม่ (ถ้าต้องการตั้ง)" style="padding:5px 8px;border-radius:8px;border:2px solid #e2e8f0;font-size:12px;width:130px;">
-            <button onclick="saveUserRole('${u.username}')" class="bg-indigo-500 text-white px-3 py-1.5 rounded-xl font-black text-xs hover:bg-indigo-600 transition-all">💾 บันทึก</button>
+            <input type="password" id="pwdInput-${safeId}" placeholder="รหัสผ่านใหม่ (ถ้าต้องการตั้ง)" style="padding:5px 8px;border-radius:8px;border:2px solid #e2e8f0;font-size:12px;width:130px;">
+            <button onclick="saveUserRole('${safeU}')" class="bg-indigo-500 text-white px-3 py-1.5 rounded-xl font-black text-xs hover:bg-indigo-600 transition-all">💾 บันทึก</button>
           </div>
-        </div>`).join("");
+        </div>`;
+      }).join("");
     } catch(e) {
-      listEl.innerHTML = `<p class="text-red-500 text-center text-sm font-bold py-4">เกิดข้อผิดพลาด: ${e.message}</p>`;
+      listEl.innerHTML = `<p class="text-red-500 text-center text-sm font-bold py-4">เกิดข้อผิดพลาด: ${escapeHtml(e.message||"")}</p>`;
     }
   }
 
@@ -1430,17 +1441,17 @@
         <span class="shrink-0 text-xl mt-0.5">${moduleIcon[a.module] || "📋"}</span>
         <div class="flex-1 min-w-0">
           <div class="flex items-center gap-2 flex-wrap">
-            <span class="text-xs font-black px-2 py-0.5 rounded-full ${moduleColor[a.module] || "bg-slate-100 text-slate-600"}">${a.module}</span>
-            <span class="text-xs font-black text-slate-700 truncate">${a.name}</span>
-            ${a.action ? `<span class="text-xs text-slate-500 font-bold">${a.action}</span>` : ""}
-            ${a.qty !== undefined && a.qty !== "" ? `<span class="text-xs font-black text-emerald-600">× ${a.qty}</span>` : ""}
+            <span class="text-xs font-black px-2 py-0.5 rounded-full ${moduleColor[a.module] || "bg-slate-100 text-slate-600"}">${escapeHtml(a.module||"")}</span>
+            <span class="text-xs font-black text-slate-700 truncate">${escapeHtml(a.name||"")}</span>
+            ${a.action ? `<span class="text-xs text-slate-500 font-bold">${escapeHtml(a.action)}</span>` : ""}
+            ${a.qty !== undefined && a.qty !== "" ? `<span class="text-xs font-black text-emerald-600">× ${escapeHtml(String(a.qty))}</span>` : ""}
           </div>
           <div class="flex gap-3 mt-1 flex-wrap">
-            <span class="text-xs text-slate-400">👤 ${a.user || "-"}</span>
-            ${a.device ? `<span class="text-xs text-slate-300">🖥️ ${a.device}</span>` : ""}
-            <span class="text-xs text-slate-400 ml-auto shrink-0">🕐 ${a.timestamp}</span>
+            <span class="text-xs text-slate-400">👤 ${escapeHtml(a.user||"-")}</span>
+            ${a.device ? `<span class="text-xs text-slate-300">🖥️ ${escapeHtml(a.device)}</span>` : ""}
+            <span class="text-xs text-slate-400 ml-auto shrink-0">🕐 ${escapeHtml(a.timestamp||"")}</span>
           </div>
-          ${a.note ? `<p class="text-xs text-slate-400 mt-0.5 italic">💬 ${a.note}</p>` : ""}
+          ${a.note ? `<p class="text-xs text-slate-400 mt-0.5 italic">💬 ${escapeHtml(a.note)}</p>` : ""}
         </div>
       </div>`).join("");
   }
@@ -1926,8 +1937,9 @@
   async function crLoadWorkOrders() {
     const res = await crCallServer("getWorkOrders", {});
     if (!res.ok || !res.orders) return;
+    _crWoCache = res.orders; // cache สำหรับ reprint/report by ID
     const body = $$cr("crWoListBody");
-    if (!res.orders.length) { body.innerHTML=`<tr><td colspan="11" style="text-align:center;color:#94a3b8;padding:20px;">ยังไม่มีใบสั่งผลิต</td></tr>`; return; }
+    if (!res.orders.length) { body.innerHTML=`<tr><td colspan="12" style="text-align:center;color:#94a3b8;padding:20px;">ยังไม่มีใบสั่งผลิต</td></tr>`; return; }
     body.innerHTML = res.orders.map(o => {
       const items = crWoParseItems(o.Items);
       const summary = items.length > 1
@@ -1938,18 +1950,23 @@
       const woStatus = o.Status || "รอดำเนินการ";
       const statusColor = { "รอดำเนินการ":"#f59e0b","รอยืนยันรับ":"#3b82f6","ส่งกลับแก้ไข":"#dc2626","เสร็จสิ้น":"#059669","ยกเลิก":"#94a3b8" }[woStatus] || "#94a3b8";
       const canSend = woStatus !== "เสร็จสิ้น" && woStatus !== "ยกเลิก";
+      const canDelete = woStatus === "รอดำเนินการ" || woStatus === "ส่งกลับแก้ไข";
+      // แสดงวันที่ให้อ่านง่าย (slice ISO ถ้ายาวกว่า 10 ตัวอักษร)
+      const dateDisplay = (o.Date||"-").length > 10 ? (o.Date||"").slice(0,10) : (o.Date||"-");
+      const safeOId = escapeJs(o.OrderID||"");
       return `<tr>
         <td style="font-size:11px;font-weight:700;color:#6366f1;">${escapeHtml(o.OrderID)}</td>
-        <td style="font-size:11px;">${o.Date||"-"}</td>
+        <td style="font-size:11px;">${escapeHtml(dateDisplay)}</td>
         <td><b>${escapeHtml(summary)}</b><br><span style="font-size:10px;color:#94a3b8;">${items.length} SKU</span></td>
         <td style="font-size:11px;">${mfgList||"-"}</td>
         <td style="font-size:11px;">${items.map(i=>isoToDdmmyy(ddmmyyToIsoWo(i.exp)||i.exp)||i.exp).join(", ")||"-"}</td>
         <td style="font-weight:700;">${totalQty.toLocaleString()}</td>
         <td style="font-size:11px;">${escapeHtml(o.CreatedBy||"-")}</td>
         <td><span style="background:${statusColor};color:#fff;border-radius:999px;padding:2px 8px;font-size:10px;font-weight:900;white-space:nowrap;">${escapeHtml(woStatus)}</span></td>
-        <td>${canSend ? `<button class="cr-btn btn-primary" style="padding:5px 10px;font-size:11px;background:#0ea5e9;white-space:nowrap;" onclick='crGoDeliverWO(${JSON.stringify(o.OrderID)})'>📦 ส่งยอด</button>` : `<span style="font-size:10px;color:#94a3b8;">-</span>`}</td>
-        <td><button class="cr-btn btn-light" style="padding:5px 10px;font-size:11px;" onclick='crReprintWorkOrder(${JSON.stringify(o)})'>🖨️</button></td>
-        <td><button class="cr-btn btn-primary" style="padding:5px 10px;font-size:11px;background:#0f766e;" onclick='crPrintActualReport(${JSON.stringify(o)})'>📊</button></td>
+        <td>${canSend ? `<button class="cr-btn btn-primary" style="padding:5px 10px;font-size:11px;background:#0ea5e9;white-space:nowrap;" onclick="crGoDeliverWO('${safeOId}')">📦 ส่งยอด</button>` : `<span style="font-size:10px;color:#94a3b8;">-</span>`}</td>
+        <td><button class="cr-btn btn-light" style="padding:5px 10px;font-size:11px;" onclick="crReprintWO('${safeOId}')">🖨️</button></td>
+        <td><button class="cr-btn btn-primary" style="padding:5px 10px;font-size:11px;background:#0f766e;" onclick="crPrintActualWO('${safeOId}')">📊</button></td>
+        <td>${canDelete ? `<button style="padding:5px 9px;font-size:13px;background:#fee2e2;border:none;border-radius:6px;color:#dc2626;cursor:pointer;font-weight:900;" onclick="crDeleteWorkOrder('${safeOId}')" title="ลบใบสั่งผลิต">🗑️</button>` : `<span style="font-size:10px;color:#e2e8f0;">—</span>`}</td>
       </tr>`;
     }).join("");
   }
@@ -2204,6 +2221,26 @@
   function crReprintWorkOrder(o) {
     const items = crWoParseItems(o.Items);
     crOpenWorkOrderPrint({ ...o, Items:items });
+  }
+
+  // helper: reprint by OrderID (ใช้กับปุ่มใน list ที่ส่งแค่ ID)
+  let _crWoCache = []; // cache รายการ WO ที่โหลดมาล่าสุด
+  function crReprintWO(orderId) {
+    const o = _crWoCache.find(x => x.OrderID === orderId);
+    if (o) crReprintWorkOrder(o);
+    else showToast("ไม่พบข้อมูลใบสั่งผลิต กรุณากด 🔄 โหลดใหม่","warn");
+  }
+  function crPrintActualWO(orderId) {
+    const o = _crWoCache.find(x => x.OrderID === orderId);
+    if (o) crPrintActualReport(o);
+    else showToast("ไม่พบข้อมูลใบสั่งผลิต กรุณากด 🔄 โหลดใหม่","warn");
+  }
+
+  async function crDeleteWorkOrder(orderId) {
+    if (!await crShowModal("confirm","🗑️ ลบใบสั่งผลิต",`ลบ "${orderId}" ? ไม่สามารถกู้คืนได้`)) return;
+    const res = await crCallServer("deleteWorkOrder", { orderId, username: currentUser });
+    if (res.ok) { showToast("🗑️ ลบแล้ว"); crLoadWorkOrders(); }
+    else showToast("❌ " + (res.message||"ลบไม่สำเร็จ"),"error");
   }
 
   async function crPrintActualReport(o) {
@@ -2860,11 +2897,34 @@
   }
   function crClearAll() {
     ["crBarcode","crMfg","crExp","crNewQty","crNote","crProductName","crNewBarcode","crNewName","crNewSku"].forEach(id => { if($$cr(id)) $$cr(id).value=""; });
+    const dd = $$cr("crProductDropdown"); if (dd) dd.value = "";
     $$cr("crTotalQty").textContent = "0"; $$cr("crMasterUnit").textContent = "-";
     $$cr("crLotBreakdown").style.display = "none"; $$cr("crLotBreakdown").innerHTML = "";
     crCurrentProduct = null; crClearStatus("crMainStatus"); $$cr("crBarcode").focus();
     const editBtn = document.getElementById("crBtnEditProductInline");
     if (editBtn) editBtn.style.display = "none";
+  }
+
+  // ── Product Dropdown (stock tab) ──
+  async function crLoadProductDropdown() {
+    const sel = $$cr("crProductDropdown");
+    if (!sel) return;
+    // ใช้ cache ของ editProduct ถ้ามีแล้ว, ไม่งั้นโหลดใหม่
+    let products = crEditProductCache.length ? crEditProductCache : null;
+    if (!products) {
+      const res = await crCallServer("getColdRoomProducts", {});
+      if (res.ok && res.products) { products = res.products; crEditProductCache = products; }
+    }
+    if (!products) return;
+    const sorted = [...products].sort((a, b) => String(a.ProductName||"").localeCompare(String(b.ProductName||""), "th"));
+    sel.innerHTML = '<option value="">🔍 หรือเลือกจากรายการสินค้าทั้งหมด...</option>' +
+      sorted.map(p => `<option value="${escapeAttr(String(p.Barcode||""))}">${escapeHtml(String(p.ProductName||""))}${p.SetName ? " · " + escapeHtml(String(p.SetName)) : ""}</option>`).join("");
+  }
+
+  function crSelectProductFromDropdown(barcode) {
+    if (!barcode) return;
+    const barcodeEl = $$cr("crBarcode");
+    if (barcodeEl) { barcodeEl.value = barcode; crLookupBarcode(); }
   }
 
   // ── Export ──
@@ -2936,6 +2996,7 @@
       }
     });
     crLoadOverview();
+    crLoadProductDropdown(); // โหลดรายการสินค้าใส่ dropdown
     // pre-fill employee name
     if ($$cr("crEmployee") && currentUser) $$cr("crEmployee").value = currentUser;
     $$cr("crBarcode").focus();

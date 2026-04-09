@@ -1,3 +1,25 @@
+// ╔══════════════════════════════════════════════════════════╗
+// ║  ⚠️  ขั้นตอนแรก: ตั้งค่า appsscript.json ใน GAS Editor  ║
+// ║  1. กด ⚙️ Project Settings (ซ้ายล่าง)                   ║
+// ║  2. ✅ เปิด "Show appsscript.json manifest in editor"    ║
+// ║  3. คลิกไฟล์ appsscript.json แล้ว วางโค้ดนี้:           ║
+// ║                                                          ║
+// ║  {                                                       ║
+// ║    "timeZone": "Asia/Bangkok",                           ║
+// ║    "dependencies": {},                                   ║
+// ║    "exceptionLogging": "STACKDRIVER",                    ║
+// ║    "runtimeVersion": "V8",                               ║
+// ║    "oauthScopes": [                                      ║
+// ║      "https://www.googleapis.com/auth/spreadsheets",     ║
+// ║      "https://www.googleapis.com/auth/script.external_request", ║
+// ║      "https://www.googleapis.com/auth/script.send_mail"  ║
+// ║    ]                                                     ║
+// ║  }                                                       ║
+// ║                                                          ║
+// ║  4. Save → Run ฟังก์ชันใดก็ได้ → Allow                  ║
+// ║  5. Deploy → New version                                 ║
+// ╚══════════════════════════════════════════════════════════╝
+
 // ============================================================
 // UNIFIED STOCK MANAGEMENT — Google Apps Script
 // โรงงาน SQF (สุพรรณคิวฟู้ดส์) + MLM (แม่ละมาย)

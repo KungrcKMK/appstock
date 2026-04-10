@@ -502,8 +502,6 @@ function doPost(e) {
     if (action === "setUserRole")     return jsonResponse(setUserRole(payload));
     if (action === "submitDelivery")  return jsonResponse(submitDelivery(payload));
     if (action === "getDeliveries")   return jsonResponse(getDeliveries(payload));
-    if (action === "approveDelivery") return jsonResponse(approveDelivery(payload));
-    if (action === "rejectDelivery")  return jsonResponse(rejectDelivery(payload));
     if (action === "testEmail")       return jsonResponse(crTestEmail(payload));
 
     if (module === "COLDROOM") {

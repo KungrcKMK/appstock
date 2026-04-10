@@ -2828,21 +2828,33 @@
     } catch(e) {}
 
     if (body) {
-      body.innerHTML = items.map((item, i) => {
-        const ex = existingItems ? existingItems[i] : null;
-        const actualMfg = ex ? (ex.mfg||item.mfg||"") : (item.mfg||"");
-        const actualExp = ex ? (ex.exp||item.exp||"") : (item.exp||"");
-        const actualQty = ex ? (ex.qty||item.qty||0) : (item.qty||0);
-        return `<tr style="background:${i%2===0?"#fff":"#f8fafc"}">
-          <td style="padding:8px 10px;text-align:center;font-size:12px;color:#94a3b8;">${i+1}</td>
-          <td style="padding:8px 10px;font-weight:700;font-size:13px;">${escapeHtml(item.name||"-")}</td>
-          <td style="padding:8px 6px;text-align:center;"><input type="text" class="cr-dlv-mfg" data-idx="${i}" value="${escapeAttr(actualMfg)}" maxlength="6" style="width:78px;padding:6px 8px;border:2px solid #e2e8f0;border-radius:6px;text-align:center;font-family:inherit;font-size:13px;font-weight:700;" placeholder="DDMMYY"></td>
-          <td style="padding:8px 6px;text-align:center;"><input type="text" class="cr-dlv-exp" data-idx="${i}" value="${escapeAttr(actualExp)}" maxlength="6" style="width:78px;padding:6px 8px;border:2px solid #e2e8f0;border-radius:6px;text-align:center;font-family:inherit;font-size:13px;font-weight:700;" placeholder="DDMMYY"></td>
-          <td style="padding:8px 10px;text-align:right;font-size:13px;color:#94a3b8;">${Number(item.qty||0).toLocaleString()}</td>
-          <td style="padding:8px 6px;text-align:center;"><input type="number" class="cr-dlv-qty" data-idx="${i}" value="${actualQty}" min="0" style="width:80px;padding:6px 8px;border:2px solid #6366f1;border-radius:6px;text-align:right;font-family:inherit;font-size:14px;font-weight:900;" data-barcode="${escapeAttr(item.barcode||"")}" data-name="${escapeAttr(item.name||"")}" data-unit="${escapeAttr(item.unit||"")}"></td>
-          <td style="padding:8px 10px;font-size:12px;color:#64748b;">${escapeHtml(item.unit||"")}</td>
-        </tr>`;
-      }).join("");
+      if (!items.length) {
+        // Items ว่าง — แสดงข้อความพร้อม raw data เพื่อ debug
+        const rawStr = String(wo.Items || "").slice(0, 200);
+        body.innerHTML = `<tr><td colspan="7" style="padding:20px;text-align:center;">
+          <div style="background:#fff7ed;border:2px solid #fed7aa;border-radius:12px;padding:16px;">
+            <div style="font-weight:800;color:#92400e;font-size:14px;margin-bottom:8px;">⚠️ ไม่พบรายการสินค้าในใบสั่งผลิตนี้</div>
+            <div style="font-size:11px;color:#64748b;font-weight:600;">อาจเป็นใบสั่งผลิตเก่าที่บันทึกไม่ครบ กรุณาสร้างใบสั่งผลิตใหม่</div>
+            ${rawStr ? `<div style="margin-top:8px;font-size:10px;color:#94a3b8;word-break:break-all;font-family:monospace;">Items raw: ${escapeHtml(rawStr)}</div>` : ""}
+          </div>
+        </td></tr>`;
+      } else {
+        body.innerHTML = items.map((item, i) => {
+          const ex = existingItems ? existingItems[i] : null;
+          const actualMfg = ex ? (ex.mfg||item.mfg||"") : (item.mfg||"");
+          const actualExp = ex ? (ex.exp||item.exp||"") : (item.exp||"");
+          const actualQty = ex ? (ex.qty||item.qty||0) : (item.qty||0);
+          return `<tr style="background:${i%2===0?"#fff":"#f8fafc"}">
+            <td style="padding:8px 10px;text-align:center;font-size:12px;color:#94a3b8;">${i+1}</td>
+            <td style="padding:8px 10px;font-weight:700;font-size:13px;">${escapeHtml(item.name||"-")}</td>
+            <td style="padding:8px 6px;text-align:center;"><input type="text" class="cr-dlv-mfg" data-idx="${i}" value="${escapeAttr(actualMfg)}" maxlength="6" style="width:78px;padding:6px 8px;border:2px solid #e2e8f0;border-radius:6px;text-align:center;font-family:inherit;font-size:13px;font-weight:700;" placeholder="DDMMYY"></td>
+            <td style="padding:8px 6px;text-align:center;"><input type="text" class="cr-dlv-exp" data-idx="${i}" value="${escapeAttr(actualExp)}" maxlength="6" style="width:78px;padding:6px 8px;border:2px solid #e2e8f0;border-radius:6px;text-align:center;font-family:inherit;font-size:13px;font-weight:700;" placeholder="DDMMYY"></td>
+            <td style="padding:8px 10px;text-align:right;font-size:13px;color:#94a3b8;">${Number(item.qty||0).toLocaleString()}</td>
+            <td style="padding:8px 6px;text-align:center;"><input type="number" class="cr-dlv-qty" data-idx="${i}" value="${actualQty}" min="0" style="width:80px;padding:6px 8px;border:2px solid #6366f1;border-radius:6px;text-align:right;font-family:inherit;font-size:14px;font-weight:900;" data-barcode="${escapeAttr(item.barcode||"")}" data-name="${escapeAttr(item.name||"")}" data-unit="${escapeAttr(item.unit||"")}"></td>
+            <td style="padding:8px 10px;font-size:12px;color:#64748b;">${escapeHtml(item.unit||"")}</td>
+          </tr>`;
+        }).join("");
+      }
     }
 
     if (form) form.style.display = "";

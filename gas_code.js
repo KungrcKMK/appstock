@@ -67,7 +67,8 @@ function initSheet(sheet, name) {
     "Config":            ["Key","Value"],
     "ColdRoom_WorkOrders": ["OrderID","Date","Items","Note","CreatedBy","CreatedAt","Status"],
     "ColdRoom_DeliveryNotes": ["DeliveryID","WorkOrderID","Items","SubmittedBy","SubmittedAt","ApprovedBy","ApprovedAt","Status","Note"],
-    "BOM": ["BomID","ProductBarcode","ProductName","Factory","MaterialSKU","MaterialName","QtyPerUnit","Unit"]
+    "BOM": ["BomID","ProductBarcode","ProductName","Factory","MaterialSKU","MaterialName","QtyPerUnit","Unit"],
+    "ColdRoom_StockIn": ["StockInID","SubmittedBy","SubmittedAt","Items","Status","Note","ReviewedBy","ReviewedAt"]
   };
   if (HEADERS[name]) {
     sheet.appendRow(HEADERS[name]);

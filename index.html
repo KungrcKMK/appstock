@@ -2988,15 +2988,15 @@
   let _siProductCache = [];
   let _siRowIdx = 0;
 
-  async function crSiInit() {
-    // โหลด product list ถ้ายังไม่มี
+  async function crSiInitSubmit() {
     if (!_siProductCache.length) {
       const res = await crCallServer("getStartupOverview", {});
       _siProductCache = res.products || [];
     }
-    // ถ้ายังไม่มี row เลย ให้เพิ่ม 1 row
     if (!document.querySelector(".cr-si-row")) crSiAddRow();
-    // โหลดรายการรอตรวจ
+  }
+
+  async function crSiInitReceive() {
     crSiLoadReviewList("รอตรวจยอด");
   }
 

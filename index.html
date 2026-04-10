@@ -730,6 +730,47 @@
         </div>
       </div>
 
+      <!-- Tab: รับสินค้า (Direct Stock In) -->
+      <div class="cr-tab-panel" id="cr-tab-stockin">
+
+        <!-- ── ส่วน 1: ฟอร์มส่งรายการ (ฝ่ายผลิต — มือถือ) ── -->
+        <div class="card" id="crSiFormCard">
+          <h2 style="margin-bottom:4px;">📥 รายการรับสินค้าเข้าคลัง</h2>
+          <p style="font-size:12px;color:#64748b;margin-bottom:16px;">ฝ่ายผลิตกรอกรายการ → คนสั่งผลิตตรวจยอดจริง → ยอดเข้าคลัง</p>
+          <div class="cr-status" id="crSiFormStatus"></div>
+
+          <!-- รายการสินค้า -->
+          <div id="crSiRows" style="display:flex;flex-direction:column;gap:14px;margin-bottom:16px;"></div>
+
+          <button class="cr-btn btn-light" onclick="crSiAddRow()" style="width:100%;padding:12px;font-size:14px;border:2px dashed #94a3b8;margin-bottom:12px;">
+            ➕ เพิ่มสินค้า
+          </button>
+
+          <div style="margin-bottom:12px;">
+            <label style="font-size:12px;color:#64748b;font-weight:700;display:block;margin-bottom:4px;">หมายเหตุ (ถ้ามี)</label>
+            <input id="crSiNote" type="text" placeholder="เช่น รุ่นการผลิต, กะ..." style="width:100%;padding:10px 12px;border:1.5px solid #e2e8f0;border-radius:10px;font-size:14px;box-sizing:border-box;">
+          </div>
+
+          <button class="cr-btn btn-primary" onclick="crSiSubmit()" style="width:100%;padding:16px;font-size:16px;font-weight:900;letter-spacing:0.5px;">
+            📤 ส่งรายการให้คนสั่งผลิตตรวจ
+          </button>
+        </div>
+
+        <!-- ── ส่วน 2: รายการรอตรวจ (คนสั่งผลิต) ── -->
+        <div class="card" id="crSiReviewCard">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px;">
+            <h2 style="margin:0;">🔍 รายการรอตรวจยอด</h2>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;">
+              <button class="cr-btn btn-light" onclick="crSiLoadReviewList('รอตรวจยอด')" style="padding:8px 12px;font-size:12px;">⏳ รอตรวจ</button>
+              <button class="cr-btn btn-light" onclick="crSiLoadReviewList('')" style="padding:8px 12px;font-size:12px;">📋 ทั้งหมด</button>
+            </div>
+          </div>
+          <div class="cr-status" id="crSiReviewStatus"></div>
+          <div id="crSiReviewList"><p style="text-align:center;color:#94a3b8;padding:20px;font-size:13px;">กดโหลดรายการ</p></div>
+        </div>
+
+      </div>
+
       <!-- Tab: สูตร BOM -->
       <div class="cr-tab-panel" id="cr-tab-bom">
 

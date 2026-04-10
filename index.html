@@ -2613,31 +2613,34 @@
     const body = $$cr("crWoListBody");
     if (!res.orders.length) { body.innerHTML=`<tr><td colspan="12" style="text-align:center;color:#94a3b8;padding:20px;">ยังไม่มีใบสั่งผลิต</td></tr>`; return; }
     body.innerHTML = res.orders.map(o => {
-      const items = crWoParseItems(o.Items);
-      const summary = items.length > 1
-        ? `${items[0].name} +${items.length-1} รายการ`
-        : (items[0]?.name || o.ProductName || "-");
-      const totalQty = items.reduce((s,i)=>s+Number(i.qty||0),0);
-      const mfgList  = [...new Set(items.map(i=>isoToDdmmyy(ddmmyyToIsoWo(i.mfg)||i.mfg)||i.mfg))].join(", ");
-      const woStatus = o.Status || "รอดำเนินการ";
-      const statusColor = { "รอดำเนินการ":"#f59e0b","รอยืนยันรับ":"#3b82f6","ส่งกลับแก้ไข":"#dc2626","เสร็จสิ้น":"#059669","ยกเลิก":"#94a3b8" }[woStatus] || "#94a3b8";
-      const canSend = woStatus !== "เสร็จสิ้น" && woStatus !== "ยกเลิก";
-      const canDelete = woStatus === "รอดำเนินการ" || woStatus === "ส่งกลับแก้ไข";
-      // แสดงวันที่ให้อ่านง่าย (slice ISO ถ้ายาวกว่า 10 ตัวอักษร)
+      const items    = crWoParseItems(o.Items);
+      const hasItems = items.length > 0;
+      const summary  = hasItems
+        ? (items.length > 1 ? `${items[0].name} +${items.length-1} รายการ` : items[0].name)
+        : o.ProductName || "";
+      const totalQty  = items.reduce((s,i)=>s+Number(i.qty||0),0);
+      const mfgList   = [...new Set(items.map(i=>isoToDdmmyy(ddmmyyToIsoWo(i.mfg)||i.mfg)||i.mfg))].join(", ");
+      const woStatus  = o.Status || "รอดำเนินการ";
+      const statusColor = { "รอดำเนินการ":"#f59e0b","เสร็จสิ้น":"#059669","ยกเลิก":"#94a3b8" }[woStatus] || "#94a3b8";
+      const canDelete = woStatus !== "เสร็จสิ้น" && woStatus !== "ยกเลิก";
       const dateDisplay = (o.Date||"-").length > 10 ? (o.Date||"").slice(0,10) : (o.Date||"-");
-      const safeOId = escapeJs(o.OrderID||"");
-      return `<tr>
-        <td style="font-size:11px;font-weight:700;color:#6366f1;">${escapeHtml(o.OrderID)}</td>
+      const safeOId   = escapeJs(o.OrderID||"");
+      // WO ที่ไม่มี items = ข้อมูลเก่าที่ไม่สมบูรณ์ → แสดง warning + แนะนำให้ลบ
+      const rowStyle  = !hasItems ? "background:#fff5f5;" : "";
+      const itemsCell = hasItems
+        ? `<b>${escapeHtml(summary)}</b><br><span style="font-size:10px;color:#94a3b8;">${items.length} SKU</span>`
+        : `<span style="color:#dc2626;font-weight:700;font-size:11px;">⚠️ ไม่มีรายการสินค้า</span><br><span style="font-size:10px;color:#dc2626;">กรุณาลบแล้วสร้างใหม่</span>`;
+      return `<tr style="${rowStyle}">
+        <td style="font-size:11px;font-weight:700;color:${hasItems?"#6366f1":"#dc2626"};">${escapeHtml(o.OrderID)}</td>
         <td style="font-size:11px;">${escapeHtml(dateDisplay)}</td>
-        <td><b>${escapeHtml(summary)}</b><br><span style="font-size:10px;color:#94a3b8;">${items.length} SKU</span></td>
+        <td>${itemsCell}</td>
         <td style="font-size:11px;">${mfgList||"-"}</td>
         <td style="font-size:11px;">${items.map(i=>isoToDdmmyy(ddmmyyToIsoWo(i.exp)||i.exp)||i.exp).join(", ")||"-"}</td>
-        <td style="font-weight:700;">${totalQty.toLocaleString()}</td>
+        <td style="font-weight:700;">${hasItems ? totalQty.toLocaleString() : "-"}</td>
         <td style="font-size:11px;">${escapeHtml(o.CreatedBy||"-")}</td>
         <td><span style="background:${statusColor};color:#fff;border-radius:999px;padding:2px 8px;font-size:10px;font-weight:900;white-space:nowrap;">${escapeHtml(woStatus)}</span></td>
-        <td><span style="font-size:10px;color:#94a3b8;">-</span></td>
-        <td><button class="cr-btn btn-light" style="padding:5px 10px;font-size:11px;" onclick="crReprintWO('${safeOId}')">🖨️</button></td>
-        <td><button class="cr-btn btn-primary" style="padding:5px 10px;font-size:11px;background:#0f766e;" onclick="crPrintActualWO('${safeOId}')">📊</button></td>
+        <td>${hasItems ? `<button class="cr-btn btn-light" style="padding:5px 10px;font-size:11px;" onclick="crReprintWO('${safeOId}')">🖨️</button>` : `<span style="font-size:10px;color:#e2e8f0;">—</span>`}</td>
+        <td>${hasItems ? `<button class="cr-btn btn-primary" style="padding:5px 10px;font-size:11px;background:#0f766e;" onclick="crPrintActualWO('${safeOId}')">📊</button>` : `<span style="font-size:10px;color:#e2e8f0;">—</span>`}</td>
         <td>${canDelete ? `<button style="padding:5px 9px;font-size:13px;background:#fee2e2;border:none;border-radius:6px;color:#dc2626;cursor:pointer;font-weight:900;" onclick="crDeleteWorkOrder('${safeOId}')" title="ลบใบสั่งผลิต">🗑️</button>` : `<span style="font-size:10px;color:#e2e8f0;">—</span>`}</td>
       </tr>`;
     }).join("");

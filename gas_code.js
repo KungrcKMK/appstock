@@ -982,8 +982,8 @@ function crDeleteWorkOrder(payload) {
   for (var i = 1; i < data.length; i++) {
     if (String(data[i][h.indexOf("OrderID")]) === orderId) {
       var status = String(data[i][h.indexOf("Status")] || "รอดำเนินการ");
-      if (status === "เสร็จสิ้น" || status === "รอยืนยันรับ") {
-        return { ok: false, message: "ไม่สามารถลบได้ — ใบสั่งผลิตอยู่ระหว่างดำเนินการหรืออนุมัติแล้ว" };
+      if (status === "เสร็จสิ้น") {
+        return { ok: false, message: "ไม่สามารถลบได้ — ใบสั่งผลิตเสร็จสิ้นแล้ว" };
       }
       sheet.deleteRow(i + 1);
       crSendTelegramGeneric("🗑️ ลบใบสั่งผลิต\n🔖 " + orderId + "\n👤 " + username + deviceTag());

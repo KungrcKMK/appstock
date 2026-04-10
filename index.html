@@ -1479,9 +1479,12 @@
           </div>
           <div class="flex gap-2 items-center flex-wrap">
             <select id="roleSelect-${safeId}" style="padding:5px 8px;border-radius:8px;border:2px solid #e2e8f0;font-size:12px;font-weight:800;">
-              <option value="user"     ${u.role==="user"?"selected":""}>user</option>
-              <option value="approver" ${u.role==="approver"?"selected":""}>approver</option>
-              <option value="admin"    ${u.role==="admin"?"selected":""}>admin</option>
+              <option value="user"     ${u.role==="user"    ?"selected":""}>👤 user — พนักงานทั่วไป</option>
+              <option value="viewer"   ${u.role==="viewer"  ?"selected":""}>👁️ viewer — ดูอย่างเดียว</option>
+              <option value="approver" ${u.role==="approver"?"selected":""}>✅ approver — อนุมัติ</option>
+              <option value="manager"  ${u.role==="manager" ?"selected":""}>📋 manager — ผู้จัดการ</option>
+              <option value="ceo"      ${u.role==="ceo"     ?"selected":""}>👔 ceo — ผู้บริหาร</option>
+              <option value="admin"    ${u.role==="admin"   ?"selected":""}>🔧 admin — ผู้ดูแลระบบ</option>
             </select>
             <input type="password" id="pwdInput-${safeId}" placeholder="รหัสผ่านใหม่ (ถ้าต้องการตั้ง)" style="padding:5px 8px;border-radius:8px;border:2px solid #e2e8f0;font-size:12px;width:130px;">
             <button onclick="saveUserRole('${safeU}')" class="bg-indigo-500 text-white px-3 py-1.5 rounded-xl font-black text-xs hover:bg-indigo-600 transition-all">💾 บันทึก</button>
@@ -1925,8 +1928,8 @@
       const currentRole = localStorage.getItem("unified_stock_role") || "user";
       const roleLower  = currentRole.toLowerCase();
       const isAdmin    = roleLower === "admin";
-      const isApprover = roleLower === "admin" || roleLower === "approver";
-      const isExecDash = roleLower === "admin" || roleLower === "ceo";   // ภาพรวมผู้บริหาร
+      const isApprover = roleLower === "admin" || roleLower === "approver" || roleLower === "manager";
+      const isExecDash = roleLower === "admin" || roleLower === "ceo" || roleLower === "manager";
       const adminBtn = document.getElementById("adminNavBtn");
       if (adminBtn) adminBtn.style.display = isAdmin ? "" : "none";
       const execBtn = document.getElementById("execDashNavBtn");

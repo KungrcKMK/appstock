@@ -202,8 +202,8 @@ function verifyUser(payload) {
 
       _clearRateLimit(username); // reset นับหลังล็อกอินสำเร็จ
       const role = String(data[i][h.indexOf("Role")] || "user");
-      // ออก token ให้ admin/approver ทุกคนที่ผ่าน login (มี password หรือไม่ก็ตาม)
-      const needsToken = (role === "admin" || role === "approver");
+      // ออก token ให้ admin/approver/manager ทุกคนที่ผ่าน login
+      const needsToken = (role === "admin" || role === "approver" || role === "manager");
       const adminToken = needsToken ? _issueToken(username, role) : null;
 
       return { ok: true, role, adminToken };
@@ -1194,7 +1194,7 @@ function setUserRole(payload) {
   var newRole     = String(payload.role||"user").trim();
   var newPassword = payload.password !== undefined ? String(payload.password||"").trim() : undefined;
   if (!username) return { ok: false, message: "ไม่ระบุชื่อผู้ใช้" };
-  if (!["admin","approver","user"].includes(newRole)) return { ok: false, message: "Role ไม่ถูกต้อง" };
+  if (!["admin","approver","manager","ceo","viewer","user"].includes(newRole)) return { ok: false, message: "Role ไม่ถูกต้อง" };
   var sheet = getSheet("AppUsers");
   ensureColumns(sheet, ["Password"]);
   var data = sheet.getDataRange().getValues(); var h = data[0];

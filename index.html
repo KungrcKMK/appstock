@@ -2189,7 +2189,7 @@
   }
 
   function crSwitchTab(tab) {
-    ["stock","balance","newproduct","editproduct","workorder","delivery","approval","report","settings"].forEach(n => {
+    ["stock","balance","newproduct","editproduct","workorder","delivery","approval","bom","report","settings"].forEach(n => {
       $$cr("cr-tab-" + n)?.classList.toggle("active", n === tab);
       $$cr("crTabBtn-" + n)?.classList.toggle("active", n === tab);
     });
@@ -2198,6 +2198,7 @@
     if (tab === "editproduct" && crEditProductCache.length === 0) crLoadEditProductList();
     if (tab === "delivery")  crInitDelivery();
     if (tab === "approval")  crInitApproval();
+    if (tab === "bom")       crLoadBomList();
   }
 
   // ══════════════════════════════════════

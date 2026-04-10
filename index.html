@@ -3054,21 +3054,45 @@
   }
 
   function crSiOnProductChange(sel) {
-    const opt = sel.options[sel.selectedIndex];
+    const opt  = sel.options[sel.selectedIndex];
     const unit = opt.dataset.unit || "—";
-    const row = sel.closest(".cr-si-row");
+    const row  = sel.closest(".cr-si-row");
     row.querySelector(".cr-si-unit-label").textContent = unit;
-    // auto EXP: วันนี้ + shelf life ถ้ามี
-    const bc = opt.value;
-    const prod = crEditProductCache.find(p => String(p.Barcode||"") === bc);
-    if (prod && prod.StandardShelfLifeDays) {
-      const exp = new Date();
-      exp.setDate(exp.getDate() + Number(prod.StandardShelfLifeDays));
-      row.querySelector(".cr-si-exp").value = exp.toISOString().slice(0,10);
+
+    // MFG = วันนี้ใน DDMMYY ถ้ายังไม่ได้กรอก
+    const mfgEl = row.querySelector(".cr-si-mfg");
+    if (!mfgEl.value) {
+      mfgEl.value = isoToDdmmyy(new Date().toISOString().slice(0,10));
     }
-    // MFG = today
-    if (!row.querySelector(".cr-si-mfg").value) {
-      row.querySelector(".cr-si-mfg").value = new Date().toISOString().slice(0,10);
+
+    // EXP คำนวณจาก shelf life ของสินค้า
+    const bc   = opt.value;
+    const prod = crEditProductCache.find(p => String(p.Barcode||"") === bc);
+    const days = prod ? Number(prod.StandardShelfLifeDays||0) : 0;
+    _crSiCalcExp(row, mfgEl.value, days);
+
+    // เก็บ shelf life ไว้ใน row สำหรับ auto-recalc ตอนพิมพ์ MFG
+    row.dataset.shelfLife = days;
+  }
+
+  function crSiAutoExp(mfgInput) {
+    const row   = mfgInput.closest(".cr-si-row");
+    const days  = Number(row.dataset.shelfLife || 0);
+    if (mfgInput.value.length === 6) _crSiCalcExp(row, mfgInput.value, days);
+    else row.querySelector(".cr-si-exp").value = "";
+  }
+
+  function _crSiCalcExp(row, mfgDdmmyy, shelfDays) {
+    const expEl = row.querySelector(".cr-si-exp");
+    if (!mfgDdmmyy || mfgDdmmyy.length !== 6) { expEl.value = ""; return; }
+    const mfgIso = ddmmyyToIsoWo(mfgDdmmyy);
+    if (!mfgIso) { expEl.value = ""; return; }
+    if (shelfDays > 0) {
+      const expDate = new Date(mfgIso);
+      expDate.setDate(expDate.getDate() + shelfDays);
+      expEl.value = isoToDdmmyy(expDate.toISOString().slice(0,10));
+    } else {
+      expEl.value = mfgDdmmyy; // ถ้าไม่มี shelf life ให้ใส่ = MFG ให้แก้เอง
     }
   }
 

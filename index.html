@@ -2989,9 +2989,9 @@
   let _siRowIdx = 0;
 
   async function crSiInitSubmit() {
-    if (!_siProductCache.length) {
-      const res = await crCallServer("getStartupOverview", {});
-      _siProductCache = res.products || [];
+    if (!crEditProductCache.length) {
+      const res = await crCallServer("getColdRoomProducts", {});
+      if (res.ok) crEditProductCache = res.products || [];
     }
     if (!document.querySelector(".cr-si-row")) crSiAddRow();
   }

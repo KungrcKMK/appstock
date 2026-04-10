@@ -2985,7 +2985,7 @@
   // ══════════════════════════════════════
   // 📥 รับสินค้าตรง (Direct Stock In)
   // ══════════════════════════════════════
-  let _siProductCache = [];
+  // _siProductCache ถูกรวมเป็น crEditProductCache (โหลดครั้งเดียวตอน startup)
   let _siRowIdx = 0;
 
   async function crSiInitSubmit() {

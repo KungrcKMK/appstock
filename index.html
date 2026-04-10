@@ -2059,7 +2059,7 @@
   let _bomMatOptions     = [];
   let _bomCurrentBarcode = null;
   let _bomCurrentName    = null;
-  let _bomProductCache   = [];
+  // _bomProductCache ถูกรวมเป็น crEditProductCache (โหลดครั้งเดียวตอน initColdroom)
 
   // ① เลือกโรงงาน → โหลด material options + populate product dropdown
   async function crBomSelectFactory(factory) {

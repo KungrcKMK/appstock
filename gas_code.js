@@ -66,7 +66,8 @@ function initSheet(sheet, name) {
     "MLM_History":       ["Timestamp","Name","Action","Qty","User"],
     "Config":            ["Key","Value"],
     "ColdRoom_WorkOrders": ["OrderID","Date","Items","Note","CreatedBy","CreatedAt","Status"],
-    "ColdRoom_DeliveryNotes": ["DeliveryID","WorkOrderID","Items","SubmittedBy","SubmittedAt","ApprovedBy","ApprovedAt","Status","Note"]
+    "ColdRoom_DeliveryNotes": ["DeliveryID","WorkOrderID","Items","SubmittedBy","SubmittedAt","ApprovedBy","ApprovedAt","Status","Note"],
+    "BOM": ["BomID","ProductBarcode","ProductName","Factory","MaterialSKU","MaterialName","QtyPerUnit","Unit"]
   };
   if (HEADERS[name]) {
     sheet.appendRow(HEADERS[name]);

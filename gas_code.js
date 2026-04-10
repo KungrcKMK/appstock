@@ -1271,6 +1271,97 @@ function _addDeliveryToStock(item, submittedBy, approvedBy) {
   stockSheet.appendRow([Utilities.getUuid(), barcode, productName, mfgIso, expIso, qty, note, submittedBy, "DeliveryApproval", new Date().toISOString()]);
 }
 
+// ============================================================
+// 📥 DIRECT STOCK IN — รับสินค้าตรงจากฝ่ายผลิต
+// ============================================================
+
+function submitStockIn(payload) {
+  var username = String(payload.username || "").trim();
+  var items    = payload.items || [];
+  var note     = String(payload.note || "").trim();
+  if (!username || !items.length) return { ok: false, message: "ข้อมูลไม่ครบ" };
+
+  var sheet = getSheet("ColdRoom_StockIn");
+  var id    = "SI-" + Utilities.getUuid().slice(0,8).toUpperCase();
+  var now   = new Date().toISOString();
+  var h     = sheet.getDataRange().getValues()[0];
+  var newRow = new Array(h.length).fill("");
+  var sc = function(k,v){ var idx=h.indexOf(k); if(idx>=0) newRow[idx]=v; };
+  sc("StockInID", id);
+  sc("SubmittedBy", username);
+  sc("SubmittedAt", now);
+  sc("Items", JSON.stringify(items));
+  sc("Status", "รอตรวจยอด");
+  sc("Note", note);
+  sheet.appendRow(newRow);
+  crSendTelegramGeneric("📥 รายการรับสินค้าใหม่\n🔖 "+id+"\n👤 "+username+"\nรายการ "+items.length+" รายการ รอตรวจยอด"+deviceTag());
+  return { ok: true, stockInID: id };
+}
+
+function getStockInList(payload) {
+  var filterStatus = String(payload.filterStatus || "");
+  var sheet = getSheet("ColdRoom_StockIn");
+  var data  = sheet.getDataRange().getValues();
+  if (data.length < 2) return { ok: true, list: [] };
+  var h = data[0]; var list = [];
+  for (var i = 1; i < data.length; i++) {
+    var row = data[i];
+    var rec = {}; h.forEach(function(k,idx){ rec[k] = row[idx]; });
+    if (filterStatus && rec.Status !== filterStatus) continue;
+    var sat = rec.SubmittedAt ? new Date(rec.SubmittedAt) : null;
+    rec.SubmittedAtFmt = sat && !isNaN(sat) ? Utilities.formatDate(sat, Session.getScriptTimeZone(), "dd/MM/yy HH:mm") : String(rec.SubmittedAt||"");
+    if (rec.ReviewedAt) { var rat = new Date(rec.ReviewedAt); rec.ReviewedAtFmt = !isNaN(rat) ? Utilities.formatDate(rat, Session.getScriptTimeZone(), "dd/MM/yy HH:mm") : String(rec.ReviewedAt); }
+    list.push(rec);
+  }
+  list.sort(function(a,b){ return new Date(b.SubmittedAt)-new Date(a.SubmittedAt); });
+  return { ok: true, list: list };
+}
+
+function reviewStockIn(payload) {
+  var username  = String(payload.username || "").trim();
+  var siId      = String(payload.stockInID || "").trim();
+  var action    = String(payload.action || "approve"); // "approve" | "cancel"
+  var items     = payload.items || null; // reviewed items with final qty
+  if (!username || !siId) return { ok: false, message: "ข้อมูลไม่ครบ" };
+
+  var sheet = getSheet("ColdRoom_StockIn");
+  var data  = sheet.getDataRange().getValues();
+  var h = data[0]; var siRow = -1;
+  for (var i = 1; i < data.length; i++) {
+    if (String(data[i][h.indexOf("StockInID")]) === siId) { siRow = i; break; }
+  }
+  if (siRow < 0) return { ok: false, message: "ไม่พบรายการ " + siId };
+  if (String(data[siRow][h.indexOf("Status")]) !== "รอตรวจยอด") return { ok: false, message: "รายการนี้ดำเนินการแล้ว" };
+
+  var now = new Date().toISOString();
+  if (action === "cancel") {
+    sheet.getRange(siRow+1, h.indexOf("Status")+1).setValue("ยกเลิก");
+    sheet.getRange(siRow+1, h.indexOf("ReviewedBy")+1).setValue(username);
+    sheet.getRange(siRow+1, h.indexOf("ReviewedAt")+1).setValue(now);
+    crSendTelegramGeneric("❌ ยกเลิกรายการรับสินค้า\n🔖 "+siId+"\n👤 โดย: "+username+deviceTag());
+    return { ok: true };
+  }
+
+  // approve — use reviewed items if provided, else original
+  var origItemsStr = String(data[siRow][h.indexOf("Items")]||"[]");
+  var origItems; try { origItems = JSON.parse(origItemsStr); } catch(e){ origItems=[]; }
+  var finalItems = items || origItems;
+
+  // update items with reviewed qty
+  sheet.getRange(siRow+1, h.indexOf("Items")+1).setValue(JSON.stringify(finalItems));
+  sheet.getRange(siRow+1, h.indexOf("Status")+1).setValue("เข้าคลังแล้ว");
+  sheet.getRange(siRow+1, h.indexOf("ReviewedBy")+1).setValue(username);
+  sheet.getRange(siRow+1, h.indexOf("ReviewedAt")+1).setValue(now);
+
+  var stockErrors = [];
+  finalItems.forEach(function(item){
+    try { _addDeliveryToStock(item, String(data[siRow][h.indexOf("SubmittedBy")]||""), username); }
+    catch(e){ stockErrors.push(String(item.name||"")+": "+e.toString()); }
+  });
+  crSendTelegramGeneric("✅ ยืนยันเข้าคลัง\n🔖 "+siId+"\n👤 ตรวจโดย: "+username+"\nยอดเข้าคลังห้องเย็นแล้ว"+deviceTag());
+  return stockErrors.length ? { ok: true, warnings: stockErrors } : { ok: true };
+}
+
 function getUsers(payload) {
   if (!verifyAdminToken(payload.adminToken)) return { ok: false, message: "ไม่มีสิทธิ์" };
   var sheet = getSheet("AppUsers");

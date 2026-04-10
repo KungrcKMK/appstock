@@ -1917,24 +1917,43 @@
     const items  = active.map(m => {
       let expDays = null;
       if (m.ExpiryDate) { const d = new Date(m.ExpiryDate); if (!isNaN(d)) expDays = Math.round((d-today)/86400000); }
-      return { ...m, expDays };
+      const daily   = Number(m.DailyUsage) || 0;
+      const useDays = daily > 0 ? Math.floor(Number(m.Qty) / daily) : null;
+      return { ...m, expDays, useDays };
     }).sort((a,b) => String(a.Name).localeCompare(String(b.Name),"th"));
     const lowCount = items.filter(m => Number(m.Min)>0 && Number(m.Qty)<=Number(m.Min)).length;
+
     const rows = items.map(m => {
-      const isLow  = Number(m.Min)>0 && Number(m.Qty)<=Number(m.Min);
-      const expBadge = m.expDays===null ? "" :
-        m.expDays < 0  ? `<span style="background:#dc2626;color:#fff;border-radius:999px;padding:1px 6px;font-weight:800;font-size:10px;margin-left:4px;">หมด</span>` :
-        m.expDays <= 30? `<span style="background:#f59e0b;color:#fff;border-radius:999px;padding:1px 6px;font-weight:800;font-size:10px;margin-left:4px;">${m.expDays}ว</span>` : "";
+      const isLow = Number(m.Min)>0 && Number(m.Qty)<=Number(m.Min);
+
+      // EXP badge
+      const expBadge = m.expDays===null ? `<span style="color:#cbd5e1;font-size:11px;">—</span>` :
+        m.expDays < 0  ? `<span style="background:#dc2626;color:#fff;border-radius:999px;padding:1px 7px;font-weight:800;font-size:11px;">หมดแล้ว</span>` :
+        m.expDays <= 30? `<span style="background:#f59e0b;color:#fff;border-radius:999px;padding:1px 7px;font-weight:800;font-size:11px;">EXP ${m.expDays}ว</span>` :
+                         `<span style="color:#94a3b8;font-size:11px;">${isoToDdmmyy(String(m.ExpiryDate))}</span>`;
+
+      // ใช้ได้อีก badge
+      const useColor = m.useDays===null ? "" :
+        m.useDays === 0   ? "#dc2626" :
+        m.useDays <= 7    ? "#dc2626" :
+        m.useDays <= 14   ? "#ea580c" :
+        m.useDays <= 30   ? "#f59e0b" : "#059669";
+      const useBadge = m.useDays===null
+        ? `<span style="color:#cbd5e1;font-size:11px;">—</span>`
+        : `<span style="background:${useColor};color:#fff;border-radius:999px;padding:2px 8px;font-weight:800;font-size:11px;">${m.useDays} วัน</span>`;
+
       return `<tr style="border-bottom:1px dashed #f1f5f9;">
         <td style="padding:8px 10px;font-weight:700;color:#334155;">${escapeHtml(String(m.Name))}</td>
-        <td style="padding:8px 10px;text-align:right;">
+        <td style="padding:8px 10px;text-align:right;white-space:nowrap;">
           <span style="font-weight:900;color:${isLow?"#ef4444":color};">${Number(m.Qty).toLocaleString()}</span>
           <span style="font-size:11px;font-weight:600;color:#94a3b8;"> ${escapeHtml(String(m.Unit||""))}</span>
-          ${isLow?`<span style="font-size:10px;color:#ef4444;font-weight:800;margin-left:3px;">⚠️</span>`:""}
+          ${isLow?`<span style="font-size:10px;color:#ef4444;font-weight:800;margin-left:2px;">⚠️</span>`:""}
         </td>
-        <td style="padding:8px 10px;text-align:right;">${expBadge||`<span style="font-size:11px;color:#94a3b8;">${m.ExpiryDate?isoToDdmmyy(String(m.ExpiryDate)):""}</span>`}</td>
+        <td style="padding:8px 10px;text-align:center;">${useBadge}</td>
+        <td style="padding:8px 10px;text-align:right;white-space:nowrap;">${expBadge}</td>
       </tr>`;
     }).join("");
+
     return `
     <div style="background:#fff;border-radius:20px;padding:20px;box-shadow:0 2px 8px rgba(0,0,0,.06);border:1px solid #e2e8f0;border-left:5px solid ${color};margin-bottom:16px;">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:6px;">
@@ -1947,6 +1966,7 @@
             <thead><tr style="border-bottom:2px solid #f1f5f9;color:#64748b;font-size:11px;font-weight:800;">
               <th style="text-align:left;padding:6px 10px;">วัตถุดิบ</th>
               <th style="text-align:right;padding:6px 10px;">คงเหลือ</th>
+              <th style="text-align:center;padding:6px 10px;">ใช้ได้อีก</th>
               <th style="text-align:right;padding:6px 10px;">EXP</th>
             </tr></thead>
             <tbody>${rows}</tbody>

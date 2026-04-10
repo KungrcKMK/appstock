@@ -2526,40 +2526,7 @@
     else crSetStatus("crSiReviewStatus","❌ " + (res.message||""),"err");
   }
 
-  function crPrintWorkOrder() {
-    const orderId = $$cr("crWoOrderId").value;
-    const date    = $$cr("crWoDate").value;
-    const note    = $$cr("crWoNote").value;
-    const items   = crWoGetItems();
-    crOpenWorkOrderPrint({ OrderID:orderId, Date:date, Items:items, Note:note, CreatedBy:currentUser });
-  }
-
-  function crReprintWorkOrder(o) {
-    const items = crWoParseItems(o.Items);
-    crOpenWorkOrderPrint({ ...o, Items:items });
-  }
-
-  // helper: reprint by OrderID (ใช้กับปุ่มใน list ที่ส่งแค่ ID)
-  let _crWoCache = []; // cache รายการ WO ที่โหลดมาล่าสุด
-  function crReprintWO(orderId) {
-    const o = _crWoCache.find(x => x.OrderID === orderId);
-    if (o) crReprintWorkOrder(o);
-    else showToast("ไม่พบข้อมูลใบสั่งผลิต กรุณากด 🔄 โหลดใหม่","warn");
-  }
-  function crPrintActualWO(orderId) {
-    const o = _crWoCache.find(x => x.OrderID === orderId);
-    if (o) crPrintActualReport(o);
-    else showToast("ไม่พบข้อมูลใบสั่งผลิต กรุณากด 🔄 โหลดใหม่","warn");
-  }
-
-  async function crDeleteWorkOrder(orderId) {
-    if (!await crShowModal("confirm","🗑️ ลบใบสั่งผลิต",`ลบ "${orderId}" ? ไม่สามารถกู้คืนได้`)) return;
-    const res = await crCallServer("deleteWorkOrder", { orderId, username: currentUser });
-    if (res.ok) { showToast("🗑️ ลบแล้ว"); crLoadWorkOrders(); }
-    else showToast("❌ " + (res.message||"ลบไม่สำเร็จ"),"error");
-  }
-
-  async function crPrintActualReport(o) {
+  async function crPrintActualReport_TOREMOVE(o) {
     const items = crWoParseItems(o.Items);
     if (!items.length) { showToast("ไม่พบรายการสินค้าในใบสั่งผลิตนี้","warn"); return; }
     showLoading("กำลังโหลดยอดจริง...");

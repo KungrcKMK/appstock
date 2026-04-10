@@ -2503,7 +2503,7 @@
         <div style="display:flex;flex-direction:column;gap:4px;">
           <div style="display:flex;gap:4px;align-items:center;">
             <input type="number" id="crWoSets-${idx}" min="0" step="0.5" placeholder="${label}"
-              oninput="crWoCalcQtyFromSets(${idx})"
+              oninput="crWoCalcQtyFromSets(${idx}); crWoLockButtons()"
               style="width:60px;padding:6px 8px;border:2px solid #c7d2fe;border-radius:8px;text-align:right;font-size:14px;font-weight:900;outline:none;background:#eff6ff;">
             <span style="font-size:11px;color:#6366f1;font-weight:700;white-space:nowrap;">${label}</span>
             <span style="font-size:12px;color:#94a3b8;">×</span>

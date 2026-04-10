@@ -2575,64 +2575,8 @@
     return items;
   }
 
-  async function crSaveWorkOrder() {
-    const orderId = $$cr("crWoOrderId").value.trim();
-    const date    = $$cr("crWoDate").value;
-    const note    = $$cr("crWoNote").value.trim();
-    const items   = crWoGetItems();
-    if (!items.length) return showToast("กรุณาเพิ่มสินค้าและกรอก MFG + จำนวน","warn");
-    showLoading("กำลังบันทึก...");
-    const res = await crCallServer("saveWorkOrder", { orderId, date, items, note, createdBy:currentUser });
-    hideLoading();
-    if (res.ok) {
-      showToast("บันทึกใบสั่งผลิตสำเร็จ ✅","success");
-      crPrintWorkOrder();
-      crLoadWorkOrders();
-    } else showToast(res.message||"บันทึกไม่สำเร็จ","error");
-  }
-
   function crClearWorkOrder() {
     crInitWorkOrder();
-  }
-
-  async function crLoadWorkOrders() {
-    const res = await crCallServer("getWorkOrders", {});
-    if (!res.ok || !res.orders) return;
-    _crWoCache = res.orders; // cache สำหรับ reprint/report by ID
-    const body = $$cr("crWoListBody");
-    if (!res.orders.length) { body.innerHTML=`<tr><td colspan="12" style="text-align:center;color:#94a3b8;padding:20px;">ยังไม่มีใบสั่งผลิต</td></tr>`; return; }
-    body.innerHTML = res.orders.map(o => {
-      const items    = crWoParseItems(o.Items);
-      const hasItems = items.length > 0;
-      const summary  = hasItems
-        ? (items.length > 1 ? `${items[0].name} +${items.length-1} รายการ` : items[0].name)
-        : o.ProductName || "";
-      const totalQty  = items.reduce((s,i)=>s+Number(i.qty||0),0);
-      const mfgList   = [...new Set(items.map(i=>isoToDdmmyy(ddmmyyToIsoWo(i.mfg)||i.mfg)||i.mfg))].join(", ");
-      const woStatus  = o.Status || "รอดำเนินการ";
-      const statusColor = { "รอดำเนินการ":"#f59e0b","เสร็จสิ้น":"#059669","ยกเลิก":"#94a3b8" }[woStatus] || "#94a3b8";
-      const canDelete = woStatus !== "เสร็จสิ้น" && woStatus !== "ยกเลิก";
-      const dateDisplay = (o.Date||"-").length > 10 ? (o.Date||"").slice(0,10) : (o.Date||"-");
-      const safeOId   = escapeJs(o.OrderID||"");
-      // WO ที่ไม่มี items = ข้อมูลเก่าที่ไม่สมบูรณ์ → แสดง warning + แนะนำให้ลบ
-      const rowStyle  = !hasItems ? "background:#fff5f5;" : "";
-      const itemsCell = hasItems
-        ? `<b>${escapeHtml(summary)}</b><br><span style="font-size:10px;color:#94a3b8;">${items.length} SKU</span>`
-        : `<span style="color:#dc2626;font-weight:700;font-size:11px;">⚠️ ไม่มีรายการสินค้า</span><br><span style="font-size:10px;color:#dc2626;">กรุณาลบแล้วสร้างใหม่</span>`;
-      return `<tr style="${rowStyle}">
-        <td style="font-size:11px;font-weight:700;color:${hasItems?"#6366f1":"#dc2626"};">${escapeHtml(o.OrderID)}</td>
-        <td style="font-size:11px;">${escapeHtml(dateDisplay)}</td>
-        <td>${itemsCell}</td>
-        <td style="font-size:11px;">${mfgList||"-"}</td>
-        <td style="font-size:11px;">${items.map(i=>isoToDdmmyy(ddmmyyToIsoWo(i.exp)||i.exp)||i.exp).join(", ")||"-"}</td>
-        <td style="font-weight:700;">${hasItems ? totalQty.toLocaleString() : "-"}</td>
-        <td style="font-size:11px;">${escapeHtml(o.CreatedBy||"-")}</td>
-        <td><span style="background:${statusColor};color:#fff;border-radius:999px;padding:2px 8px;font-size:10px;font-weight:900;white-space:nowrap;">${escapeHtml(woStatus)}</span></td>
-        <td>${hasItems ? `<button class="cr-btn btn-light" style="padding:5px 10px;font-size:11px;" onclick="crReprintWO('${safeOId}')">🖨️</button>` : `<span style="font-size:10px;color:#e2e8f0;">—</span>`}</td>
-        <td>${hasItems ? `<button class="cr-btn btn-primary" style="padding:5px 10px;font-size:11px;background:#0f766e;" onclick="crPrintActualWO('${safeOId}')">📊</button>` : `<span style="font-size:10px;color:#e2e8f0;">—</span>`}</td>
-        <td>${canDelete ? `<button style="padding:5px 9px;font-size:13px;background:#fee2e2;border:none;border-radius:6px;color:#dc2626;cursor:pointer;font-weight:900;" onclick="crDeleteWorkOrder('${safeOId}')" title="ลบใบสั่งผลิต">🗑️</button>` : `<span style="font-size:10px;color:#e2e8f0;">—</span>`}</td>
-      </tr>`;
-    }).join("");
   }
 
   function crWoParseItems(raw) {

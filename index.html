@@ -4605,6 +4605,72 @@
 
   function closeRawAlert() { document.getElementById("rawAlertModal").classList.add("hidden"); }
 
+  // ── พิมพ์ QR Code ทั้งหมดของวัตถุดิบ ──
+  function rawPrintQrAll() {
+    const checkedSkus = Array.from(document.querySelectorAll(".raw-checkbox:checked")).map(cb => cb.getAttribute("data-sku"));
+    const source = checkedSkus.length > 0
+      ? rawLastData.filter(i => checkedSkus.includes(String(i.SKU)))
+      : rawLastData;
+    if (!source.length) { showToast("ยังไม่มีข้อมูล", "warn"); return; }
+
+    const factory = rawCurrentModule;
+    const factoryLabel = factory === "SQF" ? "สุพรรณคิวฟู้ดส์ (SQF)" : "แม่ละมาย (MLM)";
+    const factoryColor = factory === "SQF" ? "#2563eb" : "#16a34a";
+    const dateStr = new Date().toLocaleDateString("th-TH", { year:"numeric", month:"long", day:"numeric" });
+
+    const cards = source.map(item => {
+      const qrData = encodeURIComponent(`RAWMAT|${factory}|${item.SKU}`);
+      const qrUrl  = `https://chart.googleapis.com/chart?chs=180x180&cht=qr&choe=UTF-8&chl=${qrData}`;
+      const name   = String(item.Name || "").replace(/&/g,"&amp;").replace(/</g,"&lt;");
+      const sku    = String(item.SKU  || "").replace(/&/g,"&amp;");
+      return `
+        <div class="qr-card">
+          <div class="qr-factory" style="background:${factoryColor}">${factory}</div>
+          <img src="${qrUrl}" alt="QR ${sku}" onerror="this.style.opacity=0.3">
+          <div class="qr-sku">${sku}</div>
+          <div class="qr-name">${name}</div>
+        </div>`;
+    }).join("");
+
+    const win = window.open("", "_blank");
+    win.document.write(`<!DOCTYPE html><html><head>
+    <meta charset="utf-8">
+    <title>QR วัตถุดิบ — ${factoryLabel}</title>
+    <style>
+      *{box-sizing:border-box;margin:0;padding:0;}
+      body{font-family:Sarabun,sans-serif;background:#f8fafc;padding:20px;}
+      h1{text-align:center;font-size:18px;font-weight:900;margin-bottom:4px;color:#1e293b;}
+      .sub{text-align:center;font-size:12px;color:#64748b;margin-bottom:20px;}
+      .grid{display:flex;flex-wrap:wrap;gap:12px;justify-content:flex-start;}
+      .qr-card{
+        width:200px;background:#fff;border-radius:16px;border:2px solid #e2e8f0;
+        padding:12px 10px 14px;text-align:center;box-shadow:0 2px 8px rgba(0,0,0,.08);
+        page-break-inside:avoid;
+      }
+      .qr-factory{
+        display:inline-block;color:#fff;font-size:10px;font-weight:900;
+        padding:3px 10px;border-radius:999px;margin-bottom:8px;letter-spacing:1px;
+      }
+      .qr-card img{width:160px;height:160px;display:block;margin:0 auto 8px;}
+      .qr-sku{font-size:11px;font-weight:900;color:#475569;letter-spacing:1px;margin-bottom:3px;}
+      .qr-name{font-size:13px;font-weight:700;color:#1e293b;line-height:1.3;}
+      @media print{
+        body{background:#fff;padding:10px;}
+        .no-print{display:none!important;}
+      }
+    </style>
+    </head><body>
+    <div class="no-print" style="text-align:center;margin-bottom:16px;">
+      <button onclick="window.print()" style="background:#1e293b;color:#fff;border:none;padding:10px 28px;border-radius:10px;font-size:14px;font-weight:900;cursor:pointer;margin-right:8px;">🖨️ พิมพ์</button>
+      <button onclick="window.close()" style="background:#64748b;color:#fff;border:none;padding:10px 20px;border-radius:10px;font-size:14px;font-weight:900;cursor:pointer;">✕ ปิด</button>
+    </div>
+    <h1>🔲 QR Code วัตถุดิบ — ${factoryLabel}</h1>
+    <div class="sub">พิมพ์วันที่ ${dateStr} &nbsp;|&nbsp; ${source.length} รายการ</div>
+    <div class="grid">${cards}</div>
+    </body></html>`);
+    win.document.close();
+  }
+
   // ── Submit actions ──
   async function rawSubmitNew() {
     const sku=document.getElementById("rawNewSku").value.trim(), name=document.getElementById("rawNewName").value.trim(),

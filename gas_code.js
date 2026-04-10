@@ -11,12 +11,12 @@
 // ║    "runtimeVersion": "V8",                               ║
 // ║    "oauthScopes": [                                      ║
 // ║      "https://www.googleapis.com/auth/spreadsheets",     ║
-// ║      "https://www.googleapis.com/auth/script.external_request", ║
+// ║      "https://www.googleapis.com/auth/script.external_request",  ║
 // ║      "https://www.googleapis.com/auth/script.send_mail"  ║
 // ║    ]                                                     ║
 // ║  }                                                       ║
 // ║                                                          ║
-// ║  4. Save → Run ฟังก์ชันใดก็ได้ → Allow                  ║
+// ║  4. Save → Run ฟังก์ชันใดก็ได้ → Allow                                ║
 // ║  5. Deploy → New version                                 ║
 // ╚══════════════════════════════════════════════════════════╝
 

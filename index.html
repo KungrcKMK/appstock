@@ -2819,12 +2819,12 @@
   }
 
   function crWoUnlockButtons() {
-    const btn = document.getElementById("crWoBtnPrint");
-    if (btn) { btn.disabled = false; btn.style.opacity = ""; btn.style.cursor = ""; }
+    const wrap = document.getElementById("crWoActionBtns");
+    if (wrap) wrap.style.display = "flex";
   }
   function crWoLockButtons() {
-    const btn = document.getElementById("crWoBtnPrint");
-    if (btn) { btn.disabled = true; btn.style.opacity = ".35"; btn.style.cursor = "not-allowed"; }
+    const wrap = document.getElementById("crWoActionBtns");
+    if (wrap) wrap.style.display = "none";
   }
 
   async function crCheckBomMaterials() {

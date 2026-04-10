@@ -540,6 +540,11 @@ function handleColdroom(action, payload) {
     case "getWorkOrders":         return crGetWorkOrders();
     case "getColdRoomProducts":   return crGetColdRoomProducts();
     case "updateProduct":         return crUpdateProduct(payload);
+    case "getBomList":            return bomGetList();
+    case "getBomForProduct":      return bomGetForProduct(payload.barcode);
+    case "saveBom":               return bomSave(payload);
+    case "deleteBom":             return bomDelete(payload.barcode);
+    case "calcWorkOrderMaterials": return bomCalcWorkOrder(payload);
     default: return { ok: false, message: "Unknown action: " + action };
   }
 }

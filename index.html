@@ -3026,12 +3026,15 @@
 
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;">
           <div>
-            <label style="font-size:11px;font-weight:700;color:#64748b;display:block;margin-bottom:4px;">📅 MFG</label>
-            <input class="cr-si-mfg" type="date" style="width:100%;padding:10px;border:1.5px solid #e2e8f0;border-radius:10px;font-size:14px;box-sizing:border-box;">
+            <label style="font-size:11px;font-weight:700;color:#64748b;display:block;margin-bottom:4px;">📅 MFG <span style="font-weight:400;opacity:.7;">(DDMMYY)</span></label>
+            <input class="cr-si-mfg" type="text" maxlength="6" inputmode="numeric" placeholder="100426"
+              oninput="this.value=this.value.replace(/\D/g,''); crSiAutoExp(this)"
+              style="width:100%;padding:12px;border:1.5px solid #e2e8f0;border-radius:10px;font-size:20px;font-weight:900;text-align:center;letter-spacing:3px;box-sizing:border-box;">
           </div>
           <div>
-            <label style="font-size:11px;font-weight:700;color:#64748b;display:block;margin-bottom:4px;">⚠️ EXP</label>
-            <input class="cr-si-exp" type="date" style="width:100%;padding:10px;border:1.5px solid #e2e8f0;border-radius:10px;font-size:14px;box-sizing:border-box;">
+            <label style="font-size:11px;font-weight:700;color:#ea580c;display:block;margin-bottom:4px;">⚠️ EXP <span style="font-weight:400;opacity:.7;">(คำนวณอัตโนมัติ)</span></label>
+            <input class="cr-si-exp" type="text" maxlength="6" inputmode="numeric" placeholder="—" readonly
+              style="width:100%;padding:12px;border:1.5px solid #fed7aa;border-radius:10px;font-size:20px;font-weight:900;text-align:center;letter-spacing:3px;background:#fff7ed;color:#c2410c;box-sizing:border-box;">
           </div>
         </div>
 

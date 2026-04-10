@@ -1923,12 +1923,14 @@
       document.getElementById("rawCurrentUser").innerText   = currentUser;
       // แสดงปุ่มตาม Role
       const currentRole = localStorage.getItem("unified_stock_role") || "user";
-      const isAdmin    = currentRole === "admin";
-      const isApprover = currentRole === "admin" || currentRole === "approver";
+      const roleLower  = currentRole.toLowerCase();
+      const isAdmin    = roleLower === "admin";
+      const isApprover = roleLower === "admin" || roleLower === "approver";
+      const isExecDash = roleLower === "admin" || roleLower === "ceo";   // ภาพรวมผู้บริหาร
       const adminBtn = document.getElementById("adminNavBtn");
       if (adminBtn) adminBtn.style.display = isAdmin ? "" : "none";
       const execBtn = document.getElementById("execDashNavBtn");
-      if (execBtn) execBtn.style.display = isApprover ? "" : "none";
+      if (execBtn) execBtn.style.display = isExecDash ? "" : "none";
       const actBtn = document.getElementById("activityNavBtn");
       if (actBtn) actBtn.style.display = isAdmin ? "" : "none";
       const tgBtn = document.getElementById("telegramNavBtn");

@@ -2752,7 +2752,8 @@
   // ══════════════════════════════════════
   // 📦 ส่งยอดเข้าห้องเย็น (Delivery)
   // ══════════════════════════════════════
-  let _crDlvCurrentWO = null; // WO object currently selected
+  let _crDlvCurrentWO  = null;
+  let _crDlvWoCache    = []; // cache รายการ WO สำหรับ delivery (ไม่ต้อง call API ซ้ำ)
 
   function crGoDeliverWO(orderId) {
     crSwitchTab("delivery");
@@ -2777,11 +2778,16 @@
       const s = o.Status || "รอดำเนินการ";
       return s !== "เสร็จสิ้น" && s !== "ยกเลิก";
     });
+    _crDlvWoCache = res.orders || []; // cache ทั้งหมดไว้
+    const dateDisplay = o => {
+      const d = String(o.Date || "");
+      return d.length > 10 ? d.slice(0,10) : d;
+    };
     sel.innerHTML = '<option value="">-- กรุณาเลือกใบสั่งผลิต --</option>' +
       validOrders.map(o => {
         const s = o.Status || "รอดำเนินการ";
         const label = s === "รอยืนยันรับ" ? " [รอการอนุมัติ]" : s === "ส่งกลับแก้ไข" ? " [ส่งกลับแก้ไข]" : "";
-        return `<option value="${escapeAttr(o.OrderID)}">${escapeHtml(o.OrderID)} — ${o.Date||""}${label}</option>`;
+        return `<option value="${escapeAttr(o.OrderID)}">${escapeHtml(o.OrderID)} — ${escapeHtml(dateDisplay(o))}${label}</option>`;
       }).join("");
   }
 
@@ -2791,10 +2797,14 @@
     const body = $$cr("crDlvItemsBody");
     if (!woId) { if(form) form.style.display="none"; return; }
 
-    // ดึงข้อมูล WO
-    const res = await crCallServer("getWorkOrders", {});
-    if (!res.ok) return;
-    const wo = (res.orders||[]).find(o => o.OrderID === woId);
+    // ใช้ cache ก่อน ถ้าไม่มีค่อย reload
+    let wo = _crDlvWoCache.find(o => o.OrderID === woId);
+    if (!wo) {
+      const res = await crCallServer("getWorkOrders", {});
+      if (!res.ok) return;
+      _crDlvWoCache = res.orders || [];
+      wo = _crDlvWoCache.find(o => o.OrderID === woId);
+    }
     if (!wo) return;
     _crDlvCurrentWO = wo;
 

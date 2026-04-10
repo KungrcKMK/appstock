@@ -2870,8 +2870,9 @@
     crSetStatus("crDlvStatus","กำลังส่งยอด...","");
     const res = await crCallServer("submitDelivery", { username: currentUser, workOrderID: _crDlvCurrentWO.OrderID, items, note });
     if (res.ok) {
-      crSetStatus("crDlvStatus","✅ ส่งยอดเรียบร้อยแล้ว รอผู้อนุมัติตรวจสอบ","ok");
-      showToast("📨 ส่งยอดแล้ว รอการอนุมัติ","");
+      crSetStatus("crDlvStatus","✅ ส่งยอดเข้าคลังเรียบร้อยแล้ว","ok");
+      showToast("✅ ส่งยอดเข้าคลังเรียบร้อย");
+      if (res.warnings?.length) showToast("⚠️ บางรายการมีปัญหา: " + res.warnings.join(", "),"warn");
       crLoadMyDeliveries();
       crLoadWorkOrders();
     } else {

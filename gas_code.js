@@ -252,8 +252,10 @@ function registerUser(payload) {
     }
   }
 
-  pendSheet.appendRow([username, new Date(), "PENDING", "", ""]);
-  crSendTelegramGeneric("📝 คำขอสมัครใหม่\n👤 ชื่อ: " + username + "\nรอการอนุมัติจาก Admin" + deviceTag());
+  var validRoles = ["admin","approver","manager","ceo","viewer","user"];
+  var requestedRole = validRoles.includes(String(payload.requestedRole || "").toLowerCase()) ? String(payload.requestedRole).toLowerCase() : "user";
+  pendSheet.appendRow([username, new Date(), "PENDING", "", "", requestedRole]);
+  crSendTelegramGeneric("📝 คำขอสมัครใหม่\n👤 ชื่อ: " + username + "\n🔖 ขอ Role: " + requestedRole + "\nรอการอนุมัติจาก Admin" + deviceTag());
   return { ok: true, message: "ส่งคำขอเรียบร้อยแล้ว รอผู้ควบคุมระบบอนุมัติ" };
 }
 
@@ -265,17 +267,19 @@ function getPendingUsers(payload) {
   if (data.length < 2) return { ok: true, list: [] };
 
   const h = data[0];
-  var uCol = h.indexOf("Username");
-  var dCol = h.indexOf("RequestedAt");
-  var sCol = h.indexOf("Status");
+  var uCol  = h.indexOf("Username");
+  var dCol  = h.indexOf("RequestedAt");
+  var sCol  = h.indexOf("Status");
+  var rrCol = h.indexOf("RequestedRole");
 
   var list = [];
   for (var i = 1; i < data.length; i++) {
     if (String(data[i][sCol]) === "PENDING") {
       var dt = data[i][dCol];
       list.push({
-        username:    String(data[i][uCol]),
-        requestedAt: dt instanceof Date ? Utilities.formatDate(dt, Session.getScriptTimeZone(), "dd/MM/yyyy HH:mm") : String(dt)
+        username:      String(data[i][uCol]),
+        requestedAt:   dt instanceof Date ? Utilities.formatDate(dt, Session.getScriptTimeZone(), "dd/MM/yyyy HH:mm") : String(dt),
+        requestedRole: rrCol >= 0 ? String(data[i][rrCol] || "user") : "user"
       });
     }
   }
@@ -297,9 +301,12 @@ function approveUser(payload) {
   var raCol = ph.indexOf("ReviewedAt");
   var rbCol = ph.indexOf("ReviewedBy");
 
+  var rrCol = ph.indexOf("RequestedRole");
   var found = false;
+  var approvedRole = "user";
   for (var i = 1; i < pendData.length; i++) {
     if (String(pendData[i][uCol]).trim().toLowerCase() === username.toLowerCase() && String(pendData[i][sCol]) === "PENDING") {
+      approvedRole = rrCol >= 0 ? String(pendData[i][rrCol] || "user") : "user";
       pendSheet.getRange(i + 1, sCol  + 1).setValue("APPROVED");
       pendSheet.getRange(i + 1, raCol + 1).setValue(new Date());
       pendSheet.getRange(i + 1, rbCol + 1).setValue(requester);
@@ -311,7 +318,7 @@ function approveUser(payload) {
 
   // เพิ่มเข้า AppUsers
   const appSheet = getSheet("AppUsers");
-  appSheet.appendRow([username, true, "user", new Date()]);
+  appSheet.appendRow([username, true, approvedRole, new Date()]);
 
   crSendTelegramGeneric("✅ อนุมัติผู้ใช้ใหม่\n👤 " + username + "\nโดย: " + requester);
   return { ok: true };

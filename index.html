@@ -358,6 +358,14 @@
         <input type="text" id="registerNameInput" placeholder="👤 ชื่อ-นามสกุล หรือชื่อเล่น"
           class="w-full bg-slate-50 border-2 border-slate-200 p-5 rounded-3xl mb-3 text-center outline-none focus:border-emerald-500 font-black text-xl"
           onkeydown="if(event.key==='Enter') submitRegister()">
+        <select id="registerRoleSelect"
+          class="w-full bg-slate-50 border-2 border-slate-200 p-4 rounded-3xl mb-4 text-center outline-none focus:border-emerald-500 font-black text-base appearance-none cursor-pointer">
+          <option value="user">👤 user — พนักงานทั่วไป</option>
+          <option value="viewer">👁️ viewer — ดูข้อมูลอย่างเดียว</option>
+          <option value="approver">✅ approver — อนุมัติใบส่งยอด</option>
+          <option value="manager">📋 manager — ผู้จัดการ</option>
+          <option value="ceo">👔 ceo — ผู้บริหาร</option>
+        </select>
         <button onclick="submitRegister()" class="w-full bg-emerald-600 text-white py-5 rounded-3xl font-black hover:bg-emerald-700 transition-all shadow-xl text-lg uppercase">
           ส่งคำขอ 📨
         </button>
@@ -381,8 +389,8 @@
         <button id="navBtn-SQF"      class="nav-btn" onclick="switchModule('SQF')">🏭 วัตถุดิบ SQF<span id="badge-SQF" class="nav-badge" style="display:none"></span></button>
         <button id="navBtn-MLM"      class="nav-btn" onclick="switchModule('MLM')">🏭 วัตถุดิบ MLM<span id="badge-MLM" class="nav-badge" style="display:none"></span></button>
       </div>
-      <button id="adminNavBtn" onclick="openAdminPanel()" class="nav-btn" style="display:none;background:rgba(234,179,8,0.2);color:#fbbf24;">👑 Admin<span id="adminNavBadge" class="nav-badge" style="display:none;background:#f59e0b;"></span></button>
-      <button id="execDashNavBtn" onclick="openExecDashboard()" class="nav-btn" style="display:none;background:rgba(99,102,241,0.25);color:#a5b4fc;">📊 ภาพรวมผู้บริหาร</button>
+      <button id="navBtn-EXEC"  onclick="switchModule('EXEC')"  class="nav-btn" style="display:none;background:rgba(99,102,241,0.18);color:#a5b4fc;">📊 ภาพรวม</button>
+      <button id="navBtn-ROLES" onclick="switchModule('ROLES')" class="nav-btn" style="display:none;background:rgba(234,179,8,0.18);color:#fbbf24;">👑 Admin<span id="adminNavBadge" class="nav-badge" style="display:none;background:#f59e0b;"></span></button>
       <button id="activityNavBtn" onclick="openActivityPanel()" class="nav-btn" style="display:none;background:rgba(16,185,129,0.2);color:#34d399;">📈 ความเคลื่อนไหว</button>
       <button id="telegramNavBtn" onclick="openUnifiedSettings()" class="nav-btn" style="display:none;background:rgba(255,255,255,0.1);color:#fff;">⚙️ Telegram</button>
       <button onclick="switchToMobile()" class="nav-btn" style="background:rgba(99,102,241,0.15);color:#a5b4fc;" title="เปลี่ยนเป็นโหมดมือถือ">📱</button>
@@ -400,62 +408,68 @@
     </datalist>
   </nav>
 
-  <!-- ═══ ADMIN PANEL ═══ -->
-  <div id="adminPanelModal" class="hidden fixed inset-0 bg-black/80 backdrop-blur-md z-[500] flex items-center justify-center p-4">
-    <div class="bg-white w-full max-w-xl rounded-[3rem] shadow-2xl overflow-hidden border-8 border-yellow-500" style="max-height:90vh;display:flex;flex-direction:column;">
-      <div class="bg-slate-900 p-6 text-white flex justify-between items-center shrink-0">
+  <!-- adminPanelModal removed — merged into module-ROLES -->
+
+  <!-- ═══ EXECUTIVE DASHBOARD (full-page module) ═══ -->
+  <div id="module-EXEC" class="module-section hide" style="padding-top:60px;min-height:100vh;background:#f8fafc;">
+    <div style="max-width:1200px;margin:0 auto;padding:24px 16px 80px;">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;flex-wrap:wrap;gap:12px;">
         <div>
-          <h2 class="text-xl font-black uppercase tracking-tight">👑 Admin Panel</h2>
+          <h1 style="margin:0;font-size:22px;font-weight:900;color:#0f172a;">📊 ภาพรวมผู้บริหาร</h1>
+          <p style="margin:4px 0 0;font-size:12px;font-weight:700;color:#6366f1;" id="execDashTimestamp">—</p>
         </div>
-        <button onclick="closeAdminPanel()" class="text-3xl hover:text-red-400 transition-colors">✕</button>
+        <button onclick="loadExecDashboard()" style="background:#6366f1;color:#fff;border:none;padding:10px 20px;border-radius:12px;font-weight:800;font-size:13px;cursor:pointer;font-family:inherit;">🔄 รีเฟรช</button>
       </div>
-      <!-- Tab bar -->
-      <div class="bg-slate-800 px-4 py-2 flex gap-2 shrink-0 overflow-x-auto">
-        <button onclick="adminSwitchTab('pending')" id="adminTab-pending" style="padding:6px 14px;border-radius:8px;font-size:12px;font-weight:800;background:#f59e0b;color:#1e293b;border:none;cursor:pointer;">📝 คำขอสมัคร</button>
-        <button onclick="adminSwitchTab('users')"   id="adminTab-users"   style="padding:6px 14px;border-radius:8px;font-size:12px;font-weight:800;background:transparent;color:#94a3b8;border:none;cursor:pointer;">👥 จัดการผู้ใช้</button>
-      </div>
-      <!-- Pending users tab -->
-      <div id="adminTabContent-pending" class="p-6 overflow-y-auto flex-1">
-        <div id="adminPendingList" class="space-y-3">
-          <p class="text-slate-400 text-center text-sm font-bold py-8">กำลังโหลด...</p>
-        </div>
-        <button onclick="loadPendingUsers()" class="mt-4 w-full bg-slate-100 text-slate-700 py-3 rounded-2xl font-black text-sm hover:bg-slate-200 transition-all">
-          🔄 โหลดใหม่
-        </button>
-      </div>
-      <!-- User management tab -->
-      <div id="adminTabContent-users" class="p-6 overflow-y-auto flex-1" style="display:none;">
-        <p class="text-xs text-slate-400 font-bold mb-3">ตั้ง Role: <b style="color:#1e293b;">user</b> = ใช้งานทั่วไป &nbsp;|&nbsp; <b style="color:#0ea5e9;">approver</b> = อนุมัติใบส่งยอด &nbsp;|&nbsp; <b style="color:#f59e0b;">admin</b> = เต็มสิทธิ์</p>
-        <div id="adminUserList" class="space-y-2">
-          <p class="text-slate-400 text-center text-sm font-bold py-8">กดโหลดเพื่อดูรายชื่อ</p>
-        </div>
-        <button onclick="loadUsers()" class="mt-4 w-full bg-slate-100 text-slate-700 py-3 rounded-2xl font-black text-sm hover:bg-slate-200 transition-all">
-          🔄 โหลดรายชื่อผู้ใช้
-        </button>
+      <div id="execDashContent">
+        <p style="color:#94a3b8;text-align:center;font-weight:700;padding:60px 0;">⏳ กำลังโหลดข้อมูล...</p>
       </div>
     </div>
   </div>
 
-  <!-- ═══ EXECUTIVE DASHBOARD ═══ -->
-  <div id="execDashModal" class="hidden fixed inset-0 bg-black/80 backdrop-blur-md z-[500] flex items-center justify-center p-4">
-    <div class="bg-white w-full max-w-4xl rounded-[3rem] shadow-2xl overflow-hidden border-8 border-indigo-500" style="max-height:92vh;display:flex;flex-direction:column;">
+  <!-- ═══ ADMIN PANEL (full-page module) ═══ -->
+  <div id="module-ROLES" class="module-section hide" style="padding-top:60px;min-height:100vh;background:#f8fafc;">
+    <div style="max-width:900px;margin:0 auto;padding:0 0 80px;">
+
       <!-- Header -->
-      <div class="bg-gradient-to-r from-indigo-700 to-slate-900 p-6 text-white flex justify-between items-center shrink-0">
-        <div>
-          <h2 class="text-xl font-black uppercase tracking-tight">📊 ภาพรวมผู้บริหาร</h2>
-          <p class="text-indigo-300 text-xs font-bold mt-1" id="execDashTimestamp">—</p>
+      <div style="background:linear-gradient(135deg,#1e293b 0%,#0f172a 100%);padding:24px 24px 0;border-bottom:3px solid #f59e0b;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:10px;">
+          <div>
+            <h1 style="margin:0;font-size:22px;font-weight:900;color:#fff;">👑 Admin Panel</h1>
+            <p style="margin:4px 0 0;font-size:12px;font-weight:700;color:#f59e0b;">ระบบจัดการผู้ใช้และสิทธิ์การเข้าถึง</p>
+          </div>
         </div>
-        <div class="flex items-center gap-3">
-          <button onclick="loadExecDashboard()" class="text-xs font-black text-indigo-300 hover:text-white transition-colors px-3 py-2 rounded-xl bg-white/10">🔄 รีเฟรช</button>
-          <button onclick="closeExecDashboard()" class="text-3xl hover:text-red-400 transition-colors">✕</button>
+        <!-- Tab bar -->
+        <div style="display:flex;gap:4px;">
+          <button onclick="adminSwitchTab('pending')" id="adminTab-pending"
+            style="padding:10px 18px;border-radius:10px 10px 0 0;font-size:13px;font-weight:800;background:#f59e0b;color:#1e293b;border:none;cursor:pointer;font-family:inherit;">
+            📝 คำขอสมัคร<span id="adminPendingTabBadge" style="display:none;background:#dc2626;color:#fff;border-radius:999px;padding:1px 7px;font-size:11px;margin-left:6px;"></span>
+          </button>
+          <button onclick="adminSwitchTab('roles')" id="adminTab-roles"
+            style="padding:10px 18px;border-radius:10px 10px 0 0;font-size:13px;font-weight:800;background:transparent;color:#94a3b8;border:none;cursor:pointer;font-family:inherit;">
+            🔖 จัดการ Role
+          </button>
         </div>
       </div>
-      <!-- Body -->
-      <div class="overflow-y-auto flex-1 p-6 bg-slate-50">
-        <div id="execDashContent">
-          <p class="text-slate-400 text-center text-sm font-bold py-16">⏳ กำลังโหลดข้อมูล...</p>
+
+      <!-- Tab: คำขอสมัคร -->
+      <div id="adminTabContent-pending" style="padding:24px;">
+        <div id="adminPendingList" style="display:flex;flex-direction:column;gap:12px;">
+          <p style="color:#94a3b8;text-align:center;font-weight:700;padding:40px 0;">⏳ กำลังโหลด...</p>
         </div>
+        <button onclick="loadPendingUsers()" style="margin-top:16px;width:100%;background:#f1f5f9;color:#475569;border:none;padding:14px;border-radius:14px;font-weight:800;font-size:13px;cursor:pointer;font-family:inherit;">🔄 โหลดใหม่</button>
       </div>
+
+      <!-- Tab: จัดการ Role -->
+      <div id="adminTabContent-roles" style="padding:24px;display:none;">
+        <div style="background:#fff3cd;border:2px solid #fde68a;border-radius:14px;padding:12px 16px;margin-bottom:18px;font-size:12px;font-weight:700;color:#92400e;">
+          👤 <b>user</b> = ทั่วไป &nbsp;|&nbsp; 👁️ <b>viewer</b> = ดูอย่างเดียว &nbsp;|&nbsp; ✅ <b>approver</b> = อนุมัติ &nbsp;|&nbsp; 📋 <b>manager</b> = ผู้จัดการ &nbsp;|&nbsp; 👔 <b>ceo</b> = ผู้บริหาร &nbsp;|&nbsp; 🔧 <b>admin</b> = เต็มสิทธิ์
+        </div>
+        <div id="rolesPageList" style="display:flex;flex-direction:column;gap:10px;">
+          <p style="color:#94a3b8;text-align:center;font-weight:700;padding:40px 0;">กดโหลดเพื่อดูรายชื่อผู้ใช้</p>
+        </div>
+        <button onclick="loadRolesPage()" style="margin-top:16px;width:100%;background:#f1f5f9;color:#475569;border:none;padding:14px;border-radius:14px;font-weight:800;font-size:13px;cursor:pointer;font-family:inherit;">🔄 โหลดรายชื่อผู้ใช้</button>
+      </div>
+
     </div>
   </div>
 
@@ -1342,7 +1356,7 @@
         method: "POST",
         headers: { "Content-Type": "text/plain;charset=utf-8" },
         body: JSON.stringify({ module: "SYSTEM", action: "registerUser",
-          payload: { username: name }, deviceName: getDeviceInfo() })
+          payload: { username: name, requestedRole: document.getElementById("registerRoleSelect")?.value || "user" }, deviceName: getDeviceInfo() })
       }).then(r => r.json());
 
       if (res.ok) {
@@ -1363,12 +1377,10 @@
   // ADMIN PANEL
   // ─────────────────────────────────────────────
   function openAdminPanel() {
-    document.getElementById("adminPanelModal").classList.remove("hidden");
-    loadPendingUsers();
+    switchModule("ROLES");
+    adminSwitchTab("pending");
   }
-  function closeAdminPanel() {
-    document.getElementById("adminPanelModal").classList.add("hidden");
-  }
+  function closeAdminPanel() { /* no-op — merged into module-ROLES */ }
 
   async function loadPendingUsers() {
     const listEl = document.getElementById("adminPendingList");
@@ -1383,30 +1395,35 @@
 
       if (!res.ok) { listEl.innerHTML = `<p class="text-red-500 text-center text-sm font-bold py-8">❌ ${res.message}</p>`; return; }
       if (!res.list || res.list.length === 0) {
-        listEl.innerHTML = '<p class="text-slate-400 text-center text-sm font-bold py-8">✅ ไม่มีคำขอรอการอนุมัติ</p>';
-        // update badge
+        listEl.innerHTML = '<p style="color:#94a3b8;text-align:center;font-weight:700;padding:40px 0;">✅ ไม่มีคำขอรอการอนุมัติ</p>';
         const badge = document.getElementById("adminNavBadge");
+        const tabBadge = document.getElementById("adminPendingTabBadge");
         if (badge) badge.style.display = "none";
+        if (tabBadge) tabBadge.style.display = "none";
         return;
       }
 
       // Update badge count
       const badge = document.getElementById("adminNavBadge");
+      const tabBadge = document.getElementById("adminPendingTabBadge");
       if (badge) { badge.style.display = ""; badge.textContent = res.list.length; }
+      if (tabBadge) { tabBadge.style.display = ""; tabBadge.textContent = res.list.length; }
 
       listEl.innerHTML = res.list.map(u => {
         const safeU = escapeJs(u.username||"");
+        const roleLabel = u.requestedRole || "user";
         return `
-        <div class="flex items-center justify-between bg-slate-50 rounded-2xl p-4 border border-slate-200">
+        <div style="background:#fff;border:1.5px solid #e2e8f0;border-radius:16px;padding:16px 20px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;box-shadow:0 2px 6px rgba(0,0,0,.04);">
           <div>
-            <p class="font-black text-slate-800 text-base">👤 ${escapeHtml(u.username||"")}</p>
-            <p class="text-xs text-slate-400 font-bold mt-0.5">📅 ${escapeHtml(u.requestedAt||"")}</p>
+            <p style="margin:0;font-weight:900;font-size:15px;color:#0f172a;">👤 ${escapeHtml(u.username||"")}</p>
+            <p style="margin:3px 0 0;font-size:12px;font-weight:700;color:#94a3b8;">📅 ${escapeHtml(u.requestedAt||"")}</p>
+            <p style="margin:4px 0 0;font-size:12px;font-weight:800;color:#6366f1;">🔖 ขอ Role: ${escapeHtml(roleLabel)}</p>
           </div>
-          <div class="flex gap-2">
+          <div style="display:flex;gap:8px;">
             <button onclick="adminApprove('${safeU}')"
-              class="bg-emerald-500 text-white px-4 py-2 rounded-xl font-black text-sm hover:bg-emerald-600 transition-all">✅ อนุมัติ</button>
+              style="background:#059669;color:#fff;border:none;padding:9px 18px;border-radius:10px;font-weight:800;font-size:13px;cursor:pointer;font-family:inherit;">✅ อนุมัติ</button>
             <button onclick="adminReject('${safeU}')"
-              class="bg-red-500 text-white px-4 py-2 rounded-xl font-black text-sm hover:bg-red-600 transition-all">❌ ปฏิเสธ</button>
+              style="background:#dc2626;color:#fff;border:none;padding:9px 18px;border-radius:10px;font-weight:800;font-size:13px;cursor:pointer;font-family:inherit;">❌ ปฏิเสธ</button>
           </div>
         </div>`;
       }).join("");
@@ -1444,14 +1461,15 @@
   }
 
   function adminSwitchTab(tab) {
-    ["pending","users"].forEach(t => {
-      const btn = document.getElementById("adminTab-" + t);
+    ["pending","roles"].forEach(t => {
+      const btn  = document.getElementById("adminTab-" + t);
       const pane = document.getElementById("adminTabContent-" + t);
       const isActive = t === tab;
       if (btn)  { btn.style.background = isActive ? "#f59e0b" : "transparent"; btn.style.color = isActive ? "#1e293b" : "#94a3b8"; }
       if (pane) pane.style.display = isActive ? "" : "none";
     });
-    if (tab === "users") loadUsers();
+    if (tab === "pending") loadPendingUsers();
+    if (tab === "roles")   loadRolesPage();
   }
 
   async function loadUsers() {
@@ -1494,6 +1512,70 @@
     } catch(e) {
       listEl.innerHTML = `<p class="text-red-500 text-center text-sm font-bold py-4">เกิดข้อผิดพลาด: ${escapeHtml(e.message||"")}</p>`;
     }
+  }
+
+  async function loadRolesPage() {
+    const listEl = document.getElementById("rolesPageList");
+    if (!listEl) return;
+    listEl.innerHTML = '<p style="color:#94a3b8;text-align:center;font-weight:700;padding:40px 0;">⏳ กำลังโหลด...</p>';
+    try {
+      const res = await fetch(GAS_URL, {
+        method: "POST",
+        headers: { "Content-Type": "text/plain;charset=utf-8" },
+        body: JSON.stringify({ module: "SYSTEM", action: "getUsers", payload: { adminToken: _adminToken } })
+      }).then(r => r.json());
+      if (!res.ok) { listEl.innerHTML = `<p style="color:#dc2626;text-align:center;font-weight:700;padding:40px 0;">❌ ${escapeHtml(res.message||"")}</p>`; return; }
+      const roleColors  = { admin:"#f59e0b", approver:"#0ea5e9", manager:"#8b5cf6", ceo:"#10b981", viewer:"#64748b", user:"#94a3b8" };
+      const roleLabels  = { admin:"🔧 admin", approver:"✅ approver", manager:"📋 manager", ceo:"👔 ceo", viewer:"👁️ viewer", user:"👤 user" };
+      listEl.innerHTML = `<div style="display:flex;flex-direction:column;gap:10px;">` +
+        res.users.map(u => {
+          const safeU  = escapeJs(u.username||"");
+          const safeId = escapeAttr(u.username||"");
+          const rc = roleColors[u.role] || "#94a3b8";
+          return `
+          <div style="background:#fff;border-radius:16px;padding:16px 20px;border:1.5px solid #e2e8f0;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;box-shadow:0 2px 6px rgba(0,0,0,.04);">
+            <div style="flex:1;min-width:0;">
+              <p style="margin:0;font-weight:900;font-size:15px;color:#0f172a;">👤 ${escapeHtml(u.username||"")}</p>
+              <p style="margin:4px 0 0;font-size:12px;font-weight:700;">
+                <span style="background:${rc}22;color:${rc};padding:2px 10px;border-radius:999px;font-size:12px;font-weight:800;">${escapeHtml(roleLabels[u.role]||u.role||"")}</span>
+                ${u.hasPassword ? "&nbsp;🔒 มีรหัสผ่าน" : "&nbsp;🔓 ไม่มีรหัสผ่าน"}
+              </p>
+            </div>
+            <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+              <select id="rpRoleSelect-${safeId}" style="padding:8px 10px;border-radius:10px;border:2px solid #e2e8f0;font-size:13px;font-weight:800;font-family:inherit;outline:none;cursor:pointer;">
+                <option value="user"     ${u.role==="user"    ?"selected":""}>👤 user</option>
+                <option value="viewer"   ${u.role==="viewer"  ?"selected":""}>👁️ viewer</option>
+                <option value="approver" ${u.role==="approver"?"selected":""}>✅ approver</option>
+                <option value="manager"  ${u.role==="manager" ?"selected":""}>📋 manager</option>
+                <option value="ceo"      ${u.role==="ceo"     ?"selected":""}>👔 ceo</option>
+                <option value="admin"    ${u.role==="admin"   ?"selected":""}>🔧 admin</option>
+              </select>
+              <button onclick="saveRolePageUser('${safeU}')"
+                style="background:#6366f1;color:#fff;border:none;padding:8px 18px;border-radius:10px;font-weight:800;font-size:13px;cursor:pointer;font-family:inherit;">
+                💾 บันทึก
+              </button>
+            </div>
+          </div>`;
+        }).join("") + `</div>`;
+    } catch(e) {
+      listEl.innerHTML = `<p style="color:#dc2626;text-align:center;font-weight:700;padding:40px 0;">เกิดข้อผิดพลาด: ${escapeHtml(e.message||"")}</p>`;
+    }
+  }
+
+  async function saveRolePageUser(username) {
+    const roleEl = document.getElementById("rpRoleSelect-" + username);
+    if (!roleEl) return;
+    const newRole = roleEl.value;
+    try {
+      const res = await fetch(GAS_URL, {
+        method: "POST",
+        headers: { "Content-Type": "text/plain;charset=utf-8" },
+        body: JSON.stringify({ module: "SYSTEM", action: "setUserRole",
+          payload: { adminToken: _adminToken, username, role: newRole } })
+      }).then(r => r.json());
+      if (res.ok) { showToast(`✅ ${username} → ${newRole}`); loadRolesPage(); }
+      else alert("❌ " + res.message);
+    } catch(e) { alert("เกิดข้อผิดพลาด: " + e.message); }
   }
 
   async function saveUserRole(username) {
@@ -1660,6 +1742,8 @@
   function _loginSuccess(user, role, adminToken) {
     _loginNeedsPassword = false;
     _adminToken = adminToken || null;
+    if (_adminToken) sessionStorage.setItem("appstock_admin_token", _adminToken);
+    else sessionStorage.removeItem("appstock_admin_token");
     document.getElementById("passwordSection").style.display = "none";
     document.getElementById("usernameInput").readOnly = false;
     _setLoginBtn("เข้าสู่ระบบ 🚀", false);
@@ -1712,8 +1796,9 @@
         body: JSON.stringify({ module: "SYSTEM", action: "logoutAdmin", payload: { adminToken: _adminToken } })
       }).catch(() => {});
     }
-    // ล้าง memory
+    // ล้าง memory + session token
     _adminToken = null;
+    sessionStorage.removeItem("appstock_admin_token");
     _loginNeedsPassword = false;
     // ล้าง localStorage ทุก key
     ["unified_stock_user","unified_stock_role","appstock_device_name"].forEach(k => localStorage.removeItem(k));
@@ -1747,13 +1832,7 @@
   // ══════════════════════════════════════════════════
   // 📊 EXECUTIVE DASHBOARD
   // ══════════════════════════════════════════════════
-  function openExecDashboard() {
-    document.getElementById("execDashModal").classList.remove("hidden");
-    loadExecDashboard();
-  }
-  function closeExecDashboard() {
-    document.getElementById("execDashModal").classList.add("hidden");
-  }
+  function openExecDashboard() { switchModule("EXEC"); }
 
   async function loadExecDashboard() {
     const el = document.getElementById("execDashContent");
@@ -1919,6 +1998,8 @@
       if (!pref) { showModePicker(saved); return; }
       if (pref === "mobile") { window.location.href = "mobile.html"; return; }
       currentUser = saved;
+      // คืน adminToken จาก sessionStorage (ถ้ามี — ยังไม่หมดอายุใน GAS cache 30 นาที)
+      if (!_adminToken) _adminToken = sessionStorage.getItem("appstock_admin_token") || null;
       document.getElementById("loginOverlay").style.display = "none";
       document.getElementById("mainNav").style.display      = "block";
       document.getElementById("navUser").innerText          = currentUser;
@@ -1930,10 +2011,10 @@
       const isAdmin    = roleLower === "admin";
       const isApprover = roleLower === "admin" || roleLower === "approver" || roleLower === "manager";
       const isExecDash = roleLower === "admin" || roleLower === "ceo" || roleLower === "manager";
-      const adminBtn = document.getElementById("adminNavBtn");
-      if (adminBtn) adminBtn.style.display = isAdmin ? "" : "none";
-      const execBtn = document.getElementById("execDashNavBtn");
+      const execBtn = document.getElementById("navBtn-EXEC");
       if (execBtn) execBtn.style.display = isExecDash ? "" : "none";
+      const rolesBtn = document.getElementById("navBtn-ROLES");
+      if (rolesBtn) rolesBtn.style.display = isAdmin ? "" : "none";
       const actBtn = document.getElementById("activityNavBtn");
       if (actBtn) actBtn.style.display = isAdmin ? "" : "none";
       const tgBtn = document.getElementById("telegramNavBtn");
@@ -1955,12 +2036,18 @@
     document.querySelectorAll(".module-section").forEach(el => el.classList.add("hide"));
 
     // update nav buttons
-    ["COLDROOM","SQF","MLM"].forEach(m => {
+    ["COLDROOM","SQF","MLM","EXEC","ROLES"].forEach(m => {
       const btn = document.getElementById("navBtn-" + m);
       if (btn) btn.classList.toggle("active", m === mod);
     });
 
-    if (mod === "COLDROOM") {
+    if (mod === "EXEC") {
+      document.getElementById("module-EXEC").classList.remove("hide");
+      loadExecDashboard();
+    } else if (mod === "ROLES") {
+      document.getElementById("module-ROLES").classList.remove("hide");
+      loadPendingUsers();
+    } else if (mod === "COLDROOM") {
       document.getElementById("module-COLDROOM").classList.remove("hide");
       if (!crInitDone) initColdroom();
     } else {

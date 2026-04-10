@@ -29,50 +29,67 @@
 <!-- ══════════════════════════════════════════
      SCREEN 2 : MODULE SELECT
 ══════════════════════════════════════════ -->
-<div id="sModule" class="dvh hidden flex-col p-4 pt-safe gap-3 overflow-y-auto">
-  <div class="pt-2">
-    <p class="text-slate-400 text-sm">สวัสดี 👋</p>
-    <h2 id="mGreet" class="text-xl font-black"></h2>
+<div id="sModule" class="hidden flex-col p-4 pt-safe gap-2">
+  <div class="pt-1 pb-1 flex items-start justify-between">
+    <div>
+      <p class="text-slate-400 text-xs">สวัสดี 👋</p>
+      <h2 id="mGreet" class="text-lg font-black"></h2>
+    </div>
+    <div class="flex items-center gap-2 mt-1">
+      <button onclick="switchToDesktop()"
+        class="bg-slate-800 text-slate-300 px-3 py-1.5 rounded-xl text-xs font-black active:brightness-75">
+        💻 คอมพิวเตอร์
+      </button>
+      <button onclick="doLogout()"
+        class="bg-slate-800 text-red-400 px-3 py-1.5 rounded-xl text-xs font-black active:brightness-75">
+        ออก
+      </button>
+      <button onclick="location.reload()" title="รีเฟรชแอป"
+        class="text-slate-500 text-xl active:text-white active:scale-90 transition-transform">↻</button>
+    </div>
   </div>
-  <p class="text-slate-500 text-xs font-black uppercase tracking-widest">เลือกโมดูล</p>
 
   <button onclick="selectModule('SQF')"
-    class="btn-tap bg-orange-600/90 rounded-2xl p-4 text-left shadow-xl flex items-center gap-4">
-    <div class="text-3xl">🏭</div>
+    class="btn-tap bg-orange-600/90 rounded-2xl p-3.5 text-left shadow-xl flex items-center gap-3">
+    <div class="text-2xl">🏭</div>
     <div>
-      <div class="text-lg font-black">วัตถุดิบ SQF</div>
-      <div class="text-orange-200 text-sm">สุพรรณคิวฟู้ดส์ · เบิก / รับเข้า</div>
+      <div class="text-base font-black">วัตถุดิบ SQF</div>
+      <div class="text-orange-200 text-xs">สุพรรณคิวฟู้ดส์ · เบิก / รับเข้า</div>
     </div>
   </button>
 
   <button onclick="selectModule('MLM')"
-    class="btn-tap bg-blue-600/90 rounded-2xl p-4 text-left shadow-xl flex items-center gap-4">
-    <div class="text-3xl">🏭</div>
+    class="btn-tap bg-blue-600/90 rounded-2xl p-3.5 text-left shadow-xl flex items-center gap-3">
+    <div class="text-2xl">🏭</div>
     <div>
-      <div class="text-lg font-black">วัตถุดิบ MLM</div>
-      <div class="text-blue-200 text-sm">แม่ละมาย · เบิก / รับเข้า</div>
+      <div class="text-base font-black">วัตถุดิบ MLM</div>
+      <div class="text-blue-200 text-xs">แม่ละมาย · เบิก / รับเข้า</div>
     </div>
   </button>
 
   <button onclick="selectModule('COLDROOM')"
-    class="btn-tap bg-cyan-700/90 rounded-2xl p-4 text-left shadow-xl flex items-center gap-4">
-    <div class="text-3xl">❄️</div>
+    class="btn-tap bg-cyan-700/90 rounded-2xl p-3.5 text-left shadow-xl flex items-center gap-3">
+    <div class="text-2xl">❄️</div>
     <div>
-      <div class="text-lg font-black">คลังสินค้า Cold Room</div>
-      <div class="text-cyan-200 text-sm">SQF · เบิก / รับเข้า / นับสต๊อก</div>
+      <div class="text-base font-black">คลังสินค้า Cold Room</div>
+      <div class="text-cyan-200 text-xs">SQF · เบิก / รับเข้า / นับสต๊อก</div>
     </div>
   </button>
 
-  <div class="flex gap-3 mt-1">
-    <button onclick="switchToDesktop()"
-      class="flex-1 bg-slate-800 text-slate-300 py-3 rounded-2xl text-sm font-black active:brightness-75">
-      💻 คอมพิวเตอร์
-    </button>
-    <button onclick="doLogout()"
-      class="flex-1 bg-slate-800 text-red-400 py-3 rounded-2xl text-sm font-black active:brightness-75">
-      ออกจากระบบ
-    </button>
+  <!-- Quick-access bar: last used module -->
+  <div id="mLastBar" onclick="selectModule(localStorage.getItem('appstock_last_mod'))"
+    class="hidden btn-tap mt-1 bg-slate-800/80 border border-slate-700 rounded-2xl px-4 py-3 flex items-center justify-between gap-3">
+    <div class="flex items-center gap-3 min-w-0">
+      <span id="mLastIcon" class="text-xl flex-shrink-0"></span>
+      <div class="min-w-0">
+        <div class="text-xs text-slate-400 font-bold">เปิดล่าสุด</div>
+        <div id="mLastTitle" class="text-sm font-black truncate"></div>
+        <div id="mLastSub"   class="text-xs text-slate-400 truncate"></div>
+      </div>
+    </div>
+    <span class="text-slate-500 text-lg flex-shrink-0">›</span>
   </div>
+
 </div>
 
 <!-- ══════════════════════════════════════════
@@ -110,7 +127,7 @@
   <div id="mList" class="flex-1 overflow-y-auto px-3 pt-1.5 pb-20 space-y-1.5"></div>
 
   <!-- Bottom Nav -->
-  <nav class="flex-shrink-0 fixed bottom-0 left-0 right-0 bg-slate-900/95 backdrop-blur border-t border-slate-800
+  <nav id="sMainBottomNav" class="flex-shrink-0 fixed bottom-0 left-0 right-0 bg-slate-900/95 backdrop-blur border-t border-slate-800
               flex pb-safe z-10">
     <button onclick="showTab('list')" id="navList"
       class="flex-1 py-3 flex flex-col items-center gap-0.5 text-indigo-400">
@@ -353,14 +370,20 @@ const show = id => { const e = $(id); if (e) e.classList.remove("hidden"); };
 const hide = id => { const e = $(id); if (e) e.classList.add("hidden"); };
 
 function showScreens(...ids) {
-  ["sModule","sMain","sQR","sScanner"].forEach(s =>
-    ids.includes(s) ? show(s) : hide(s)
-  );
-  // Also ensure flex display for screens that need it
-  ids.forEach(id => {
-    const el = $(id);
-    if (el && el.classList.contains("flex-col")) el.style.display = "flex";
+  ["sModule","sMain","sQR","sScanner"].forEach(s => {
+    const el = $(s);
+    if (!el) return;
+    if (ids.includes(s)) {
+      el.classList.remove("hidden");
+      el.style.display = el.classList.contains("flex-col") ? "flex" : "";
+    } else {
+      el.style.display = "none";
+      el.classList.add("hidden");
+    }
   });
+  // bottom nav ใน sMain เป็น fixed → ซ่อน/แสดงแยกต่างหาก
+  const nav = $("sMainBottomNav");
+  if (nav) nav.style.display = ids.includes("sMain") ? "flex" : "none";
 }
 
 let _toastT;
@@ -406,6 +429,7 @@ window.addEventListener("DOMContentLoaded", () => {
   if (user) {
     $("mGreet").textContent = user;
     showScreens("sModule");
+    updateLastBar();
   } else {
     // ไม่มี session → กลับไป login ที่ index.html
     window.location.replace("index.html");
@@ -434,7 +458,9 @@ const MOD_CFG = {
 };
 
 async function selectModule(m) {
+  if (!m || !MOD_CFG[m]) return;
   mod = m;
+  localStorage.setItem("appstock_last_mod", m);
   const cfg = MOD_CFG[m];
   $("mTitle").textContent = cfg.title;
   $("mSub").textContent   = user + " · " + cfg.sub;
@@ -442,10 +468,25 @@ async function selectModule(m) {
   await loadData();
 }
 
+const MOD_ICON = { SQF:"🏭", MLM:"🏭", COLDROOM:"❄️" };
+
+function updateLastBar() {
+  const last = localStorage.getItem("appstock_last_mod");
+  const bar  = $("mLastBar");
+  if (!bar) return;
+  if (!last || !MOD_CFG[last]) { bar.classList.add("hidden"); return; }
+  const cfg = MOD_CFG[last];
+  $("mLastIcon").textContent  = MOD_ICON[last] || "📦";
+  $("mLastTitle").textContent = cfg.title;
+  $("mLastSub").textContent   = user + " · " + cfg.sub;
+  bar.classList.remove("hidden");
+}
+
 function goModuleSelect() {
   closeScanner();
   $("sModule").style.display = "";
   showScreens("sModule");
+  updateLastBar();
 }
 
 // ─────────────────────────────────────────────
@@ -580,17 +621,35 @@ function pickItem(sku) {
 
   if (sel.min > 0 && sel.qty <= sel.min) show("aWarn"); else hide("aWarn");
 
+  const isViewer = (role || "").toLowerCase() === "viewer";
+
   if (sel.cr) {
     // Cold Room — lot list + count
     hide("aTypeRow"); hide("aInputRow"); hide("aConfirmRow");
     show("aCrSection");
-    hide("aCrCountRow"); hide("aCrInRow"); hide("aCrConfirmRow");
+    if (isViewer) {
+      hide("aCrCountRow"); hide("aCrInRow"); hide("aCrConfirmRow");
+    }
     crLotSel = null; crAction = null;
     renderCrLots();
   } else {
-    show("aTypeRow"); show("aInputRow"); show("aConfirmRow");
+    if (isViewer) {
+      hide("aTypeRow"); hide("aInputRow"); hide("aConfirmRow");
+      let vn = $("aViewerNote");
+      if (!vn) {
+        vn = document.createElement("p");
+        vn.id = "aViewerNote";
+        vn.className = "text-center text-slate-400 font-bold text-sm py-4";
+        vn.textContent = "👁️ สิทธิ์ดูอย่างเดียว — ไม่สามารถเบิก/รับ/นับได้";
+        $("aTypeRow").parentNode.insertBefore(vn, $("aTypeRow"));
+      }
+      show("aViewerNote");
+    } else {
+      hide("aViewerNote");
+      show("aTypeRow"); show("aInputRow"); show("aConfirmRow");
+    }
     hide("aCrSection");
-    setType("OUT");
+    if (!isViewer) setType("OUT");
   }
 
   show("actionOverlay");
@@ -646,12 +705,12 @@ function renderCrLots() {
           <div class="mt-0.5 font-bold">${daysLabel}</div>
           <div class="text-cyan-400 font-black text-base mt-1">${lot.qty} <span class="text-slate-500 text-xs font-normal">${lot.unit}</span></div>
         </div>
-        <div class="flex flex-col gap-1.5 flex-shrink-0">
+        ${(role||"").toLowerCase() === "viewer" ? "" : `<div class="flex flex-col gap-1.5 flex-shrink-0">
           <button onclick="crSelectLot(${i},'out')"
             class="btn-tap bg-orange-600 text-white px-3 py-1.5 rounded-xl font-black text-xs">📤 เบิก</button>
           <button onclick="crSelectLot(${i},'count')"
             class="btn-tap bg-cyan-700 text-white px-3 py-1.5 rounded-xl font-black text-xs">📊 นับ</button>
-        </div>
+        </div>`}
       </div>
     </div>`;
   }).join("");

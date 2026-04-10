@@ -780,6 +780,147 @@ function crGetStartupOverview() {
   };
 }
 
+// ══════════════════════════════════════════
+// 📖 BOM — Bill of Materials (สูตรการผลิต)
+// ══════════════════════════════════════════
+
+function bomGetList() {
+  const sheet = getSheet("BOM");
+  const data  = sheet.getDataRange().getValues();
+  if (data.length <= 1) return { ok: true, boms: [] };
+  const h = data[0];
+  const map = {};
+  for (var i = 1; i < data.length; i++) {
+    var row = {};
+    h.forEach(function(k, idx) { row[k] = data[i][idx]; });
+    var bc = String(row.ProductBarcode);
+    if (!map[bc]) map[bc] = { barcode: bc, name: String(row.ProductName), factory: String(row.Factory), materials: [] };
+    map[bc].materials.push({ sku: String(row.MaterialSKU), name: String(row.MaterialName), qtyPerUnit: Number(row.QtyPerUnit)||0, unit: String(row.Unit) });
+  }
+  return { ok: true, boms: Object.values(map) };
+}
+
+function bomGetForProduct(barcode) {
+  if (!barcode) return { ok: false, message: "ไม่ระบุ barcode" };
+  const sheet = getSheet("BOM");
+  const data  = sheet.getDataRange().getValues();
+  const h = data[0];
+  const result = { barcode: barcode, name: "", factory: "", materials: [] };
+  for (var i = 1; i < data.length; i++) {
+    if (String(data[i][h.indexOf("ProductBarcode")]) !== String(barcode)) continue;
+    var row = {};
+    h.forEach(function(k, idx) { row[k] = data[i][idx]; });
+    if (!result.factory) { result.factory = String(row.Factory); result.name = String(row.ProductName); }
+    result.materials.push({ sku: String(row.MaterialSKU), name: String(row.MaterialName), qtyPerUnit: Number(row.QtyPerUnit)||0, unit: String(row.Unit) });
+  }
+  // แนบ stock ปัจจุบันจาก factory sheet
+  if (result.factory && result.materials.length > 0) {
+    var matSheet = getSheet(result.factory + "_Materials");
+    var matData  = matSheet.getDataRange().getValues();
+    var mh = matData[0];
+    var stockMap = {};
+    for (var j = 1; j < matData.length; j++) {
+      var sku = String(matData[j][mh.indexOf("SKU")]);
+      stockMap[sku] = { qty: Number(matData[j][mh.indexOf("Qty")])||0, dailyUsage: Number(matData[j][mh.indexOf("DailyUsage")])||0, unit: String(matData[j][mh.indexOf("Unit")]||"") };
+    }
+    result.materials = result.materials.map(function(m) {
+      var s = stockMap[m.sku] || { qty: 0, dailyUsage: 0, unit: m.unit };
+      return Object.assign({}, m, { currentQty: s.qty, dailyUsage: s.dailyUsage });
+    });
+  }
+  return { ok: true, bom: result };
+}
+
+function bomSave(payload) {
+  var barcode = payload.barcode, name = payload.name, factory = payload.factory, materials = payload.materials || [];
+  if (!barcode || !factory) return { ok: false, message: "ข้อมูลไม่ครบ (barcode/factory)" };
+  var sheet = getSheet("BOM");
+  ensureColumns(sheet, ["BomID","ProductBarcode","ProductName","Factory","MaterialSKU","MaterialName","QtyPerUnit","Unit"]);
+  // ลบ BOM เดิมของสินค้านี้
+  var data = sheet.getDataRange().getValues();
+  for (var i = data.length - 1; i >= 1; i--) {
+    if (String(data[i][1]) === String(barcode)) sheet.deleteRow(i + 1);
+  }
+  // เพิ่ม BOM ใหม่
+  materials.forEach(function(m, idx) {
+    var bomId = "BOM-" + String(barcode).replace(/[^a-zA-Z0-9]/g,"").substring(0,8) + "-" + String(idx+1).padStart(3,"0");
+    sheet.appendRow([bomId, barcode, name, factory, m.sku, m.name, Number(m.qtyPerUnit)||0, m.unit]);
+  });
+  return { ok: true, saved: materials.length };
+}
+
+function bomDelete(barcode) {
+  if (!barcode) return { ok: false, message: "ไม่ระบุ barcode" };
+  var sheet = getSheet("BOM");
+  var data  = sheet.getDataRange().getValues();
+  for (var i = data.length - 1; i >= 1; i--) {
+    if (String(data[i][1]) === String(barcode)) sheet.deleteRow(i + 1);
+  }
+  return { ok: true };
+}
+
+function bomCalcWorkOrder(payload) {
+  // payload.items = [{barcode, produceQty}]
+  var items = payload.items || [];
+  if (!items.length) return { ok: false, message: "ไม่มีรายการสินค้า" };
+
+  // โหลด BOM ทั้งหมด
+  var bomSheet = getSheet("BOM");
+  var bomData  = bomSheet.getDataRange().getValues();
+  var bomH = bomData[0];
+  var bomMap = {};
+  for (var i = 1; i < bomData.length; i++) {
+    var bc = String(bomData[i][bomH.indexOf("ProductBarcode")]);
+    var factory = String(bomData[i][bomH.indexOf("Factory")]);
+    var sku  = String(bomData[i][bomH.indexOf("MaterialSKU")]);
+    var matName = String(bomData[i][bomH.indexOf("MaterialName")]);
+    var qpu  = Number(bomData[i][bomH.indexOf("QtyPerUnit")])||0;
+    var unit = String(bomData[i][bomH.indexOf("Unit")]);
+    if (!bomMap[bc]) bomMap[bc] = { factory: factory, skus: {} };
+    if (!bomMap[bc].skus[sku]) bomMap[bc].skus[sku] = { name: matName, totalNeeded: 0, unit: unit };
+    bomMap[bc].skus[sku].totalNeeded += qpu; // base per unit
+  }
+
+  // รวม material ที่ต้องการทั้งหมด แยกตาม factory
+  var neededByFactory = {}; // { factory: { sku: { name, needed, unit } } }
+  var noBom = [];
+  items.forEach(function(item) {
+    var bom = bomMap[item.barcode];
+    if (!bom) { noBom.push(item.barcode); return; }
+    var factory = bom.factory;
+    if (!neededByFactory[factory]) neededByFactory[factory] = {};
+    Object.entries(bom.skus).forEach(function(pair) {
+      var sku = pair[0], mat = pair[1];
+      if (!neededByFactory[factory][sku]) neededByFactory[factory][sku] = { name: mat.name, needed: 0, unit: mat.unit };
+      neededByFactory[factory][sku].needed += mat.totalNeeded * Number(item.produceQty);
+    });
+  });
+
+  // แนบ stock ปัจจุบัน
+  var result = {};
+  Object.keys(neededByFactory).forEach(function(factory) {
+    var matSheet = getSheet(factory + "_Materials");
+    var matData  = matSheet.getDataRange().getValues();
+    var mh = matData[0];
+    var stockMap = {};
+    for (var j = 1; j < matData.length; j++) {
+      stockMap[String(matData[j][mh.indexOf("SKU")])] = {
+        qty: Number(matData[j][mh.indexOf("Qty")])||0,
+        dailyUsage: Number(matData[j][mh.indexOf("DailyUsage")])||0
+      };
+    }
+    result[factory] = Object.entries(neededByFactory[factory]).map(function(pair) {
+      var sku = pair[0], mat = pair[1];
+      var s = stockMap[sku] || { qty: 0, dailyUsage: 0 };
+      var remaining = s.qty - mat.needed;
+      var daysAfter = s.dailyUsage > 0 ? Math.floor(remaining / s.dailyUsage) : null;
+      var daysBefore = s.dailyUsage > 0 ? Math.floor(s.qty / s.dailyUsage) : null;
+      return { sku: sku, name: mat.name, needed: mat.needed, unit: mat.unit, currentQty: s.qty, remaining: remaining, dailyUsage: s.dailyUsage, daysBefore: daysBefore, daysAfter: daysAfter, sufficient: remaining >= 0 };
+    });
+  });
+  return { ok: true, materials: result, noBom: noBom };
+}
+
 function crClearLotStock(payload) {
   const { barcode, mfg, reason, employeeName } = payload;
   const mfgIso = (typeof mfg === "string" && mfg.includes("-")) ? mfg : ddmmyyToIso(mfg);

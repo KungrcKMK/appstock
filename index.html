@@ -2900,16 +2900,12 @@
   }
 
   function crWoUnlockButtons() {
-    ["crWoBtnSave","crWoBtnPrint"].forEach(id => {
-      const btn = document.getElementById(id);
-      if (btn) { btn.disabled = false; btn.style.opacity = ""; btn.style.cursor = ""; }
-    });
+    const btn = document.getElementById("crWoBtnPrint");
+    if (btn) { btn.disabled = false; btn.style.opacity = ""; btn.style.cursor = ""; }
   }
   function crWoLockButtons() {
-    ["crWoBtnSave","crWoBtnPrint"].forEach(id => {
-      const btn = document.getElementById(id);
-      if (btn) { btn.disabled = true; btn.style.opacity = ".35"; btn.style.cursor = "not-allowed"; }
-    });
+    const btn = document.getElementById("crWoBtnPrint");
+    if (btn) { btn.disabled = true; btn.style.opacity = ".35"; btn.style.cursor = "not-allowed"; }
   }
 
   async function crCheckBomMaterials() {

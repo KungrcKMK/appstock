@@ -2849,7 +2849,6 @@
     const res = await crCallServer("getColdRoomProducts", {});
     if (!res.ok) { crSetStatus("crEditProductStatus","❌ โหลดไม่ได้ กรุณาลองใหม่","err"); return; }
     crEditProductCache = res.products || [];
-    crWoProducts = crEditProductCache; // แชร์ cache กับ Work Order
     const sel = document.getElementById("crEditProductSelect");
     sel.innerHTML = `<option value="">-- เลือกสินค้า (${crEditProductCache.length} รายการ) --</option>`;
     const sorted = [...crEditProductCache].sort((a,b)=>String(a.ProductName||"").localeCompare(String(b.ProductName||""),"th"));

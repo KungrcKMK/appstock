@@ -791,6 +791,12 @@
               🔬 ตรวจสอบวัตถุดิบที่ต้องใช้
             </button>
             <div id="crWoBomResult" style="display:none;margin-top:10px;"></div>
+            <div id="crWoActionBtns" style="display:none;margin-top:12px;display:flex;gap:10px;">
+              <button class="cr-btn btn-primary" onclick="crPrintWorkOrder()" id="crWoBtnPrint"
+                style="flex:1;padding:14px;font-size:15px;font-weight:900;background:#6366f1;">🖨️ พิมพ์ใบสั่งผลิต</button>
+              <button class="cr-btn btn-light" onclick="crClearWorkOrder()"
+                style="padding:14px;font-size:15px;font-weight:900;">🧹 ใหม่</button>
+            </div>
           </div>
 
           <!-- หมายเหตุ -->

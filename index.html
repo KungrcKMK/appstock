@@ -2077,14 +2077,14 @@
     showLoading("โหลดวัตถุดิบ " + factory + "...");
     const res = await fetch(GAS_URL + "?module=" + factory).then(r=>r.json()).finally(hideLoading);
     _bomMatOptions = res.status === "success" ? res.materials : [];
-    // populate product dropdown ถ้ายังไม่มี
-    if (!_bomProductCache.length) {
+    // populate product dropdown — ใช้ crEditProductCache (โหลดครั้งเดียวตอน startup)
+    if (!crEditProductCache.length) {
       const prodRes = await crCallServer("getColdRoomProducts");
-      _bomProductCache = prodRes.ok ? (prodRes.products || []) : [];
+      if (prodRes.ok) crEditProductCache = prodRes.products || [];
     }
     const sel = document.getElementById("crBomProductSel");
     sel.innerHTML = '<option value="">— เลือกสินค้า —</option>' +
-      _bomProductCache.map(p => {
+      crEditProductCache.map(p => {
         const bc  = escapeHtml(String(p.Barcode     || p.barcode     || ""));
         const nm  = escapeHtml(String(p.ProductName || p.productName || p.name || ""));
         return `<option value="${bc}" data-name="${nm}">${nm} (${bc})</option>`;

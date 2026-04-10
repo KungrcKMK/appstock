@@ -2076,96 +2076,76 @@
   // ══════════════════════════════════════════════════════
   // 📖 BOM — สูตรการผลิต
   // ══════════════════════════════════════════════════════
-  let _bomMatOptions = []; // cache รายการวัตถุดิบจาก factory ที่เลือก
+  let _bomFactory        = "";
+  let _bomMatOptions     = [];
   let _bomCurrentBarcode = null;
   let _bomCurrentName    = null;
+  let _bomProductCache   = [];
 
-  async function crLoadBomList() {
-    const listEl = document.getElementById("crBomProductList");
-    listEl.innerHTML = '<p style="color:#94a3b8;text-align:center;font-weight:700;padding:30px 0;">⏳ กำลังโหลด...</p>';
-    // โหลดสินค้าทั้งหมด + BOM ที่มีอยู่ พร้อมกัน
-    const [prodRes, bomRes] = await Promise.all([
-      crCallServer("getColdRoomProducts"),
-      crCallServer("getBomList")
-    ]);
-    const products = prodRes.ok ? (prodRes.products || []) : [];
-    const boms     = bomRes.ok  ? (bomRes.boms || [])     : [];
-    const bomMap   = {}; boms.forEach(b => { bomMap[b.barcode] = b; });
-
-    if (!products.length) {
-      listEl.innerHTML = '<p style="color:#94a3b8;text-align:center;font-weight:700;padding:30px 0;">ยังไม่มีสินค้าในระบบ</p>';
-      return;
+  // ① เลือกโรงงาน → โหลด material options + populate product dropdown
+  async function crBomSelectFactory(factory) {
+    _bomFactory = factory;
+    // highlight ปุ่ม
+    ["SQF","MLM"].forEach(f => {
+      const btn = document.getElementById("crBomBtn" + f);
+      if (!btn) return;
+      const active = f === factory;
+      btn.style.background      = active ? (f==="SQF"?"#f59e0b":"#10b981") : "#f8fafc";
+      btn.style.color           = active ? "#fff" : "#374151";
+      btn.style.borderColor     = active ? (f==="SQF"?"#d97706":"#059669") : "#e2e8f0";
+    });
+    // โหลดวัตถุดิบของ factory นั้น
+    showLoading("โหลดวัตถุดิบ " + factory + "...");
+    const res = await fetch(GAS_URL + "?module=" + factory).then(r=>r.json()).finally(hideLoading);
+    _bomMatOptions = res.status === "success" ? res.materials : [];
+    // populate product dropdown ถ้ายังไม่มี
+    if (!_bomProductCache.length) {
+      const prodRes = await crCallServer("getColdRoomProducts");
+      _bomProductCache = prodRes.ok ? (prodRes.products || []) : [];
     }
-
-    listEl.innerHTML = products.map(p => {
-      const bom  = bomMap[p.barcode];
-      const hasBom = !!bom;
-      const matCount = hasBom ? bom.materials.length : 0;
-      const factoryBadge = hasBom
-        ? `<span style="background:${bom.factory==="SQF"?"#f59e0b":"#10b981"};color:#fff;border-radius:999px;padding:2px 10px;font-size:11px;font-weight:800;">${bom.factory}</span>`
-        : `<span style="background:#e2e8f0;color:#64748b;border-radius:999px;padding:2px 10px;font-size:11px;font-weight:700;">ยังไม่มี BOM</span>`;
-      return `<div style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border:2px solid ${hasBom?"#c7d2fe":"#e2e8f0"};border-radius:14px;background:${hasBom?"#eef2ff":"#f8fafc"};flex-wrap:wrap;gap:8px;">
-        <div style="flex:1;min-width:0;">
-          <div style="font-weight:800;color:#0f172a;font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escapeHtml(p.name||p.productName||"")}</div>
-          <div style="font-size:11px;color:#64748b;margin-top:2px;">${escapeHtml(p.barcode)} ${hasBom?`· ${matCount} วัตถุดิบ`:""}</div>
-        </div>
-        <div style="display:flex;align-items:center;gap:8px;flex-shrink:0;">
-          ${factoryBadge}
-          <button class="cr-btn btn-light" onclick="crOpenBomEditor('${escapeHtml(p.barcode)}','${escapeHtml((p.name||p.productName||"").replace(/'/g,"\\'"))}')" style="padding:6px 12px;font-size:12px;font-weight:800;">
-            ${hasBom?"✏️ แก้ไข":"➕ กำหนด"} BOM
-          </button>
-        </div>
-      </div>`;
-    }).join("");
-  }
-
-  async function crOpenBomEditor(barcode, name) {
-    _bomCurrentBarcode = barcode;
-    _bomCurrentName    = name;
-    document.getElementById("crBomEditorTitle").textContent = "✏️ BOM: " + name;
-    document.getElementById("crBomEditorSub").textContent   = "Barcode: " + barcode;
-    document.getElementById("crBomEditorCard").style.display = "";
-    document.getElementById("crBomEditorCard").scrollIntoView({ behavior:"smooth", block:"start" });
-
-    // โหลด BOM ที่มีอยู่
-    const res = await crCallServer("getBomForProduct", { barcode });
-    const bom = res.ok ? res.bom : null;
-
-    if (bom && bom.factory) {
-      document.getElementById("crBomFactory").value = bom.factory;
-      await crBomLoadMaterialOptions();
-      // fill rows
-      const tbody = document.getElementById("crBomMatBody");
-      tbody.innerHTML = "";
-      bom.materials.forEach(m => crBomAddRow(m));
-    } else {
-      document.getElementById("crBomFactory").value = "";
-      _bomMatOptions = [];
-      document.getElementById("crBomMatBody").innerHTML = "";
-    }
-  }
-
-  function crCloseBomEditor() {
-    document.getElementById("crBomEditorCard").style.display = "none";
+    const sel = document.getElementById("crBomProductSel");
+    sel.innerHTML = '<option value="">— เลือกสินค้า —</option>' +
+      _bomProductCache.map(p => `<option value="${escapeHtml(p.barcode)}" data-name="${escapeHtml(p.name||p.productName||"")}">${escapeHtml(p.name||p.productName||"")} (${escapeHtml(p.barcode)})</option>`).join("");
+    sel.value = "";
+    // reset section
+    document.getElementById("crBomMatSection").style.display = "none";
+    document.getElementById("crBomPlaceholder").style.display = "";
+    document.getElementById("crBomMatBody").innerHTML = "";
     _bomCurrentBarcode = null;
     _bomCurrentName    = null;
   }
 
-  async function crBomLoadMaterialOptions() {
-    const factory = document.getElementById("crBomFactory").value;
-    if (!factory) { _bomMatOptions = []; return; }
-    const res = await fetch(GAS_URL + "?module=" + factory).then(r=>r.json());
-    _bomMatOptions = res.status === "success" ? res.materials : [];
-    // อัปเดต select ทุก row ที่มีอยู่
-    document.querySelectorAll(".bom-mat-select").forEach(sel => {
-      const cur = sel.value;
-      sel.innerHTML = _bomMatOptions.map(m =>
-        `<option value="${escapeHtml(m.SKU)}" data-unit="${escapeHtml(m.Unit||"")}">${escapeHtml(m.Name)} (${escapeHtml(m.SKU)})</option>`
-      ).join("");
-      if (cur) sel.value = cur;
-    });
+  // ② เลือกสินค้า → โหลด BOM ที่มีอยู่ (ถ้ามี)
+  async function crBomOnProductChange() {
+    const sel = document.getElementById("crBomProductSel");
+    const barcode = sel.value;
+    if (!barcode) {
+      document.getElementById("crBomMatSection").style.display = "none";
+      document.getElementById("crBomPlaceholder").style.display = "";
+      return;
+    }
+    if (!_bomFactory) { showToast("กรุณาเลือกโรงงานก่อน","warn"); sel.value = ""; return; }
+    const name = sel.options[sel.selectedIndex]?.dataset?.name || barcode;
+    _bomCurrentBarcode = barcode;
+    _bomCurrentName    = name;
+    document.getElementById("crBomPlaceholder").style.display = "none";
+    document.getElementById("crBomMatSection").style.display  = "";
+    document.getElementById("crBomMatBody").innerHTML = "";
+    // โหลด BOM เดิม
+    const res = await crCallServer("getBomForProduct", { barcode });
+    const bom = res.ok ? res.bom : null;
+    const badge = document.getElementById("crBomStatusBadge");
+    if (bom && bom.materials && bom.materials.length > 0) {
+      badge.textContent = "มี BOM อยู่แล้ว — กำลังแสดง";
+      badge.style.background = "#dcfce7"; badge.style.color = "#166534";
+      bom.materials.forEach(m => crBomAddRow(m));
+    } else {
+      badge.textContent = "ยังไม่มี BOM — เพิ่มวัตถุดิบได้เลย";
+      badge.style.background = "#fef3c7"; badge.style.color = "#92400e";
+    }
   }
 
+  // ③ เพิ่ม row วัตถุดิบ
   function crBomAddRow(preset = null) {
     const tbody = document.getElementById("crBomMatBody");
     const idx   = tbody.children.length + 1;
@@ -2175,91 +2155,128 @@
       `<option value="${escapeHtml(m.SKU)}" data-unit="${escapeHtml(m.Unit||"")}">${escapeHtml(m.Name)} (${escapeHtml(m.SKU)})</option>`
     ).join("");
     tr.innerHTML = `
-      <td style="padding:8px;color:#94a3b8;font-size:12px;font-weight:700;">${idx}</td>
+      <td style="padding:8px 6px;color:#94a3b8;font-size:12px;font-weight:700;text-align:center;">${idx}</td>
       <td style="padding:8px;">
-        <select class="bom-mat-select" onchange="crBomRowSyncUnit(this)" style="width:100%;padding:8px;border-radius:8px;border:2px solid #e2e8f0;font-family:inherit;font-size:13px;">
+        <select class="bom-mat-select" onchange="crBomRowSyncUnit(this)"
+          style="width:100%;padding:9px 8px;border-radius:8px;border:2px solid #e2e8f0;font-family:inherit;font-size:13px;">
           <option value="">— เลือกวัตถุดิบ —</option>${opts}
         </select>
       </td>
       <td style="padding:8px;">
         <input type="number" class="bom-qty-input" min="0" step="0.001" placeholder="0"
-          style="width:100%;padding:8px;border-radius:8px;border:2px solid #e2e8f0;text-align:right;font-weight:700;font-size:13px;box-sizing:border-box;">
+          style="width:100%;padding:9px 8px;border-radius:8px;border:2px solid #e2e8f0;text-align:right;font-weight:800;font-size:14px;box-sizing:border-box;">
       </td>
       <td style="padding:8px;">
         <input type="text" class="bom-unit-input" placeholder="หน่วย"
-          style="width:100%;padding:8px;border-radius:8px;border:2px solid #e2e8f0;font-size:12px;box-sizing:border-box;">
+          style="width:100%;padding:9px 8px;border-radius:8px;border:2px solid #e2e8f0;font-size:12px;box-sizing:border-box;">
       </td>
       <td style="padding:8px;text-align:center;">
-        <button onclick="this.closest('tr').remove()" style="background:#fee2e2;color:#dc2626;border:none;border-radius:8px;padding:6px 10px;cursor:pointer;font-size:14px;">✕</button>
+        <button onclick="this.closest('tr').remove()"
+          style="background:#fee2e2;color:#dc2626;border:none;border-radius:8px;padding:6px 10px;cursor:pointer;font-size:15px;line-height:1;">✕</button>
       </td>`;
     tbody.appendChild(tr);
-    // preset ข้อมูล
     if (preset) {
-      const sel = tr.querySelector(".bom-mat-select");
-      sel.value = preset.sku || "";
+      tr.querySelector(".bom-mat-select").value = preset.sku || "";
       tr.querySelector(".bom-qty-input").value  = preset.qtyPerUnit || "";
       tr.querySelector(".bom-unit-input").value = preset.unit || "";
     }
   }
 
   function crBomRowSyncUnit(sel) {
-    const opt  = sel.options[sel.selectedIndex];
-    const unit = opt?.dataset?.unit || "";
-    const row  = sel.closest("tr");
-    if (unit) row.querySelector(".bom-unit-input").value = unit;
+    const unit = sel.options[sel.selectedIndex]?.dataset?.unit || "";
+    if (unit) sel.closest("tr").querySelector(".bom-unit-input").value = unit;
   }
 
+  // บันทึก BOM
   async function crSaveBom() {
-    if (!_bomCurrentBarcode) return showToast("ไม่ทราบ barcode สินค้า","warn");
-    const factory = document.getElementById("crBomFactory").value;
-    if (!factory) return showToast("กรุณาเลือกโรงงาน (SQF/MLM)","warn");
+    if (!_bomCurrentBarcode) return showToast("กรุณาเลือกสินค้า","warn");
+    if (!_bomFactory)        return showToast("กรุณาเลือกโรงงาน","warn");
     const rows = document.querySelectorAll("#crBomMatBody tr");
     const materials = [];
-    let valid = true;
+    let hasError = false;
     rows.forEach(tr => {
-      const sku = tr.querySelector(".bom-mat-select").value;
-      const qty = parseFloat(tr.querySelector(".bom-qty-input").value);
-      const unit= tr.querySelector(".bom-unit-input").value.trim();
-      const name= tr.querySelector(".bom-mat-select").options[tr.querySelector(".bom-mat-select").selectedIndex]?.text?.split(" (")[0] || sku;
-      if (!sku || isNaN(qty) || qty <= 0) { valid = false; return; }
+      const sku  = tr.querySelector(".bom-mat-select").value;
+      const qty  = parseFloat(tr.querySelector(".bom-qty-input").value);
+      const unit = tr.querySelector(".bom-unit-input").value.trim();
+      const selEl= tr.querySelector(".bom-mat-select");
+      const name = selEl.options[selEl.selectedIndex]?.text?.split(" (")[0] || sku;
+      if (!sku || isNaN(qty) || qty <= 0) { hasError = true; return; }
       materials.push({ sku, name, qtyPerUnit: qty, unit });
     });
-    if (!valid) return showToast("กรุณากรอกวัตถุดิบและปริมาณให้ครบ","warn");
+    if (hasError) return showToast("กรุณากรอกวัตถุดิบและปริมาณให้ครบทุก row","warn");
     if (!materials.length) return showToast("กรุณาเพิ่มวัตถุดิบอย่างน้อย 1 รายการ","warn");
-    const res = await crCallServer("saveBom", { barcode: _bomCurrentBarcode, name: _bomCurrentName, factory, materials });
+    const res = await crCallServer("saveBom", { barcode: _bomCurrentBarcode, name: _bomCurrentName, factory: _bomFactory, materials });
     if (res.ok) {
-      showToast(`บันทึก BOM สำเร็จ ${res.saved} รายการ ✅`, "success");
-      crCloseBomEditor();
+      showToast(`✅ บันทึก BOM สำเร็จ (${res.saved} รายการ)`, "success");
+      const badge = document.getElementById("crBomStatusBadge");
+      badge.textContent = `บันทึกแล้ว ${res.saved} รายการ`;
+      badge.style.background = "#dcfce7"; badge.style.color = "#166534";
       crLoadBomList();
     } else {
       showToast(res.message || "บันทึกไม่สำเร็จ","error");
     }
   }
 
+  // ลบ BOM
   async function crDeleteBom() {
-    if (!_bomCurrentBarcode) return;
-    if (!confirm(`ลบ BOM ของ "${_bomCurrentName}" ทั้งหมด?`)) return;
+    if (!_bomCurrentBarcode) return showToast("ยังไม่ได้เลือกสินค้า","warn");
+    if (!confirm(`ลบ BOM ทั้งหมดของ "${_bomCurrentName}"?`)) return;
     const res = await crCallServer("deleteBom", { barcode: _bomCurrentBarcode });
     if (res.ok) {
       showToast("ลบ BOM แล้ว","success");
-      crCloseBomEditor();
+      document.getElementById("crBomMatBody").innerHTML = "";
+      const badge = document.getElementById("crBomStatusBadge");
+      badge.textContent = "ยังไม่มี BOM"; badge.style.background = "#fef3c7"; badge.style.color = "#92400e";
       crLoadBomList();
     }
   }
 
-  // ── ตรวจสอบวัตถุดิบ BOM สำหรับใบสั่งผลิต ──
+  // รายการ BOM ทั้งหมด (card ล่าง)
+  async function crLoadBomList() {
+    const listEl = document.getElementById("crBomProductList");
+    listEl.innerHTML = '<p style="color:#94a3b8;text-align:center;font-weight:700;padding:20px 0;">⏳ กำลังโหลด...</p>';
+    const res = await crCallServer("getBomList");
+    const boms = res.ok ? (res.boms || []) : [];
+    if (!boms.length) {
+      listEl.innerHTML = '<p style="color:#94a3b8;text-align:center;font-weight:700;padding:20px 0;">ยังไม่มี BOM ที่กำหนดไว้</p>';
+      return;
+    }
+    listEl.innerHTML = `<div style="display:flex;flex-direction:column;gap:8px;">` +
+      boms.map(b => {
+        const fc = b.factory === "SQF" ? "#f59e0b" : "#10b981";
+        return `<div style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border:2px solid #e2e8f0;border-left:4px solid ${fc};border-radius:12px;background:#f8fafc;flex-wrap:wrap;gap:8px;">
+          <div style="flex:1;min-width:0;">
+            <div style="font-weight:800;font-size:14px;color:#0f172a;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escapeHtml(b.name)}</div>
+            <div style="font-size:11px;color:#64748b;margin-top:2px;">${escapeHtml(b.barcode)} &nbsp;·&nbsp; ${b.materials.length} วัตถุดิบ</div>
+          </div>
+          <div style="display:flex;align-items:center;gap:8px;flex-shrink:0;">
+            <span style="background:${fc};color:#fff;border-radius:999px;padding:2px 10px;font-size:11px;font-weight:800;">${escapeHtml(b.factory)}</span>
+            <button class="cr-btn btn-light" onclick="crBomQuickLoad('${escapeHtml(b.barcode)}','${escapeHtml(b.factory)}','${escapeHtml(b.name.replace(/'/g,"\\'"))}')"
+              style="padding:5px 12px;font-size:12px;">✏️ แก้ไข</button>
+          </div>
+        </div>`;
+      }).join("") + `</div>`;
+  }
+
+  // คลิก "แก้ไข" จาก BOM list → switch factory + product แล้ว load
+  async function crBomQuickLoad(barcode, factory, name) {
+    await crBomSelectFactory(factory);
+    const sel = document.getElementById("crBomProductSel");
+    sel.value = barcode;
+    await crBomOnProductChange();
+    document.querySelector("#cr-tab-bom .card").scrollIntoView({ behavior:"smooth", block:"start" });
+  }
+
+  // ── ตรวจสอบวัตถุดิบ BOM จากใบสั่งผลิต ──
   async function crCheckBomMaterials() {
-    const factory = document.getElementById("crWoFactory").value;
     const resultEl = document.getElementById("crWoBomResult");
-    // เก็บ items จากตาราง
     const rows = document.querySelectorAll("#crWoItemsBody tr");
     const items = [];
     rows.forEach(tr => {
-      const sel = tr.querySelector("select");
+      const sel     = tr.querySelector("select");
       const barcode = sel?.value || "";
-      // qty จากช่อง quantity (column 5 ในตาราง)
-      const qtyInput = tr.querySelectorAll("input[type='number']");
-      const qty = qtyInput.length >= 2 ? parseFloat(qtyInput[1].value) || 0 : 0;
+      const inputs  = tr.querySelectorAll("input[type='number']");
+      const qty     = inputs.length >= 2 ? parseFloat(inputs[1].value) || 0 : 0;
       if (barcode && qty > 0) items.push({ barcode, produceQty: qty });
     });
     if (!items.length) {
@@ -2268,7 +2285,7 @@
       return;
     }
     resultEl.style.display = "";
-    resultEl.innerHTML = `<div style="background:#f1f5f9;border-radius:12px;padding:14px;font-size:13px;color:#64748b;font-weight:700;text-align:center;">⏳ กำลังคำนวณ...</div>`;
+    resultEl.innerHTML = `<div style="background:#f1f5f9;border-radius:12px;padding:14px;font-size:13px;color:#64748b;font-weight:700;text-align:center;">⏳ กำลังคำนวณวัตถุดิบ...</div>`;
     const res = await crCallServer("calcWorkOrderMaterials", { items });
     if (!res.ok) {
       resultEl.innerHTML = `<div style="background:#fee2e2;border:2px solid #fca5a5;border-radius:12px;padding:12px 16px;font-size:13px;font-weight:700;color:#991b1b;">❌ ${escapeHtml(res.message||"เกิดข้อผิดพลาด")}</div>`;
@@ -2278,14 +2295,14 @@
     const noBom = res.noBom || [];
     const hasShortage = Object.values(matsByFactory).some(mats => mats.some(m => !m.sufficient));
 
-    let html = `<div style="border:2px solid ${hasShortage?"#fca5a5":"#86efac"};border-radius:16px;overflow:hidden;">`;
-    html += `<div style="background:${hasShortage?"#fee2e2":"#dcfce7"};padding:12px 16px;font-size:14px;font-weight:900;color:${hasShortage?"#991b1b":"#166534"};">
-      ${hasShortage?"⚠️ มีวัตถุดิบไม่เพียงพอ — ตรวจสอบด้านล่าง":"✅ วัตถุดิบเพียงพอทั้งหมด"}
-    </div>`;
+    let html = `<div style="border:2px solid ${hasShortage?"#fca5a5":"#86efac"};border-radius:16px;overflow:hidden;">
+      <div style="background:${hasShortage?"#fee2e2":"#dcfce7"};padding:12px 16px;font-size:14px;font-weight:900;color:${hasShortage?"#991b1b":"#166534"};">
+        ${hasShortage?"⚠️ มีวัตถุดิบไม่เพียงพอ — ตรวจสอบด้านล่าง":"✅ วัตถุดิบเพียงพอทั้งหมด"}
+      </div>`;
 
     Object.entries(matsByFactory).forEach(([fact, mats]) => {
       html += `<div style="padding:14px 16px;background:#fff;">
-        <div style="font-size:12px;font-weight:800;color:#475569;margin-bottom:10px;">🏭 ${fact} Materials</div>
+        <div style="font-size:12px;font-weight:800;color:#475569;margin-bottom:10px;">🏭 ${escapeHtml(fact)}</div>
         <div style="overflow-x:auto;"><table style="width:100%;border-collapse:collapse;font-size:12px;min-width:480px;">
           <thead><tr style="background:#f1f5f9;color:#475569;font-size:11px;font-weight:800;">
             <th style="padding:8px 10px;text-align:left;">วัตถุดิบ</th>
@@ -2295,37 +2312,33 @@
             <th style="padding:8px 10px;text-align:center;">ใช้ได้อีก</th>
             <th style="padding:8px 10px;text-align:center;">สถานะ</th>
           </tr></thead>
-          <tbody>
-          ${mats.map(m => {
-            const ok = m.sufficient;
-            const useDayColor = m.daysAfter===null?"#94a3b8":m.daysAfter<=0?"#dc2626":m.daysAfter<=7?"#dc2626":m.daysAfter<=14?"#ea580c":m.daysAfter<=30?"#f59e0b":"#059669";
-            const useDayBadge = m.daysAfter===null
-              ? `<span style="color:#94a3b8;">—</span>`
-              : `<span style="background:${useDayColor};color:#fff;border-radius:999px;padding:2px 8px;font-weight:800;">${m.daysAfter} วัน</span>`;
+          <tbody>${mats.map(m => {
+            const ok  = m.sufficient;
+            const dc  = m.daysAfter===null?"#94a3b8":m.daysAfter<=7?"#dc2626":m.daysAfter<=14?"#ea580c":m.daysAfter<=30?"#f59e0b":"#059669";
+            const dayBadge = m.daysAfter===null ? `<span style="color:#94a3b8;">—</span>`
+              : `<span style="background:${dc};color:#fff;border-radius:999px;padding:2px 8px;font-weight:800;">${m.daysAfter} วัน</span>`;
             return `<tr style="border-top:1px dashed #f1f5f9;background:${ok?"#fff":"#fff5f5"};">
               <td style="padding:8px 10px;font-weight:700;color:#334155;">${escapeHtml(m.name)}</td>
               <td style="padding:8px 10px;text-align:right;font-weight:700;color:#6366f1;">${m.needed.toLocaleString()} ${escapeHtml(m.unit)}</td>
               <td style="padding:8px 10px;text-align:right;color:#334155;">${m.currentQty.toLocaleString()} ${escapeHtml(m.unit)}</td>
               <td style="padding:8px 10px;text-align:right;font-weight:900;color:${ok?"#059669":"#dc2626"};">${m.remaining.toLocaleString()} ${escapeHtml(m.unit)}</td>
-              <td style="padding:8px 10px;text-align:center;">${useDayBadge}</td>
+              <td style="padding:8px 10px;text-align:center;">${dayBadge}</td>
               <td style="padding:8px 10px;text-align:center;">${ok
-                ? `<span style="background:#dcfce7;color:#166534;border-radius:999px;padding:2px 8px;font-weight:800;font-size:11px;">✅ พอ</span>`
-                : `<span style="background:#fee2e2;color:#991b1b;border-radius:999px;padding:2px 8px;font-weight:800;font-size:11px;">❌ ขาด ${Math.abs(m.remaining).toLocaleString()}</span>`}
+                ? `<span style="background:#dcfce7;color:#166534;border-radius:999px;padding:2px 9px;font-weight:800;font-size:11px;">✅ พอ</span>`
+                : `<span style="background:#fee2e2;color:#991b1b;border-radius:999px;padding:2px 9px;font-weight:800;font-size:11px;">❌ ขาด ${Math.abs(m.remaining).toLocaleString()}</span>`}
               </td>
             </tr>`;
-          }).join("")}
-          </tbody>
-        </table></div>
-      </div>`;
+          }).join("")}</tbody>
+        </table></div></div>`;
     });
 
     if (noBom.length > 0) {
       html += `<div style="background:#fff7ed;padding:10px 16px;font-size:12px;font-weight:700;color:#92400e;border-top:1px solid #fed7aa;">
-        📋 ไม่พบสูตร BOM: ${noBom.map(b=>escapeHtml(b)).join(", ")} — กรุณากำหนด BOM ที่แท็บ "📖 สูตร BOM"
+        📋 ไม่พบ BOM: ${noBom.map(b=>escapeHtml(b)).join(", ")} — กรุณากำหนดที่แท็บ 📖 สูตร BOM
       </div>`;
     }
     if (!Object.keys(matsByFactory).length && !noBom.length) {
-      html += `<div style="padding:16px;text-align:center;font-size:13px;color:#94a3b8;font-weight:700;">ไม่พบข้อมูล BOM สำหรับสินค้าที่เลือก</div>`;
+      html += `<div style="padding:16px;text-align:center;font-size:13px;color:#94a3b8;font-weight:700;">ไม่พบ BOM สำหรับสินค้าที่เลือก</div>`;
     }
     html += `</div>`;
     resultEl.innerHTML = html;

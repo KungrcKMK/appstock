@@ -2408,6 +2408,7 @@
   }
 
   async function crInitWorkOrder() {
+    crWoLockButtons(); // ต้องตรวจสอบวัตถุดิบก่อนถึงจะบันทึก/พิมพ์ได้
     const today = new Date().toISOString().slice(0,10);
     $$cr("crWoDate").value      = today;
     $$cr("crWoCreatedBy").value = currentUser;

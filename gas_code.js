@@ -998,7 +998,20 @@ function crGetWorkOrders() {
   if (data.length < 2) return { ok: true, orders: [] };
   const h = data[0];
   const orders = data.slice(1).reverse().slice(0,50).map(row => {
-    const o = {}; h.forEach((k,i) => { o[k] = row[i]; });
+    const o = {};
+    h.forEach((k, i) => {
+      var v = row[i];
+      // Date object จาก Google Sheets → แปลงเป็น ISO string
+      if (v instanceof Date) {
+        o[k] = v.toISOString().slice(0, 10);
+      } else {
+        o[k] = v;
+      }
+    });
+    // Items ต้องเป็น string JSON เสมอ
+    if (o.Items !== undefined && typeof o.Items !== "string") {
+      o.Items = o.Items ? JSON.stringify(o.Items) : "";
+    }
     return o;
   });
   return { ok: true, orders };

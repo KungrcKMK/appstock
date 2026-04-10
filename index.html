@@ -730,6 +730,73 @@
         </div>
       </div>
 
+      <!-- Tab: สูตร BOM -->
+      <div class="cr-tab-panel" id="cr-tab-bom">
+        <div class="card">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:10px;">
+            <div>
+              <h2 style="margin:0;">📖 จัดการสูตร BOM</h2>
+              <p style="margin:4px 0 0;font-size:12px;color:#64748b;font-weight:600;">กำหนดวัตถุดิบที่ใช้ในการผลิตสินค้าแต่ละชนิด</p>
+            </div>
+            <button class="cr-btn btn-light" onclick="crLoadBomList()" style="padding:8px 14px;font-size:12px;">🔄 โหลด</button>
+          </div>
+
+          <!-- รายการสินค้าที่มี BOM -->
+          <div id="crBomProductList" style="display:flex;flex-direction:column;gap:10px;margin-bottom:20px;">
+            <p style="color:#94a3b8;text-align:center;font-weight:700;padding:30px 0;">กด "โหลด" เพื่อดูรายการสินค้า</p>
+          </div>
+        </div>
+
+        <!-- BOM Editor Panel (ซ่อนไว้ก่อน) -->
+        <div class="card" id="crBomEditorCard" style="display:none;">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+            <div>
+              <h2 style="margin:0;" id="crBomEditorTitle">✏️ แก้ไข BOM</h2>
+              <p style="margin:4px 0 0;font-size:12px;color:#94a3b8;" id="crBomEditorSub"></p>
+            </div>
+            <button class="cr-btn btn-light" onclick="crCloseBomEditor()" style="padding:8px 12px;font-size:12px;">✕ ปิด</button>
+          </div>
+
+          <!-- Factory selector -->
+          <div class="row" style="margin-bottom:14px;">
+            <div class="field">
+              <label>🏭 โรงงานวัตถุดิบ (Factory)</label>
+              <select id="crBomFactory" onchange="crBomLoadMaterialOptions()" style="width:100%;padding:10px;border-radius:8px;border:2px solid #e2e8f0;font-family:inherit;font-weight:700;">
+                <option value="">— เลือกโรงงาน —</option>
+                <option value="SQF">🏭 SQF (สุพรรณคิวฟู้ดส์)</option>
+                <option value="MLM">🏭 MLM (แม่ละมาย)</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- ตารางวัตถุดิบ -->
+          <div style="font-size:12px;font-weight:700;color:#64748b;text-transform:uppercase;margin-bottom:8px;">⚗️ วัตถุดิบที่ใช้ต่อหน่วยสินค้า 1 หน่วย</div>
+          <div style="overflow-x:auto;">
+            <table style="width:100%;border-collapse:collapse;min-width:560px;" id="crBomMatTable">
+              <thead>
+                <tr style="background:#1e293b;color:#fff;font-size:11px;font-weight:700;text-transform:uppercase;">
+                  <th style="padding:10px 8px;text-align:left;">#</th>
+                  <th style="padding:10px 8px;text-align:left;">วัตถุดิบ</th>
+                  <th style="padding:10px 8px;text-align:right;width:120px;">ปริมาณ/หน่วย</th>
+                  <th style="padding:10px 8px;text-align:left;width:90px;">หน่วย</th>
+                  <th style="padding:10px 8px;text-align:center;width:44px;">ลบ</th>
+                </tr>
+              </thead>
+              <tbody id="crBomMatBody"></tbody>
+            </table>
+          </div>
+          <button class="cr-btn btn-light" onclick="crBomAddRow()" style="margin-top:10px;width:100%;border:2px dashed #cbd5e1;background:#f8fafc;color:#6366f1;font-weight:900;">
+            ➕ เพิ่มวัตถุดิบ
+          </button>
+
+          <!-- Action buttons -->
+          <div style="display:flex;gap:10px;margin-top:16px;flex-wrap:wrap;">
+            <button class="cr-btn btn-primary" onclick="crSaveBom()" style="flex:1;">💾 บันทึก BOM</button>
+            <button class="cr-btn btn-light"   onclick="crDeleteBom()" style="background:#fff1f2;color:#dc2626;border-color:#fca5a5;">🗑️ ลบ BOM นี้</button>
+          </div>
+        </div>
+      </div>
+
       <!-- Tab: แดชบอร์ด -->
       <div class="cr-tab-panel" id="cr-tab-report">
         <div class="card">

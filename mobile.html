@@ -209,12 +209,14 @@
       </div>
     </div>
 
-    <!-- IN/OUT Toggle -->
-    <div id="aTypeRow" class="flex gap-3 px-5 pt-3">
-      <button onclick="setType('OUT')" id="aBtnOut"
-        class="flex-1 py-3 rounded-2xl font-black text-base bg-orange-600 text-white">📤 เบิก</button>
-      <button onclick="setType('IN')"  id="aBtnIn"
-        class="flex-1 py-3 rounded-2xl font-black text-base bg-slate-700 text-slate-400">📥 รับ</button>
+    <!-- IN/OUT/COUNT Toggle -->
+    <div id="aTypeRow" class="flex gap-2 px-5 pt-3">
+      <button onclick="setType('OUT')"   id="aBtnOut"
+        class="flex-1 py-2.5 rounded-2xl font-black text-sm bg-orange-600 text-white">📤 เบิก</button>
+      <button onclick="setType('IN')"    id="aBtnIn"
+        class="flex-1 py-2.5 rounded-2xl font-black text-sm bg-slate-700 text-slate-400">📥 รับ</button>
+      <button onclick="setType('COUNT')" id="aBtnCount"
+        class="flex-1 py-2.5 rounded-2xl font-black text-sm bg-slate-700 text-slate-400">📊 นับ</button>
     </div>
 
     <!-- Qty -->
@@ -794,40 +796,61 @@ if (window.visualViewport) {
 
 function setType(t) {
   aType = t;
-  $("aBtnOut").className = t === "OUT"
-    ? "flex-1 py-3 rounded-2xl font-black text-base bg-orange-600 text-white"
-    : "flex-1 py-3 rounded-2xl font-black text-base bg-slate-700 text-slate-400";
-  $("aBtnIn").className  = t === "IN"
-    ? "flex-1 py-3 rounded-2xl font-black text-base bg-emerald-600 text-white"
-    : "flex-1 py-3 rounded-2xl font-black text-base bg-slate-700 text-slate-400";
+  const base = "flex-1 py-2.5 rounded-2xl font-black text-sm";
+  $("aBtnOut").className   = t === "OUT"   ? `${base} bg-orange-600 text-white`  : `${base} bg-slate-700 text-slate-400`;
+  $("aBtnIn").className    = t === "IN"    ? `${base} bg-emerald-600 text-white` : `${base} bg-slate-700 text-slate-400`;
+  $("aBtnCount").className = t === "COUNT" ? `${base} bg-cyan-600 text-white`    : `${base} bg-slate-700 text-slate-400`;
+
+  const confirmBtn = $("aConfirm");
+  if (t === "COUNT") {
+    // pre-fill ด้วยยอดปัจจุบัน
+    $("aQtyIn").value = sel ? sel.qty : 0;
+    confirmBtn.textContent = "📊 บันทึกการนับ";
+    confirmBtn.className = confirmBtn.className.replace(/bg-\w+-\d+/, "bg-cyan-600");
+  } else {
+    $("aQtyIn").value = 1;
+    confirmBtn.textContent = "✅ ยืนยัน";
+    confirmBtn.className = confirmBtn.className.replace(/bg-\w+-\d+/, "bg-indigo-600");
+  }
 }
 
 function adjQty(d) {
   const el = $("aQtyIn");
-  el.value = Math.max(1, (Number(el.value) || 1) + d);
+  const min = aType === "COUNT" ? 0 : 1;
+  el.value = Math.max(min, (Number(el.value) || min) + d);
 }
 
 async function confirmAction() {
   if (!sel) return;
-  const qty = Number($("aQtyIn").value) || 0;
-  if (qty <= 0) { toast("ระบุจำนวนให้ถูกต้อง", "warn"); return; }
+  const qty = Number($("aQtyIn").value);
+  if (isNaN(qty) || qty < 0) { toast("ระบุจำนวนให้ถูกต้อง", "warn"); return; }
+  if (aType !== "COUNT" && qty <= 0) { toast("ระบุจำนวนมากกว่า 0", "warn"); return; }
   if (aType === "OUT" && qty > sel.qty) {
     toast(`⚠️ สต๊อกไม่พอ — มี ${sel.qty} ${sel.unit}`, "err"); return;
   }
   const btn = $("aConfirm");
   btn.disabled = true; btn.textContent = "กำลังบันทึก...";
-  setLoading(true, aType === "OUT" ? "กำลังบันทึกการเบิก..." : "กำลังบันทึกรับเข้า...");
+
+  const isCount = aType === "COUNT";
+  setLoading(true, isCount ? "กำลังบันทึกการนับ..." : aType === "OUT" ? "กำลังบันทึกการเบิก..." : "กำลังบันทึกรับเข้า...");
   try {
-    const r = await gasPost({ module: mod, action: "UPDATE", sku: sel.sku, type: aType, qty, user });
-    setLoading(false); btn.disabled = false; btn.textContent = "✅ ยืนยัน";
-    if (r.status === "success") {
-      const label = aType === "OUT" ? "📤 เบิก" : "📥 รับ";
-      toast(`${label} ${qty} ${sel.unit} · ${sel.name}`);
+    const r = isCount
+      ? await gasPost({ module: mod, action: "VERIFY", sku: sel.sku, qty, user })
+      : await gasPost({ module: mod, action: "UPDATE", sku: sel.sku, type: aType, qty, user });
+
+    setLoading(false); btn.disabled = false;
+    btn.textContent = isCount ? "📊 บันทึกการนับ" : "✅ ยืนยัน";
+
+    const ok = isCount ? r.status === "success" : r.status === "success";
+    if (ok) {
+      const label = isCount ? `📊 นับ → ${qty}` : aType === "OUT" ? `📤 เบิก ${qty}` : `📥 รับ ${qty}`;
+      toast(`${label} ${sel.unit} · ${sel.name}`);
       closeAction();
       await loadData();
     } else { toast(r.message || "บันทึกไม่สำเร็จ", "err"); }
   } catch(e) {
-    setLoading(false); btn.disabled = false; btn.textContent = "✅ ยืนยัน";
+    setLoading(false); btn.disabled = false;
+    btn.textContent = isCount ? "📊 บันทึกการนับ" : "✅ ยืนยัน";
     toast("เกิดข้อผิดพลาด: " + e.message, "err");
   }
 }

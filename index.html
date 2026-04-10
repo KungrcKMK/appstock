@@ -2985,7 +2985,7 @@
   // ══════════════════════════════════════
   // 📥 รับสินค้าตรง (Direct Stock In)
   // ══════════════════════════════════════
-  // _siProductCache ถูกรวมเป็น crEditProductCache (โหลดครั้งเดียวตอน startup)
+  // crEditProductCache ถูกรวมเป็น crEditProductCache (โหลดครั้งเดียวตอน startup)
   let _siRowIdx = 0;
 
   async function crSiInitSubmit() {
@@ -3002,7 +3002,7 @@
 
   function crSiAddRow() {
     const idx = _siRowIdx++;
-    const opts = _siProductCache.map(p => {
+    const opts = crEditProductCache.map(p => {
       const bc = escapeHtml(String(p.Barcode || ""));
       const nm = escapeHtml(String(p.ProductName || ""));
       return `<option value="${bc}" data-name="${nm}" data-unit="${escapeHtml(String(p.DefaultUnit||""))}">${nm}</option>`;
@@ -3057,7 +3057,7 @@
     row.querySelector(".cr-si-unit-label").textContent = unit;
     // auto EXP: วันนี้ + shelf life ถ้ามี
     const bc = opt.value;
-    const prod = _siProductCache.find(p => String(p.Barcode||"") === bc);
+    const prod = crEditProductCache.find(p => String(p.Barcode||"") === bc);
     if (prod && prod.StandardShelfLifeDays) {
       const exp = new Date();
       exp.setDate(exp.getDate() + Number(prod.StandardShelfLifeDays));

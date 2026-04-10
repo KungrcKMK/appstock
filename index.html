@@ -3106,13 +3106,16 @@
       const bc   = sel.value;
       const nm   = sel.options[sel.selectedIndex]?.dataset.name || "";
       const unit = sel.options[sel.selectedIndex]?.dataset.unit || "";
-      const mfg  = row.querySelector(".cr-si-mfg").value;
-      const exp  = row.querySelector(".cr-si-exp").value;
-      const qty  = Number(row.querySelector(".cr-si-qty").value || 0);
-      if (!bc || !mfg || !exp) { valid = false; return; }
+      const mfgRaw = row.querySelector(".cr-si-mfg").value.trim();
+      const expRaw = row.querySelector(".cr-si-exp").value.trim();
+      const qty    = Number(row.querySelector(".cr-si-qty").value || 0);
+      if (!bc || mfgRaw.length !== 6 || expRaw.length !== 6) { valid = false; return; }
+      // แปลง DDMMYY → ISO สำหรับเก็บใน GAS
+      const mfg = ddmmyyToIsoWo(mfgRaw) || mfgRaw;
+      const exp = ddmmyyToIsoWo(expRaw) || expRaw;
       items.push({ barcode: bc, name: nm, unit, mfg, exp, qty });
     });
-    if (!valid) { showToast("กรุณาเลือกสินค้าและระบุ MFG/EXP ให้ครบ","warn"); return; }
+    if (!valid) { showToast("กรุณาเลือกสินค้าและระบุ MFG/EXP (6 หลัก) ให้ครบ","warn"); return; }
 
     crSetStatus("crSiFormStatus","กำลังส่งรายการ...","");
     const res = await crCallServer("submitStockIn", { username: currentUser, items, note: document.getElementById("crSiNote").value.trim() });

@@ -2392,6 +2392,595 @@
   }
 
   // ══════════════════════════════════════
+  // 📋 ใบสั่งผลิต (Work Order) — Multi-SKU
+  // ══════════════════════════════════════
+  let crWoProducts = [];   // products list from GAS
+  let crWoRowIdx   = 0;    // row counter
+
+  function ddmmyyToIsoWo(str) {
+    if (!str || str.length !== 6) return "";
+    const dd=str.slice(0,2), mm=str.slice(2,4), yy=str.slice(4,6);
+    return `${2000+parseInt(yy,10)}-${mm}-${dd}`;
+  }
+
+  async function crInitWorkOrder() {
+    const today = new Date().toISOString().slice(0,10);
+    $$cr("crWoDate").value      = today;
+    $$cr("crWoCreatedBy").value = currentUser;
+    const seq = String(Math.floor(Math.random()*900)+100);
+    $$cr("crWoOrderId").value   = "WO-" + today.replace(/-/g,"") + "-" + seq;
+    $$cr("crWoNote").value      = "";
+    // โหลด products ถ้ายังไม่มี
+    if (!crWoProducts.length) await crWoLoadProducts();
+    // เพิ่มแถวแรกอัตโนมัติ
+    $$cr("crWoItemsBody").innerHTML = "";
+    crWoRowIdx = 0;
+    crWoAddRow();
+    crLoadWorkOrders();
+  }
+
+  async function crWoLoadProducts() {
+    // ใช้ cache จาก edit tab ถ้ามีแล้ว ไม่ต้องเรียก GAS ซ้ำ
+    if (crEditProductCache.length > 0) { crWoProducts = crEditProductCache; return; }
+    const res = await crCallServer("getColdRoomProducts", {});
+    crWoProducts = (res.products || []);
+    crEditProductCache = crWoProducts; // แชร์ cache
+  }
+
+  function crWoAddRow() {
+    const idx = crWoRowIdx++;
+    const options = crWoProducts.map(p => {
+      // ใช้ unitsPerSet จริงจาก DB — ถ้าว่างหรือ 0 ให้เก็บเป็น 0 ไว้แยก "ยังไม่ตั้งค่า" ออกจาก "ตั้งค่า=1"
+      const ups = p.UnitsPerSet ? Number(p.UnitsPerSet) : 0;
+      return `<option value="${escapeAttr(p.Barcode)}" data-name="${escapeAttr(p.ProductName)}" data-unit="${escapeAttr(p.DefaultUnit||"")}" data-shelf="${escapeAttr(p.StandardShelfLifeDays||10)}" data-setname="${escapeAttr(p.SetName||"")}" data-ups="${ups}">${escapeHtml(p.ProductName)}</option>`;
+    }).join("");
+    const row = document.createElement("tr");
+    row.id = `crWoRow-${idx}`;
+    row.style.cssText = "border-bottom:1px solid #e2e8f0;";
+    row.innerHTML = `
+      <td style="padding:8px;text-align:center;font-size:12px;color:#94a3b8;font-weight:700;">${idx+1}</td>
+      <td style="padding:6px 8px;overflow:hidden;">
+        <select id="crWoSel-${idx}" onchange="crWoOnSelectProduct(${idx})"
+          style="width:100%;padding:7px 8px;border:2px solid #e2e8f0;border-radius:8px;font-family:inherit;font-size:13px;font-weight:700;outline:none;background:#fff;overflow:hidden;text-overflow:ellipsis;">
+          <option value="">— เลือกสินค้า —</option>
+          ${options}
+        </select>
+      </td>
+      <td style="padding:8px;">
+        <input type="text" id="crWoMfg-${idx}" maxlength="6" inputmode="numeric" placeholder="DDMMYY"
+          oninput="crWoCalcExpRow(${idx})"
+          style="width:100%;padding:8px;border:2px solid #e2e8f0;border-radius:8px;text-align:center;font-size:14px;font-weight:900;font-family:monospace;outline:none;">
+      </td>
+      <td style="padding:8px;">
+        <input type="text" id="crWoExp-${idx}" readonly
+          style="width:100%;padding:8px;border:2px solid #f0fdf4;border-radius:8px;text-align:center;font-size:13px;font-weight:900;color:#059669;background:#f0fdf4;font-family:monospace;">
+      </td>
+      <td id="crWoQtyTd-${idx}" style="padding:6px 8px;">
+        <div style="color:#94a3b8;font-size:12px;text-align:center;">← เลือกสินค้าก่อน</div>
+      </td>
+      <td style="padding:6px 8px;">
+        <input type="text" id="crWoUnit-${idx}" readonly
+          style="width:100%;padding:7px;border:2px solid #f1f5f9;border-radius:8px;font-size:13px;background:#f8fafc;color:#64748b;font-weight:700;">
+      </td>
+      <td style="padding:8px;text-align:center;">
+        <button onclick="crWoRemoveRow(${idx})" style="background:#fee2e2;border:none;color:#dc2626;border-radius:6px;padding:6px 10px;cursor:pointer;font-size:14px;font-weight:900;">✕</button>
+      </td>`;
+    $$cr("crWoItemsBody").appendChild(row);
+  }
+
+  function crWoRemoveRow(idx) {
+    const row = document.getElementById(`crWoRow-${idx}`);
+    if (row) row.remove();
+  }
+
+  function crWoOnSelectProduct(idx) {
+    const sel     = document.getElementById(`crWoSel-${idx}`);
+    const opt     = sel.options[sel.selectedIndex];
+    const barcode = opt.value;
+    const unit    = opt.getAttribute("data-unit")    || "";
+    const setName = opt.getAttribute("data-setname") || "";
+    const ups     = Number(opt.getAttribute("data-ups") || 0); // 0 = ยังไม่ตั้งค่า
+
+    document.getElementById(`crWoUnit-${idx}`).value = unit;
+    crWoCalcExpRow(idx);
+
+    const td = document.getElementById(`crWoQtyTd-${idx}`);
+    if (!td) return;
+
+    if (!barcode) {
+      td.innerHTML = `<div style="color:#94a3b8;font-size:12px;text-align:center;">← เลือกสินค้าก่อน</div>`;
+      return;
+    }
+
+    if (ups > 1 || (ups === 1 && setName)) {
+      // ✅ มีการตั้งค่า SetName/UPS ครบ → แสดงสมการชัดเจน
+      const label = setName || "ชุด";
+      td.innerHTML = `
+        <div style="display:flex;flex-direction:column;gap:4px;">
+          <div style="display:flex;gap:4px;align-items:center;">
+            <input type="number" id="crWoSets-${idx}" min="0" step="0.5" placeholder="${label}"
+              oninput="crWoCalcQtyFromSets(${idx})"
+              style="width:60px;padding:6px 8px;border:2px solid #c7d2fe;border-radius:8px;text-align:right;font-size:14px;font-weight:900;outline:none;background:#eff6ff;">
+            <span style="font-size:11px;color:#6366f1;font-weight:700;white-space:nowrap;">${label}</span>
+            <span style="font-size:12px;color:#94a3b8;">×</span>
+            <span style="font-size:12px;color:#4338ca;font-weight:800;white-space:nowrap;">${ups}</span>
+            <span style="font-size:11px;color:#64748b;">=</span>
+            <input type="number" id="crWoQty-${idx}" min="0" placeholder="จำนวน"
+              style="width:90px;padding:6px 8px;border:2px solid #bbf7d0;border-radius:8px;text-align:right;font-size:14px;font-weight:900;outline:none;background:#f0fdf4;color:#15803d;">
+          </div>
+          <div style="font-size:10px;color:#64748b;padding:0 2px;">1 ${label} = ${ups} ${unit}</div>
+        </div>`;
+    } else {
+      // ⚠️ UPS = 0 หรือ 1 โดยไม่มี SetName = ยังไม่ตั้งค่า
+      td.innerHTML = `
+        <div style="display:flex;flex-direction:column;gap:6px;">
+          <div style="background:#fef3c7;border:1px solid #fcd34d;border-radius:8px;padding:5px 9px;font-size:11px;color:#92400e;display:flex;align-items:center;gap:6px;">
+            <span>⚠️ ยังไม่ตั้งค่า ชุด/UPS</span>
+            <button onclick="crSwitchTab('editproduct');crOpenEditProduct('${escapeJs(barcode)}')"
+              style="background:#f59e0b;color:#fff;border:none;border-radius:5px;padding:2px 7px;font-size:10px;font-weight:800;cursor:pointer;">แก้ไข</button>
+          </div>
+          <div style="display:flex;gap:4px;align-items:center;">
+            <input type="number" id="crWoQty-${idx}" min="1" placeholder="จำนวน${unit ? ' ('+unit+')' : ''}"
+              style="width:100%;padding:8px;border:2px solid #fcd34d;border-radius:8px;text-align:right;font-size:14px;font-weight:900;outline:none;background:#fffbeb;">
+          </div>
+        </div>`;
+    }
+  }
+
+  function crWoCalcQtyFromSets(idx) {
+    const sel  = document.getElementById(`crWoSel-${idx}`);
+    const opt  = sel?.options[sel.selectedIndex];
+    const ups  = Number(opt?.getAttribute("data-ups") || 0);
+    const sets = Number(document.getElementById(`crWoSets-${idx}`)?.value || 0);
+    const qtyEl = document.getElementById(`crWoQty-${idx}`);
+    if (!qtyEl || ups <= 0 || sets <= 0) return;
+    // คำนวณ: ชุด × UPS — ไม่ round ถ้าผลเป็นทศนิยมที่สมเหตุสมผล (เช่น 20.5 ชุด × 10 = 205)
+    const result = sets * ups;
+    qtyEl.value = Number.isInteger(result) ? result : result.toFixed(2);
+    // แสดงสูตรใต้ช่อง
+    const unit    = opt?.getAttribute("data-unit")    || "";
+    const setName = opt?.getAttribute("data-setname") || "ชุด";
+    const infEl = document.getElementById(`crWoCalcInfo-${idx}`);
+    if (infEl) infEl.textContent = `${sets} ${setName} × ${ups} = ${qtyEl.value} ${unit}`;
+  }
+
+  function crWoCalcExpRow(idx) {
+    const sel   = document.getElementById(`crWoSel-${idx}`);
+    const opt   = sel?.options[sel.selectedIndex];
+    const shelf = Number(opt?.getAttribute("data-shelf") || 10);
+    const mfg   = (document.getElementById(`crWoMfg-${idx}`)?.value || "").trim();
+    const expEl = document.getElementById(`crWoExp-${idx}`);
+    if (mfg.length !== 6) { if(expEl) expEl.value=""; return; }
+    const mfgIso  = ddmmyyToIsoWo(mfg); if(!mfgIso) return;
+    const expDate = new Date(mfgIso);
+    expDate.setDate(expDate.getDate() + shelf);
+    const dd=String(expDate.getDate()).padStart(2,"0");
+    const mm=String(expDate.getMonth()+1).padStart(2,"0");
+    const yy=String(expDate.getFullYear()).slice(2);
+    if(expEl) expEl.value = dd+mm+yy;
+  }
+
+  function crWoGetItems() {
+    const items = [];
+    document.querySelectorAll("[id^='crWoRow-']").forEach(row => {
+      const idx  = row.id.replace("crWoRow-","");
+      const sel  = document.getElementById(`crWoSel-${idx}`);
+      const opt  = sel?.options[sel.selectedIndex];
+      const barcode = sel?.value || "";
+      const name    = opt?.getAttribute("data-name") || "";
+      const unit    = document.getElementById(`crWoUnit-${idx}`)?.value || "";
+      const mfg     = (document.getElementById(`crWoMfg-${idx}`)?.value || "").trim();
+      const exp     = document.getElementById(`crWoExp-${idx}`)?.value || "";
+      const qty     = Number(document.getElementById(`crWoQty-${idx}`)?.value || 0);
+      const sets    = Number(document.getElementById(`crWoSets-${idx}`)?.value || 0);  // อาจไม่มีถ้า UPS ไม่ได้ตั้งค่า
+      const ups     = Number(opt?.getAttribute("data-ups") || 0);
+      const setName = opt?.getAttribute("data-setname") || "";
+      // validation: qty ต้องมี, mfg 6 หลัก, มีชื่อสินค้า
+      if (name && mfg.length===6 && qty>0) {
+        // ตรวจสอบ: ถ้า UPS ตั้งค่าแล้ว แต่ qty ≠ sets×ups → อาจมีการแก้มือ → ยอมรับค่า qty ที่ user กรอก
+        items.push({ barcode, name, unit, mfg, exp, qty, sets: sets||0, unitsPerSet: ups||1, setName });
+      }
+    });
+    return items;
+  }
+
+  async function crSaveWorkOrder() {
+    const orderId = $$cr("crWoOrderId").value.trim();
+    const date    = $$cr("crWoDate").value;
+    const note    = $$cr("crWoNote").value.trim();
+    const items   = crWoGetItems();
+    if (!items.length) return showToast("กรุณาเพิ่มสินค้าและกรอก MFG + จำนวน","warn");
+    showLoading("กำลังบันทึก...");
+    const res = await crCallServer("saveWorkOrder", { orderId, date, items, note, createdBy:currentUser });
+    hideLoading();
+    if (res.ok) {
+      showToast("บันทึกใบสั่งผลิตสำเร็จ ✅","success");
+      crPrintWorkOrder();
+      crLoadWorkOrders();
+    } else showToast(res.message||"บันทึกไม่สำเร็จ","error");
+  }
+
+  function crClearWorkOrder() {
+    crInitWorkOrder();
+  }
+
+  async function crLoadWorkOrders() {
+    const res = await crCallServer("getWorkOrders", {});
+    if (!res.ok || !res.orders) return;
+    _crWoCache = res.orders; // cache สำหรับ reprint/report by ID
+    const body = $$cr("crWoListBody");
+    if (!res.orders.length) { body.innerHTML=`<tr><td colspan="12" style="text-align:center;color:#94a3b8;padding:20px;">ยังไม่มีใบสั่งผลิต</td></tr>`; return; }
+    body.innerHTML = res.orders.map(o => {
+      const items = crWoParseItems(o.Items);
+      const summary = items.length > 1
+        ? `${items[0].name} +${items.length-1} รายการ`
+        : (items[0]?.name || o.ProductName || "-");
+      const totalQty = items.reduce((s,i)=>s+Number(i.qty||0),0);
+      const mfgList  = [...new Set(items.map(i=>isoToDdmmyy(ddmmyyToIsoWo(i.mfg)||i.mfg)||i.mfg))].join(", ");
+      const woStatus = o.Status || "รอดำเนินการ";
+      const statusColor = { "รอดำเนินการ":"#f59e0b","รอยืนยันรับ":"#3b82f6","ส่งกลับแก้ไข":"#dc2626","เสร็จสิ้น":"#059669","ยกเลิก":"#94a3b8" }[woStatus] || "#94a3b8";
+      const canSend = woStatus !== "เสร็จสิ้น" && woStatus !== "ยกเลิก";
+      const canDelete = woStatus === "รอดำเนินการ" || woStatus === "ส่งกลับแก้ไข";
+      // แสดงวันที่ให้อ่านง่าย (slice ISO ถ้ายาวกว่า 10 ตัวอักษร)
+      const dateDisplay = (o.Date||"-").length > 10 ? (o.Date||"").slice(0,10) : (o.Date||"-");
+      const safeOId = escapeJs(o.OrderID||"");
+      return `<tr>
+        <td style="font-size:11px;font-weight:700;color:#6366f1;">${escapeHtml(o.OrderID)}</td>
+        <td style="font-size:11px;">${escapeHtml(dateDisplay)}</td>
+        <td><b>${escapeHtml(summary)}</b><br><span style="font-size:10px;color:#94a3b8;">${items.length} SKU</span></td>
+        <td style="font-size:11px;">${mfgList||"-"}</td>
+        <td style="font-size:11px;">${items.map(i=>isoToDdmmyy(ddmmyyToIsoWo(i.exp)||i.exp)||i.exp).join(", ")||"-"}</td>
+        <td style="font-weight:700;">${totalQty.toLocaleString()}</td>
+        <td style="font-size:11px;">${escapeHtml(o.CreatedBy||"-")}</td>
+        <td><span style="background:${statusColor};color:#fff;border-radius:999px;padding:2px 8px;font-size:10px;font-weight:900;white-space:nowrap;">${escapeHtml(woStatus)}</span></td>
+        <td>${canSend ? `<button class="cr-btn btn-primary" style="padding:5px 10px;font-size:11px;background:#0ea5e9;white-space:nowrap;" onclick="crGoDeliverWO('${safeOId}')">📦 ส่งยอด</button>` : `<span style="font-size:10px;color:#94a3b8;">-</span>`}</td>
+        <td><button class="cr-btn btn-light" style="padding:5px 10px;font-size:11px;" onclick="crReprintWO('${safeOId}')">🖨️</button></td>
+        <td><button class="cr-btn btn-primary" style="padding:5px 10px;font-size:11px;background:#0f766e;" onclick="crPrintActualWO('${safeOId}')">📊</button></td>
+        <td>${canDelete ? `<button style="padding:5px 9px;font-size:13px;background:#fee2e2;border:none;border-radius:6px;color:#dc2626;cursor:pointer;font-weight:900;" onclick="crDeleteWorkOrder('${safeOId}')" title="ลบใบสั่งผลิต">🗑️</button>` : `<span style="font-size:10px;color:#e2e8f0;">—</span>`}</td>
+      </tr>`;
+    }).join("");
+  }
+
+  function crWoParseItems(raw) {
+    if (!raw) return [];
+    try { return typeof raw === "string" ? JSON.parse(raw) : raw; } catch(e) { return []; }
+  }
+
+  function crPrintWorkOrder() {
+    const orderId = $$cr("crWoOrderId").value;
+    const date    = $$cr("crWoDate").value;
+    const note    = $$cr("crWoNote").value;
+    const items   = crWoGetItems();
+    crOpenWorkOrderPrint({ OrderID:orderId, Date:date, Items:items, Note:note, CreatedBy:currentUser });
+  }
+
+  function crReprintWorkOrder(o) {
+    const items = crWoParseItems(o.Items);
+    crOpenWorkOrderPrint({ ...o, Items:items });
+  }
+
+  // helper: reprint by OrderID (ใช้กับปุ่มใน list ที่ส่งแค่ ID)
+  let _crWoCache = []; // cache รายการ WO ที่โหลดมาล่าสุด
+  function crReprintWO(orderId) {
+    const o = _crWoCache.find(x => x.OrderID === orderId);
+    if (o) crReprintWorkOrder(o);
+    else showToast("ไม่พบข้อมูลใบสั่งผลิต กรุณากด 🔄 โหลดใหม่","warn");
+  }
+  function crPrintActualWO(orderId) {
+    const o = _crWoCache.find(x => x.OrderID === orderId);
+    if (o) crPrintActualReport(o);
+    else showToast("ไม่พบข้อมูลใบสั่งผลิต กรุณากด 🔄 โหลดใหม่","warn");
+  }
+
+  async function crDeleteWorkOrder(orderId) {
+    if (!await crShowModal("confirm","🗑️ ลบใบสั่งผลิต",`ลบ "${orderId}" ? ไม่สามารถกู้คืนได้`)) return;
+    const res = await crCallServer("deleteWorkOrder", { orderId, username: currentUser });
+    if (res.ok) { showToast("🗑️ ลบแล้ว"); crLoadWorkOrders(); }
+    else showToast("❌ " + (res.message||"ลบไม่สำเร็จ"),"error");
+  }
+
+  async function crPrintActualReport(o) {
+    const items = crWoParseItems(o.Items);
+    if (!items.length) { showToast("ไม่พบรายการสินค้าในใบสั่งผลิตนี้","warn"); return; }
+    showLoading("กำลังโหลดยอดจริง...");
+    // ดึงยอดจริงแต่ละ SKU
+    const rows = [];
+    for (const item of items) {
+      const res = await crCallServer("getProductAndBalances", { barcode: item.barcode || item.name });
+      const mfgIso  = ddmmyyToIsoWo(item.mfg) || item.mfg || "";
+      let actual = 0;
+      if (res.found && res.balances) {
+        const lot = res.balances.find(b => (b.MFG||"").startsWith(mfgIso.slice(0,10)));
+        actual = lot ? Number(lot.Qty||0) : 0;
+      }
+      rows.push({ ...item, actual });
+    }
+    hideLoading();
+    const dateStr   = o.Date ? new Date(o.Date).toLocaleDateString("th-TH",{year:"numeric",month:"long",day:"numeric"}) : "-";
+    const printDate = new Date().toLocaleDateString("th-TH",{year:"numeric",month:"long",day:"numeric"});
+    const totalPlan   = rows.reduce((s,r)=>s+Number(r.qty||0),0);
+    const totalActual = rows.reduce((s,r)=>s+r.actual,0);
+    const totalDiff   = totalActual - totalPlan;
+
+    const tableRows = rows.map((r,i) => {
+      const planned = Number(r.qty||0);
+      const actual  = r.actual;
+      const diff    = actual - planned;
+      const diffSign = diff>=0?"+":"";
+      const diffColor = diff>=0?"#059669":"#dc2626";
+      const mfgFmt  = isoToDdmmyy(ddmmyyToIsoWo(r.mfg)||r.mfg)||r.mfg||"-";
+      const expFmt  = isoToDdmmyy(ddmmyyToIsoWo(r.exp)||r.exp)||r.exp||"-";
+      const status  = diff>=0
+        ? `<span style="color:#059669;font-weight:700;">✅ ตามแผน</span>`
+        : `<span style="color:#dc2626;font-weight:700;">⚠️ ขาด ${Math.abs(diff).toLocaleString()}</span>`;
+      return `<tr style="background:${i%2===0?"#fff":"#f8fafc"}">
+        <td style="padding:10px 12px;border:1px solid #e2e8f0;text-align:center;font-size:12px;color:#94a3b8;">${i+1}</td>
+        <td style="padding:10px 12px;border:1px solid #e2e8f0;font-weight:700;">${escapeHtml(r.name||"-")}</td>
+        <td style="padding:10px 12px;border:1px solid #e2e8f0;text-align:center;font-weight:900;color:#6366f1;">${mfgFmt}</td>
+        <td style="padding:10px 12px;border:1px solid #e2e8f0;text-align:center;color:#059669;">${expFmt}</td>
+        <td style="padding:10px 12px;border:1px solid #e2e8f0;text-align:right;font-weight:900;font-size:16px;color:#3b82f6;">${planned.toLocaleString()}</td>
+        <td style="padding:10px 12px;border:1px solid #e2e8f0;text-align:right;font-weight:900;font-size:16px;color:#16a34a;">${actual.toLocaleString()}</td>
+        <td style="padding:10px 12px;border:1px solid #e2e8f0;text-align:right;font-weight:900;font-size:16px;color:${diffColor};">${diffSign}${diff.toLocaleString()}</td>
+        <td style="padding:10px 12px;border:1px solid #e2e8f0;">${escapeHtml(r.unit||"-")}</td>
+        <td style="padding:10px 12px;border:1px solid #e2e8f0;text-align:center;">${status}</td>
+      </tr>`;
+    }).join("");
+
+    const overallDiffColor = totalDiff>=0?"#059669":"#dc2626";
+    const w = window.open("","","width=1050,height=720");
+    w.document.write(`<!DOCTYPE html><html lang="th"><head><meta charset="UTF-8">
+    <title>รายงานยอดผลิตจริง ${o.OrderID}</title>
+    <style>
+      body{font-family:'Sarabun',sans-serif;color:#1e293b;padding:32px 40px;font-size:14px;}
+      .hd{display:flex;justify-content:space-between;align-items:flex-start;border-bottom:3px solid #1e293b;padding-bottom:14px;margin-bottom:22px;}
+      h1{font-size:24px;font-weight:900;margin:0 0 4px;} .sub{font-size:12px;color:#64748b;}
+      .summary{display:flex;gap:16px;margin-bottom:22px;}
+      .sum-card{flex:1;border-radius:10px;padding:16px 20px;text-align:center;}
+      .sum-card .n{font-size:32px;font-weight:900;line-height:1;}
+      .sum-card .l{font-size:11px;font-weight:700;text-transform:uppercase;margin-top:5px;opacity:.7;}
+      .plan-c{background:#eff6ff;border:2px solid #3b82f6;} .plan-c .n{color:#3b82f6;}
+      .act-c{background:#f0fdf4;border:2px solid #22c55e;} .act-c .n{color:#16a34a;}
+      .dif-c{background:#f8fafc;border:2px solid #64748b;} .dif-c .n{color:${overallDiffColor};}
+      .status-bar{padding:12px 18px;border-radius:8px;font-weight:900;font-size:14px;text-align:center;margin-bottom:20px;}
+      .sign{display:flex;gap:40px;margin-top:40px;}
+      .sign-box{flex:1;text-align:center;border-top:2px solid #94a3b8;padding-top:8px;font-size:11px;color:#64748b;}
+      .footer{margin-top:18px;font-size:10px;color:#94a3b8;text-align:center;border-top:1px solid #e2e8f0;padding-top:10px;}
+      @media print{body{padding:14px 22px;} .no-print{display:none;}}
+    </style></head><body>
+    <div class="hd">
+      <div><h1>📊 รายงานยอดผลิตจริง</h1>
+        <div class="sub">อ้างอิงใบสั่งผลิต: <b>${escapeHtml(o.OrderID||"-")}</b> &nbsp;|&nbsp; ❄️ คลังสินค้า SQF</div>
+        <div class="sub">วันที่สั่งผลิต: <b>${dateStr}</b> &nbsp;|&nbsp; ผู้สั่ง: <b>${escapeHtml(o.CreatedBy||"-")}</b></div>
+      </div>
+      <div style="text-align:right;">
+        <div class="sub">วันที่พิมพ์: <b>${printDate}</b> &nbsp;|&nbsp; ผู้พิมพ์: <b>${currentUser}</b></div>
+        <button class="no-print" onclick="window.print()" style="margin-top:8px;background:#0f766e;color:#fff;border:none;padding:8px 20px;border-radius:6px;font-size:12px;font-weight:700;cursor:pointer;">🖨️ พิมพ์</button>
+      </div>
+    </div>
+    <div class="summary">
+      <div class="sum-card plan-c"><div class="n">${totalPlan.toLocaleString()}</div><div class="l">📋 สั่งผลิต (แผน)</div></div>
+      <div class="sum-card act-c"><div class="n">${totalActual.toLocaleString()}</div><div class="l">✅ ผลิตได้จริง</div></div>
+      <div class="sum-card dif-c"><div class="n" style="color:${overallDiffColor};">${totalDiff>=0?"+":""}${totalDiff.toLocaleString()}</div><div class="l">📐 ผลต่าง (จำนวน)</div></div>
+    </div>
+    <div class="status-bar" style="background:${totalDiff>=0?"#f0fdf4":"#fef2f2"};border:2px solid ${totalDiff>=0?"#22c55e":"#ef4444"};color:${totalDiff>=0?"#16a34a":"#dc2626"};">
+      ${totalDiff>=0?"✅ ผลิตได้ตามเป้าหมายโดยรวม":"⚠️ ผลิตได้ต่ำกว่าแผนโดยรวม — ตรวจสอบสาเหตุ"}
+    </div>
+    <table style="width:100%;border-collapse:collapse;font-size:13px;">
+      <thead><tr style="background:#1e293b;color:#fff;font-size:11px;">
+        <th style="padding:9px 12px;text-align:center;width:30px">#</th>
+        <th style="padding:9px 12px;text-align:left;">ชื่อสินค้า</th>
+        <th style="padding:9px 12px;text-align:center;width:80px">MFG</th>
+        <th style="padding:9px 12px;text-align:center;width:80px">EXP</th>
+        <th style="padding:9px 12px;text-align:right;width:90px">📋 สั่งผลิต</th>
+        <th style="padding:9px 12px;text-align:right;width:90px">✅ ผลิตจริง</th>
+        <th style="padding:9px 12px;text-align:right;width:90px">📐 ผลต่าง</th>
+        <th style="padding:9px 12px;text-align:left;width:55px">หน่วย</th>
+        <th style="padding:9px 12px;text-align:center;width:100px">สถานะ</th>
+      </tr></thead>
+      <tbody>${tableRows}</tbody>
+      <tfoot><tr style="background:#f1f5f9;font-weight:900;font-size:14px;">
+        <td colspan="4" style="padding:10px 12px;border:1px solid #e2e8f0;text-align:right;">รวม</td>
+        <td style="padding:10px 12px;border:1px solid #e2e8f0;text-align:right;color:#3b82f6;">${totalPlan.toLocaleString()}</td>
+        <td style="padding:10px 12px;border:1px solid #e2e8f0;text-align:right;color:#16a34a;">${totalActual.toLocaleString()}</td>
+        <td style="padding:10px 12px;border:1px solid #e2e8f0;text-align:right;color:${overallDiffColor};">${totalDiff>=0?"+":""}${totalDiff.toLocaleString()}</td>
+        <td colspan="2" style="padding:10px 12px;border:1px solid #e2e8f0;"></td>
+      </tfoot>
+    </table>
+    ${o.Note ? `<div style="background:#fef9c3;border-left:5px solid #eab308;padding:10px 14px;border-radius:6px;margin:16px 0;font-size:12px;">💬 <b>หมายเหตุ:</b> ${escapeHtml(o.Note)}</div>` : ""}
+    <div class="sign">
+      <div class="sign-box">ผู้จัดทำรายงาน<br><br>( ${currentUser} )</div>
+      <div class="sign-box">ผู้ควบคุมการผลิต<br><br>( .......................... )</div>
+      <div class="sign-box">QC / ผู้อนุมัติ<br><br>( .......................... )</div>
+    </div>
+    <div class="footer">พิมพ์โดยระบบจัดการสต๊อก SQF & MLM &nbsp;|&nbsp; ${new Date().toLocaleString("th-TH")}</div>
+    </body></html>`);
+    w.document.close();
+  }
+
+  function crOpenWorkOrderPrint(o) {
+    const items   = crWoParseItems(o.Items);
+    const dateStr = o.Date ? new Date(o.Date).toLocaleDateString("th-TH",{year:"numeric",month:"long",day:"numeric"}) : "-";
+
+    // ตรวจว่ามีรายการที่ใช้ ชุด/UPS บ้างมั้ย
+    const hasSetItems = items.some(it => Number(it.sets||0) > 0 && it.setName);
+
+    const itemRows = items.map((item,i) => {
+      const mfgFmt = isoToDdmmyy(ddmmyyToIsoWo(item.mfg)||item.mfg) || item.mfg || "-";
+      const expFmt = isoToDdmmyy(ddmmyyToIsoWo(item.exp)||item.exp) || item.exp || "-";
+      const qty    = Number(item.qty || 0);
+      const sets   = Number(item.sets || 0);
+      const ups    = Number(item.unitsPerSet || 1);
+      const sName  = item.setName || "";
+      const unit   = item.unit || "";
+
+      // แสดงจำนวน: ถ้ามีชุด → แสดงทั้ง 2 บรรทัด; ถ้าไม่มี → แสดงแค่ qty
+      const qtyCell = (sets > 0 && sName)
+        ? `<div style="font-size:15px;font-weight:900;color:#6366f1;">${sets.toLocaleString()} ${escapeHtml(sName)}</div>
+           <div style="font-size:11px;color:#94a3b8;margin:2px 0;">× ${ups} ${escapeHtml(unit)}/ชุด</div>
+           <div style="font-size:18px;font-weight:900;color:#1e293b;border-top:1px dashed #e2e8f0;margin-top:4px;padding-top:4px;">= ${qty.toLocaleString()} <span style="font-size:12px;font-weight:400;color:#64748b;">${escapeHtml(unit)}</span></div>`
+        : `<div style="font-size:18px;font-weight:900;">${qty.toLocaleString()} <span style="font-size:12px;font-weight:400;color:#64748b;">${escapeHtml(unit)}</span></div>`;
+
+      return `<tr style="background:${i%2===0?"#fff":"#f8fafc"}">
+        <td style="padding:10px 14px;border:1px solid #e2e8f0;text-align:center;font-size:12px;color:#94a3b8;">${i+1}</td>
+        <td style="padding:10px 14px;border:1px solid #e2e8f0;font-weight:700;font-size:14px;">${escapeHtml(item.name||"-")}</td>
+        <td style="padding:10px 14px;border:1px solid #e2e8f0;text-align:center;font-weight:900;font-size:16px;color:#6366f1;letter-spacing:1px;">${mfgFmt}</td>
+        <td style="padding:10px 14px;border:1px solid #e2e8f0;text-align:center;font-weight:900;font-size:16px;color:#059669;letter-spacing:1px;">${expFmt}</td>
+        <td style="padding:10px 14px;border:1px solid #e2e8f0;text-align:right;vertical-align:middle;">${qtyCell}</td>
+        <td style="padding:10px 14px;border:1px solid #e2e8f0;"></td>
+      </tr>`;
+    }).join("");
+
+    const totalQty  = items.reduce((s,i)=>s+Number(i.qty||0),0);
+    // สรุปชุดแยกตาม setName (เพราะแต่ละสินค้าอาจมี setName ต่างกัน)
+    const setsMap = {};
+    items.forEach(it => {
+      const sets = Number(it.sets||0); const sn = it.setName||"";
+      if (sets>0 && sn) setsMap[sn] = (setsMap[sn]||0) + sets;
+    });
+    const setsSummary = Object.entries(setsMap).map(([n,v])=>`${v.toLocaleString()} ${n}`).join(" + ");
+
+    const w = window.open("","","width=1000,height=700");
+    w.document.write(`<!DOCTYPE html><html lang="th"><head><meta charset="UTF-8">
+    <title>ใบสั่งผลิต ${o.OrderID}</title>
+    <style>
+      body{font-family:'Sarabun',sans-serif;color:#1e293b;padding:36px 48px;font-size:14px;}
+      .hd{display:flex;justify-content:space-between;align-items:flex-start;border-bottom:3px solid #1e293b;padding-bottom:16px;margin-bottom:24px;}
+      h1{font-size:26px;font-weight:900;margin:0 0 4px;}
+      .sub{font-size:12px;color:#64748b;}
+      .note-box{background:#fef9c3;border-left:5px solid #eab308;padding:12px 16px;border-radius:6px;margin:16px 0;font-size:13px;}
+      .total-bar{display:flex;gap:16px;margin:12px 0;flex-wrap:wrap;}
+      .total-card{padding:10px 18px;border-radius:10px;border:2px solid;}
+      .tc-sets{border-color:#c7d2fe;background:#eff6ff;color:#4338ca;}
+      .tc-qty {border-color:#bbf7d0;background:#f0fdf4;color:#15803d;}
+      .tc-label{font-size:10px;font-weight:700;text-transform:uppercase;opacity:.8;margin-bottom:4px;}
+      .tc-value{font-size:20px;font-weight:900;}
+      .sign{display:flex;gap:48px;margin-top:48px;}
+      .sign-box{flex:1;text-align:center;border-top:2px solid #94a3b8;padding-top:8px;font-size:11px;color:#64748b;}
+      .footer{margin-top:20px;font-size:10px;color:#94a3b8;text-align:center;border-top:1px solid #e2e8f0;padding-top:10px;}
+      @media print{body{padding:16px 24px;} .no-print{display:none;}}
+    </style></head><body>
+    <div class="hd">
+      <div>
+        <h1>📋 ใบสั่งผลิต</h1>
+        <div class="sub">❄️ คลังสินค้า SQF — สุพรรณคิวฟู้ดส์</div>
+      </div>
+      <div style="text-align:right;">
+        <div style="font-size:22px;font-weight:900;color:#6366f1;">${escapeHtml(o.OrderID||"-")}</div>
+        <div class="sub">วันที่: <b>${dateStr}</b> &nbsp;|&nbsp; ผู้สั่ง: <b>${escapeHtml(o.CreatedBy||"-")}</b></div>
+        <button class="no-print" onclick="window.print()" style="margin-top:8px;background:#1e293b;color:#fff;border:none;padding:8px 20px;border-radius:6px;font-size:12px;font-weight:700;cursor:pointer;">🖨️ พิมพ์</button>
+      </div>
+    </div>
+    ${setsSummary ? `<div class="total-bar">
+      <div class="total-card tc-sets"><div class="tc-label">📦 สั่งผลิต (ชุด)</div><div class="tc-value">${setsSummary}</div></div>
+      <div class="total-card tc-qty" ><div class="tc-label">🔢 รวมทั้งหมด (หน่วย)</div><div class="tc-value">${totalQty.toLocaleString()}</div></div>
+    </div>` : ""}
+    <table style="width:100%;border-collapse:collapse;margin-bottom:16px;">
+      <thead><tr style="background:#1e293b;color:#fff;font-size:12px;">
+        <th style="padding:10px 14px;text-align:center;width:32px">#</th>
+        <th style="padding:10px 14px;text-align:left;">ชื่อสินค้า</th>
+        <th style="padding:10px 14px;text-align:center;width:90px">MFG</th>
+        <th style="padding:10px 14px;text-align:center;width:90px">EXP</th>
+        <th style="padding:10px 14px;text-align:right;width:150px">จำนวน (ชุด → หน่วย)</th>
+        <th style="padding:10px 14px;text-align:left;width:120px">หมายเหตุ</th>
+      </tr></thead>
+      <tbody>${itemRows}</tbody>
+      <tfoot><tr style="background:#f1f5f9;font-weight:900;">
+        <td colspan="4" style="padding:10px 14px;border:1px solid #e2e8f0;text-align:right;">รวมทั้งหมด</td>
+        <td style="padding:10px 14px;border:1px solid #e2e8f0;text-align:right;">
+          ${setsSummary ? `<div style="font-size:14px;color:#6366f1;font-weight:700;">${setsSummary}</div>` : ""}
+          <div style="font-size:20px;color:#15803d;">${totalQty.toLocaleString()}</div>
+        </td>
+        <td style="padding:10px 14px;border:1px solid #e2e8f0;"></td>
+      </tr></tfoot>
+    </table>
+    ${o.Note ? `<div class="note-box">💬 <b>หมายเหตุ:</b> ${escapeHtml(o.Note)}</div>` : ""}
+    <div class="sign">
+      <div class="sign-box">ผู้สั่งผลิต<br><br>( ${escapeHtml(o.CreatedBy||"...")} )</div>
+      <div class="sign-box">ผู้ควบคุมการผลิต<br><br>( .......................... )</div>
+      <div class="sign-box">QC ตรวจรับ<br><br>( .......................... )</div>
+    </div>
+    <div class="footer">พิมพ์โดยระบบจัดการสต๊อก SQF & MLM &nbsp;|&nbsp; ${new Date().toLocaleString("th-TH")}</div>
+    </body></html>`);
+    w.document.close();
+  }
+
+  async function crCheckBomMaterials() {
+    const resultEl = document.getElementById("crWoBomResult");
+    const rows = document.querySelectorAll("#crWoItemsBody tr");
+    const items = [];
+    rows.forEach(tr => {
+      const sel     = tr.querySelector("select");
+      const barcode = sel?.value || "";
+      const inputs  = tr.querySelectorAll("input[type='number']");
+      const qty     = inputs.length >= 2 ? parseFloat(inputs[1].value) || 0 : 0;
+      if (barcode && qty > 0) items.push({ barcode, produceQty: qty });
+    });
+    if (!items.length) {
+      resultEl.style.display = "";
+      resultEl.innerHTML = `<div style="background:#fff3cd;border:2px solid #fde68a;border-radius:12px;padding:12px 16px;font-size:13px;font-weight:700;color:#92400e;">⚠️ กรุณาเพิ่มสินค้าและระบุจำนวนก่อน</div>`;
+      return;
+    }
+    resultEl.style.display = "";
+    resultEl.innerHTML = `<div style="background:#f1f5f9;border-radius:12px;padding:14px;font-size:13px;color:#64748b;font-weight:700;text-align:center;">⏳ กำลังคำนวณวัตถุดิบ...</div>`;
+    const res = await crCallServer("calcWorkOrderMaterials", { items });
+    if (!res.ok) {
+      resultEl.innerHTML = `<div style="background:#fee2e2;border:2px solid #fca5a5;border-radius:12px;padding:12px 16px;font-size:13px;font-weight:700;color:#991b1b;">❌ ${escapeHtml(res.message||"เกิดข้อผิดพลาด")}</div>`;
+      return;
+    }
+    const matsByFactory = res.materials || {};
+    const noBom = res.noBom || [];
+    const hasShortage = Object.values(matsByFactory).some(mats => mats.some(m => !m.sufficient));
+
+    let html = `<div style="border:2px solid ${hasShortage?"#fca5a5":"#86efac"};border-radius:16px;overflow:hidden;">
+      <div style="background:${hasShortage?"#fee2e2":"#dcfce7"};padding:12px 16px;font-size:14px;font-weight:900;color:${hasShortage?"#991b1b":"#166534"};">
+        ${hasShortage?"⚠️ มีวัตถุดิบไม่เพียงพอ — ตรวจสอบด้านล่าง":"✅ วัตถุดิบเพียงพอทั้งหมด"}
+      </div>`;
+
+    Object.entries(matsByFactory).forEach(([fact, mats]) => {
+      html += `<div style="padding:14px 16px;background:#fff;">
+        <div style="font-size:12px;font-weight:800;color:#475569;margin-bottom:10px;">🏭 ${escapeHtml(fact)}</div>
+        <div style="overflow-x:auto;"><table style="width:100%;border-collapse:collapse;font-size:12px;min-width:480px;">
+          <thead><tr style="background:#f1f5f9;color:#475569;font-size:11px;font-weight:800;">
+            <th style="padding:8px 10px;text-align:left;">วัตถุดิบ</th>
+            <th style="padding:8px 10px;text-align:right;">ต้องใช้</th>
+            <th style="padding:8px 10px;text-align:right;">มีอยู่</th>
+            <th style="padding:8px 10px;text-align:right;">คงเหลือ</th>
+            <th style="padding:8px 10px;text-align:center;">ใช้ได้อีก</th>
+            <th style="padding:8px 10px;text-align:center;">สถานะ</th>
+          </tr></thead>
+          <tbody>${mats.map(m => {
+            const ok  = m.sufficient;
+            const dc  = m.daysAfter===null?"#94a3b8":m.daysAfter<=7?"#dc2626":m.daysAfter<=14?"#ea580c":m.daysAfter<=30?"#f59e0b":"#059669";
+            const dayBadge = m.daysAfter===null ? `<span style="color:#94a3b8;">—</span>`
+              : `<span style="background:${dc};color:#fff;border-radius:999px;padding:2px 8px;font-weight:800;">${m.daysAfter} วัน</span>`;
+            return `<tr style="border-top:1px dashed #f1f5f9;background:${ok?"#fff":"#fff5f5"};">
+              <td style="padding:8px 10px;font-weight:700;color:#334155;">${escapeHtml(m.name)}</td>
+              <td style="padding:8px 10px;text-align:right;font-weight:700;color:#6366f1;">${m.needed.toLocaleString()} ${escapeHtml(m.unit)}</td>
+              <td style="padding:8px 10px;text-align:right;color:#334155;">${m.currentQty.toLocaleString()} ${escapeHtml(m.unit)}</td>
+              <td style="padding:8px 10px;text-align:right;font-weight:900;color:${ok?"#059669":"#dc2626"};">${m.remaining.toLocaleString()} ${escapeHtml(m.unit)}</td>
+              <td style="padding:8px 10px;text-align:center;">${dayBadge}</td>
+              <td style="padding:8px 10px;text-align:center;">${ok
+                ? `<span style="background:#dcfce7;color:#166534;border-radius:999px;padding:2px 9px;font-weight:800;font-size:11px;">✅ พอ</span>`
+                : `<span style="background:#fee2e2;color:#991b1b;border-radius:999px;padding:2px 9px;font-weight:800;font-size:11px;">❌ ขาด ${Math.abs(m.remaining).toLocaleString()}</span>`}
+              </td>
+            </tr>`;
+          }).join("")}</tbody>
+        </table></div></div>`;
+    });
+
+    if (noBom.length > 0) {
+      html += `<div style="background:#fff7ed;padding:10px 16px;font-size:12px;font-weight:700;color:#92400e;border-top:1px solid #fed7aa;">
+        📋 ไม่พบ BOM: ${noBom.map(b=>escapeHtml(b)).join(", ")} — กรุณากำหนดที่แท็บ 📖 สูตร BOM
+      </div>`;
+    }
+    if (!Object.keys(matsByFactory).length && !noBom.length) {
+      html += `<div style="padding:16px;text-align:center;font-size:13px;color:#94a3b8;font-weight:700;">ไม่พบ BOM สำหรับสินค้าที่เลือก</div>`;
+    }
+    html += `</div>`;
+    resultEl.innerHTML = html;
+  }
+
+  // ══════════════════════════════════════
   // 📥 รับสินค้าตรง (Direct Stock In)
   // ══════════════════════════════════════
   let _siProductCache = [];

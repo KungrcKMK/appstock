@@ -27,28 +27,6 @@
 <body class="text-white select-none">
 
 <!-- ══════════════════════════════════════════
-     SCREEN 1 : LOGIN
-══════════════════════════════════════════ -->
-<div id="sLogin" class="dvh flex flex-col items-center justify-center p-5 gap-3">
-  <div class="text-center mb-1">
-    <div class="text-5xl mb-2">📦</div>
-    <h1 class="text-2xl font-black tracking-tight">AppStock</h1>
-    <p class="text-slate-400 text-sm mt-1">ระบบจัดการสต๊อก</p>
-  </div>
-  <div class="w-full max-w-xs space-y-3">
-    <input id="lUser" type="text" inputmode="text" placeholder="👤 ชื่อพนักงาน" autocomplete="username"
-      class="w-full bg-slate-800 border-2 border-slate-700 text-white p-3.5 rounded-2xl text-center text-base font-bold outline-none focus:border-indigo-500 transition-colors">
-    <input id="lPass" type="password" placeholder="🔑 รหัสผ่าน" autocomplete="current-password"
-      class="w-full bg-slate-800 border-2 border-slate-700 text-white p-3.5 rounded-2xl text-center text-base font-bold outline-none focus:border-indigo-500 transition-colors">
-    <button onclick="doLogin()" id="lBtn"
-      class="btn-tap w-full bg-indigo-600 text-white p-4 rounded-2xl text-lg font-black shadow-lg">
-      เข้าสู่ระบบ →
-    </button>
-    <p id="lErr" class="text-red-400 text-center text-sm font-bold hidden"></p>
-  </div>
-</div>
-
-<!-- ══════════════════════════════════════════
      SCREEN 2 : MODULE SELECT
 ══════════════════════════════════════════ -->
 <div id="sModule" class="dvh hidden flex-col p-4 pt-safe gap-3 overflow-y-auto">
@@ -420,51 +398,17 @@ function daysColor(d) {
 // LOGIN
 // ─────────────────────────────────────────────
 // ─────────────────────────────────────────────
-// INIT — auto-login if session exists
+// INIT — ถ้าไม่มี session → redirect กลับ index.html
 // ─────────────────────────────────────────────
 window.addEventListener("DOMContentLoaded", () => {
   if (user) {
     $("mGreet").textContent = user;
-    $("sModule").style.display = "";
     showScreens("sModule");
   } else {
-    showScreens("sLogin");
+    // ไม่มี session → กลับไป login ที่ index.html
+    window.location.replace("index.html");
   }
 });
-
-$("lPass").addEventListener("keydown", e => { if (e.key === "Enter") doLogin(); });
-$("lUser").addEventListener("keydown", e => { if (e.key === "Enter") $("lPass").focus(); });
-
-async function doLogin() {
-  const u = $("lUser").value.trim();
-  const p = $("lPass").value;
-  const errEl = $("lErr");
-  hide("lErr");
-  if (!u || !p) { errEl.textContent = "กรุณากรอกชื่อและรหัสผ่าน"; show("lErr"); return; }
-  $("lBtn").textContent = "กำลังเข้าสู่ระบบ..."; $("lBtn").disabled = true;
-  setLoading(true, "กำลังเข้าสู่ระบบ...");
-  try {
-    const r = await gasPost({ action: "verifyUser", payload: { username: u, password: p } });
-    setLoading(false); $("lBtn").textContent = "เข้าสู่ระบบ →"; $("lBtn").disabled = false;
-    if (r.ok) {
-      user = u; role = r.role;
-      // บันทึก session เดียวกับ index.html
-      localStorage.setItem("unified_stock_user", u);
-      localStorage.setItem("unified_stock_role",  r.role || "user");
-      localStorage.setItem("appstock_mode_pref",  "mobile");
-      $("mGreet").textContent = u;
-      $("lPass").value = "";
-      hide("lErr");
-      $("sModule").style.display = "";
-      showScreens("sModule");
-    } else {
-      errEl.textContent = r.message || "เข้าสู่ระบบไม่สำเร็จ"; show("lErr");
-    }
-  } catch(e) {
-    setLoading(false); $("lBtn").textContent = "เข้าสู่ระบบ →"; $("lBtn").disabled = false;
-    errEl.textContent = "เชื่อมต่อ GAS ไม่สำเร็จ"; show("lErr");
-  }
-}
 
 function doLogout() {
   // ล้าง session และ mode pref → กลับ index.html

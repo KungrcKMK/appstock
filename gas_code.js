@@ -503,6 +503,9 @@ function doPost(e) {
     if (action === "setUserRole")     return jsonResponse(setUserRole(payload));
     if (action === "submitDelivery")  return jsonResponse(submitDelivery(payload));
     if (action === "getDeliveries")   return jsonResponse(getDeliveries(payload));
+    if (action === "submitStockIn")   return jsonResponse(submitStockIn(payload));
+    if (action === "getStockInList")  return jsonResponse(getStockInList(payload));
+    if (action === "reviewStockIn")   return jsonResponse(reviewStockIn(payload));
     if (action === "testEmail")       return jsonResponse(crTestEmail(payload));
 
     if (module === "COLDROOM") {

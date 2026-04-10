@@ -2526,28 +2526,8 @@
     else crSetStatus("crSiReviewStatus","❌ " + (res.message||""),"err");
   }
 
-  async function crPrintActualReport_TOREMOVE(o) {
-    const items = crWoParseItems(o.Items);
-    if (!items.length) { showToast("ไม่พบรายการสินค้าในใบสั่งผลิตนี้","warn"); return; }
-    showLoading("กำลังโหลดยอดจริง...");
-    // ดึงยอดจริงแต่ละ SKU
-    const rows = [];
-    for (const item of items) {
-      const res = await crCallServer("getProductAndBalances", { barcode: item.barcode || item.name });
-      const mfgIso  = ddmmyyToIsoWo(item.mfg) || item.mfg || "";
-      let actual = 0;
-      if (res.found && res.balances) {
-        const lot = res.balances.find(b => (b.MFG||"").startsWith(mfgIso.slice(0,10)));
-        actual = lot ? Number(lot.Qty||0) : 0;
-      }
-      rows.push({ ...item, actual });
-    }
-    hideLoading();
-    const dateStr   = o.Date ? new Date(o.Date).toLocaleDateString("th-TH",{year:"numeric",month:"long",day:"numeric"}) : "-";
-    const printDate = new Date().toLocaleDateString("th-TH",{year:"numeric",month:"long",day:"numeric"});
-    const totalPlan   = rows.reduce((s,r)=>s+Number(r.qty||0),0);
-    const totalActual = rows.reduce((s,r)=>s+r.actual,0);
-    const totalDiff   = totalActual - totalPlan;
+  async function crPrintActualReport_PLACEHOLDER_STILL_REMOVING(o) {
+    const totalDiff = 0;
 
     const tableRows = rows.map((r,i) => {
       const planned = Number(r.qty||0);

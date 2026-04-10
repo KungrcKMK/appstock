@@ -766,12 +766,19 @@
           </div>
           <div class="cr-status" id="crWoStatus"></div>
 
-          <!-- เลขที่ + วันที่ + ผู้สั่ง -->
+          <!-- เลขที่ + วันที่ + ผู้สั่ง + โรงงาน -->
           <div class="row">
             <div class="field"><label>🏷️ เลขที่ใบสั่งผลิต</label>
               <input type="text" id="crWoOrderId" readonly style="background:#f1f5f9;color:#6366f1;font-weight:900;font-size:18px;"></div>
             <div class="field"><label>📅 วันที่สั่งผลิต</label><input type="date" id="crWoDate"></div>
             <div class="field"><label>👤 ผู้สั่งผลิต</label><input type="text" id="crWoCreatedBy" readonly style="background:#f1f5f9;"></div>
+            <div class="field"><label>🏭 โรงงานวัตถุดิบ</label>
+              <select id="crWoFactory" onchange="crCheckBomMaterials()" style="width:100%;padding:10px;border-radius:8px;border:2px solid #e2e8f0;font-family:inherit;font-weight:700;background:#f8fafc;">
+                <option value="">— เลือกโรงงาน —</option>
+                <option value="SQF">🏭 SQF (สุพรรณคิวฟู้ดส์)</option>
+                <option value="MLM">🏭 MLM (แม่ละมาย)</option>
+              </select>
+            </div>
           </div>
 
           <!-- ตารางรายการ SKU -->

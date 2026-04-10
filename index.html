@@ -2444,7 +2444,7 @@
     row.innerHTML = `
       <td style="padding:8px;text-align:center;font-size:12px;color:#94a3b8;font-weight:700;">${idx+1}</td>
       <td style="padding:6px 8px;overflow:hidden;">
-        <select id="crWoSel-${idx}" onchange="crWoOnSelectProduct(${idx})"
+        <select id="crWoSel-${idx}" onchange="crWoOnSelectProduct(${idx}); crWoLockButtons()"
           style="width:100%;padding:7px 8px;border:2px solid #e2e8f0;border-radius:8px;font-family:inherit;font-size:13px;font-weight:700;outline:none;background:#fff;overflow:hidden;text-overflow:ellipsis;">
           <option value="">— เลือกสินค้า —</option>
           ${options}

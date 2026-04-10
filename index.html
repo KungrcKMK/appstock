@@ -3745,6 +3745,12 @@
   // ── Init ──
   function initColdroom() {
     crInitDone = true;
+    // โหลด product list ครั้งเดียว เก็บไว้ใน crEditProductCache ใช้ได้ทุก dropdown
+    if (!crEditProductCache.length) {
+      crCallServer("getColdRoomProducts").then(res => {
+        if (res.ok && res.products?.length) crEditProductCache = res.products;
+      });
+    }
     crCallServer("getAlertSettings").then(res => {
       if (res.ok) {
         const s = res.settings;

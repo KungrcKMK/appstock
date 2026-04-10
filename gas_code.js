@@ -1183,21 +1183,25 @@ function submitDelivery(payload) {
     dnSheet.getRange(dnRow+1, dh.indexOf("Items")+1).setValue(itemsJson);
     dnSheet.getRange(dnRow+1, dh.indexOf("SubmittedBy")+1).setValue(username);
     dnSheet.getRange(dnRow+1, dh.indexOf("SubmittedAt")+1).setValue(now);
-    dnSheet.getRange(dnRow+1, dh.indexOf("Status")+1).setValue("รอการอนุมัติ");
+    dnSheet.getRange(dnRow+1, dh.indexOf("Status")+1).setValue("อนุมัติแล้ว");
     dnSheet.getRange(dnRow+1, dh.indexOf("Note")+1).setValue(note);
-    dnSheet.getRange(dnRow+1, dh.indexOf("ApprovedBy")+1).setValue("");
-    dnSheet.getRange(dnRow+1, dh.indexOf("ApprovedAt")+1).setValue("");
+    dnSheet.getRange(dnRow+1, dh.indexOf("ApprovedBy")+1).setValue(username);
+    dnSheet.getRange(dnRow+1, dh.indexOf("ApprovedAt")+1).setValue(now);
   } else {
     dnId = "DN-" + Utilities.getUuid().slice(0,8).toUpperCase();
     var newRow = new Array(dh.length).fill("");
     var sc = function(k,v){ var idx=dh.indexOf(k); if(idx>=0) newRow[idx]=v; };
     sc("DeliveryID",dnId); sc("WorkOrderID",woId); sc("Items",itemsJson);
-    sc("SubmittedBy",username); sc("SubmittedAt",now); sc("Status","รอการอนุมัติ"); sc("Note",note);
+    sc("SubmittedBy",username); sc("SubmittedAt",now); sc("Status","อนุมัติแล้ว");
+    sc("ApprovedBy",username); sc("ApprovedAt",now); sc("Note",note);
     dnSheet.appendRow(newRow);
   }
-  woSheet.getRange(woRow+1, wh.indexOf("Status")+1).setValue("รอยืนยันรับ");
-  crSendTelegramGeneric("📦 ส่งยอดเข้าห้องเย็น\n🔖 "+woId+"\n👤 "+username+"\nรอการอนุมัติ"+deviceTag());
-  return { ok: true, dnId: dnId };
+  // เพิ่มยอดเข้าคลังห้องเย็นทันที (auto-approve)
+  var stockErrors = [];
+  items.forEach(function(item){ try{ _addDeliveryToStock(item, username, username); }catch(e){ stockErrors.push(String(item.name||"")+": "+e.toString()); } });
+  woSheet.getRange(woRow+1, wh.indexOf("Status")+1).setValue("เสร็จสิ้น");
+  crSendTelegramGeneric("📦 ส่งยอดเข้าห้องเย็น\n🔖 "+woId+"\n👤 "+username+"\nยอดเข้าคลังอัตโนมัติ"+deviceTag());
+  return stockErrors.length ? { ok: true, dnId: dnId, warnings: stockErrors } : { ok: true, dnId: dnId };
 }
 
 function getDeliveries(payload) {

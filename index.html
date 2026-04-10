@@ -729,6 +729,96 @@
         </div>
       </div>
 
+      <!-- Tab: ใบสั่งผลิต -->
+      <div class="cr-tab-panel" id="cr-tab-workorder">
+        <div class="card">
+          <!-- หัวใบ -->
+          <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:16px;">
+            <h2 style="margin:0;">📋 สร้างใบสั่งผลิต</h2>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;">
+              <button class="cr-btn btn-primary" onclick="crSaveWorkOrder()" id="crWoBtnSave">💾 บันทึก</button>
+              <button class="cr-btn btn-primary" onclick="crPrintWorkOrder()" style="background:#6366f1;">🖨️ พิมพ์</button>
+              <button class="cr-btn btn-light"   onclick="crClearWorkOrder()">🧹 ใหม่</button>
+            </div>
+          </div>
+          <div class="cr-status" id="crWoStatus"></div>
+
+          <!-- เลขที่ + วันที่ + ผู้สั่ง + โรงงาน -->
+          <div class="row">
+            <div class="field"><label>🏷️ เลขที่ใบสั่งผลิต</label>
+              <input type="text" id="crWoOrderId" readonly style="background:#f1f5f9;color:#6366f1;font-weight:900;font-size:18px;"></div>
+            <div class="field"><label>📅 วันที่สั่งผลิต</label><input type="date" id="crWoDate"></div>
+            <div class="field"><label>👤 ผู้สั่งผลิต</label><input type="text" id="crWoCreatedBy" readonly style="background:#f1f5f9;"></div>
+            <div class="field"><label>🏭 โรงงานวัตถุดิบ</label>
+              <select id="crWoFactory" onchange="crCheckBomMaterials()" style="width:100%;padding:10px;border-radius:8px;border:2px solid #e2e8f0;font-family:inherit;font-weight:700;background:#f8fafc;">
+                <option value="">— เลือกโรงงาน —</option>
+                <option value="SQF">🏭 SQF (สุพรรณคิวฟู้ดส์)</option>
+                <option value="MLM">🏭 MLM (แม่ละมาย)</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- ตารางรายการ SKU -->
+          <div style="margin:16px 0 8px;font-size:12px;font-weight:700;color:#64748b;text-transform:uppercase;">📦 รายการสินค้าที่สั่งผลิต</div>
+          <div class="table-wrap" style="overflow-x:auto;">
+            <table id="crWoItemsTable" style="width:100%;border-collapse:collapse;min-width:820px;table-layout:fixed;">
+              <colgroup>
+                <col style="width:36px">
+                <col><!-- สินค้า fill ที่เหลือ -->
+                <col style="width:108px">
+                <col style="width:88px">
+                <col style="width:265px">
+                <col style="width:72px">
+                <col style="width:40px">
+              </colgroup>
+              <thead>
+                <tr style="background:#1e293b;color:#fff;font-size:11px;font-weight:700;text-transform:uppercase;">
+                  <th style="padding:10px 8px;text-align:left;">#</th>
+                  <th style="padding:10px 8px;text-align:left;">สินค้า</th>
+                  <th style="padding:10px 8px;text-align:center;">MFG (6 หลัก)</th>
+                  <th style="padding:10px 8px;text-align:center;">EXP</th>
+                  <th style="padding:10px 8px;text-align:left;">ชุด × UPS = จำนวน</th>
+                  <th style="padding:10px 8px;text-align:left;">หน่วย</th>
+                  <th style="padding:10px 8px;text-align:center;">ลบ</th>
+                </tr>
+              </thead>
+              <tbody id="crWoItemsBody"></tbody>
+            </table>
+          </div>
+          <button class="cr-btn btn-light" onclick="crWoAddRow()" style="margin-top:10px;width:100%;border:2px dashed #cbd5e1;background:#f8fafc;color:#6366f1;font-weight:900;">
+            ➕ เพิ่มสินค้า
+          </button>
+
+          <!-- ตรวจสอบวัตถุดิบ BOM -->
+          <div style="margin-top:14px;">
+            <button class="cr-btn btn-light" onclick="crCheckBomMaterials()" style="width:100%;border:2px dashed #818cf8;background:#eef2ff;color:#4338ca;font-weight:900;">
+              🔬 ตรวจสอบวัตถุดิบที่ต้องใช้
+            </button>
+            <div id="crWoBomResult" style="display:none;margin-top:10px;"></div>
+          </div>
+
+          <!-- หมายเหตุ -->
+          <div class="row" style="margin-top:14px;">
+            <div class="field full">
+              <label>💬 หมายเหตุ / คำสั่งพิเศษ</label>
+              <textarea id="crWoNote" rows="2" placeholder="ระบุคำสั่งพิเศษหรือรายละเอียดเพิ่มเติม" style="width:100%;padding:10px;border-radius:8px;border:2px solid #e2e8f0;font-family:inherit;resize:vertical;box-sizing:border-box;"></textarea>
+            </div>
+          </div>
+        </div>
+
+        <!-- รายการใบสั่งผลิตล่าสุด -->
+        <div class="card">
+          <div style="display:flex;justify-content:space-between;align-items:center;">
+            <h2>📂 ใบสั่งผลิตล่าสุด</h2>
+            <button class="cr-btn btn-light" onclick="crLoadWorkOrders()" style="padding:8px 12px;font-size:12px;">🔄 โหลด</button>
+          </div>
+          <div class="table-wrap">
+            <table><thead><tr><th>เลขที่</th><th>วันที่</th><th>สินค้า</th><th>MFG</th><th>EXP</th><th>สั่งผลิต</th><th>ผู้สั่ง</th><th>สถานะ</th><th>ส่งยอด</th><th>พิมพ์</th><th>ใบรายงาน</th><th>ลบ</th></tr></thead>
+            <tbody id="crWoListBody"></tbody></table>
+          </div>
+        </div>
+      </div>
+
       <!-- Tab: รับสินค้า (Direct Stock In) -->
       <div class="cr-tab-panel" id="cr-tab-stockin">
 

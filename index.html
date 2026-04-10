@@ -2299,19 +2299,7 @@
     if (tab === "bom")       crLoadBomList();
   }
 
-  // ══════════════════════════════════════
-  // 📋 ใบสั่งผลิต (Work Order) — Multi-SKU
-  // ══════════════════════════════════════
-  let crWoProducts = [];   // products list from GAS
-  let crWoRowIdx   = 0;    // row counter
-
-  function ddmmyyToIsoWo(str) {
-    if (!str || str.length !== 6) return "";
-    const dd=str.slice(0,2), mm=str.slice(2,4), yy=str.slice(4,6);
-    return `${2000+parseInt(yy,10)}-${mm}-${dd}`;
-  }
-
-  async function crInitWorkOrder() {
+  async function crInitWorkOrder_REMOVED() {
     const today = new Date().toISOString().slice(0,10);
     $$cr("crWoDate").value      = today;
     $$cr("crWoCreatedBy").value = currentUser;

@@ -2105,7 +2105,11 @@
     }
     const sel = document.getElementById("crBomProductSel");
     sel.innerHTML = '<option value="">— เลือกสินค้า —</option>' +
-      _bomProductCache.map(p => `<option value="${escapeHtml(p.barcode)}" data-name="${escapeHtml(p.name||p.productName||"")}">${escapeHtml(p.name||p.productName||"")} (${escapeHtml(p.barcode)})</option>`).join("");
+      _bomProductCache.map(p => {
+        const bc  = escapeHtml(String(p.Barcode     || p.barcode     || ""));
+        const nm  = escapeHtml(String(p.ProductName || p.productName || p.name || ""));
+        return `<option value="${bc}" data-name="${nm}">${nm} (${bc})</option>`;
+      }).join("");
     sel.value = "";
     // reset section
     document.getElementById("crBomMatSection").style.display = "none";

@@ -981,38 +981,6 @@
   ════════════════════════════════════════════ -->
   <div id="module-RAW" class="module-section hide" style="padding-top:60px;">
 
-    <!-- ═══ UNIFIED STOCK ALERT MODAL ═══ -->
-    <div id="stockAlertModal" class="hidden fixed inset-0 bg-black/85 backdrop-blur-md z-[500] flex items-center justify-center p-4">
-      <div class="bg-white w-full max-w-lg rounded-[3rem] shadow-2xl overflow-hidden">
-
-        <!-- Header -->
-        <div id="alertModalHeader" class="p-6 text-white">
-          <div class="flex items-center gap-4">
-            <div class="text-5xl alert-pulse" id="alertModalIcon">🚨</div>
-            <div>
-              <div class="font-black text-2xl uppercase tracking-tight" id="alertModalTitle">แจ้งเตือนสต๊อก</div>
-              <div class="text-sm opacity-80 font-bold mt-1" id="alertModalSubtitle"></div>
-            </div>
-          </div>
-          <!-- Summary chips -->
-          <div class="flex gap-2 mt-4 flex-wrap" id="alertModalChips"></div>
-        </div>
-
-        <!-- Content -->
-        <div class="max-h-[50vh] overflow-y-auto custom-scrollbar px-6 py-4" id="alertModalContent"></div>
-
-        <!-- Footer -->
-        <div class="p-6 bg-slate-50 border-t flex gap-3">
-          <button onclick="closeStockAlert()" class="flex-1 bg-slate-900 text-white py-5 rounded-2xl font-black text-lg hover:bg-red-600 transition-all">
-            รับทราบ ✅
-          </button>
-          <button onclick="closeStockAlert(true)" class="bg-slate-200 text-slate-600 px-6 py-5 rounded-2xl font-black text-sm hover:bg-slate-300 transition-all">
-            ปิดชั่วคราว
-          </button>
-        </div>
-      </div>
-    </div>
-
     <!-- rawAlertModal alias (backward compat) -->
     <div id="rawAlertModal" class="hidden"></div>
 

@@ -1,6 +1,6 @@
 {
-  "name": "AppStock — ระบบจัดการสต๊อก SQF & MLM",
-  "short_name": "AppStock",
+  "name": "ระบบ",
+  "short_name": "ระบบ",
   "description": "ระบบจัดการสต๊อกสินค้า Cold Room, SQF และ MLM — สุพรรณคิวฟู้ดส์",
   "start_url": "./",
   "display": "standalone",

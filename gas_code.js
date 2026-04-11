@@ -1498,7 +1498,7 @@ function getRawMaterials(module) {
 }
 
 function rmCreate(data, module) {
-  const { sku, name, unit, qty, min, dailyUsage, expiryDate, user } = data;
+  const { sku, name, unit, qty, min, dailyUsage, expiryDate, alertDays, user } = data;
   if (!sku || !name) return { status: "error", message: "ข้อมูลไม่ครบ" };
 
   const sheet = getSheet(module + "_Materials");

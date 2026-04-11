@@ -1463,7 +1463,7 @@ function getRawMaterials(module) {
   const histSheet = getSheet(module + "_History");
 
   // เพิ่มคอลัมน์ใหม่ถ้า sheet เก่ายังไม่มี
-  ensureColumns(matSheet, ["DailyUsage"]);
+  ensureColumns(matSheet, ["DailyUsage","AlertDays"]);
 
   const matData = matSheet.getDataRange().getValues();
   const h = matData[0];

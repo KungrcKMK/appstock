@@ -810,13 +810,15 @@ async function confirmCrCount() {
     if (!crLotSel) return;
     let newQty = Number($("aCrQtyIn").value);
     if (isNaN(newQty) || newQty < 0) { toast("ระบุจำนวนให้ถูกต้อง", "warn"); return; }
+    const crNote = ($("aCrNote")?.value || "").trim();
+    if (!crNote) { toast("กรุณาระบุหมายเหตุก่อนบันทึก", "warn"); $("aCrNote")?.focus(); return; }
     if (crAction === "out") {
       if (newQty > crLotSel.qty) { toast(`⚠️ เบิกเกินยอด Lot (มี ${crLotSel.qty})`, "err"); return; }
       newQty = crLotSel.qty - newQty;  // เบิก = ลดจากยอดเดิม
     }
     payload = { barcode: sel.sku, employeeName: user,
                 mfg: isoToDdmmyy(crLotSel.mfg), exp: isoToDdmmyy(crLotSel.exp),
-                newQty, note: crAction === "out" ? "เบิกออก (Mobile)" : "นับสต๊อก (Mobile)" };
+                newQty, note: crNote };
     loadMsg   = crAction === "out" ? "กำลังบันทึกการเบิก..." : "กำลังบันทึกการนับ...";
     successMsg = crAction === "out"
       ? `📤 เบิก · ${sel.name} Lot ${fmtDate(crLotSel.mfg)} → เหลือ ${newQty} ${crLotSel.unit}`

@@ -4068,6 +4068,11 @@
 
   function closeStockAlert(suppress = false) {
     document.getElementById("stockAlertModal").classList.add("hidden");
+    // แสดง alert ถัดไปใน queue (ถ้ามี)
+    if (_alertQueue.length > 0) {
+      const next = _alertQueue.shift();
+      setTimeout(() => showStockAlert(next.module, next.expItems, next.lowItems, next.nearItems), 350);
+    }
   }
 
   // ── Raw Materials critical check (ใช้ unified) ──

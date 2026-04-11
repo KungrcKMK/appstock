@@ -4730,7 +4730,8 @@
     if (!unit) return showToast("กรุณาระบุหน่วยนับ","warn");
     setRawBusy("rawBtnCreate",true,"กำลังสร้าง...");
     showLoading("กำลังสร้างรายการ...");
-    const r = await rawFetch({ action:"CREATE", sku, name, unit, qty, min, dailyUsage, expiryDate:expiry, user:currentUser });
+    const alertDaysNew = Math.max(1, parseInt(document.getElementById("rawNewAlertDays").value||rawAlertDays));
+    const r = await rawFetch({ action:"CREATE", sku, name, unit, qty, min, dailyUsage, expiryDate:expiry, alertDays:alertDaysNew, user:currentUser });
     hideLoading(); setRawBusy("rawBtnCreate",false);
     if (r.status==="success") { closeRawCreate(); showToast("สร้างรายการสำเร็จ ✅","success"); rawLoadData(); }
     else showToast(r.message||"ไม่สำเร็จ","error");

@@ -456,14 +456,8 @@ window.addEventListener("DOMContentLoaded", () => {
 
 function doLogout() {
   ["unified_stock_user","unified_stock_role","appstock_mode_pref"].forEach(k => localStorage.removeItem(k));
-  user = null; role = null; mod = null; data = []; _mNeedPass = false;
-  // รีเซ็ตฟอร์ม login
-  if ($("mLoginUser")) { $("mLoginUser").value = ""; $("mLoginUser").readOnly = false; }
-  if ($("mLoginPass")) $("mLoginPass").value = "";
-  if ($("mPassSection")) $("mPassSection").style.display = "none";
-  showScreens(); // ซ่อนทุก screen
-  const el = $("sLogin");
-  if (el) { el.classList.remove("hidden"); el.style.display = "flex"; }
+  user = null; role = null; mod = null; data = [];
+  window.location.href = "index.html";
 }
 
 function switchToDesktop() {

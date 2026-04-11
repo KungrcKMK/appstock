@@ -4076,16 +4076,38 @@
     }
   }
 
-  // ── ตรวจสอบ SQF + MLM ทันทีหลัง Login ──
+  // ── ตรวจสอบทุกโมดูลทันทีหลัง Login (COLDROOM → SQF → MLM ตามลำดับ) ──
+  let _suppressCrLoginAlert = false; // ป้องกัน crCheckCritical แสดง popup ซ้ำ
+
   async function checkRawAlertsOnLogin() {
+    _suppressCrLoginAlert = true; // ปิด crCheckCritical popup ระหว่างนี้
     try {
-      const [sqfRes, mlmRes] = await Promise.all([
+      const [crRes, sqfRes, mlmRes] = await Promise.all([
+        fetch(GAS_URL, { method:"POST", headers:{"Content-Type":"text/plain;charset=utf-8"},
+          body: JSON.stringify({ module:"COLDROOM", action:"getStartupOverview" }) }).then(r => r.json()),
         fetch(GAS_URL + "?module=SQF").then(r => r.json()),
         fetch(GAS_URL + "?module=MLM").then(r => r.json())
       ]);
-      if (sqfRes.status === "success") rawCheckCritical(sqfRes.materials || [], "SQF", true);
-      if (mlmRes.status === "success") rawCheckCritical(mlmRes.materials || [], "MLM", true);
+
+      // COLDROOM
+      if (crRes.ok) {
+        const exp  = (crRes.expiredLots  || []).map(l => ({ name: l.ProductName, expLabel: `EXP ${isoToDdmmyy(l.EXP)}` }));
+        const near = (crRes.expiringLots || []).map(l => ({ name: l.ProductName, expLabel: `${l.ExpireDays} วัน` }));
+        updateNavBadge("COLDROOM", exp.length + near.length);
+        if (exp.length + near.length > 0) showStockAlert("COLDROOM", exp, [], near);
+      }
+      // SQF
+      if (sqfRes.status === "success") {
+        const items = sqfRes.materials || [];
+        rawCheckCritical(items, "SQF", true);
+      }
+      // MLM
+      if (mlmRes.status === "success") {
+        const items = mlmRes.materials || [];
+        rawCheckCritical(items, "MLM", true);
+      }
     } catch(e) { console.warn("checkRawAlertsOnLogin:", e); }
+    finally    { _suppressCrLoginAlert = false; }
   }
 
   // ── Raw Materials critical check (ใช้ unified) ──

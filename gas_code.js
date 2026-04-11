@@ -1518,6 +1518,7 @@ function rmCreate(data, module) {
     if (col === "Min")          return Number(min) || 0;
     if (col === "DailyUsage")   return Number(dailyUsage) || 0;
     if (col === "ExpiryDate")   return expiryDate || "";
+    if (col === "AlertDays")    return Number(alertDays) || 7;
     if (col === "LastVerified") return "";
     if (col === "Discontinued") return false;
     return "";

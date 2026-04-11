@@ -4006,6 +4006,11 @@
   function showStockAlert(module, expItems = [], lowItems = [], nearItems = []) {
     const total = expItems.length + lowItems.length + nearItems.length;
     if (total === 0) return;
+    // ถ้า modal กำลังแสดงอยู่ → เข้า queue รอ
+    if (!document.getElementById("stockAlertModal").classList.contains("hidden")) {
+      _alertQueue.push({ module, expItems, lowItems, nearItems });
+      return;
+    }
 
     const meta = ALERT_META[module] || ALERT_META.MLM;
 

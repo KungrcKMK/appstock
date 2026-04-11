@@ -4615,7 +4615,7 @@
 
   function closeRawAlert() { document.getElementById("rawAlertModal").classList.add("hidden"); }
 
-  // ── พิมพ์ QR Code ทั้งหมดของวัตถุดิบ ──
+  // ── พิมพ์ QR Code ทั้งหมดของวัตถุดิบ (ใช้ QRCode.js → data URL) ──
   function rawPrintQrAll() {
     const checkedSkus = Array.from(document.querySelectorAll(".raw-checkbox:checked")).map(cb => cb.getAttribute("data-sku"));
     const source = checkedSkus.length > 0
@@ -4628,15 +4628,29 @@
     const factoryColor = factory === "SQF" ? "#2563eb" : "#16a34a";
     const dateStr = new Date().toLocaleDateString("th-TH", { year:"numeric", month:"long", day:"numeric" });
 
+    // Generate QR data URLs using QRCode.js (synchronous canvas)
+    const tmpWrap = document.createElement("div");
+    tmpWrap.style.cssText = "position:fixed;left:-9999px;top:0;visibility:hidden;";
+    document.body.appendChild(tmpWrap);
+
+    const qrDataUrls = {};
+    source.forEach(item => {
+      const el = document.createElement("div");
+      tmpWrap.appendChild(el);
+      new QRCode(el, { text: `RAWMAT|${factory}|${item.SKU}`, width: 180, height: 180, correctLevel: QRCode.CorrectLevel.M });
+      const canvas = el.querySelector("canvas");
+      qrDataUrls[item.SKU] = canvas ? canvas.toDataURL("image/png") : "";
+    });
+    document.body.removeChild(tmpWrap);
+
     const cards = source.map(item => {
-      const qrData = encodeURIComponent(`RAWMAT|${factory}|${item.SKU}`);
-      const qrUrl  = `https://chart.googleapis.com/chart?chs=180x180&cht=qr&choe=UTF-8&chl=${qrData}`;
-      const name   = String(item.Name || "").replace(/&/g,"&amp;").replace(/</g,"&lt;");
-      const sku    = String(item.SKU  || "").replace(/&/g,"&amp;");
+      const name = String(item.Name || "").replace(/&/g,"&amp;").replace(/</g,"&lt;");
+      const sku  = String(item.SKU  || "").replace(/&/g,"&amp;");
+      const src  = qrDataUrls[item.SKU] || "";
       return `
         <div class="qr-card">
           <div class="qr-factory" style="background:${factoryColor}">${factory}</div>
-          <img src="${qrUrl}" alt="QR ${sku}" onerror="this.style.opacity=0.3">
+          ${src ? `<img src="${src}" alt="QR ${sku}">` : `<div style="width:160px;height:160px;margin:0 auto 8px;background:#f1f5f9;border-radius:8px;"></div>`}
           <div class="qr-sku">${sku}</div>
           <div class="qr-name">${name}</div>
         </div>`;

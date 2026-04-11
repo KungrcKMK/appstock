@@ -4662,7 +4662,8 @@
     document.getElementById("rawQrTitle").innerText = `${rawCurrentQrName} (${sku})`;
     document.getElementById("rawQrcode").innerHTML  = "";
     document.getElementById("rawQrModal").classList.remove("hidden");
-    new QRCode(document.getElementById("rawQrcode"), { text:String(sku), width:220, height:220 });
+    const qrText = `RAWMAT|${rawCurrentModule}|${sku}`;
+    new QRCode(document.getElementById("rawQrcode"), { text: qrText, width:220, height:220, correctLevel: QRCode.CorrectLevel.M });
   }
   function closeRawQr() { document.getElementById("rawQrModal").classList.add("hidden"); }
 

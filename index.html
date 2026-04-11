@@ -3800,6 +3800,8 @@
       hideLoading();
       if (data.status && data.status !== "success") { showToast(data.message || "โหลดข้อมูลไม่สำเร็จ","error"); return; }
       rawLastData = Array.isArray(data.materials) ? data.materials : [];
+      const inp = document.getElementById("rawAlertDaysInput");
+      if (inp) inp.value = rawAlertDays;
       rawNextSku  = data.nextSku || MODULE_META[rawCurrentModule].skuPrefix + "0001";
       renderRawInventory(rawLastData);
       renderRawHistory(data.recentHistory || []);

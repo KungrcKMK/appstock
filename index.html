@@ -4151,7 +4151,8 @@
     list.innerHTML = filtered.map(item => {
       const isLow=Number(item.Qty)<=Number(item.Min);
       const ed=rawParseDate(item.ExpiryDate); const isExp=ed&&ed<today;
-      const nearAlert=rawNearExpiry(item, rawAlertDays);
+      const itemAlertDays = Number(item.AlertDays) || rawAlertDays;
+      const nearAlert=rawNearExpiry(item, itemAlertDays);
       let bc="bg-emerald-600 text-white", bi="✅", bt="ปลอดภัย";
       let rowBg="", rowBorder="";
       if(isExp)       {bc="bg-red-600 text-white";   bi="🔴"; bt="หมดอายุ";                       rowBg="bg-red-50";    rowBorder="border-l-4 border-red-500";}

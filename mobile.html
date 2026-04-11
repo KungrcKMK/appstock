@@ -479,10 +479,74 @@ function daysColor(d) {
 }
 
 // ─────────────────────────────────────────────
-// LOGIN
+// LOGIN (inline — ไม่ต้องพึ่ง index.html)
 // ─────────────────────────────────────────────
+let _mNeedPass = false;
+
+async function mDoLogin() {
+  const u = ($("mLoginUser")?.value || "").trim();
+  if (!u) { mLoginErr("กรุณาระบุชื่อผู้ใช้"); return; }
+
+  if (_mNeedPass) {
+    const p = ($("mLoginPass")?.value || "").trim();
+    if (!p) { mLoginErr("กรุณาระบุรหัสผ่าน"); return; }
+    mLoginSetBtn("กำลังตรวจสอบ...", true);
+    try {
+      const res = await fetch(GAS_URL, {
+        method: "POST", headers: { "Content-Type": "text/plain;charset=utf-8" },
+        body: JSON.stringify({ module:"SYSTEM", action:"verifyUser", payload:{ username:u, password:p } })
+      }).then(r => r.json());
+      if (!res.ok) { mLoginErr(res.message || "รหัสผ่านไม่ถูกต้อง"); mLoginSetBtn("🚀 เข้าสู่ระบบ", false); return; }
+      mLoginSuccess(u, res.role);
+    } catch(e) { mLoginErr("เกิดข้อผิดพลาด: " + e.message); mLoginSetBtn("🚀 เข้าสู่ระบบ", false); }
+    return;
+  }
+
+  mLoginSetBtn("กำลังตรวจสอบ...", true);
+  try {
+    const res = await fetch(GAS_URL, {
+      method: "POST", headers: { "Content-Type": "text/plain;charset=utf-8" },
+      body: JSON.stringify({ module:"SYSTEM", action:"verifyUser", payload:{ username:u } })
+    }).then(r => r.json());
+
+    if (res.requirePassword) {
+      _mNeedPass = true;
+      $("mPassSection").style.display = "";
+      $("mLoginPass").value = "";
+      $("mLoginPass").focus();
+      $("mLoginUser").readOnly = true;
+      mLoginSetBtn("🔑 เข้าสู่ระบบ", false);
+      return;
+    }
+    if (!res.ok) { mLoginErr(res.message || "ไม่พบชื่อผู้ใช้"); mLoginSetBtn("🚀 เข้าสู่ระบบ", false); return; }
+    mLoginSuccess(u, res.role);
+  } catch(e) { mLoginErr("เกิดข้อผิดพลาด: " + e.message); mLoginSetBtn("🚀 เข้าสู่ระบบ", false); }
+}
+
+function mLoginSuccess(u, r) {
+  localStorage.setItem("unified_stock_user", u);
+  localStorage.setItem("unified_stock_role", r || "user");
+  user = u; role = r || "user";
+  $("mGreet").textContent = u;
+  showScreens("sModule");
+  updateLastBar();
+}
+
+function mLoginErr(msg) {
+  const el = $("mLoginErr");
+  if (!el) return;
+  el.textContent = "❌ " + msg;
+  el.classList.remove("hidden");
+  setTimeout(() => el.classList.add("hidden"), 4000);
+}
+
+function mLoginSetBtn(txt, dis) {
+  const b = $("mLoginBtn");
+  if (b) { b.textContent = txt; b.disabled = dis; }
+}
+
 // ─────────────────────────────────────────────
-// INIT — ถ้าไม่มี session → redirect กลับ index.html
+// INIT
 // ─────────────────────────────────────────────
 window.addEventListener("DOMContentLoaded", () => {
   if (user) {
@@ -490,8 +554,9 @@ window.addEventListener("DOMContentLoaded", () => {
     showScreens("sModule");
     updateLastBar();
   } else {
-    // ไม่มี session → กลับไป login ที่ index.html
-    window.location.replace("index.html");
+    // ไม่มี session → แสดงหน้า login ใน mobile (ไม่ redirect ไป index.html)
+    const el = $("sLogin");
+    if (el) { el.classList.remove("hidden"); el.style.display = "flex"; }
   }
 });
 

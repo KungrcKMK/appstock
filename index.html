@@ -4190,6 +4190,7 @@
       const daily    = Number(item.DailyUsage||0);
       const qty      = Number(item.Qty||0);
       const daysLeft = daily > 0 ? Math.floor(qty / daily) : null;
+      const outDate  = daysLeft !== null ? (() => { const d=new Date(today); d.setDate(d.getDate()+daysLeft); return `${String(d.getDate()).padStart(2,"0")}/${String(d.getMonth()+1).padStart(2,"0")}/${d.getFullYear()+543}`; })() : null;
       let bc="bg-emerald-600 text-white", bi="✅", bt="ปลอดภัย";
       let rowBg="", rowBorder="";
       if(isExp)                             {bc="bg-red-600 text-white";    bi="🔴"; bt="หมดอายุ";   rowBg="bg-red-50";    rowBorder="border-l-4 border-red-500";}

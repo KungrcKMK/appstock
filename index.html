@@ -4137,9 +4137,8 @@
           <div class="text-[10px] font-black text-slate-300 uppercase leading-none mb-2">นับจริง: ${rawForceThaiDate(item.LastVerified)}</div>
           <div class="flex gap-2 flex-wrap justify-center">
             <button onclick="openRawAction('${escapeJs(item.SKU)}','${escapeJs(item.Name)}','${escapeJs(item.Unit)}',${Number(item.Qty)||0})" class="bg-blue-600 text-white px-5 py-3 rounded-2xl text-[10px] font-black hover:bg-black uppercase">📥 รับ/เบิก</button>
-            <button onclick="openRawVerify('${escapeJs(item.SKU)}','${escapeJs(item.Name)}')"  class="bg-purple-600 text-white px-5 py-3 rounded-2xl text-[10px] font-black hover:bg-black uppercase">ตรวจยอด</button>
+            <button onclick="openRawVerify('${escapeJs(item.SKU)}','${escapeJs(item.Name)}')"  class="bg-purple-600 text-white px-5 py-3 rounded-2xl text-[10px] font-black hover:bg-black uppercase">นับสต๊อก</button>
             <button onclick="openRawEdit('${escapeJs(item.SKU)}')"                             class="bg-sky-600    text-white px-5 py-3 rounded-2xl text-[10px] font-black hover:bg-black uppercase">แก้ไข</button>
-            <button onclick="openRawQrByItem('${escapeJs(item.SKU)}','${escapeJs(item.Name)}')" class="bg-slate-900  text-white px-5 py-3 rounded-2xl text-[10px] font-black hover:bg-blue-600 uppercase">QR</button>
             <button onclick="rawDelete('${escapeJs(item.SKU)}','${escapeJs(item.Name)}')"       class="bg-red-50 text-red-600 px-5 py-3 rounded-2xl text-[10px] font-black hover:bg-red-600 hover:text-white uppercase">ลบ</button>
           </div>
         </td>

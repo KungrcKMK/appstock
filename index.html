@@ -4095,7 +4095,7 @@
 
     const exp  = items.filter(i => { const d=rawParseDate(i.ExpiryDate); return d && d < today; })
                       .map(i => ({ name: i.Name, expLabel: rawForceThaiDate(i.ExpiryDate) }));
-    const near = items.filter(i => rawNearExpiry(i, 30) && !exp.find(e => e.name===i.Name))
+    const near = items.filter(i => rawNearExpiry(i, rawAlertDays) && !exp.find(e => e.name===i.Name))
                       .map(i => ({ name: i.Name, expLabel: rawForceThaiDate(i.ExpiryDate) }));
     const low  = items.filter(i => Number(i.Qty) <= Number(i.Min) && Number(i.Qty) >= 0)
                       .map(i => ({ name: i.Name, qty: i.Qty, unit: i.Unit, min: i.Min }));

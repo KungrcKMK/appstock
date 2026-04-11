@@ -442,6 +442,72 @@ function daysColor(d) {
 }
 
 // ─────────────────────────────────────────────
+// MATH INPUT — คำนวณในช่องตัวเลข เช่น 16*48+5
+// ─────────────────────────────────────────────
+(function(){
+  function mathEval(expr){
+    const s=String(expr).replace(/,/g,"").trim();
+    if(!s) return NaN;
+    if(!/^[\d\s\+\-\*\/\(\)\.]+$/.test(s)) return NaN;
+    try{
+      const r=Function('"use strict";return('+s+')')();
+      return (typeof r==="number"&&isFinite(r))?Math.round(r*1e6)/1e6:NaN;
+    }catch(e){return NaN;}
+  }
+  function getPreview(el){
+    if(el._mathPreview) return el._mathPreview;
+    const d=document.createElement("div");
+    d.style.cssText="font-size:11px;font-weight:800;color:#818cf8;margin-top:4px;min-height:14px;";
+    d.setAttribute("data-math-preview","1");
+    el.parentNode.insertBefore(d,el.nextSibling);
+    el._mathPreview=d;
+    return d;
+  }
+  function clearPreview(el){if(el._mathPreview)el._mathPreview.textContent="";}
+
+  document.addEventListener("focus",function(e){
+    const el=e.target;
+    if(el.tagName!=="INPUT"||el.type!=="number") return;
+    el._mathWasNum=true;
+    el._mathMin=el.min; el._mathMax=el.max; el._mathStep=el.step;
+    el.type="text"; el.inputMode="decimal";
+  },true);
+
+  document.addEventListener("input",function(e){
+    const el=e.target;
+    if(el.tagName!=="INPUT"||!el._mathWasNum) return;
+    const val=el.value.trim();
+    if(/[\+\-\*\/\(\)]/.test(val)){
+      const r=mathEval(val);
+      getPreview(el).textContent=isNaN(r)?"":"= "+r.toLocaleString("th-TH",{maximumFractionDigits:6});
+    } else {clearPreview(el);}
+  },false);
+
+  document.addEventListener("blur",function(e){
+    const el=e.target;
+    if(el.tagName!=="INPUT") return;
+    const wasMath=el._mathWasNum;
+    const val=el.value.trim();
+    if(val&&/[\+\-\*\/\(\)]/.test(val)){
+      const r=mathEval(val);
+      if(!isNaN(r)){
+        el.value=r;
+        el.dispatchEvent(new Event("input",{bubbles:true}));
+        el.dispatchEvent(new Event("change",{bubbles:true}));
+      }
+    }
+    clearPreview(el);
+    if(wasMath){
+      el._mathWasNum=false;
+      el.type="number";
+      if(el._mathMin!==undefined) el.min=el._mathMin;
+      if(el._mathMax!==undefined) el.max=el._mathMax;
+      if(el._mathStep!==undefined) el.step=el._mathStep;
+    }
+  },true);
+})();
+
+// ─────────────────────────────────────────────
 // INIT — ถ้าไม่มี session → redirect กลับ index.html
 // ─────────────────────────────────────────────
 window.addEventListener("DOMContentLoaded", () => {

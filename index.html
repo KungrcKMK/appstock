@@ -4438,9 +4438,9 @@
     // แยกกลุ่มจาก sourceData
     const expItems   = sourceData.filter(i => { const d=rawParseDate(i.ExpiryDate); return d&&d<today; });
     const lowItems   = sourceData.filter(i => !expItems.includes(i) && Number(i.Qty)<=Number(i.Min));
-    const near7      = sourceData.filter(i => !expItems.includes(i) && rawNearExpiry(i,7));
-    const near30     = sourceData.filter(i => !expItems.includes(i) && !near7.includes(i) && rawNearExpiry(i,30));
-    const okItems    = sourceData.filter(i => !expItems.includes(i) && !lowItems.includes(i) && !near7.includes(i) && !near30.includes(i));
+    const near7      = sourceData.filter(i => !expItems.includes(i) && rawNearExpiry(i, rawAlertDays));
+    const near30     = [];
+    const okItems    = sourceData.filter(i => !expItems.includes(i) && !lowItems.includes(i) && !near7.includes(i));
 
     const total    = sourceData.length;
 

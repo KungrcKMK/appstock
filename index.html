@@ -4134,8 +4134,7 @@
       const ed=rawParseDate(item.ExpiryDate); const isExp=ed&&ed<today;
       if (rawCurrentFilter==="low"   && !isLow)            return false;
       if (rawCurrentFilter==="exp"   && !isExp)            return false;
-      if (rawCurrentFilter==="exp7"  && !rawNearExpiry(item,7))  return false;
-      if (rawCurrentFilter==="exp30" && !rawNearExpiry(item,30)) return false;
+      if (rawCurrentFilter==="near"  && !rawNearExpiry(item, rawAlertDays)) return false;
       return true;
     });
 

@@ -4169,8 +4169,9 @@
           <div class="text-[12px] text-slate-400 font-mono font-black mt-3">📦 ${escapeHtml(item.SKU||"-")} • 📅 Exp: ${rawForceThaiDate(item.ExpiryDate)}</div>
         </td>
         <td class="p-8 text-right">
-          <div class="font-black text-4xl text-slate-900 tracking-tighter">${Number(item.Qty||0).toLocaleString()}</div>
+          <div class="font-black text-4xl text-slate-900 tracking-tighter">${qty.toLocaleString()}</div>
           <div class="text-[11px] font-black text-emerald-600 uppercase mt-2 tracking-widest">${escapeHtml(item.Unit||"-")}</div>
+          ${daysLeft !== null ? `<div class="text-[11px] font-black mt-1 ${daysLeft<=7?"text-red-500":daysLeft<=14?"text-orange-500":daysLeft<=30?"text-amber-500":"text-slate-400"}">⏱ เหลือ ${daysLeft} วัน</div>` : ""}
         </td>
         <td class="p-8 text-center">
           <div class="text-[10px] font-black text-slate-300 uppercase leading-none mb-2">นับจริง: ${rawForceThaiDate(item.LastVerified)}</div>

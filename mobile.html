@@ -737,6 +737,7 @@ function crSelectLot(i, action) {
   confirmBtn.className = `btn-tap w-full py-4 rounded-2xl font-black text-lg text-white shadow-lg ${isOut ? "bg-orange-600" : "bg-cyan-600"}`;
   confirmBtn.textContent = isOut ? "📤 ยืนยันการเบิก" : "📊 บันทึกการนับ";
 
+  if ($("aCrNote")) $("aCrNote").value = "";
   show("aCrCountRow"); show("aCrConfirmRow");
   $("aCrQtyIn").focus();
 }

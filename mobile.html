@@ -561,9 +561,8 @@ window.addEventListener("DOMContentLoaded", () => {
 });
 
 function doLogout() {
-  // ล้าง session และ mode pref → กลับ index.html
   ["unified_stock_user","unified_stock_role","appstock_mode_pref"].forEach(k => localStorage.removeItem(k));
-  user = null; role = null; mod = null; data = [];
+  user = null; role = null; mod = null; data = []; _mNeedPass = false;
   window.location.href = "index.html";
 }
 

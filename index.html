@@ -3750,6 +3750,15 @@
   let rawCurrentModule  = "MLM";
   let rawLastData       = [];
   let rawCurrentFilter  = "all";
+  let rawAlertDays      = parseInt(localStorage.getItem("rawAlertDays") || "7");
+
+  function rawSetAlertDays(v) {
+    rawAlertDays = Math.max(1, Math.min(365, parseInt(v) || 7));
+    localStorage.setItem("rawAlertDays", rawAlertDays);
+    const inp = document.getElementById("rawAlertDaysInput");
+    if (inp) inp.value = rawAlertDays;
+    renderRawInventory(rawLastData);
+  }
   let rawNextSku        = "";
   let rawHtml5QrCode    = null;
   let rawVerifyTarget   = "";

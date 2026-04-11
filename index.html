@@ -4158,9 +4158,11 @@
       const daysLeft = daily > 0 ? Math.floor(qty / daily) : null;
       let bc="bg-emerald-600 text-white", bi="✅", bt="ปลอดภัย";
       let rowBg="", rowBorder="";
-      if(isExp)       {bc="bg-red-600 text-white";   bi="🔴"; bt="หมดอายุ";                       rowBg="bg-red-50";    rowBorder="border-l-4 border-red-500";}
-      else if(isLow)  {bc="bg-orange-500 text-white";bi="🟠"; bt="ต่ำ";                            rowBg="bg-orange-50"; rowBorder="border-l-4 border-orange-500";}
-      else if(nearAlert){bc="bg-amber-500 text-white";bi="⏳"; bt=`ใกล้หมด (≤${rawAlertDays}ว)`; rowBg="bg-amber-50";  rowBorder="border-l-4 border-amber-400";}
+      if(isExp)                          {bc="bg-red-600 text-white";    bi="🔴"; bt="หมดอายุ";              rowBg="bg-red-50";    rowBorder="border-l-4 border-red-500";}
+      else if(daysLeft!==null&&daysLeft<=7) {bc="bg-red-600 text-white"; bi="🔴"; bt=`วิกฤต (${daysLeft}ว)`; rowBg="bg-red-50";    rowBorder="border-l-4 border-red-500";}
+      else if(isLow)                     {bc="bg-orange-500 text-white"; bi="🟠"; bt="ต่ำ";                  rowBg="bg-orange-50"; rowBorder="border-l-4 border-orange-500";}
+      else if(daysLeft!==null&&daysLeft<=14){bc="bg-orange-500 text-white";bi="🟠";bt=`เร่งด่วน (${daysLeft}ว)`; rowBg="bg-orange-50"; rowBorder="border-l-4 border-orange-500";}
+      else if(nearAlert||daysLeft!==null&&daysLeft<=30){bc="bg-amber-500 text-white";bi="⏳"; bt=daysLeft!==null&&daysLeft<=30?`ควรสั่ง (${daysLeft}ว)`:`ใกล้หมด (≤${itemAlertDays}ว)`; rowBg="bg-amber-50"; rowBorder="border-l-4 border-amber-400";}
       return `<tr class="border-b transition-colors ${rowBg} ${rowBorder} hover:brightness-95">
         <td class="p-8 text-center"><input type="checkbox" class="raw-checkbox" data-sku="${escapeAttr(item.SKU)}"></td>
         <td class="p-8"><span class="badge-status ${bc} uppercase"><span>${bi}</span><span>${bt}</span></span></td>

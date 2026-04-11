@@ -392,7 +392,7 @@ const show = id => { const e = $(id); if (e) e.classList.remove("hidden"); };
 const hide = id => { const e = $(id); if (e) e.classList.add("hidden"); };
 
 function showScreens(...ids) {
-  ["sLogin","sModule","sMain","sQR","sScanner"].forEach(s => {
+  ["sModule","sMain","sQR","sScanner"].forEach(s => {
     const el = $(s);
     if (!el) return;
     if (ids.includes(s)) {

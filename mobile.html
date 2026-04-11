@@ -970,6 +970,24 @@ function onScan(decoded) {
     }
   } catch(e) { /* not JSON */ }
 
+  // Try RAWMAT|FACTORY|SKU format (จาก พิมพ์ QR วัตถุดิบ)
+  if (decoded.startsWith("RAWMAT|")) {
+    const parts = decoded.split("|");
+    if (parts.length >= 3) {
+      const qrFactory = parts[1];
+      const qrSku     = parts[2];
+      if (qrFactory !== mod) {
+        toast("QR นี้เป็นของ " + qrFactory + " กำลังเปลี่ยนโมดูล...", "warn");
+        selectModule(qrFactory).then(() => pickItem(qrSku));
+      } else {
+        const item = data.find(d => String(d.sku) === String(qrSku));
+        if (item) { pickItem(qrSku); return; }
+        toast("ไม่พบรหัส " + qrSku, "warn");
+      }
+      return;
+    }
+  }
+
   // Try match as raw SKU or barcode
   const found = data.find(d =>
     String(d.sku).toLowerCase() === decoded.toLowerCase() ||

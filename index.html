@@ -4202,7 +4202,7 @@
         <td class="p-8 text-center"><input type="checkbox" class="raw-checkbox" data-sku="${escapeAttr(item.SKU)}"></td>
         <td class="p-8"><span class="badge-status ${bc} uppercase"><span>${bi}</span><span>${bt}</span></span></td>
         <td class="p-8">
-          <div class="font-black text-slate-800 text-xl uppercase leading-none">${escapeHtml(item.Name||"-")}</div>
+          <div class="font-black text-slate-800 text-base leading-snug" style="max-width:220px;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;" title="${escapeAttr(item.Name||"-")}">${escapeHtml(item.Name||"-")}</div>
           <div class="text-[12px] text-slate-400 font-mono font-black mt-3">📦 ${escapeHtml(item.SKU||"-")} • 📅 Exp: ${rawForceThaiDate(item.ExpiryDate)}</div>
         </td>
         <td class="p-8 text-right">

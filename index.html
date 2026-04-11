@@ -4211,7 +4211,7 @@
           ${daysLeft !== null ? `<div class="text-[11px] font-black mt-1 ${daysLeft<=7?"text-red-500":daysLeft<=14?"text-orange-500":daysLeft<=30?"text-amber-500":"text-slate-400"}" style="white-space:nowrap;">⏱ เหลือ ${daysLeft} วัน <span class="font-normal opacity-75">(ถึงวันที่ ${outDate})</span></div>` : ""}
         </td>
         <td class="p-8 text-center">
-          <div class="text-[10px] font-black text-slate-300 uppercase leading-none mb-2">นับจริง: ${rawForceThaiDate(item.LastVerified)}</div>
+          <div class="text-[11px] font-black text-slate-800 leading-none mb-2">นับจริง: ${rawForceThaiDate(item.LastVerified)}</div>
           <div class="flex gap-2 flex-wrap justify-center">
             <button onclick="openRawAction('${escapeJs(item.SKU)}','${escapeJs(item.Name)}','${escapeJs(item.Unit)}',${Number(item.Qty)||0})" class="bg-blue-600 text-white px-5 py-3 rounded-2xl text-[10px] font-black hover:bg-black uppercase">📥 รับ/เบิก</button>
             <button onclick="openRawVerify('${escapeJs(item.SKU)}','${escapeJs(item.Name)}')"  class="bg-purple-600 text-white px-5 py-3 rounded-2xl text-[10px] font-black hover:bg-black uppercase">นับสต๊อก</button>

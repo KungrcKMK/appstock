@@ -621,8 +621,26 @@
         </div>
       </div>
 
-      <!-- Tab: สินค้าใหม่ -->
-      <div class="cr-tab-panel" id="cr-tab-newproduct">
+      <!-- Tab: ⚙️ จัดการสินค้า (รวม 3 ฟังก์ชัน) -->
+      <div class="cr-tab-panel" id="cr-tab-manage">
+        <!-- Sub-tab bar -->
+        <div style="display:flex;gap:8px;padding:16px 16px 0;border-bottom:2px solid #e2e8f0;margin-bottom:0;overflow-x:auto;">
+          <button id="crMngBtn-newproduct"  onclick="crManageSubTab('newproduct')"
+            style="flex-shrink:0;padding:8px 18px;border-radius:12px 12px 0 0;border:2px solid #e2e8f0;border-bottom:none;font-weight:900;font-size:13px;cursor:pointer;background:#6366f1;color:#fff;font-family:inherit;">
+            ➕ สินค้าใหม่
+          </button>
+          <button id="crMngBtn-editproduct" onclick="crManageSubTab('editproduct')"
+            style="flex-shrink:0;padding:8px 18px;border-radius:12px 12px 0 0;border:2px solid #e2e8f0;border-bottom:none;font-weight:900;font-size:13px;cursor:pointer;background:#f8fafc;color:#64748b;font-family:inherit;">
+            ✏️ แก้ไขสินค้า
+          </button>
+          <button id="crMngBtn-bom"         onclick="crManageSubTab('bom')"
+            style="flex-shrink:0;padding:8px 18px;border-radius:12px 12px 0 0;border:2px solid #e2e8f0;border-bottom:none;font-weight:900;font-size:13px;cursor:pointer;background:#f8fafc;color:#64748b;font-family:inherit;">
+            📖 สูตร BOM
+          </button>
+        </div>
+
+        <!-- Sub-section: สินค้าใหม่ -->
+        <div id="crMngSub-newproduct">
         <div class="card">
           <h2>➕ ขึ้นทะเบียนสินค้าใหม่</h2>
           <div style="display:flex;gap:10px;">

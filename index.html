@@ -4522,8 +4522,7 @@
 
     ${buildSection("🔴 หมดอายุ — ต้องดำเนินการทันที","#dc2626","#fee2e2",expItems)}
     ${buildSection("🟠 สต๊อกต่ำกว่าจุดสั่งซื้อ","#ea580c","#fff7ed",lowItems)}
-    ${buildSection("⏳ ใกล้หมดอายุ ภายใน 7 วัน","#d97706","#fefce8",near7)}
-    ${buildSection("🗓️ ใกล้หมดอายุ ภายใน 30 วัน","#0284c7","#f0f9ff",near30)}
+    ${buildSection(`⏳ ใกล้หมดอายุ ภายใน ${rawAlertDays} วัน`,"#d97706","#fefce8",near7)}
     ${buildSection("✅ สต๊อกปกติ","#059669","#f0fdf4",okItems)}
 
     <div class="sign-section">

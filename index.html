@@ -2371,16 +2371,32 @@
   }
 
   function crSwitchTab(tab) {
-    ["stock","balance","newproduct","editproduct","workorder","submit","receive","bom","report","settings"].forEach(n => {
+    // newproduct / editproduct / bom → เปลี่ยนไป manage แล้วเปิด sub-tab
+    const manageMap = { newproduct: true, editproduct: true, bom: true };
+    if (manageMap[tab]) { crSwitchTab("manage"); crManageSubTab(tab); return; }
+
+    ["stock","balance","manage","workorder","submit","receive","report","settings"].forEach(n => {
       $$cr("cr-tab-" + n)?.classList.toggle("active", n === tab);
       $$cr("crTabBtn-" + n)?.classList.toggle("active", n === tab);
     });
     crStopScanner(false);
-    if (tab === "editproduct" && crEditProductCache.length === 0) crLoadEditProductList();
     if (tab === "workorder") crInitWorkOrder();
     if (tab === "submit")    crSiInitSubmit();
     if (tab === "receive")   crSiInitReceive();
-    if (tab === "bom")       crLoadBomList();
+  }
+
+  function crManageSubTab(sub) {
+    ["newproduct","editproduct","bom"].forEach(n => {
+      const sec = document.getElementById("crMngSub-" + n);
+      const btn = document.getElementById("crMngBtn-" + n);
+      if (sec) sec.style.display = n === sub ? "" : "none";
+      if (btn) {
+        btn.style.background = n === sub ? "#6366f1" : "#f8fafc";
+        btn.style.color      = n === sub ? "#fff"    : "#64748b";
+      }
+    });
+    if (sub === "editproduct" && crEditProductCache.length === 0) crLoadEditProductList();
+    if (sub === "bom") crLoadBomList();
   }
 
   // ══════════════════════════════════════

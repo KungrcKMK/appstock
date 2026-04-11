@@ -3988,6 +3988,8 @@
     MLM:      { label:"🏭 วัตถุดิบ MLM",    headerBg:"bg-blue-700",    icon:"🏭" }
   };
 
+  let _alertQueue = [];
+
   // อัปเดต badge บน Nav
   function updateNavBadge(module, count) {
     const badge = document.getElementById("badge-" + module);

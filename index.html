@@ -4502,16 +4502,17 @@
         const qty      = Number(item.Qty||0);
         const daily    = Number(item.DailyUsage||0);
         const daysLeft = daily > 0 ? Math.floor(qty/daily) : null;
-        const daysText = daysLeft !== null ? `<span style="font-weight:700;color:${daysLeft<=7?"#dc2626":daysLeft<=14?"#ea580c":"#475569"}">${daysLeft} วัน</span>` : "-";
+        const outDate  = daysLeft !== null ? (() => { const d=new Date(); d.setHours(0,0,0,0); d.setDate(d.getDate()+daysLeft); return `${String(d.getDate()).padStart(2,"0")}/${String(d.getMonth()+1).padStart(2,"0")}/${d.getFullYear()+543}`; })() : null;
+        const daysText = daysLeft !== null
+          ? `<span style="font-weight:700;color:${daysLeft<=7?"#dc2626":daysLeft<=14?"#ea580c":"#475569"}">${daysLeft} วัน</span>${outDate?`<br><span style="font-size:10px;color:#94a3b8;font-weight:400;">(ถึง ${outDate})</span>`:""}`
+          : "-";
         return `<tr style="background:${idx%2===0?"#fff":bgColor}">
           <td style="padding:7px 10px;border:1px solid #e2e8f0;text-align:center;font-size:11px;">${idx+1}</td>
-          <td style="padding:7px 10px;border:1px solid #e2e8f0;font-size:11px;color:#64748b;">${escapeHtml(item.SKU||"-")}</td>
           <td style="padding:7px 10px;border:1px solid #e2e8f0;font-weight:700;">${escapeHtml(item.Name||"-")}</td>
-          <td style="padding:7px 10px;border:1px solid #e2e8f0;text-align:right;font-weight:700;">${qty.toLocaleString()}</td>
+          <td style="padding:7px 10px;border:1px solid #e2e8f0;text-align:right;font-weight:700;">${qty.toLocaleString()} <span style="font-size:10px;color:#64748b;font-weight:400;">${escapeHtml(item.Unit||"")}</span></td>
           <td style="padding:7px 10px;border:1px solid #e2e8f0;text-align:right;">${Number(item.Min||0).toLocaleString()}</td>
           <td style="padding:7px 10px;border:1px solid #e2e8f0;text-align:right;color:#0284c7;">${daily>0?daily.toLocaleString():"-"}</td>
-          <td style="padding:7px 10px;border:1px solid #e2e8f0;text-align:center;">${daysText}</td>
-          <td style="padding:7px 10px;border:1px solid #e2e8f0;">${escapeHtml(item.Unit||"-")}</td>
+          <td style="padding:7px 10px;border:1px solid #e2e8f0;text-align:center;line-height:1.6;">${daysText}</td>
           <td style="padding:7px 10px;border:1px solid #e2e8f0;">${rawForceThaiDate(item.ExpiryDate)||"-"}</td>
           <td style="padding:7px 10px;border:1px solid #e2e8f0;">${rawForceThaiDate(item.LastVerified)||"-"}</td>
         </tr>`;
@@ -4521,13 +4522,11 @@
         <table style="width:100%;border-collapse:collapse;font-size:12px;">
           <thead><tr style="background:#1e293b;color:#fff;">
             <th style="padding:7px 10px;border:1px solid #334155;text-align:center;width:30px">ลำดับ</th>
-            <th style="padding:7px 10px;border:1px solid #334155;width:85px">รหัส SKU</th>
             <th style="padding:7px 10px;border:1px solid #334155;">ชื่อวัตถุดิบ</th>
-            <th style="padding:7px 10px;border:1px solid #334155;text-align:right;width:70px">คงเหลือ</th>
-            <th style="padding:7px 10px;border:1px solid #334155;text-align:right;width:70px">ขั้นต่ำ</th>
-            <th style="padding:7px 10px;border:1px solid #334155;text-align:right;width:70px">ใช้/วัน</th>
-            <th style="padding:7px 10px;border:1px solid #334155;text-align:center;width:80px">วันคงเหลือ</th>
-            <th style="padding:7px 10px;border:1px solid #334155;width:55px">หน่วย</th>
+            <th style="padding:7px 10px;border:1px solid #334155;text-align:right;width:100px">คงเหลือ / หน่วย</th>
+            <th style="padding:7px 10px;border:1px solid #334155;text-align:right;width:65px">ขั้นต่ำ</th>
+            <th style="padding:7px 10px;border:1px solid #334155;text-align:right;width:65px">ใช้/วัน</th>
+            <th style="padding:7px 10px;border:1px solid #334155;text-align:center;width:110px">วันคงเหลือ / ถึงวันที่</th>
             <th style="padding:7px 10px;border:1px solid #334155;width:90px">วันหมดอายุ</th>
             <th style="padding:7px 10px;border:1px solid #334155;width:100px">ตรวจนับล่าสุด</th>
           </tr></thead>

@@ -1081,6 +1081,10 @@
             <div class="flex items-end pb-1"><span class="text-xs font-black text-slate-400">หน่วยนับ/วัน<br><span class="text-slate-300">ใช้คำนวณวันหมดสต๊อก</span></span></div>
           </div>
           <div><label class="text-xs font-black uppercase ml-1">วันหมดอายุ (ค.ศ.) 📅</label><input type="date" id="rawNewExpiry" class="w-full bg-slate-50 p-4 rounded-xl font-black text-xl outline-none"></div>
+          <div><label class="text-xs font-black uppercase ml-1">⏰ เตือนล่วงหน้า (วัน)</label>
+            <input type="number" id="rawNewAlertDays" class="w-full bg-amber-50 border-4 border-amber-200 p-4 rounded-xl font-black text-xl" value="7" min="1" max="365" placeholder="7">
+            <p class="text-xs text-slate-400 mt-1 ml-1">เตือนก่อนหมดอายุกี่วัน (ว่างไว้ = ใช้ค่าส่วนกลาง)</p>
+          </div>
           <button onclick="rawSubmitNew()" id="rawBtnCreate" class="w-full bg-emerald-700 text-white py-6 mt-4 rounded-3xl font-black text-2xl shadow-xl hover:bg-black transition-all">✅ ยืนยันบันทึก</button>
         </div>
       </div>

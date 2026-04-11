@@ -4747,7 +4747,8 @@
     if (!unit) return showToast("กรุณาระบุหน่วย","warn");
     setRawBusy("rawBtnEdit",true,"กำลังบันทึก...");
     showLoading("กำลังบันทึกการแก้ไข...");
-    const r = await rawFetch({ action:"EDIT", sku, name, unit, min, dailyUsage, expiryDate:expiry, user:currentUser });
+    const alertDaysEdit = Math.max(1, parseInt(document.getElementById("rawEditAlertDays").value||rawAlertDays));
+    const r = await rawFetch({ action:"EDIT", sku, name, unit, min, dailyUsage, expiryDate:expiry, alertDays:alertDaysEdit, user:currentUser });
     hideLoading(); setRawBusy("rawBtnEdit",false);
     if (r.status==="success") { closeRawEdit(); showToast("แก้ไขเรียบร้อย ✏️","success"); rawLoadData(); }
     else showToast(r.message||"ไม่สำเร็จ","error");

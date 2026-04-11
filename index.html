@@ -4109,10 +4109,24 @@
                       .map(i => ({ name: i.Name, expLabel: rawForceThaiDate(i.ExpiryDate) }));
     const low  = items.filter(i => Number(i.Qty) <= Number(i.Min) && Number(i.Qty) >= 0)
                       .map(i => ({ name: i.Name, qty: i.Qty, unit: i.Unit, min: i.Min }));
+    // วันคงเหลือจาก DailyUsage ≤ rawAlertDays (เฉพาะที่ยังไม่นับใน exp/near/low)
+    const lowDays = items.filter(i => {
+      const daily = Number(i.DailyUsage||0);
+      if (daily <= 0) return false;
+      const daysLeft = Math.floor(Number(i.Qty||0) / daily);
+      if (daysLeft > rawAlertDays) return false;
+      // ไม่นับซ้ำกับ exp หรือ low
+      if (exp.find(e => e.name === i.Name)) return false;
+      if (low.find(e => e.name === i.Name)) return false;
+      return true;
+    }).map(i => {
+      const daysLeft = Math.floor(Number(i.Qty||0) / Number(i.DailyUsage||1));
+      return { name: i.Name, qty: i.Qty, unit: i.Unit, min: i.Min, expLabel: `เหลือใช้ได้ ${daysLeft} วัน` };
+    });
 
-    const total = exp.length + near.length + low.length;
+    const total = exp.length + near.length + low.length + lowDays.length;
     updateNavBadge(module, total);
-    if (showPopup && total > 0) showStockAlert(module, exp, low, near);
+    if (showPopup && total > 0) showStockAlert(module, exp, [...low, ...lowDays], near);
   }
 
   // ── Cold Room critical check ──

@@ -4237,12 +4237,11 @@
     const rows = rawLastData.map(item => {
       const isLow = Number(item.Qty) <= Number(item.Min);
       const ed = rawParseDate(item.ExpiryDate); const isExp = ed && ed < today;
-      const near7 = rawNearExpiry(item,7); const near30 = rawNearExpiry(item,30);
+      const nearAlert2 = rawNearExpiry(item, rawAlertDays);
       let rowStyle = "", statusText = "ปลอดภัย", statusColor = "#059669";
-      if(isExp)       { rowStyle="background:#fee2e2;"; statusText="หมดอายุ";   statusColor="#dc2626"; }
-      else if(isLow)  { rowStyle="background:#ffedd5;"; statusText="ต่ำ";        statusColor="#ea580c"; }
-      else if(near7)  { rowStyle="background:#fef9c3;"; statusText="ใกล้หมด";   statusColor="#d97706"; }
-      else if(near30) { rowStyle="background:#e0f2fe;"; statusText="30 วัน";     statusColor="#0284c7"; }
+      if(isExp)        { rowStyle="background:#fee2e2;"; statusText="หมดอายุ";                        statusColor="#dc2626"; }
+      else if(isLow)   { rowStyle="background:#ffedd5;"; statusText="ต่ำ";                             statusColor="#ea580c"; }
+      else if(nearAlert2){ rowStyle="background:#fef9c3;"; statusText=`ใกล้หมด(≤${rawAlertDays}ว)`; statusColor="#d97706"; }
       return `<tr style="${rowStyle}">
         <td style="padding:8px 12px;border:1px solid #e2e8f0;">${escapeHtml(item.SKU||"-")}</td>
         <td style="padding:8px 12px;border:1px solid #e2e8f0;font-weight:700;">${escapeHtml(item.Name||"-")}</td>

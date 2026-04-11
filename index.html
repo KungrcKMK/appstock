@@ -4075,6 +4075,18 @@
     }
   }
 
+  // ── ตรวจสอบ SQF + MLM ทันทีหลัง Login ──
+  async function checkRawAlertsOnLogin() {
+    try {
+      const [sqfRes, mlmRes] = await Promise.all([
+        fetch(GAS_URL + "?module=SQF").then(r => r.json()),
+        fetch(GAS_URL + "?module=MLM").then(r => r.json())
+      ]);
+      if (sqfRes.status === "success") rawCheckCritical(sqfRes.materials || [], "SQF", true);
+      if (mlmRes.status === "success") rawCheckCritical(mlmRes.materials || [], "MLM", true);
+    } catch(e) { console.warn("checkRawAlertsOnLogin:", e); }
+  }
+
   // ── Raw Materials critical check (ใช้ unified) ──
   function rawCheckCritical(items, module = rawCurrentModule, showPopup = true) {
     const today = new Date(); today.setHours(0,0,0,0);

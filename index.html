@@ -1180,9 +1180,16 @@
             <button id="rawFilter-all"   onclick="setRawFilter('all')"   class="px-5 py-3 rounded-[1.5rem] text-[11px] font-black uppercase filter-active transition-all">🌈 ทั้งหมด</button>
             <button id="rawFilter-low"   onclick="setRawFilter('low')"   class="px-5 py-3 rounded-[1.5rem] text-[11px] font-black uppercase bg-white text-slate-400 hover:text-black">⚠️ ต่ำ</button>
             <button id="rawFilter-exp"   onclick="setRawFilter('exp')"   class="px-5 py-3 rounded-[1.5rem] text-[11px] font-black uppercase bg-white text-slate-400 hover:text-black">🔴 หมดอายุ</button>
-            <button id="rawFilter-exp7"  onclick="setRawFilter('exp7')"  class="px-5 py-3 rounded-[1.5rem] text-[11px] font-black uppercase bg-white text-slate-400 hover:text-black">⏳ 7 วัน</button>
-            <button id="rawFilter-exp30" onclick="setRawFilter('exp30')" class="px-5 py-3 rounded-[1.5rem] text-[11px] font-black uppercase bg-white text-slate-400 hover:text-black">🗓️ 30 วัน</button>
+            <button id="rawFilter-near"  onclick="setRawFilter('near')"  class="px-5 py-3 rounded-[1.5rem] text-[11px] font-black uppercase bg-white text-slate-400 hover:text-black">⏳ ใกล้หมด</button>
           </div>
+        </div>
+        <!-- ⚙️ ตั้งค่าวันแจ้งเตือน -->
+        <div class="flex items-center gap-3 mt-3 px-2">
+          <span class="text-xs font-black text-slate-500 uppercase tracking-wide">⚙️ แจ้งเตือนล่วงหน้า</span>
+          <input type="number" id="rawAlertDaysInput" min="1" max="365" value="7"
+            onchange="rawSetAlertDays(this.value)"
+            class="w-20 bg-slate-100 border-2 border-slate-200 px-3 py-1.5 rounded-xl font-black text-sm text-center focus:border-blue-500 outline-none">
+          <span class="text-xs font-black text-slate-500">วัน ก่อนหมดอายุ</span>
         </div>
       </div>
 

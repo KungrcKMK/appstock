@@ -4153,6 +4153,9 @@
       const ed=rawParseDate(item.ExpiryDate); const isExp=ed&&ed<today;
       const itemAlertDays = Number(item.AlertDays) || rawAlertDays;
       const nearAlert=rawNearExpiry(item, itemAlertDays);
+      const daily    = Number(item.DailyUsage||0);
+      const qty      = Number(item.Qty||0);
+      const daysLeft = daily > 0 ? Math.floor(qty / daily) : null;
       let bc="bg-emerald-600 text-white", bi="✅", bt="ปลอดภัย";
       let rowBg="", rowBorder="";
       if(isExp)       {bc="bg-red-600 text-white";   bi="🔴"; bt="หมดอายุ";                       rowBg="bg-red-50";    rowBorder="border-l-4 border-red-500";}

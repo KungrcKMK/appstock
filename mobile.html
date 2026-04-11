@@ -943,7 +943,8 @@ function closeScanner() {
     scanner = null;
   }
   $("scanEl").innerHTML = "";
-  hide("sScanner");
+  const el = $("sScanner");
+  if (el) { el.style.display = "none"; el.classList.add("hidden"); }
 }
 
 function onScan(decoded) {

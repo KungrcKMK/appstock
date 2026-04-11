@@ -2227,10 +2227,13 @@
     loadDevice();
     const saved = localStorage.getItem("unified_stock_user");
     if (saved) {
-      // ถ้าไม่มี mode preference → แสดง mode picker ก่อน (เฉพาะกรณี reload หน้า)
-      const pref = localStorage.getItem("appstock_mode_pref") || sessionStorage.getItem("appstock_mode_session");
-      if (!pref) { showModePicker(saved); return; }
-      if (pref === "mobile") { window.location.href = "mobile.html"; return; }
+      // session ยังอยู่ → ตรวจ mode session (ไม่ใช้ pref เพื่อป้องกัน auto-redirect)
+      const sessionMode = sessionStorage.getItem("appstock_mode_session");
+      if (!sessionMode) {
+        // ไม่มี session mode → แสดง mode picker ทุกครั้ง (ไม่ auto-redirect)
+        showModePicker(saved); return;
+      }
+      if (sessionMode === "mobile") { window.location.href = "mobile.html"; return; }
       currentUser = saved;
       // คืน adminToken จาก sessionStorage (ถ้ามี — ยังไม่หมดอายุใน GAS cache 30 นาที)
       if (!_adminToken) _adminToken = sessionStorage.getItem("appstock_admin_token") || null;

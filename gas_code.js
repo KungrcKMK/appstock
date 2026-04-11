@@ -1618,6 +1618,8 @@ function rmEdit(data, module) {
       if (h.indexOf("DailyUsage") >= 0)
         sheet.getRange(i + 1, h.indexOf("DailyUsage") + 1).setValue(Number(dailyUsage) || 0);
       sheet.getRange(i + 1, h.indexOf("ExpiryDate") + 1).setValue(expiryDate || "");
+      if (h.indexOf("AlertDays") >= 0 && alertDays !== undefined)
+        sheet.getRange(i + 1, h.indexOf("AlertDays") + 1).setValue(Number(alertDays) || 7);
       const userWithDevice3 = _reqDeviceName ? `${user||"-"} (📱 ${_reqDeviceName})` : (user||"");
       getSheet(module + "_History").appendRow([new Date().toISOString(), name || oldName, "แก้ไขข้อมูล", "-", userWithDevice3]);
       sendAlert(`✏️ แก้ไขข้อมูล\n📦 ${name||oldName} (${sku})\n👤 ${user||"-"}${deviceTag()}`, module);

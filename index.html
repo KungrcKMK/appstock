@@ -4141,13 +4141,12 @@
     list.innerHTML = filtered.map(item => {
       const isLow=Number(item.Qty)<=Number(item.Min);
       const ed=rawParseDate(item.ExpiryDate); const isExp=ed&&ed<today;
-      const near7=rawNearExpiry(item,7); const near30=rawNearExpiry(item,30);
+      const nearAlert=rawNearExpiry(item, rawAlertDays);
       let bc="bg-emerald-600 text-white", bi="✅", bt="ปลอดภัย";
       let rowBg="", rowBorder="";
-      if(isExp)        {bc="bg-red-600 text-white";   bi="🔴"; bt="หมดอายุ";   rowBg="bg-red-50";    rowBorder="border-l-4 border-red-500";}
-      else if(isLow)   {bc="bg-orange-500 text-white";bi="🟠"; bt="ต่ำ";        rowBg="bg-orange-50"; rowBorder="border-l-4 border-orange-500";}
-      else if(near7)   {bc="bg-amber-500 text-white"; bi="⏳"; bt="ใกล้หมด";   rowBg="bg-amber-50";  rowBorder="border-l-4 border-amber-400";}
-      else if(near30)  {bc="bg-sky-600 text-white";   bi="🗓️"; bt="30 วัน";   rowBg="bg-sky-50";    rowBorder="border-l-4 border-sky-400";}
+      if(isExp)       {bc="bg-red-600 text-white";   bi="🔴"; bt="หมดอายุ";                       rowBg="bg-red-50";    rowBorder="border-l-4 border-red-500";}
+      else if(isLow)  {bc="bg-orange-500 text-white";bi="🟠"; bt="ต่ำ";                            rowBg="bg-orange-50"; rowBorder="border-l-4 border-orange-500";}
+      else if(nearAlert){bc="bg-amber-500 text-white";bi="⏳"; bt=`ใกล้หมด (≤${rawAlertDays}ว)`; rowBg="bg-amber-50";  rowBorder="border-l-4 border-amber-400";}
       return `<tr class="border-b transition-colors ${rowBg} ${rowBorder} hover:brightness-95">
         <td class="p-8 text-center"><input type="checkbox" class="raw-checkbox" data-sku="${escapeAttr(item.SKU)}"></td>
         <td class="p-8"><span class="badge-status ${bc} uppercase"><span>${bi}</span><span>${bt}</span></span></td>

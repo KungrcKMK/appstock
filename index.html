@@ -1846,7 +1846,7 @@
     sessionStorage.setItem("appstock_mode_session", mode); // จดจำสำหรับ session นี้เสมอ
     document.getElementById("modePicker").style.display = "none";
     if (mode === "mobile") { window.location.href = "mobile.html"; }
-    else                   { checkAuth(); }
+    else                   { checkAuth(); checkRawAlertsOnLogin(); }
   }
 
   function switchToMobile() {

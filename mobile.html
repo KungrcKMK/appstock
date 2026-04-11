@@ -1119,7 +1119,7 @@ items.forEach((item,i)=>{
   d.innerHTML='<span class="mod">'+m+'</span><canvas id="c'+i+'"></canvas>'
     +'<div class="name">'+item.name+'</div><div class="sku">'+item.sku+'</div>';
   g.appendChild(d);
-  QRCode.toCanvas(document.getElementById("c"+i),JSON.stringify({m,s:item.sku}),
+  QRCode.toCanvas(document.getElementById("c"+i),`RAWMAT|${m}|${item.sku}`,
     {width:110,margin:1,color:{dark:"#000",light:"#fff"}});
 });
 setTimeout(()=>window.print(),1200);

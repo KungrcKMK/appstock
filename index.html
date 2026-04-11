@@ -4577,6 +4577,7 @@
     document.getElementById("rawEditMin").value        = Number(item.Min||0);
     document.getElementById("rawEditDailyUsage").value = Number(item.DailyUsage||0);
     document.getElementById("rawEditExpiry").value     = rawFormatDateInput(item.ExpiryDate);
+    document.getElementById("rawEditAlertDays").value  = item.AlertDays ? Number(item.AlertDays) : rawAlertDays;
     document.getElementById("rawEditModal").classList.remove("hidden");
   }
   function closeRawEdit() { document.getElementById("rawEditModal").classList.add("hidden"); }

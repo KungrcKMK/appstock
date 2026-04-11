@@ -1061,30 +1061,31 @@ async function setQrModule(m) {
   renderQrList();
 }
 
-function renderQrList() {
+async function renderQrList() {
   const items = qrCache[qrMod] || [];
   const el = $("qrList");
   if (!items.length) {
     el.innerHTML = '<p class="text-slate-600 text-center py-10 font-bold">ไม่มีรายการ</p>'; return;
   }
+
+  // สร้าง QR data URL ก่อน แล้วค่อย render (หลีกเลี่ยงปัญหา async canvas)
+  const qrContent = items.map(item => `RAWMAT|${qrMod}|${item.sku}`);
+  const dataUrls = await Promise.all(qrContent.map(text =>
+    QRCode.toDataURL(text, { width: 80, margin: 1, color: { dark: "#000", light: "#fff" } })
+      .catch(() => "")
+  ));
+
   el.innerHTML = items.map((item, i) => `
     <div class="bg-slate-800 rounded-2xl p-4 flex items-center gap-4">
-      <canvas id="qc${i}" class="rounded-xl flex-shrink-0 bg-white p-1"></canvas>
+      ${dataUrls[i]
+        ? `<img src="${dataUrls[i]}" class="rounded-xl flex-shrink-0 bg-white p-1" width="80" height="80">`
+        : `<div class="w-20 h-20 rounded-xl bg-slate-700 flex items-center justify-center text-slate-500 text-xs flex-shrink-0">QR Error</div>`}
       <div class="flex-1 min-w-0">
         <div class="font-black text-white text-sm leading-snug">${item.name}</div>
         <div class="text-slate-500 text-xs mt-0.5">${item.sku}</div>
         <div class="text-slate-600 text-xs">คงเหลือ: ${item.qty} ${item.unit}</div>
       </div>
     </div>`).join("");
-
-  // Generate QR codes
-  items.forEach((item, i) => {
-    const canvas = $("qc" + i);
-    if (!canvas) return;
-    QRCode.toCanvas(canvas, JSON.stringify({ m: qrMod, s: item.sku }), {
-      width: 72, margin: 1, color: { dark: "#000", light: "#fff" }
-    });
-  });
 }
 
 function printQR() {

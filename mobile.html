@@ -27,43 +27,6 @@
 <body class="text-white select-none">
 
 <!-- ══════════════════════════════════════════
-     SCREEN 1 : LOGIN
-══════════════════════════════════════════ -->
-<div id="sLogin" class="hidden flex-col items-center justify-center min-h-screen p-6 pt-safe gap-6">
-  <div class="w-full max-w-sm">
-    <!-- Logo -->
-    <div class="text-center mb-8">
-      <div class="text-6xl mb-3">📦</div>
-      <h1 class="text-2xl font-black text-white">ระบบจัดการสต๊อก</h1>
-      <p class="text-slate-500 text-sm mt-1">กรุณาเข้าสู่ระบบ</p>
-    </div>
-
-    <!-- Form -->
-    <div class="bg-slate-800 rounded-3xl p-6 space-y-4 shadow-2xl border border-slate-700">
-      <div>
-        <label class="text-slate-400 text-xs font-black uppercase tracking-wide block mb-2">👤 ชื่อผู้ใช้</label>
-        <input id="mLoginUser" type="text" placeholder="พิมพ์ชื่อผู้ใช้..."
-          autocomplete="username" autocapitalize="off" autocorrect="off"
-          onkeydown="if(event.key==='Enter') mDoLogin()"
-          class="w-full bg-slate-900 border-2 border-slate-700 focus:border-indigo-500 text-white text-lg font-bold rounded-2xl px-4 py-4 outline-none">
-      </div>
-      <div id="mPassSection" style="display:none;">
-        <label class="text-slate-400 text-xs font-black uppercase tracking-wide block mb-2">🔑 รหัสผ่าน</label>
-        <input id="mLoginPass" type="password" placeholder="รหัสผ่าน..."
-          autocomplete="current-password"
-          onkeydown="if(event.key==='Enter') mDoLogin()"
-          class="w-full bg-slate-900 border-2 border-slate-700 focus:border-indigo-500 text-white text-lg font-bold rounded-2xl px-4 py-4 outline-none">
-      </div>
-      <div id="mLoginErr" class="hidden text-red-400 text-sm font-bold text-center bg-red-900/30 rounded-xl px-4 py-3"></div>
-      <button id="mLoginBtn" onclick="mDoLogin()"
-        class="btn-tap w-full bg-indigo-600 active:bg-indigo-700 text-white font-black text-lg rounded-2xl py-4 shadow-lg">
-        🚀 เข้าสู่ระบบ
-      </button>
-    </div>
-  </div>
-</div>
-
-<!-- ══════════════════════════════════════════
      SCREEN 2 : MODULE SELECT
 ══════════════════════════════════════════ -->
 <div id="sModule" class="hidden flex-col p-4 pt-safe gap-2">

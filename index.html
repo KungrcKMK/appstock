@@ -4135,7 +4135,8 @@
 
     const total = exp.length + near.length;
     updateNavBadge("COLDROOM", total);
-    if (total > 0) showStockAlert("COLDROOM", exp, [], near);
+    // ถ้า checkRawAlertsOnLogin กำลังจัดการ popup อยู่ → ไม่แสดงซ้ำ
+    if (total > 0 && !_suppressCrLoginAlert) showStockAlert("COLDROOM", exp, [], near);
   }
 
   // backward compat

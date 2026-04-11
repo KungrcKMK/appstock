@@ -1819,11 +1819,7 @@
     localStorage.setItem("unified_stock_user", user);
     localStorage.setItem("unified_stock_role", role || "user");
     loadDevice();
-    // ถ้าเคยเลือก desktop ไว้ → ข้ามหน้าเลือก
-    const pref = localStorage.getItem("appstock_mode_pref");
-    if (pref === "desktop") { checkAuth(); return; }
-    if (pref === "mobile")  { window.location.href = "mobile.html"; return; }
-    // ครั้งแรก → แสดงหน้าเลือกอุปกรณ์
+    // แสดงหน้าเลือกอุปกรณ์ทุกครั้งที่ Login (ไม่ข้ามแม้จะมี pref บันทึกไว้)
     showModePicker(user);
   }
 

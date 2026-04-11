@@ -1604,7 +1604,7 @@ function rmVerify(data, module) {
 }
 
 function rmEdit(data, module) {
-  const { sku, name, unit, min, dailyUsage, expiryDate, user } = data;
+  const { sku, name, unit, min, dailyUsage, expiryDate, alertDays, user } = data;
   const sheet = getSheet(module + "_Materials");
   const rows  = sheet.getDataRange().getValues();
   const h = rows[0];

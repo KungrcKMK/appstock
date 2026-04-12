@@ -1551,10 +1551,9 @@
           <div class="flex gap-2 items-center flex-wrap">
             <select id="roleSelect-${safeId}" style="padding:5px 8px;border-radius:8px;border:2px solid #e2e8f0;font-size:12px;font-weight:800;">
               <option value="user"     ${u.role==="user"    ?"selected":""}>👤 user — พนักงานทั่วไป</option>
-              <option value="viewer"   ${u.role==="viewer"  ?"selected":""}>👁️ viewer — ดูอย่างเดียว</option>
+              <option value="viewer"   ${u.role==="viewer"  ?"selected":""}>👁️ viewer — ดูข้อมูล + ภาพรวม</option>
               <option value="approver" ${u.role==="approver"?"selected":""}>✅ approver — อนุมัติ</option>
               <option value="manager"  ${u.role==="manager" ?"selected":""}>📋 manager — ผู้จัดการ</option>
-              <option value="ceo"      ${u.role==="ceo"     ?"selected":""}>👔 ceo — ผู้บริหาร</option>
               <option value="admin"    ${u.role==="admin"   ?"selected":""}>🔧 admin — ผู้ดูแลระบบ</option>
             </select>
             <input type="password" id="pwdInput-${safeId}" placeholder="รหัสผ่านใหม่ (ถ้าต้องการตั้ง)" style="padding:5px 8px;border-radius:8px;border:2px solid #e2e8f0;font-size:12px;width:130px;">

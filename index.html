@@ -5035,45 +5035,6 @@
     } catch(e) { hideLoading(); showToast("ส่งไม่สำเร็จ: "+e.message,"error"); }
   }
 
-  function applyEmailPreset(preset) {
-    const presets = {
-      gmail:   { host:"smtp.gmail.com",          port:"465", ssl:"SSL"  },
-      outlook: { host:"smtp.office365.com",       port:"587", ssl:"TLS"  },
-      yahoo:   { host:"smtp.mail.yahoo.com",      port:"465", ssl:"SSL"  },
-      custom:  { host:"",                          port:"",    ssl:"SSL"  }
-    };
-    const p = presets[preset]; if(!p) return;
-    document.getElementById("uniSmtpHost").value = p.host;
-    document.getElementById("uniSmtpPort").value = p.port;
-    document.getElementById("uniSmtpSsl").value  = p.ssl;
-  }
-
-  async function testEmail() {
-    const host     = document.getElementById("uniSmtpHost").value.trim();
-    const port     = document.getElementById("uniSmtpPort").value.trim();
-    const ssl      = document.getElementById("uniSmtpSsl").value;
-    const sender   = document.getElementById("uniEmailSender").value.trim();
-    const password = document.getElementById("uniEmailPassword").value.trim();
-    const emails   = document.getElementById("uniEmailRecipients").value.trim();
-    if (!host)     { showToast("กรุณาระบุ SMTP Server","warn"); return; }
-    if (!sender)   { showToast("กรุณาระบุ Email ผู้ส่ง","warn"); return; }
-    if (!password) { showToast("กรุณาระบุ Password","warn"); return; }
-    if (!emails)   { showToast("กรุณาระบุ Email ผู้รับ","warn"); return; }
-    showLoading("กำลังส่ง Email ทดสอบ...");
-    try {
-      const r = await (await fetch(GAS_URL, {
-        method: "POST",
-        body: JSON.stringify({
-          module: "COLDROOM", action: "testEmail",
-          payload: { username: currentUser, smtpHost: host, smtpPort: port, smtpSsl: ssl, emailSender: sender, emailPassword: password, emailRecipients: emails }
-        })
-      })).json();
-      hideLoading();
-      if (r.ok) showToast(r.message || "ส่ง Email ทดสอบสำเร็จ ✅","success");
-      else showToast(r.message || "ส่ง Email ไม่สำเร็จ","error");
-    } catch(e) { hideLoading(); showToast("เกิดข้อผิดพลาด: "+e.message,"error"); }
-  }
-
   // ── Raw Settings (legacy — ใช้ unified แทน) ──────
   async function openRawSettings() { openUnifiedSettings(); }
   function closeRawSettings()      { closeUnifiedSettings(); }

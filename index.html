@@ -1064,12 +1064,12 @@
 
     <!-- Create Modal -->
     <div id="rawCreateModal" class="hidden fixed inset-0 bg-black/80 z-[230] flex items-center justify-center p-4">
-      <div class="bg-white w-full max-w-md rounded-[4rem] shadow-2xl overflow-y-auto border-8 border-emerald-600" style="max-height:90dvh;">
-        <div class="bg-emerald-600 p-8 text-white flex justify-between items-center">
+      <div class="bg-white w-full max-w-md rounded-[4rem] shadow-2xl overflow-hidden border-8 border-emerald-600 flex flex-col" style="max-height:90dvh;">
+        <div class="bg-emerald-600 p-8 text-white flex justify-between items-center shrink-0">
           <h2 class="text-3xl font-black uppercase italic">📦 ลงทะเบียน SKU</h2>
           <button onclick="closeRawCreate()" class="text-4xl">✕</button>
         </div>
-        <div class="p-8 space-y-6">
+        <div class="p-8 space-y-6 overflow-y-auto">
           <div><label class="text-xs font-black uppercase ml-1">รหัสอัตโนมัติ 🆔</label><input type="text" id="rawNewSku" class="w-full bg-slate-100 p-5 rounded-2xl font-black text-emerald-700 text-xl" readonly></div>
           <div><label class="text-xs font-black uppercase ml-1">ชื่อวัตถุดิบ 📝</label><input type="text" id="rawNewName" class="w-full bg-slate-50 border-4 border-slate-100 p-5 rounded-2xl font-black text-2xl focus:border-emerald-600 outline-none"></div>
           <div class="grid grid-cols-2 gap-4">

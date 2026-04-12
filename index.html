@@ -2355,8 +2355,9 @@
       const currentRole = localStorage.getItem("unified_stock_role") || "user";
       const roleLower  = currentRole.toLowerCase();
       const isAdmin    = roleLower === "admin";
+      const isViewer   = roleLower === "viewer";
       const isApprover = roleLower === "admin" || roleLower === "approver" || roleLower === "manager";
-      const isExecDash = roleLower === "admin" || roleLower === "ceo" || roleLower === "manager";
+      const isExecDash = roleLower === "admin" || roleLower === "viewer" || roleLower === "manager";
       const execBtn = document.getElementById("navBtn-EXEC");
       if (execBtn) execBtn.style.display = isExecDash ? "" : "none";
       const rolesBtn = document.getElementById("navBtn-ROLES");

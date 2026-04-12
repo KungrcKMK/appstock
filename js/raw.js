@@ -58,7 +58,9 @@ async function rawFetch(payload) {
       deviceName: getDeviceInfo()
     })
   });
-  return await res.json();
+  const json = await res.json();
+  if (handleTokenExpired(json)) return json;
+  return json;
 }
 
 let _rawSearchAcInit = false;

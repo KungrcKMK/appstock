@@ -1098,15 +1098,12 @@ function _smtpSend(s, recipients, subject, htmlBody) {
   const isGmail = !host || host.includes("gmail");
 
   if (isGmail) {
-    // ใช้ GmailApp — ส่งในนาม emailSender (ต้อง set "Send mail as" ใน Gmail ก่อน)
-    // หรือถ้าไม่ set ก็ส่งจาก account ของ script owner เลย
-    const fromAlias = String(s.emailSender || "").trim();
-    const opts = { htmlBody: htmlBody };
-    if (fromAlias) opts.from = fromAlias;
+    // ใช้ MailApp — auto-authorized ไม่ต้องขอสิทธิ์เพิ่ม
+    var plainText = htmlBody.replace(/<[^>]+>/g, "");
     recipients.forEach(function(email) {
-      GmailApp.sendEmail(email, subject, htmlBody.replace(/<[^>]+>/g,""), opts);
+      MailApp.sendEmail(email, subject, plainText, { htmlBody: htmlBody });
     });
-    return { ok: true, method: "GmailApp" };
+    return { ok: true, method: "MailApp" };
   }
 
   // Custom SMTP via smtp2go HTTP API (https://www.smtp2go.com/docs/api/)

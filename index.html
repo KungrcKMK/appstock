@@ -250,23 +250,63 @@
             </select>
           </div>
 
+          <!-- SMTP Preset -->
           <div>
-            <label class="text-xs font-black uppercase text-slate-400 mb-1 block">📤 Email ผู้ส่ง (Gmail)</label>
+            <label class="text-xs font-black uppercase text-slate-400 mb-1 block">⚡ Preset</label>
+            <select id="uniEmailPreset" onchange="applyEmailPreset(this.value)"
+              class="w-full bg-white border-2 border-slate-200 p-3 rounded-2xl font-bold outline-none focus:border-amber-500 transition-colors text-sm">
+              <option value="">— เลือก mail server —</option>
+              <option value="gmail">Gmail (smtp.gmail.com:465)</option>
+              <option value="outlook">Outlook / Hotmail (smtp.office365.com:587)</option>
+              <option value="yahoo">Yahoo Mail (smtp.mail.yahoo.com:465)</option>
+              <option value="custom">กำหนดเอง (Custom SMTP)</option>
+            </select>
+          </div>
+
+          <!-- SMTP Host + Port -->
+          <div class="grid grid-cols-3 gap-2">
+            <div class="col-span-2">
+              <label class="text-xs font-black uppercase text-slate-400 mb-1 block">🖥️ SMTP Server</label>
+              <input id="uniSmtpHost" type="text"
+                class="w-full bg-white border-2 border-slate-200 p-3 rounded-2xl font-bold outline-none focus:border-amber-500 transition-colors text-sm"
+                placeholder="smtp.gmail.com">
+            </div>
+            <div>
+              <label class="text-xs font-black uppercase text-slate-400 mb-1 block">🔌 Port</label>
+              <input id="uniSmtpPort" type="number"
+                class="w-full bg-white border-2 border-slate-200 p-3 rounded-2xl font-bold outline-none focus:border-amber-500 transition-colors text-sm"
+                placeholder="465">
+            </div>
+          </div>
+
+          <!-- SSL -->
+          <div>
+            <label class="text-xs font-black uppercase text-slate-400 mb-1 block">🔒 การเข้ารหัส</label>
+            <select id="uniSmtpSsl"
+              class="w-full bg-white border-2 border-slate-200 p-3 rounded-2xl font-bold outline-none focus:border-amber-500 transition-colors text-sm">
+              <option value="SSL">SSL (port 465)</option>
+              <option value="TLS">STARTTLS (port 587)</option>
+              <option value="none">ไม่เข้ารหัส (port 25)</option>
+            </select>
+          </div>
+
+          <!-- Sender + Password -->
+          <div>
+            <label class="text-xs font-black uppercase text-slate-400 mb-1 block">📤 Username / Email ผู้ส่ง</label>
             <input id="uniEmailSender" type="email"
               class="w-full bg-white border-2 border-slate-200 p-3 rounded-2xl font-bold outline-none focus:border-amber-500 transition-colors text-sm"
               placeholder="yourname@gmail.com">
           </div>
 
           <div>
-            <label class="text-xs font-black uppercase text-slate-400 mb-1 block">🔑 App Password
-              <span class="text-slate-300 font-normal normal-case">(Google App Password 16 หลัก)</span>
-            </label>
+            <label class="text-xs font-black uppercase text-slate-400 mb-1 block">🔑 Password / App Password</label>
             <input id="uniEmailPassword" type="password"
               class="w-full bg-white border-2 border-slate-200 p-3 rounded-2xl font-bold outline-none focus:border-amber-500 transition-colors text-sm"
-              placeholder="xxxx xxxx xxxx xxxx">
-            <p class="text-[10px] text-slate-400 mt-1 ml-1">สร้างได้ที่ myaccount.google.com → Security → App passwords</p>
+              placeholder="รหัสผ่าน หรือ App Password">
+            <p class="text-[10px] text-slate-400 mt-1 ml-1">Gmail: ต้องใช้ App Password — myaccount.google.com → Security → App passwords</p>
           </div>
 
+          <!-- Recipients -->
           <div>
             <label class="text-xs font-black uppercase text-slate-400 mb-1 block">📮 Email ผู้รับ
               <span class="text-slate-300 font-normal normal-case">(คั่นหลาย Email ด้วยคอมม่า)</span>

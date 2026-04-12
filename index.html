@@ -4307,6 +4307,16 @@
       return true;
     });
 
+    filtered.sort((a, b) => {
+      let va, vb;
+      if (rawSortKey === "name")   { va = (a.Name||"").toLowerCase(); vb = (b.Name||"").toLowerCase(); }
+      else if (rawSortKey === "qty") { va = Number(a.Qty||0); vb = Number(b.Qty||0); }
+      else { va = _rawStatusPriority(a); vb = _rawStatusPriority(b); }
+      if (va < vb) return rawSortAsc ? -1 : 1;
+      if (va > vb) return rawSortAsc ? 1 : -1;
+      return 0;
+    });
+
     list.innerHTML = filtered.map(item => {
       const isLow=Number(item.Qty)<=Number(item.Min);
       const ed=rawParseDate(item.ExpiryDate); const isExp=ed&&ed<today;

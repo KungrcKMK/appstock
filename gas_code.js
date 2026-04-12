@@ -1096,6 +1096,111 @@ function crSendTelegram(message) {
 }
 
 // ============================================================
+// ⏰ EXPIRY ALERT — แจ้งเตือนวันหมดอายุผ่าน Telegram
+// ตั้ง Time Trigger: GAS Editor → Triggers → Add Trigger
+//   Function: checkExpiryAlerts | Time-driven | Day timer | 8am–9am
+// ============================================================
+
+function checkExpiryAlerts() {
+  try {
+    var s = crGetAlertSettings().settings;
+    var token   = String(s.telegramBotToken || "").trim();
+    var chatIds = String(s.telegramChatIds  || "").split(",").map(function(c){ return c.trim(); }).filter(Boolean);
+    if (!token || !chatIds.length) return;
+
+    var tz       = "Asia/Bangkok";
+    var todayKey = Utilities.formatDate(new Date(), tz, "yyyyMMdd");
+    var sp       = PropertiesService.getScriptProperties();
+    var props    = sp.getProperties();
+    var now      = new Date();
+    var expired  = [];
+    var warning  = [];
+
+    ["SQF", "MLM"].forEach(function(mod) {
+      try {
+        var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(mod + "_Materials");
+        if (!sheet) return;
+        var data = sheet.getDataRange().getValues();
+        if (data.length < 2) return;
+        var h       = data[0];
+        var iSku    = h.indexOf("SKU");
+        var iName   = h.indexOf("Name");
+        var iExp    = h.indexOf("ExpiryDate");
+        var iAlert  = h.indexOf("AlertDays");
+        var iDis    = h.indexOf("Discontinued");
+        if (iName < 0 || iExp < 0) return;
+
+        for (var i = 1; i < data.length; i++) {
+          if (iDis >= 0 && (data[i][iDis] === true || String(data[i][iDis]).toUpperCase() === "TRUE")) continue;
+          var expRaw = String(data[i][iExp] || "").trim();
+          if (!expRaw) continue;
+          var name_      = String(data[i][iName]  || "").trim();
+          var sku_       = iSku   >= 0 ? String(data[i][iSku]  || "").trim() : "";
+          var alertDays_ = iAlert >= 0 ? (Number(data[i][iAlert]) || 7) : 7;
+
+          // แปลง ExpiryDate → Date (รองรับ dd/mm/yyyy และ yyyy-mm-dd)
+          var expDate = null;
+          if (/^\d{2}\/\d{2}\/\d{4}$/.test(expRaw)) {
+            var p = expRaw.split("/");
+            expDate = new Date(Number(p[2]), Number(p[1]) - 1, Number(p[0]));
+          } else if (/^\d{4}-\d{2}-\d{2}/.test(expRaw)) {
+            var p2 = expRaw.slice(0, 10).split("-");
+            expDate = new Date(Number(p2[0]), Number(p2[1]) - 1, Number(p2[2]));
+          }
+          if (!expDate || isNaN(expDate)) continue;
+
+          var daysLeft = Math.round((expDate - now) / 86400000);
+          if (daysLeft > alertDays_ || daysLeft < -30) continue;
+
+          // dedup รายวัน
+          var safeId   = (sku_ || name_).replace(/[^A-Za-z0-9\u0E00-\u0E7F]/g, "_").slice(0, 40);
+          var dedupKey = "expd_" + todayKey + "_" + mod + "_" + safeId;
+          if (props[dedupKey]) continue;
+
+          var label  = mod === "SQF" ? "🏭SQF" : "🏭MLM";
+          var expThai = String(expDate.getDate()).padStart(2,"0") + "/" +
+                        String(expDate.getMonth()+1).padStart(2,"0") + "/" +
+                        (expDate.getFullYear()+543);
+          var entry = label + " " + name_ + (sku_ ? " ("+sku_+")" : "") +
+                      "  •  หมดอายุ " + expThai;
+          if (daysLeft < 0) {
+            expired.push("❌ " + entry + "  (เกินมาแล้ว " + Math.abs(daysLeft) + " วัน)");
+          } else {
+            warning.push("⚠️ " + entry + "  (เหลือ " + daysLeft + " วัน)");
+          }
+
+          var toSet = {}; toSet[dedupKey] = "1"; sp.setProperties(toSet);
+        }
+      } catch(e) { Logger.log("checkExpiryAlerts err " + mod + ": " + e); }
+    });
+
+    if (!expired.length && !warning.length) return;
+
+    var ts  = Utilities.formatDate(now, tz, "dd/MM/yyyy HH:mm");
+    var msg = "⏰ แจ้งเตือนวันหมดอายุวัตถุดิบ\n" + ts + "\n";
+    if (expired.length) msg += "\n" + expired.join("\n");
+    if (warning.length) msg += "\n" + warning.join("\n");
+    msg += "\n\nกรุณาตรวจสอบและจัดการโดยด่วน";
+
+    chatIds.forEach(function(chatId) {
+      try {
+        UrlFetchApp.fetch("https://api.telegram.org/bot" + token + "/sendMessage", {
+          method: "post", contentType: "application/json",
+          payload: JSON.stringify({ chat_id: chatId, text: msg }),
+          muteHttpExceptions: true
+        });
+      } catch(e) { Logger.log("checkExpiryAlerts Telegram err: " + e); }
+    });
+
+    // ลบ dedup keys เก่า
+    var allProps = sp.getProperties();
+    Object.keys(allProps).forEach(function(k) {
+      if (k.startsWith("expd_") && !k.startsWith("expd_" + todayKey)) sp.deleteProperty(k);
+    });
+  } catch(e) { Logger.log("checkExpiryAlerts fatal: " + e.toString()); }
+}
+
+// ============================================================
 // 📦 DELIVERY NOTES — ส่งยอดเข้าห้องเย็น + อนุมัติ
 // ============================================================
 

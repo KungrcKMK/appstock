@@ -1170,21 +1170,10 @@ async function crLoadOverview() {
     b.innerHTML = '<tr><td colspan="9" style="text-align:center;padding:20px;">ไม่มีข้อมูลสต๊อก</td></tr>';
   } else {
     const sortedLots = res.allLots.slice().sort((a, b) => (a.ExpireDays ?? 9999) - (b.ExpireDays ?? 9999));
-    b.innerHTML = sortedLots.map((r, i) => `
-      <tr id="crRow-${i}" onclick="crRowClick(event,${i})" style="cursor:pointer;">
-        <td data-label="☑" style="text-align:center;" onclick="event.stopPropagation()">
-          <input type="checkbox" class="cr-row-chk" data-idx="${i}"
-            onchange="crToggleRow(${i}, this.checked)"
-            style="width:17px;height:17px;cursor:pointer;accent-color:var(--primary);">
-        </td>
-        <td data-label="ชื่อสินค้า"><b>${escapeHtml(r.ProductName)}</b></td>
-        <td data-label="MFG"><b>${isoToDdmmyy(r.MFG)}</b></td>
-        <td data-label="EXP">${isoToDdmmyy(r.EXP)}</td>
-        <td data-label="จำนวน" style="color:var(--primary);font-weight:700;">${r.Qty} <span style="font-size:12px;color:var(--text);font-weight:normal;">${escapeHtml(r.Unit)}</span></td>
-        <td data-label="เหลือ(วัน)">${r.ExpireDays}</td>
-        <td data-label="สถานะ"><span class="pill ${r.ExpireStatus.includes('ปกติ') ? 'pill-ok' : 'pill-danger'}">${r.ExpireStatus}</span></td>
-        <td data-label="QC">${r.QcShelfLifeStatus}</td>
-      </tr>`).join("");
+    window._crSortedLots = sortedLots;
+    window._crLotsShown = 0;
+    b.innerHTML = "";
+    crLoadMoreLots();
   }
 
   // 🚨 แจ้งเตือน Cold Room

@@ -250,7 +250,9 @@ async function crCallServer(action, payload = {}) {
         deviceName: getDeviceInfo()
       })
     });
-    return await res.json();
+    const json = await res.json();
+    if (handleTokenExpired(json)) return json;
+    return json;
   } catch (e) {
     showToast("พบข้อผิดพลาด: " + e.message, "err");
     throw e;

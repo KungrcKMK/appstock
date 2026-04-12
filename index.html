@@ -4330,12 +4330,12 @@
         </td>
         <td class="p-8 text-center">
           <div class="text-[11px] font-black text-slate-800 leading-none mb-2">นับจริง: ${rawForceThaiDate(item.LastVerified)}</div>
-          <div class="grid grid-cols-2 gap-2">
+          ${window._appIsViewer ? "" : `<div class="grid grid-cols-2 gap-2">
             <button onclick="openRawAction('${escapeJs(item.SKU)}','${escapeJs(item.Name)}','${escapeJs(item.Unit)}',${Number(item.Qty)||0})" class="bg-blue-600 text-white px-3 py-3 rounded-2xl text-[10px] font-black hover:bg-black uppercase">📥 รับ/เบิก</button>
             <button onclick="openRawVerify('${escapeJs(item.SKU)}','${escapeJs(item.Name)}')"  class="bg-purple-600 text-white px-3 py-3 rounded-2xl text-[10px] font-black hover:bg-black uppercase">นับสต๊อก</button>
             <button onclick="openRawEdit('${escapeJs(item.SKU)}')"                             class="bg-sky-600    text-white px-3 py-3 rounded-2xl text-[10px] font-black hover:bg-black uppercase">แก้ไข</button>
             <button onclick="rawDelete('${escapeJs(item.SKU)}','${escapeJs(item.Name)}')"       class="bg-red-50 text-red-600 px-3 py-3 rounded-2xl text-[10px] font-black hover:bg-red-600 hover:text-white uppercase">ลบ</button>
-          </div>
+          </div>`}
         </td>
       </tr>`;
     }).join("");

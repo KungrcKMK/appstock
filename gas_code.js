@@ -1375,6 +1375,7 @@ function getStockInList(payload) {
     list.push(rec);
   }
   list.sort(function(a,b){ return new Date(b.SubmittedAt)-new Date(a.SubmittedAt); });
+  list = list.slice(0, 100); // จำกัด 100 ล่าสุด
   return { ok: true, list: list };
 }
 

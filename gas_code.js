@@ -144,11 +144,25 @@ function _issueAdminToken(username) { return _issueToken(username, "admin"); }
 
 function _getTokenData(token) {
   if (!token) return null;
-  var cached = CacheService.getScriptCache().get("tk_" + token);
-  if (cached) { try { return JSON.parse(cached); } catch(e) { return null; } }
+  var cache = CacheService.getScriptCache();
+  var cached = cache.get("tk_" + token);
+  if (cached) {
+    try {
+      var data = JSON.parse(cached);
+      // Sliding window: ต่ออายุ token อีก 30 นาทีทุกครั้งที่ใช้งาน
+      cache.put("tk_" + token, cached, 1800);
+      return data;
+    } catch(e) { return null; }
+  }
   // compat: เก่าเก็บด้วย at_ prefix
-  var old = CacheService.getScriptCache().get("at_" + token);
-  if (old) return { u: old, r: "admin" };
+  var old = cache.get("at_" + token);
+  if (old) {
+    // upgrade เป็นรูปแบบใหม่ + ต่ออายุ
+    var upgraded = JSON.stringify({ u: old, r: "admin" });
+    cache.put("tk_" + token, upgraded, 1800);
+    cache.remove("at_" + token);
+    return { u: old, r: "admin" };
+  }
   return null;
 }
 function verifyAdminToken(token) { var d = _getTokenData(token); return !!(d && d.r === "admin"); }

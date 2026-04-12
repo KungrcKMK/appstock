@@ -2371,6 +2371,7 @@
         });
       }
       window._appIsViewer = isViewer;
+      if (isViewer) document.querySelectorAll(".viewer-hide").forEach(el => el.style.display = "none");
       switchModule(isViewer ? "EXEC" : "COLDROOM");
     }
   }

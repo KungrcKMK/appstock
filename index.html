@@ -3356,7 +3356,8 @@
     if (!res.allLots || !res.allLots.length) {
       b.innerHTML = '<tr><td colspan="9" style="text-align:center;padding:20px;">ไม่มีข้อมูลสต๊อก</td></tr>';
     } else {
-      b.innerHTML = res.allLots.map((r, i) => `
+      const sortedLots = res.allLots.slice().sort((a, b) => (a.ExpireDays ?? 9999) - (b.ExpireDays ?? 9999));
+      b.innerHTML = sortedLots.map((r, i) => `
         <tr id="crRow-${i}" onclick="crRowClick(event,${i})" style="cursor:pointer;">
           <td data-label="☑" style="text-align:center;" onclick="event.stopPropagation()">
             <input type="checkbox" class="cr-row-chk" data-idx="${i}"

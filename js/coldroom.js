@@ -1180,6 +1180,59 @@ async function crLoadOverview() {
   crCheckCritical(res);
 }
 
+// ─── Lazy Render — โหลดทีละ 50 แถว ──────────
+const CR_LOTS_PER_PAGE = 50;
+
+function crRenderLotRow(r, i) {
+  return `<tr id="crRow-${i}" onclick="crRowClick(event,${i})" style="cursor:pointer;">
+    <td data-label="☑" style="text-align:center;" onclick="event.stopPropagation()">
+      <input type="checkbox" class="cr-row-chk" data-idx="${i}"
+        onchange="crToggleRow(${i}, this.checked)"
+        style="width:17px;height:17px;cursor:pointer;accent-color:var(--primary);">
+    </td>
+    <td data-label="ชื่อสินค้า"><b>${escapeHtml(r.ProductName)}</b></td>
+    <td data-label="MFG"><b>${isoToDdmmyy(r.MFG)}</b></td>
+    <td data-label="EXP">${isoToDdmmyy(r.EXP)}</td>
+    <td data-label="จำนวน" style="color:var(--primary);font-weight:700;">${r.Qty} <span style="font-size:12px;color:var(--text);font-weight:normal;">${escapeHtml(r.Unit)}</span></td>
+    <td data-label="เหลือ(วัน)">${r.ExpireDays}</td>
+    <td data-label="สถานะ"><span class="pill ${r.ExpireStatus.includes('ปกติ') ? 'pill-ok' : 'pill-danger'}">${r.ExpireStatus}</span></td>
+    <td data-label="QC">${r.QcShelfLifeStatus}</td>
+  </tr>`;
+}
+
+function crLoadMoreLots() {
+  const lots = window._crSortedLots || [];
+  const b = $$cr("crBalanceBody");
+  if (!b || !lots.length) return;
+
+  const start = window._crLotsShown || 0;
+  const end = Math.min(start + CR_LOTS_PER_PAGE, lots.length);
+
+  // ลบปุ่ม "โหลดเพิ่ม" เก่า (ถ้ามี)
+  const oldBtn = document.getElementById("crLoadMoreRow");
+  if (oldBtn) oldBtn.remove();
+
+  // เพิ่ม rows
+  let html = "";
+  for (let i = start; i < end; i++) {
+    html += crRenderLotRow(lots[i], i);
+  }
+  b.insertAdjacentHTML("beforeend", html);
+  window._crLotsShown = end;
+
+  // เพิ่มปุ่ม "โหลดเพิ่ม" ถ้ายังมีข้อมูลเหลือ
+  if (end < lots.length) {
+    b.insertAdjacentHTML("beforeend", `
+      <tr id="crLoadMoreRow">
+        <td colspan="9" style="text-align:center;padding:16px;">
+          <button onclick="crLoadMoreLots()" style="background:var(--primary);color:#fff;border:none;padding:10px 28px;border-radius:12px;font-weight:800;font-size:14px;cursor:pointer;font-family:inherit;">
+            โหลดเพิ่ม (${end}/${lots.length}) ▼
+          </button>
+        </td>
+      </tr>`);
+  }
+}
+
 // ─── Checkbox Selection ───────────────────────
 const crSelectedRows = new Set();
 

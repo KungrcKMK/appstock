@@ -1577,8 +1577,8 @@
         body: JSON.stringify({ module: "SYSTEM", action: "getUsers", payload: { adminToken: _adminToken } })
       }).then(r => r.json());
       if (!res.ok) { listEl.innerHTML = `<p style="color:#dc2626;text-align:center;font-weight:700;padding:40px 0;">❌ ${escapeHtml(res.message||"")}</p>`; return; }
-      const roleColors  = { admin:"#f59e0b", approver:"#0ea5e9", manager:"#8b5cf6", ceo:"#10b981", viewer:"#64748b", user:"#94a3b8" };
-      const roleLabels  = { admin:"🔧 admin", approver:"✅ approver", manager:"📋 manager", ceo:"👔 ceo", viewer:"👁️ viewer", user:"👤 user" };
+      const roleColors  = { admin:"#f59e0b", approver:"#0ea5e9", manager:"#8b5cf6", viewer:"#10b981", user:"#94a3b8" };
+      const roleLabels  = { admin:"🔧 admin", approver:"✅ approver", manager:"📋 manager", viewer:"👁️ viewer", user:"👤 user" };
       listEl.innerHTML = `<div style="display:flex;flex-direction:column;gap:10px;">` +
         res.users.map(u => {
           const safeU  = escapeJs(u.username||"");

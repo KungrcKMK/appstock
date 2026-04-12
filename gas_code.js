@@ -1540,12 +1540,18 @@ function getRawMaterials(module) {
     }
   }
 
-  const histData = histSheet.getDataRange().getValues();
-  const hh = histData[0];
-  const recentHistory = histData.slice(1)
-    .map(row => { const o = {}; hh.forEach((k, i) => { o[k] = row[i]; }); return o; })
-    .reverse().slice(0, 30)
-    .map(x => [x.Timestamp, x.Name, x.Action, x.Qty, x.User]);
+  // อ่านเฉพาะ 30 แถวสุดท้ายของ History (ไม่โหลดทั้ง sheet)
+  const histLastRow = histSheet.getLastRow();
+  let recentHistory = [];
+  if (histLastRow > 1) {
+    const hh = histSheet.getRange(1, 1, 1, histSheet.getLastColumn()).getValues()[0];
+    const histNum = Math.min(30, histLastRow - 1);
+    const histData = histSheet.getRange(histLastRow - histNum + 1, 1, histNum, hh.length).getValues();
+    recentHistory = histData.reverse().map(row => {
+      const o = {}; hh.forEach((k, i) => { o[k] = row[i]; });
+      return [o.Timestamp, o.Name, o.Action, o.Qty, o.User];
+    });
+  }
 
   const prefix     = module === "SQF" ? "SQF-" : "MLM-";
   const existingNums = matData.slice(1)

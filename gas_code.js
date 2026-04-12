@@ -1039,16 +1039,7 @@ function crGetAlertSettings() {
     telegramBotName:           map.telegramBotName           || "",
     telegramBotToken:          map.telegramBotToken          || "",
     telegramChatIds:           map.telegramChatIds           || "",
-    enableTelegramStockUpdate: map.enableTelegramStockUpdate || "true",
-    enableEmailLowStock:       map.enableEmailLowStock       || "false",
-    smtpHost:                  map.smtpHost                  || "smtp.gmail.com",
-    smtpPort:                  map.smtpPort                  || "465",
-    smtpSsl:                   map.smtpSsl                   || "SSL",
-    emailSender:               map.emailSender               || "",
-    emailPassword:             map.emailPassword             || "",
-    emailRecipients:           map.emailRecipients           || "",
-    emailTimeFrom:             map.emailTimeFrom             || "08:00",
-    emailTimeTo:               map.emailTimeTo               || "18:00"
+    enableTelegramStockUpdate: map.enableTelegramStockUpdate || "true"
   }};
 }
 

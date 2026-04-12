@@ -1098,6 +1098,62 @@ function crSendTelegram(message) {
 }
 
 // ============================================================
+// 🗄️ ARCHIVE — ย้ายสต๊อกเก่าไป Archive sheet
+// ตั้ง Time Trigger: ทุกวันอาทิตย์ หรือเรียกผ่าน action "archiveOldStock"
+// ============================================================
+
+function archiveOldStock(payload) {
+  if (payload && payload.adminToken && !verifyAdminToken(payload.adminToken)) {
+    return { ok: false, message: "ไม่มีสิทธิ์" };
+  }
+
+  var stockSheet = getSheet("ColdRoom_Stock");
+  var data = stockSheet.getDataRange().getValues();
+  if (data.length < 2) return { ok: true, archived: 0, message: "ไม่มีข้อมูล" };
+
+  var h = data[0];
+  var qtyIdx = h.indexOf("Qty");
+  var expIdx = h.indexOf("EXP");
+
+  // Archive sheet — สร้างถ้ายังไม่มี
+  var ss = SpreadsheetApp.getActiveSpreadsheet();
+  var archiveSheet = ss.getSheetByName("ColdRoom_Stock_Archive");
+  if (!archiveSheet) {
+    archiveSheet = ss.insertSheet("ColdRoom_Stock_Archive");
+    archiveSheet.appendRow(h);
+    archiveSheet.getRange(1, 1, 1, h.length).setFontWeight("bold").setBackground("#1e293b").setFontColor("#ffffff");
+    archiveSheet.setFrozenRows(1);
+  }
+
+  var today = new Date(); today.setHours(0, 0, 0, 0);
+  var sixMonthsAgo = new Date(today); sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
+
+  var rowsToArchive = []; // เก็บ row index (1-based) ที่จะลบ (เรียงจากมากไปน้อย)
+
+  for (var i = data.length - 1; i >= 1; i--) {
+    var qty = Number(data[i][qtyIdx] || 0);
+    var expVal = data[i][expIdx];
+    var expDate = expVal ? new Date(formatCellDate(expVal)) : null;
+
+    var shouldArchive = false;
+    if (qty <= 0) shouldArchive = true;
+    if (expDate && !isNaN(expDate) && expDate < sixMonthsAgo) shouldArchive = true;
+
+    if (shouldArchive) {
+      archiveSheet.appendRow(data[i]);
+      rowsToArchive.push(i + 1); // +1 for 1-based sheet row
+    }
+  }
+
+  // ลบจาก sheet หลัก (จากล่างขึ้นบนเพื่อไม่ให้ index เลื่อน)
+  for (var j = 0; j < rowsToArchive.length; j++) {
+    stockSheet.deleteRow(rowsToArchive[j]);
+  }
+
+  return { ok: true, archived: rowsToArchive.length, message: "ย้าย " + rowsToArchive.length + " รายการไป Archive แล้ว" };
+}
+
+// ============================================================
 // ⏰ EXPIRY ALERT — แจ้งเตือนวันหมดอายุผ่าน Telegram
 // ตั้ง Time Trigger: GAS Editor → Triggers → Add Trigger
 //   Function: checkExpiryAlerts | Time-driven | Day timer | 8am–9am

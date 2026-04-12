@@ -316,6 +316,25 @@
               placeholder="manager@company.com, admin@company.com"></textarea>
           </div>
 
+          <!-- ช่วงเวลาส่ง -->
+          <div>
+            <label class="text-xs font-black uppercase text-slate-400 mb-2 block">🕐 ช่วงเวลาที่อนุญาตส่ง Email</label>
+            <div class="flex items-center gap-2">
+              <div class="flex-1">
+                <div class="text-[10px] text-slate-400 font-bold mb-1">เริ่มส่งตั้งแต่</div>
+                <input id="uniEmailTimeFrom" type="time" value="08:00"
+                  class="w-full bg-white border-2 border-slate-200 p-3 rounded-2xl font-bold outline-none focus:border-amber-500 transition-colors text-sm text-center">
+              </div>
+              <div class="text-slate-400 font-black mt-4">—</div>
+              <div class="flex-1">
+                <div class="text-[10px] text-slate-400 font-bold mb-1">หยุดส่งเมื่อถึง</div>
+                <input id="uniEmailTimeTo" type="time" value="18:00"
+                  class="w-full bg-white border-2 border-slate-200 p-3 rounded-2xl font-bold outline-none focus:border-amber-500 transition-colors text-sm text-center">
+              </div>
+            </div>
+            <p class="text-[10px] text-slate-400 mt-1 ml-1">นอกช่วงเวลานี้จะไม่ส่ง Email (Server จะตรวจสอบเวลาก่อนส่งทุกครั้ง)</p>
+          </div>
+
           <button onclick="testEmail()"
             class="w-full bg-amber-100 text-amber-800 py-3 rounded-2xl font-black hover:bg-amber-200 transition-all uppercase text-sm">
             📧 ทดสอบส่ง Email

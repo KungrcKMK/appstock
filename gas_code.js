@@ -1175,8 +1175,12 @@ function checkExpiryAlerts() {
 
     if (!expired.length && !warning.length) return;
 
-    var ts  = Utilities.formatDate(now, tz, "dd/MM/yyyy HH:mm");
-    var msg = "⏰ แจ้งเตือนวันหมดอายุวัตถุดิบ\n" + ts + "\n";
+    var ts      = Utilities.formatDate(now, tz, "dd/MM/yyyy HH:mm");
+    var total   = expired.length + warning.length;
+    var summary = "พบ " + total + " รายการ";
+    if (expired.length) summary += "  •  ❌ หมดอายุแล้ว " + expired.length + " รายการ";
+    if (warning.length) summary += "  •  ⚠️ ใกล้หมด " + warning.length + " รายการ";
+    var msg = "⏰ แจ้งเตือนวันหมดอายุวัตถุดิบ\n" + ts + "\n" + summary + "\n";
     if (expired.length) msg += "\n" + expired.join("\n");
     if (warning.length) msg += "\n" + warning.join("\n");
     msg += "\n\nกรุณาตรวจสอบและจัดการโดยด่วน";

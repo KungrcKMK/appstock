@@ -35,6 +35,17 @@ function showToast(msg, type = "info", timeout = 2800) {
   }, timeout);
 }
 
+// ── Token Expired Handler ──
+function handleTokenExpired(res) {
+  if (res && !res.ok && typeof res.message === "string" &&
+      res.message.includes("ไม่มีสิทธิ์")) {
+    showToast("Session หมดอายุ กรุณาเข้าสู่ระบบใหม่", "error", 4000);
+    setTimeout(() => location.reload(), 1500);
+    return true;
+  }
+  return false;
+}
+
 // ── Force Refresh — ล้าง SW cache + reload ──
 async function forceRefresh() {
   if (!confirm("🔄 อัปเดตแอปใหม่?\n\nจะล้าง cache ทั้งหมดและโหลดหน้าใหม่\n(ข้อมูลที่กรอกไว้จะหาย)")) return;

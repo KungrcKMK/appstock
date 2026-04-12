@@ -360,12 +360,14 @@ function getActivityLog(payload) {
 
   var list = [];
 
-  // ── ColdRoom_Stock ──
+  // ── ColdRoom_Stock (อ่านเฉพาะ 150 แถวสุดท้าย) ──
   try {
     var crSheet = getSheet("ColdRoom_Stock");
-    var crData  = crSheet.getDataRange().getValues();
-    if (crData.length > 1) {
-      var ch = crData[0];
+    var crLastRow = crSheet.getLastRow();
+    if (crLastRow > 1) {
+      var ch = crSheet.getRange(1, 1, 1, crSheet.getLastColumn()).getValues()[0];
+      var numRows = Math.min(150, crLastRow - 1);
+      var crData = crSheet.getRange(crLastRow - numRows + 1, 1, numRows, ch.length).getValues();
       var cName  = ch.indexOf("ProductName");
       var cQty   = ch.indexOf("Qty");
       var cEmp   = ch.indexOf("EmployeeName");
@@ -373,9 +375,7 @@ function getActivityLog(payload) {
       var cNote  = ch.indexOf("Note");
       var cUpd   = ch.indexOf("UpdatedAt");
       var cMfg   = ch.indexOf("MFG");
-      // เอา 150 แถวล่าสุด
-      var start = Math.max(1, crData.length - 150);
-      for (var i = crData.length - 1; i >= start; i--) {
+      for (var i = crData.length - 1; i >= 0; i--) {
         var ts = crData[i][cUpd];
         var dt = ts ? new Date(ts) : null;
         list.push({

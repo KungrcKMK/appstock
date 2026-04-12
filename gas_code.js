@@ -1539,10 +1539,6 @@ function rmVerify(data, module) {
                  summary2 +
                  "\n👤 " + (user||"-") + deviceTag();
       sendAlert(msg2, module);
-      // ⚠️ ส่ง Email เตือนสต๊อกต่ำ หลังตรวจนับ
-      if (minQty > 0 && newQty < minQty) {
-        _sendEmailLowStock(name, sku, newQty, unit_, minQty, module);
-      }
       return { status: "success" };
     }
   }

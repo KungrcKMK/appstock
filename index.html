@@ -5110,7 +5110,9 @@
       smtpSsl:                   document.getElementById("uniSmtpSsl").value,
       emailSender:               document.getElementById("uniEmailSender").value.trim(),
       emailPassword:             document.getElementById("uniEmailPassword").value.trim(),
-      emailRecipients:           document.getElementById("uniEmailRecipients").value.trim()
+      emailRecipients:           document.getElementById("uniEmailRecipients").value.trim(),
+      emailTimeFrom:             document.getElementById("uniEmailTimeFrom").value,
+      emailTimeTo:               document.getElementById("uniEmailTimeTo").value
     };
     const btn = document.getElementById("uniBtnSave");
     btn.disabled = true; btn.textContent = "กำลังบันทึก...";

@@ -11,7 +11,15 @@ const STATIC_ASSETS = [
   "./index.html",
   "./manifest.json",
   "./icons/icon-192.png",
-  "./icons/icon-512.png"
+  "./icons/icon-512.png",
+  "./js/utils.js",
+  "./js/app.js",
+  "./js/auth.js",
+  "./js/admin.js",
+  "./js/exec.js",
+  "./js/coldroom.js",
+  "./js/raw.js",
+  "./js/alerts.js"
 ];
 
 // CDN ที่ cache ด้วย (fonts, charts, qrcode)

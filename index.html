@@ -5022,6 +5022,8 @@
         document.getElementById("uniTgChatIds").value        = s.telegramChatIds            || "";
         document.getElementById("uniTgEnable").value         = s.enableTelegramStockUpdate  || "true";
         document.getElementById("uniEmailEnable").value      = s.enableEmailLowStock        || "false";
+        document.getElementById("uniEmailSender").value      = s.emailSender                || "";
+        document.getElementById("uniEmailPassword").value    = s.emailPassword              || "";
         document.getElementById("uniEmailRecipients").value  = s.emailRecipients            || "";
       }
     } catch(e) { hideLoading(); showToast("โหลดการตั้งค่าไม่สำเร็จ","error"); return; }

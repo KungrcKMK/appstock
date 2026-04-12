@@ -1148,13 +1148,13 @@
             <button onclick="rawRunBackup()" class="text-xs font-black text-emerald-600 hover:underline">☁️ สำรองข้อมูล</button>
           </div>
         </div>
-        <div class="flex flex-wrap gap-3">
+        <div class="flex flex-wrap gap-3" id="rawActionBtns">
           <button onclick="rawExportSelected()" class="bg-indigo-600 text-white px-5 py-3 rounded-2xl font-black shadow-lg hover:bg-black transition-all text-xs uppercase">📊 ส่งออก</button>
           <button onclick="rawExportPdf()"       class="bg-purple-600  text-white px-5 py-3 rounded-2xl font-black shadow-lg hover:bg-black transition-all text-xs uppercase">📄 ส่งออก PDF</button>
-          <button onclick="openRawCreate()"      class="bg-emerald-600 text-white px-5 py-3 rounded-2xl font-black shadow-lg hover:bg-black transition-all text-xs uppercase">➕ เพิ่มวัตถุดิบ</button>
-          <button onclick="openPurchaseRequest()" class="bg-teal-600   text-white px-5 py-3 rounded-2xl font-black shadow-lg hover:bg-black transition-all text-xs uppercase">📋 ใบขอซื้อ</button>
-          <button onclick="openStockReport()"    class="bg-slate-800   text-white px-5 py-3 rounded-2xl font-black shadow-lg hover:bg-black transition-all text-xs uppercase">📑 ใบรายงาน</button>
-          <button onclick="rawPrintQrAll()"      class="bg-pink-600    text-white px-5 py-3 rounded-2xl font-black shadow-lg hover:bg-black transition-all text-xs uppercase">🔲 พิมพ์ QR</button>
+          <button onclick="openRawCreate()"      class="bg-emerald-600 text-white px-5 py-3 rounded-2xl font-black shadow-lg hover:bg-black transition-all text-xs uppercase viewer-hide">➕ เพิ่มวัตถุดิบ</button>
+          <button onclick="openPurchaseRequest()" class="bg-teal-600   text-white px-5 py-3 rounded-2xl font-black shadow-lg hover:bg-black transition-all text-xs uppercase viewer-hide">📋 ใบขอซื้อ</button>
+          <button onclick="openStockReport()"    class="bg-slate-800   text-white px-5 py-3 rounded-2xl font-black shadow-lg hover:bg-black transition-all text-xs uppercase viewer-hide">📑 ใบรายงาน</button>
+          <button onclick="rawPrintQrAll()"      class="bg-pink-600    text-white px-5 py-3 rounded-2xl font-black shadow-lg hover:bg-black transition-all text-xs uppercase viewer-hide">🔲 พิมพ์ QR</button>
           <button onclick="openRawScanner()"     class="bg-orange-500  text-white px-5 py-3 rounded-2xl font-black shadow-lg hover:bg-black transition-all text-xs uppercase">📷 สแกน QR</button>
         </div>
       </header>

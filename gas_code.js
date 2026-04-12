@@ -1322,6 +1322,138 @@ function crTestEmail(payload) {
 }
 
 // ============================================================
+// ⏰ EXPIRY ALERT — ตรวจสอบวันหมดอายุ (รันผ่าน Time Trigger ทุกวัน)
+// ============================================================
+
+// ตั้ง Time Trigger: GAS Editor → Triggers → Add Trigger
+//   Function: checkExpiryAlerts | Event: Time-driven | Day timer | เลือกเวลา เช่น 8:00–9:00am
+function checkExpiryAlerts() {
+  try {
+    var s = crGetAlertSettings().settings;
+    if (s.enableEmailLowStock !== "true") return; // ใช้ flag เดียวกับ low-stock
+    if (!_isWithinEmailHours(s)) return;
+    var recipients = String(s.emailRecipients || "").split(",").map(function(e){ return e.trim(); }).filter(Boolean);
+    if (!recipients.length) return;
+
+    var tz       = "Asia/Bangkok";
+    var todayKey = Utilities.formatDate(new Date(), tz, "yyyyMMdd");
+    var sp       = PropertiesService.getScriptProperties();
+    var props    = sp.getProperties();
+    var now      = new Date();
+    var items    = [];
+
+    ["SQF", "MLM"].forEach(function(mod) {
+      try {
+        var sheet = SpreadsheetApp.getActiveSpreadsheet().getSheetByName(mod + "_Materials");
+        if (!sheet) return;
+        var data = sheet.getDataRange().getValues();
+        if (data.length < 2) return;
+        var h = data[0];
+        var iSku    = h.indexOf("SKU");
+        var iName   = h.indexOf("Name");
+        var iUnit   = h.indexOf("Unit");
+        var iExp    = h.indexOf("ExpiryDate");
+        var iAlert  = h.indexOf("AlertDays");
+        var iDis    = h.indexOf("Discontinued");
+        if (iName < 0 || iExp < 0) return;
+
+        for (var i = 1; i < data.length; i++) {
+          if (iDis >= 0 && (data[i][iDis] === true || String(data[i][iDis]).toUpperCase() === "TRUE")) continue;
+          var expRaw = String(data[i][iExp] || "").trim();
+          if (!expRaw) continue;
+          var name_      = String(data[i][iName] || "").trim();
+          var sku_       = iSku   >= 0 ? String(data[i][iSku]   || "").trim() : "";
+          var unit_      = iUnit  >= 0 ? String(data[i][iUnit]  || "") : "";
+          var alertDays_ = iAlert >= 0 ? (Number(data[i][iAlert]) || 7) : 7;
+
+          // แปลง ExpiryDate เป็น Date (รองรับ dd/mm/yyyy, yyyy-mm-dd, ISO)
+          var expDate = null;
+          if (/^\d{2}\/\d{2}\/\d{4}$/.test(expRaw)) {
+            var parts = expRaw.split("/");
+            expDate = new Date(Number(parts[2]), Number(parts[1]) - 1, Number(parts[0]));
+          } else if (/^\d{4}-\d{2}-\d{2}/.test(expRaw)) {
+            var p2 = expRaw.slice(0, 10).split("-");
+            expDate = new Date(Number(p2[0]), Number(p2[1]) - 1, Number(p2[2]));
+          }
+          if (!expDate || isNaN(expDate)) continue;
+
+          var daysLeft = Math.round((expDate - now) / (1000 * 60 * 60 * 24));
+          if (daysLeft > alertDays_ || daysLeft < -30) continue; // ไม่เกินล่วงหน้า และไม่เกิน 30 วันที่ผ่านมา
+
+          // dedup รายวัน
+          var safeId   = (sku_ || name_).replace(/[^A-Za-z0-9\u0E00-\u0E7F]/g, "_").slice(0, 40);
+          var dedupKey = "expd_" + todayKey + "_" + mod + "_" + safeId;
+          if (props[dedupKey]) continue;
+
+          var label = mod === "SQF" ? "🏭 SQF" : "🏭 MLM";
+          var expThai = String(expDate.getDate()).padStart(2, "0") + "/" +
+                        String(expDate.getMonth() + 1).padStart(2, "0") + "/" +
+                        (expDate.getFullYear() + 543);
+          items.push({ name: name_, sku: sku_, unit: unit_, label: label, daysLeft: daysLeft, expThai: expThai, dedupKey: dedupKey });
+        }
+      } catch(e) { Logger.log("checkExpiryAlerts err " + mod + ": " + e); }
+    });
+
+    if (!items.length) return;
+
+    // เรียง: หมดอายุแล้ว → ใกล้หมด
+    items.sort(function(a, b) { return a.daysLeft - b.daysLeft; });
+
+    var ts   = Utilities.formatDate(now, tz, "dd/MM/yyyy HH:mm");
+    var rows = items.map(function(it) {
+      var color  = it.daysLeft < 0 ? "#dc2626" : it.daysLeft <= 3 ? "#ea580c" : "#d97706";
+      var status = it.daysLeft < 0 ? "❌ หมดอายุแล้ว " + Math.abs(it.daysLeft) + " วัน"
+                                   : "⚠️ เหลือ " + it.daysLeft + " วัน";
+      return "<tr>" +
+        "<td style='padding:8px 12px;border-bottom:1px solid #f1f5f9;font-size:13px;color:#475569;'>" + it.label + "</td>" +
+        "<td style='padding:8px 12px;border-bottom:1px solid #f1f5f9;font-weight:600;'>" + it.name +
+          (it.sku ? " <span style='color:#94a3b8;font-size:11px;font-weight:400;'>(" + it.sku + ")</span>" : "") + "</td>" +
+        "<td style='padding:8px 12px;border-bottom:1px solid #f1f5f9;text-align:center;'>" + it.expThai + "</td>" +
+        "<td style='padding:8px 12px;border-bottom:1px solid #f1f5f9;color:" + color + ";font-weight:700;text-align:center;'>" + status + "</td>" +
+        "</tr>";
+    }).join("");
+
+    var htmlBody =
+      "<div style='font-family:sans-serif;max-width:640px;margin:auto;'>" +
+      "<div style='background:linear-gradient(135deg,#d97706,#b45309);color:white;padding:20px 24px;border-radius:8px 8px 0 0;'>" +
+      "<h2 style='margin:0;font-size:20px;'>⏰ แจ้งเตือนวันหมดอายุวัตถุดิบ</h2>" +
+      "<p style='margin:6px 0 0;opacity:.85;font-size:13px;'>เวลา: " + ts + "</p></div>" +
+      "<div style='background:#fff;border:1px solid #e2e8f0;border-top:none;border-radius:0 0 8px 8px;overflow:hidden;'>" +
+      "<p style='padding:16px 24px 8px;margin:0;color:#334155;'>พบวัตถุดิบใกล้หมด/หมดอายุ <strong style='color:#d97706;'>" + items.length + " รายการ</strong></p>" +
+      "<table style='width:100%;border-collapse:collapse;'>" +
+      "<thead><tr style='background:#fef9f0;'>" +
+      "<th style='padding:8px 12px;text-align:left;font-size:12px;color:#64748b;font-weight:600;'>โรงงาน</th>" +
+      "<th style='padding:8px 12px;text-align:left;font-size:12px;color:#64748b;font-weight:600;'>รายการ</th>" +
+      "<th style='padding:8px 12px;text-align:center;font-size:12px;color:#64748b;font-weight:600;'>วันหมดอายุ</th>" +
+      "<th style='padding:8px 12px;text-align:center;font-size:12px;color:#64748b;font-weight:600;'>สถานะ</th>" +
+      "</tr></thead><tbody>" + rows + "</tbody></table>" +
+      "<p style='padding:12px 24px;margin:0;color:#94a3b8;font-size:12px;border-top:1px solid #f1f5f9;'>— AppStock Alert System • ส่งสูงสุด 1 ครั้ง/รายการ/วัน</p>" +
+      "</div></div>";
+
+    var expiredCount  = items.filter(function(it){ return it.daysLeft < 0; }).length;
+    var expiringCount = items.length - expiredCount;
+    var subjParts = [];
+    if (expiredCount)  subjParts.push("หมดอายุแล้ว " + expiredCount + " รายการ");
+    if (expiringCount) subjParts.push("ใกล้หมด " + expiringCount + " รายการ");
+    var subject = "⏰ วัตถุดิบ — " + subjParts.join(", ");
+
+    var result = _smtpSend(s, recipients, subject, htmlBody);
+    if (result.ok) {
+      var toSet = {};
+      items.forEach(function(it) { toSet[it.dedupKey] = "1"; });
+      sp.setProperties(toSet);
+      // ลบ key เก่า
+      var allProps = sp.getProperties();
+      Object.keys(allProps).forEach(function(k) {
+        if (k.startsWith("expd_") && !k.startsWith("expd_" + todayKey)) sp.deleteProperty(k);
+      });
+    } else {
+      Logger.log("checkExpiryAlerts send failed: " + JSON.stringify(result));
+    }
+  } catch(e) { Logger.log("checkExpiryAlerts fatal: " + e.toString()); }
+}
+
+// ============================================================
 // 📦 DELIVERY NOTES — ส่งยอดเข้าห้องเย็น + อนุมัติ
 // ============================================================
 

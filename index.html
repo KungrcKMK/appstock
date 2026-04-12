@@ -5091,16 +5091,19 @@
   }
 
   async function testEmail() {
-    const emails = document.getElementById("uniEmailRecipients").value.trim();
-    if (!emails) { showToast("กรุณาระบุ Email ผู้รับก่อน","warn"); return; }
+    const emails   = document.getElementById("uniEmailRecipients").value.trim();
+    const sender   = document.getElementById("uniEmailSender").value.trim();
+    const password = document.getElementById("uniEmailPassword").value.trim();
+    if (!sender)   { showToast("กรุณาระบุ Email ผู้ส่งก่อน","warn"); return; }
+    if (!password) { showToast("กรุณาระบุ App Password ก่อน","warn"); return; }
+    if (!emails)   { showToast("กรุณาระบุ Email ผู้รับก่อน","warn"); return; }
     showLoading("กำลังส่ง Email ทดสอบ...");
     try {
-      // ส่งค่าจาก form ไปด้วย ไม่ต้องบันทึกก่อนก็ทดสอบได้
       const r = await (await fetch(GAS_URL, {
         method: "POST",
         body: JSON.stringify({
           module: "COLDROOM", action: "testEmail",
-          payload: { username: currentUser, emailRecipients: emails }
+          payload: { username: currentUser, emailSender: sender, emailPassword: password, emailRecipients: emails }
         })
       })).json();
       hideLoading();

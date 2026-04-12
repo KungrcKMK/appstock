@@ -547,6 +547,7 @@ function handleColdroom(action, payload) {
     case "saveBom":               return bomSave(payload);
     case "deleteBom":             return bomDelete(payload.barcode);
     case "calcWorkOrderMaterials": return bomCalcWorkOrder(payload);
+    case "archiveOldStock":        return archiveOldStock(payload);
     default: return { ok: false, message: "Unknown action: " + action };
   }
 }

@@ -1291,6 +1291,7 @@ function getDeliveries(payload) {
     deliveries.push(dn);
   }
   deliveries.sort(function(a,b){ return new Date(b.SubmittedAt)-new Date(a.SubmittedAt); });
+  deliveries = deliveries.slice(0, 100); // จำกัด 100 ล่าสุด
   return { ok: true, deliveries: deliveries };
 }
 

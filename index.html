@@ -1037,12 +1037,12 @@
 
     <!-- Edit Modal -->
     <div id="rawEditModal" class="hidden fixed inset-0 bg-black/80 z-[240] flex items-center justify-center p-4">
-      <div class="bg-white w-full max-w-md rounded-[4rem] shadow-2xl overflow-y-auto border-8 border-sky-600" style="max-height:90dvh;">
-        <div class="bg-sky-600 p-8 text-white flex justify-between items-center">
+      <div class="bg-white w-full max-w-md rounded-[4rem] shadow-2xl overflow-hidden border-8 border-sky-600 flex flex-col" style="max-height:90dvh;">
+        <div class="bg-sky-600 p-8 text-white flex justify-between items-center shrink-0">
           <h2 class="text-3xl font-black uppercase italic">✏️ แก้ไขสินค้า</h2>
           <button onclick="closeRawEdit()" class="text-4xl">✕</button>
         </div>
-        <div class="p-8 space-y-6">
+        <div class="p-8 space-y-6 overflow-y-auto">
           <div><label class="text-xs font-black uppercase ml-1">SKU</label><input type="text" id="rawEditSku" class="w-full bg-slate-100 p-5 rounded-2xl font-black text-sky-700 text-xl" readonly></div>
           <div><label class="text-xs font-black uppercase ml-1">ชื่อวัตถุดิบ</label><input type="text" id="rawEditName" class="w-full bg-slate-50 border-4 border-slate-100 p-5 rounded-2xl font-black text-2xl focus:border-sky-600 outline-none"></div>
           <div class="grid grid-cols-2 gap-4">

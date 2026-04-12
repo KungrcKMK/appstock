@@ -1042,13 +1042,23 @@ function crGetAlertSettings() {
     telegramChatIds:           map.telegramChatIds           || "",
     enableTelegramStockUpdate: map.enableTelegramStockUpdate || "true",
     enableEmailLowStock:       map.enableEmailLowStock       || "false",
-    emailRecipients:           map.emailRecipients           || ""
+    smtpHost:                  map.smtpHost                  || "smtp.gmail.com",
+    smtpPort:                  map.smtpPort                  || "465",
+    smtpSsl:                   map.smtpSsl                   || "SSL",
+    emailSender:               map.emailSender               || "",
+    emailPassword:             map.emailPassword             || "",
+    emailRecipients:           map.emailRecipients           || "",
+    emailTimeFrom:             map.emailTimeFrom             || "08:00",
+    emailTimeTo:               map.emailTimeTo               || "18:00"
   }};
 }
 
 function crSaveAlertSettings(payload) {
-  const keys  = ["telegramBotName","telegramBotToken","telegramChatIds","enableTelegramStockUpdate",
-                  "enableEmailLowStock","emailRecipients"];
+  const keys = [
+    "telegramBotName","telegramBotToken","telegramChatIds","enableTelegramStockUpdate",
+    "enableEmailLowStock","smtpHost","smtpPort","smtpSsl",
+    "emailSender","emailPassword","emailRecipients","emailTimeFrom","emailTimeTo"
+  ];
   const sheet = getSheet("Config");
   const data  = sheet.getDataRange().getValues();
 
@@ -1056,13 +1066,76 @@ function crSaveAlertSettings(payload) {
     let found = false;
     for (let i = 1; i < data.length; i++) {
       if (String(data[i][0]) === key) {
-        sheet.getRange(i + 1, 2).setValue(payload[key] || "");
+        sheet.getRange(i + 1, 2).setValue(payload[key] !== undefined ? payload[key] : "");
         found = true; break;
       }
     }
-    if (!found) sheet.appendRow([key, payload[key] || ""]);
+    if (!found) sheet.appendRow([key, payload[key] !== undefined ? payload[key] : ""]);
   });
   return { ok: true };
+}
+
+// ── ตรวจสอบช่วงเวลาที่อนุญาตส่ง Email ──
+function _isWithinEmailHours(s) {
+  try {
+    const from = String(s.emailTimeFrom || "00:00");
+    const to   = String(s.emailTimeTo   || "23:59");
+    if (!from || !to) return true;
+    const now  = new Date();
+    const tz   = "Asia/Bangkok";
+    const cur  = parseInt(Utilities.formatDate(now, tz, "HHmm"), 10);
+    const f    = parseInt(from.replace(":", ""), 10);
+    const t    = parseInt(to.replace(":", ""), 10);
+    return cur >= f && cur <= t;
+  } catch(e) { return true; }
+}
+
+// ── ส่ง Email ผ่าน SMTP ──
+// Gmail (smtp.gmail.com) → ใช้ GmailApp (App Password ไม่จำเป็นสำหรับ GAS owner)
+// Custom SMTP → ส่งผ่าน UrlFetchApp ไปยัง smtp2go HTTP API
+function _smtpSend(s, recipients, subject, htmlBody) {
+  const host = String(s.smtpHost || "").toLowerCase();
+  const isGmail = !host || host.includes("gmail");
+
+  if (isGmail) {
+    // ใช้ GmailApp — ส่งในนาม emailSender (ต้อง set "Send mail as" ใน Gmail ก่อน)
+    // หรือถ้าไม่ set ก็ส่งจาก account ของ script owner เลย
+    const fromAlias = String(s.emailSender || "").trim();
+    const opts = { htmlBody: htmlBody };
+    if (fromAlias) opts.from = fromAlias;
+    recipients.forEach(function(email) {
+      GmailApp.sendEmail(email, subject, htmlBody.replace(/<[^>]+>/g,""), opts);
+    });
+    return { ok: true, method: "GmailApp" };
+  }
+
+  // Custom SMTP via smtp2go HTTP API (https://www.smtp2go.com/docs/api/)
+  // ต้องสมัคร smtp2go แล้วใส่ api_key แทน emailPassword
+  const apiUrl = "https://api.smtp2go.com/v3/email/send";
+  const apiKey = String(s.emailPassword || "").trim(); // ใส่ smtp2go API key ไว้ใน password
+  const sender = String(s.emailSender   || "noreply@example.com").trim();
+
+  const payload = JSON.stringify({
+    api_key:  apiKey,
+    to:       recipients,
+    sender:   sender,
+    subject:  subject,
+    html_body: htmlBody
+  });
+
+  try {
+    const resp = UrlFetchApp.fetch(apiUrl, {
+      method: "post",
+      contentType: "application/json",
+      payload: payload,
+      muteHttpExceptions: true
+    });
+    const result = JSON.parse(resp.getContentText());
+    if (result.data && result.data.succeeded > 0) return { ok: true, method: "smtp2go" };
+    return { ok: false, method: "smtp2go", error: JSON.stringify(result) };
+  } catch(e) {
+    return { ok: false, method: "smtp2go", error: e.toString() };
+  }
 }
 
 function crSendTelegram(message) {

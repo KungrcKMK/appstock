@@ -393,19 +393,20 @@ function getActivityLog(payload) {
     }
   } catch(e) { Logger.log("ColdRoom activity error: " + e); }
 
-  // ── SQF_History ──
+  // ── SQF_History (อ่านเฉพาะ 150 แถวสุดท้าย) ──
   try {
     var sqfSheet = getSheet("SQF_History");
-    var sqfData  = sqfSheet.getDataRange().getValues();
-    if (sqfData.length > 1) {
-      var sh = sqfData[0];
+    var sqfLastRow = sqfSheet.getLastRow();
+    if (sqfLastRow > 1) {
+      var sh = sqfSheet.getRange(1, 1, 1, sqfSheet.getLastColumn()).getValues()[0];
+      var sqfNum = Math.min(150, sqfLastRow - 1);
+      var sqfData = sqfSheet.getRange(sqfLastRow - sqfNum + 1, 1, sqfNum, sh.length).getValues();
       var sTs  = sh.indexOf("Timestamp");
       var sNm  = sh.indexOf("Name");
       var sAct = sh.indexOf("Action");
       var sQty = sh.indexOf("Qty");
       var sUsr = sh.indexOf("User");
-      var sStart = Math.max(1, sqfData.length - 150);
-      for (var j = sqfData.length - 1; j >= sStart; j--) {
+      for (var j = sqfData.length - 1; j >= 0; j--) {
         var sqfDt = sqfData[j][sTs] ? new Date(sqfData[j][sTs]) : null;
         list.push({
           module:    "SQF",
@@ -422,19 +423,20 @@ function getActivityLog(payload) {
     }
   } catch(e) { Logger.log("SQF activity error: " + e); }
 
-  // ── MLM_History ──
+  // ── MLM_History (อ่านเฉพาะ 150 แถวสุดท้าย) ──
   try {
     var mlmSheet = getSheet("MLM_History");
-    var mlmData  = mlmSheet.getDataRange().getValues();
-    if (mlmData.length > 1) {
-      var mh = mlmData[0];
+    var mlmLastRow = mlmSheet.getLastRow();
+    if (mlmLastRow > 1) {
+      var mh = mlmSheet.getRange(1, 1, 1, mlmSheet.getLastColumn()).getValues()[0];
+      var mlmNum = Math.min(150, mlmLastRow - 1);
+      var mlmData = mlmSheet.getRange(mlmLastRow - mlmNum + 1, 1, mlmNum, mh.length).getValues();
       var mTs  = mh.indexOf("Timestamp");
       var mNm  = mh.indexOf("Name");
       var mAct = mh.indexOf("Action");
       var mQty = mh.indexOf("Qty");
       var mUsr = mh.indexOf("User");
-      var mStart = Math.max(1, mlmData.length - 150);
-      for (var k = mlmData.length - 1; k >= mStart; k--) {
+      for (var k = mlmData.length - 1; k >= 0; k--) {
         var mlmDt = mlmData[k][mTs] ? new Date(mlmData[k][mTs]) : null;
         list.push({
           module:    "MLM",

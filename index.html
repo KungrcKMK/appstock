@@ -3871,6 +3871,39 @@
   let rawLastData       = [];
   let rawCurrentFilter  = "all";
   let rawAlertDays      = parseInt(localStorage.getItem("rawAlertDays") || "7");
+  let rawSortKey        = "status";   // status | name | qty
+  let rawSortAsc        = true;
+
+  // priority: วิกฤต=0, หมดอายุ=1, ต่ำ=2, เร่งด่วน=3, ควรสั่ง=4, ปกติ=5
+  function _rawStatusPriority(item) {
+    const today = new Date(); today.setHours(0,0,0,0);
+    const isLow = Number(item.Qty) <= Number(item.Min);
+    const ed    = rawParseDate(item.ExpiryDate);
+    const isExp = ed && ed < today;
+    const daily = Number(item.DailyUsage || 0);
+    const qty   = Number(item.Qty || 0);
+    const days  = daily > 0 ? Math.floor(qty / daily) : null;
+    const itemAlertDays = Number(item.AlertDays) || rawAlertDays;
+    if (isExp)                                      return 1;
+    if (days !== null && days <= 7)                 return 0;
+    if (isLow)                                      return 2;
+    if (days !== null && days <= 14)                return 3;
+    if (rawNearExpiry(item, itemAlertDays) || (days !== null && days <= 30)) return 4;
+    return 5;
+  }
+
+  function rawSetSort(key) {
+    if (rawSortKey === key) { rawSortAsc = !rawSortAsc; }
+    else { rawSortKey = key; rawSortAsc = key !== "qty"; }
+    // อัปเดตไอคอน
+    ["status","name","qty"].forEach(k => {
+      const el = document.getElementById("rawSortIcon-" + k);
+      if (!el) return;
+      if (k === rawSortKey) { el.textContent = rawSortAsc ? "↑" : "↓"; el.classList.remove("opacity-40"); el.classList.add("opacity-100","text-blue-500"); }
+      else                  { el.textContent = "↕"; el.classList.add("opacity-40"); el.classList.remove("opacity-100","text-blue-500"); }
+    });
+    renderRawInventory(rawLastData);
+  }
 
   function rawSetAlertDays(v) {
     rawAlertDays = Math.max(1, Math.min(365, parseInt(v) || 7));

@@ -1179,9 +1179,15 @@
               <thead class="bg-slate-50 text-[11px] font-black uppercase text-slate-400 border-b">
                 <tr>
                   <th class="p-8 text-center"><input type="checkbox" id="rawSelectAll" onclick="rawToggleAll()"></th>
-                  <th class="p-8">สถานะ</th>
-                  <th class="p-8">ข้อมูลสินค้า</th>
-                  <th class="p-8 text-right">ยอดคงเหลือ</th>
+                  <th class="p-8 cursor-pointer select-none hover:text-slate-700 transition-colors" onclick="rawSetSort('status')">
+                    สถานะ <span id="rawSortIcon-status" class="opacity-40">↕</span>
+                  </th>
+                  <th class="p-8 cursor-pointer select-none hover:text-slate-700 transition-colors" onclick="rawSetSort('name')">
+                    ข้อมูลสินค้า <span id="rawSortIcon-name" class="opacity-40">↕</span>
+                  </th>
+                  <th class="p-8 text-right cursor-pointer select-none hover:text-slate-700 transition-colors" onclick="rawSetSort('qty')">
+                    ยอดคงเหลือ <span id="rawSortIcon-qty" class="opacity-40">↕</span>
+                  </th>
                   <th class="p-8 text-center">จัดการ</th>
                 </tr>
               </thead>

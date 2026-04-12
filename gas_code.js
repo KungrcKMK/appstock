@@ -24,7 +24,7 @@
 // โรงงาน SQF (สุพรรณคิวฟู้ดส์) + MLM (แม่ละมาย)
 // 3 Modules: COLDROOM | SQF | MLM
 //
-// อัปเดตล่าสุด: 2026-04-09 (v7)
+// อัปเดตล่าสุด: 2026-04-12 (v8)
 // แก้ไข: ensureColumns ColdRoom_Products (SetName/UnitsPerSet ไม่บันทึก),
 //         crSaveNewProduct ใช้ header-map แทน fixed array,
 //         updateProduct / getColdRoomProducts เรียก ensureColumns ก่อนทุกครั้ง

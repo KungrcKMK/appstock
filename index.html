@@ -5087,6 +5087,8 @@
         document.getElementById("uniEmailSender").value      = s.emailSender                || "";
         document.getElementById("uniEmailPassword").value    = s.emailPassword              || "";
         document.getElementById("uniEmailRecipients").value  = s.emailRecipients            || "";
+        document.getElementById("uniEmailTimeFrom").value    = s.emailTimeFrom              || "08:00";
+        document.getElementById("uniEmailTimeTo").value      = s.emailTimeTo                || "18:00";
       }
     } catch(e) { hideLoading(); showToast("โหลดการตั้งค่าไม่สำเร็จ","error"); return; }
     document.getElementById("unifiedSettingsModal").classList.remove("hidden");

@@ -1045,9 +1045,7 @@ function crGetAlertSettings() {
 
 function crSaveAlertSettings(payload) {
   const keys = [
-    "telegramBotName","telegramBotToken","telegramChatIds","enableTelegramStockUpdate",
-    "enableEmailLowStock","smtpHost","smtpPort","smtpSsl",
-    "emailSender","emailPassword","emailRecipients","emailTimeFrom","emailTimeTo"
+    "telegramBotName","telegramBotToken","telegramChatIds","enableTelegramStockUpdate"
   ];
   const sheet = getSheet("Config");
   const data  = sheet.getDataRange().getValues();

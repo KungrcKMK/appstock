@@ -2366,7 +2366,15 @@
       if (actBtn) actBtn.style.display = isAdmin ? "" : "none";
       const tgBtn = document.getElementById("telegramNavBtn");
       if (tgBtn) tgBtn.style.display = isAdmin ? "" : "none";
-      switchModule("COLDROOM");
+      // viewer — ซ่อน tabs ที่แก้ไขข้อมูลใน Cold Room
+      if (isViewer) {
+        ["stock","workorder","submit","receive","manage"].forEach(t => {
+          const btn = document.getElementById("crTabBtn-" + t);
+          if (btn) btn.style.display = "none";
+        });
+      }
+      window._appIsViewer = isViewer;
+      switchModule(isViewer ? "EXEC" : "COLDROOM");
     }
   }
 

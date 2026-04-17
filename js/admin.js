@@ -57,32 +57,38 @@ async function loadPendingUsers() {
   }
 }
 
-async function adminApprove(username) {
+async function adminApprove(username, evt) {
   if (!confirm(`อนุมัติ "${username}" เข้าใช้ระบบ?`)) return;
-  try {
-    const res = await fetch(GAS_URL, {
-      method: "POST",
-      headers: { "Content-Type": "text/plain;charset=utf-8" },
-      body: JSON.stringify({ module: "SYSTEM", action: "approveUser",
-        payload: { adminToken: _adminToken, username } })
-    }).then(r => r.json());
-    if (res.ok) { showToast("✅ อนุมัติ " + username + " แล้ว"); loadPendingUsers(); }
-    else alert("❌ " + res.message);
-  } catch(e) { alert("เกิดข้อผิดพลาด: " + e.message); }
+  const btn = evt?.currentTarget;
+  await guardedClick(btn, async () => {
+    try {
+      const res = await fetch(GAS_URL, {
+        method: "POST",
+        headers: { "Content-Type": "text/plain;charset=utf-8" },
+        body: JSON.stringify({ module: "SYSTEM", action: "approveUser",
+          payload: { adminToken: _adminToken, username } })
+      }).then(r => r.json());
+      if (res.ok) { showToast("✅ อนุมัติ " + username + " แล้ว"); loadPendingUsers(); }
+      else alert("❌ " + res.message);
+    } catch(e) { alert("เกิดข้อผิดพลาด: " + e.message); }
+  });
 }
 
-async function adminReject(username) {
+async function adminReject(username, evt) {
   if (!confirm(`ปฏิเสธคำขอของ "${username}"?`)) return;
-  try {
-    const res = await fetch(GAS_URL, {
-      method: "POST",
-      headers: { "Content-Type": "text/plain;charset=utf-8" },
-      body: JSON.stringify({ module: "SYSTEM", action: "rejectUser",
-        payload: { adminToken: _adminToken, username } })
-    }).then(r => r.json());
-    if (res.ok) { showToast("🚫 ปฏิเสธ " + username + " แล้ว"); loadPendingUsers(); }
-    else alert("❌ " + res.message);
-  } catch(e) { alert("เกิดข้อผิดพลาด: " + e.message); }
+  const btn = evt?.currentTarget;
+  await guardedClick(btn, async () => {
+    try {
+      const res = await fetch(GAS_URL, {
+        method: "POST",
+        headers: { "Content-Type": "text/plain;charset=utf-8" },
+        body: JSON.stringify({ module: "SYSTEM", action: "rejectUser",
+          payload: { adminToken: _adminToken, username } })
+      }).then(r => r.json());
+      if (res.ok) { showToast("🚫 ปฏิเสธ " + username + " แล้ว"); loadPendingUsers(); }
+      else alert("❌ " + res.message);
+    } catch(e) { alert("เกิดข้อผิดพลาด: " + e.message); }
+  });
 }
 
 function adminSwitchTab(tab) {

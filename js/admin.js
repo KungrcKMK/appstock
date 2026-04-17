@@ -45,9 +45,9 @@ async function loadPendingUsers() {
           <p style="margin:4px 0 0;font-size:12px;font-weight:800;color:#6366f1;">🔖 ขอ Role: ${escapeHtml(roleLabel)}</p>
         </div>
         <div style="display:flex;gap:8px;">
-          <button onclick="adminApprove('${safeU}')"
+          <button onclick="adminApprove('${safeU}', event)"
             style="background:#059669;color:#fff;border:none;padding:9px 18px;border-radius:10px;font-weight:800;font-size:13px;cursor:pointer;font-family:inherit;">✅ อนุมัติ</button>
-          <button onclick="adminReject('${safeU}')"
+          <button onclick="adminReject('${safeU}', event)"
             style="background:#dc2626;color:#fff;border:none;padding:9px 18px;border-radius:10px;font-weight:800;font-size:13px;cursor:pointer;font-family:inherit;">❌ ปฏิเสธ</button>
         </div>
       </div>`;

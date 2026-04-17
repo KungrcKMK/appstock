@@ -553,7 +553,7 @@ function deviceTag() {
 function handleColdroom(action, payload) {
   switch (action) {
     case "getProductAndBalances": return crGetProductAndBalances(payload);
-    case "saveOrUpdateCount":     return crSaveOrUpdateCount(payload);
+    case "saveOrUpdateCount":     return _withLock(function(){ return crSaveOrUpdateCount(payload); });
     case "saveNewProduct":        return crSaveNewProduct(payload);
     case "getStartupOverview":    return crGetStartupOverview();
     case "clearLotStock":         return crClearLotStock(payload);

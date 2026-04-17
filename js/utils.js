@@ -4,6 +4,25 @@ function escapeHtml(v) {
 function escapeAttr(v) { return escapeHtml(v); }
 
 // ─────────────────────────────────────────────
+// POKA-YOKE: Double-submit guard
+// ใช้ครอบฟังก์ชัน async ที่ผูกกับปุ่ม เพื่อกันกดซ้ำ
+// ─────────────────────────────────────────────
+async function guardedClick(btn, fn) {
+  if (!btn || btn.disabled) return;
+  const orig = btn.innerHTML;
+  btn.disabled = true;
+  btn.style.opacity = "0.6";
+  btn.style.cursor = "wait";
+  try { return await fn(); }
+  finally {
+    btn.disabled = false;
+    btn.style.opacity = "";
+    btn.style.cursor = "";
+    btn.innerHTML = orig;
+  }
+}
+
+// ─────────────────────────────────────────────
 // AUTOCOMPLETE UTILITY (ใช้ร่วมทุก module)
 // getItems() → [{label, sub?, badge?, value}]
 // onSelect(item, inputEl)

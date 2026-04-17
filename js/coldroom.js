@@ -380,6 +380,18 @@ function crWoOnSelectProduct(idx) {
   const setName = opt.getAttribute("data-setname") || "";
   const ups     = Number(opt.getAttribute("data-ups") || 0); // 0 = ยังไม่ตั้งค่า
 
+  // Poka-Yoke: ป้องกันเลือก barcode ซ้ำใน work order
+  if (barcode) {
+    const allSels = document.querySelectorAll('[id^="crWoSel-"]');
+    let dup = 0;
+    allSels.forEach(s => { if (s.id !== `crWoSel-${idx}` && s.value === barcode) dup++; });
+    if (dup > 0) {
+      showToast("⚠️ สินค้านี้มีในใบสั่งอยู่แล้ว — แก้ไขจำนวนในแถวเดิมแทน","warn");
+      sel.value = "";
+      return;
+    }
+  }
+
   document.getElementById(`crWoUnit-${idx}`).value = unit;
   crWoCalcExpRow(idx);
 

@@ -1720,7 +1720,7 @@ function rmVerify(data, module) {
       const unit_      = rows[i][h.indexOf("Unit")] || "";
       const minQty     = Number(rows[i][h.indexOf("Min")] || 0);
       const dailyUsage = Number(rows[i][h.indexOf("DailyUsage")] || 0);
-      const newQty     = Number(qty);
+      const newQty     = _validateQty(qty, true); // Poka-Yoke: กัน negative/overflow
       sheet.getRange(i + 1, h.indexOf("Qty")          + 1).setValue(newQty);
       sheet.getRange(i + 1, h.indexOf("LastVerified") + 1).setValue(new Date().toISOString());
       const userWithDevice2 = _reqDeviceName ? (user||"-") + " (📱 " + _reqDeviceName + ")" : (user||"-");

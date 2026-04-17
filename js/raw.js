@@ -954,6 +954,12 @@ async function rawSubmitVerify() {
   const q=Number(document.getElementById("rawVerifyQty").value);
   if (!rawVerifyTarget) return showToast("ไม่พบ SKU","error");
   if (isNaN(q)||q<0)    return showToast("ระบุยอดให้ถูกต้อง","warn");
+  // Poka-Yoke: เตือนถ้าค่าใหม่ต่างจากค่าปัจจุบัน > 5 เท่า
+  const curItem = (rawLastData || []).find(it => String(it.SKU) === String(rawVerifyTarget));
+  const curQty = curItem ? Number(curItem.Qty || 0) : 0;
+  if (curQty > 0 && (q > curQty * 5 || q < curQty / 5)) {
+    if (!confirm(`⚠️ ยอดใหม่ (${q}) ต่างจากยอดปัจจุบัน (${curQty}) มาก\n\nแน่ใจว่าถูกต้อง?`)) return;
+  }
   setRawBusy("rawBtnVerify",true,"กำลังบันทึก...");
   showLoading("กำลังบันทึกยอดตรวจนับ...");
   const r = await rawFetch({ action:"VERIFY", sku:rawVerifyTarget, qty:q, user:currentUser });

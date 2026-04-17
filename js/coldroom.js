@@ -1396,11 +1396,32 @@ async function crSaveCount() {
   if (!pl.employeeName || !pl.mfg || !pl.exp || pl.newQty === "" || isNaN(pl.newQty)) {
     await crShowModal("alert","ข้อมูลไม่ครบ","กรุณาระบุ: ชื่อพนักงาน, วันผลิต, วันหมดอายุ, จำนวน"); return;
   }
+  // Poka-Yoke: ตรวจรูปแบบและความสมเหตุผลของวันที่
+  if (!/^\d{6}$/.test(pl.mfg) || !/^\d{6}$/.test(pl.exp)) {
+    await crShowModal("alert","รูปแบบวันที่ผิด","วันผลิต/หมดอายุต้องเป็นตัวเลข 6 หลัก (DDMMYY)"); return;
+  }
+  const mfgIso = ddmmyyToIsoWo(pl.mfg);
+  const expIso = ddmmyyToIsoWo(pl.exp);
+  if (!mfgIso || !expIso) {
+    await crShowModal("alert","วันที่ไม่ถูกต้อง","กรุณาตรวจสอบ MFG/EXP อีกครั้ง"); return;
+  }
+  const today = new Date().toISOString().slice(0,10);
+  if (mfgIso > today) {
+    await crShowModal("alert","วันผลิตอยู่ในอนาคต","วันผลิต (MFG) อยู่ในอนาคต — ตรวจสอบอีกครั้ง"); return;
+  }
+  if (expIso <= mfgIso) {
+    await crShowModal("alert","วันหมดอายุไม่ถูกต้อง","วันหมดอายุ (EXP) ต้องมากกว่าวันผลิต (MFG)"); return;
+  }
   if (!pl.note) {
     await crShowModal("alert","กรุณาระบุหมายเหตุ","ต้องระบุหมายเหตุทุกครั้งก่อนบันทึก");
     $$cr("crNote").focus(); return;
   }
   const qty = Number(pl.newQty);
+  // Poka-Yoke: เตือนเมื่อจำนวนใหม่ต่างจากเดิมมาก (> 5 เท่า)
+  const curTotal = Number(($$cr("crTotalQty")?.textContent || "0").replace(/,/g,"")) || 0;
+  if (curTotal > 0 && qty > curTotal * 5) {
+    if (!confirm(`⚠️ ยอดใหม่ (${qty}) สูงกว่ายอดปัจจุบันรวม (${curTotal}) มาก\n\nแน่ใจว่าถูกต้อง?`)) return;
+  }
   const res = await crCallServer("saveOrUpdateCount", pl);
   if (res.ok) {
     if (navigator.vibrate) navigator.vibrate([100,50,100]);

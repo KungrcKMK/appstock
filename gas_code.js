@@ -612,6 +612,9 @@ function crSaveOrUpdateCount(payload) {
   if (!mfg || !exp) return { ok: false, message: "กรุณาระบุวันผลิตและวันหมดอายุ" };
   const mfgIso = ddmmyyToIso(mfg);
   const expIso = ddmmyyToIso(exp);
+  // Poka-Yoke: ตรวจรูปแบบและความสมเหตุผลของวันที่
+  if (!mfgIso || !expIso) return { ok: false, message: "รูปแบบวันที่ไม่ถูกต้อง (DDMMYY)" };
+  if (expIso <= mfgIso)   return { ok: false, message: "วันหมดอายุต้องมากกว่าวันผลิต" };
 
   const prodSheet = getSheet("ColdRoom_Products");
   const prodData  = prodSheet.getDataRange().getValues();

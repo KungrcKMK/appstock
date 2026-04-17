@@ -1663,13 +1663,19 @@ function getRawMaterials(module) {
 function rmCreate(data, module) {
   const { sku, name, unit, qty, min, dailyUsage, expiryDate, alertDays, user } = data;
   if (!sku || !name) return { status: "error", message: "ข้อมูลไม่ครบ" };
+  // Poka-Yoke: ตรวจค่าที่ต้องไม่เป็นลบ
+  if (Number(min) < 0)        return { status: "error", message: "ขั้นต่ำต้องไม่เป็นค่าลบ" };
+  if (Number(dailyUsage) < 0) return { status: "error", message: "ใช้ต่อวันต้องไม่เป็นค่าลบ" };
+  if (!unit || !String(unit).trim()) return { status: "error", message: "กรุณาระบุหน่วย" };
 
   const sheet = getSheet(module + "_Materials");
   ensureColumns(sheet, ["DailyUsage"]);
   const rows = sheet.getDataRange().getValues();
   const h    = rows[0];
   for (let i = 1; i < rows.length; i++) {
-    if (String(rows[i][0]) === String(sku)) return { status: "error", message: "SKU นี้มีอยู่แล้ว" };
+    if (String(rows[i][0]).trim().toLowerCase() === String(sku).trim().toLowerCase()) {
+      return { status: "error", message: "SKU นี้มีอยู่แล้ว" };
+    }
   }
 
   // สร้าง row ตาม header จริงของ sheet (รองรับทั้ง sheet เก่าและใหม่)

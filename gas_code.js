@@ -672,6 +672,13 @@ function crEnsureProductCols(sheet) {
 function crSaveNewProduct(payload) {
   const { barcode, productName, sku, defaultUnit, standardShelfLifeDays, warningPercentage, warningDays, setName, unitsPerSet } = payload;
   if (!barcode || !productName) return { ok: false, message: "ข้อมูลไม่ครบ" };
+  // Poka-Yoke: ตรวจ Shelf life อยู่ใน range ที่สมเหตุสมผล (1-3650 วัน = 10 ปี)
+  const shelfVal = Number(standardShelfLifeDays);
+  if (standardShelfLifeDays !== "" && standardShelfLifeDays !== undefined) {
+    if (isNaN(shelfVal) || shelfVal <= 0 || shelfVal > 3650) {
+      return { ok: false, message: "อายุสินค้า (shelf life) ต้องอยู่ระหว่าง 1-3650 วัน" };
+    }
+  }
 
   const sheet = getSheet("ColdRoom_Products");
   crEnsureProductCols(sheet); // เพิ่มคอลัมน์ที่หายไปก่อนทุกครั้ง
@@ -681,8 +688,12 @@ function crSaveNewProduct(payload) {
   const data = sheet.getDataRange().getValues();
 
   for (let i = 1; i < data.length; i++) {
-    if (String(data[i][h.indexOf("Barcode")]) === String(barcode)) {
+    if (String(data[i][h.indexOf("Barcode")]).trim() === String(barcode).trim()) {
       return { ok: false, message: "บาร์โค้ดนี้มีในระบบแล้ว" };
+    }
+    // Poka-Yoke: ตรวจ SKU ซ้ำ (ถ้าระบุ)
+    if (sku && String(data[i][h.indexOf("SKU")]).trim().toLowerCase() === String(sku).trim().toLowerCase()) {
+      return { ok: false, message: "SKU นี้มีในระบบแล้ว" };
     }
   }
 

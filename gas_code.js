@@ -1535,9 +1535,22 @@ function setUserRole(payload) {
   var sheet = getSheet("AppUsers");
   ensureColumns(sheet, ["Password"]);
   var data = sheet.getDataRange().getValues(); var h = data[0];
+  var roleIdx = h.indexOf("Role");
+  var activeIdx = h.indexOf("Active");
   for (var i = 1; i < data.length; i++) {
     if (String(data[i][h.indexOf("Username")]).trim().toLowerCase() === username.toLowerCase()) {
-      sheet.getRange(i+1, h.indexOf("Role")+1).setValue(newRole);
+      var currentRole = String(data[i][roleIdx]||"").toLowerCase();
+      // Poka-Yoke: ป้องกัน demote admin คนสุดท้าย
+      if (currentRole === "admin" && newRole !== "admin") {
+        var adminCount = 0;
+        for (var j = 1; j < data.length; j++) {
+          var r = String(data[j][roleIdx]||"").toLowerCase();
+          var a = activeIdx >= 0 ? String(data[j][activeIdx]||"").toUpperCase() : "TRUE";
+          if (r === "admin" && a !== "FALSE") adminCount++;
+        }
+        if (adminCount <= 1) return { ok: false, message: "ไม่สามารถเปลี่ยน role ของ admin คนสุดท้ายได้" };
+      }
+      sheet.getRange(i+1, roleIdx+1).setValue(newRole);
       if (newPassword !== undefined) {
         var hashed = newPassword ? _hashPwd(newPassword) : "";
         sheet.getRange(i+1, h.indexOf("Password")+1).setValue(hashed);

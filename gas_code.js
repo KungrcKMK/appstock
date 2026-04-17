@@ -1579,9 +1579,9 @@ function crSendTelegramGeneric(message) {
 
 function handleRawMaterial(action, data, module) {
   switch (action) {
-    case "CREATE": return rmCreate(data, module);
-    case "UPDATE": return rmUpdate(data, module);
-    case "VERIFY": return rmVerify(data, module);
+    case "CREATE": return _withLock(function(){ return rmCreate(data, module); });
+    case "UPDATE": return _withLock(function(){ return rmUpdate(data, module); });
+    case "VERIFY": return _withLock(function(){ return rmVerify(data, module); });
     case "EDIT":   return rmEdit(data, module);
     case "DELETE": return rmDelete(data, module);
     case "BACKUP": return rmBackup(data, module);

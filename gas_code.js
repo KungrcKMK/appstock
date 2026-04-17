@@ -528,7 +528,7 @@ function doPost(e) {
     if (action === "getDeliveries")   return jsonResponse(getDeliveries(payload));
     if (action === "submitStockIn")   return jsonResponse(submitStockIn(payload));
     if (action === "getStockInList")  return jsonResponse(getStockInList(payload));
-    if (action === "reviewStockIn")   return jsonResponse(reviewStockIn(payload));
+    if (action === "reviewStockIn")   return jsonResponse(_withLock(function(){ return reviewStockIn(payload); }));
 
     if (module === "COLDROOM") {
       return jsonResponse(handleColdroom(action, payload));

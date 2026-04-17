@@ -130,6 +130,14 @@ function _validateQty(v, allowDecimal) {
   return allowDecimal ? Math.round(n * 1000) / 1000 : Math.floor(n);
 }
 
+// Poka-Yoke: ครอบฟังก์ชัน read-then-write ด้วย DocumentLock กัน race condition
+function _withLock(fn) {
+  var lock = LockService.getDocumentLock();
+  try { lock.waitLock(10000); } catch(e) { return { ok: false, status: "error", message: "ระบบกำลังประมวลผลคำขออื่น กรุณาลองใหม่" }; }
+  try { return fn(); }
+  finally { try { lock.releaseLock(); } catch(e) {} }
+}
+
 // ============================================================
 // SYSTEM — verifyUser
 // ============================================================

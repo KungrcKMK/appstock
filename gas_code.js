@@ -1794,11 +1794,13 @@ function rmBackup(data, module) {
 function ddmmyyToIso(str) {
   if (!str || typeof str !== "string") return String(str || "");
   if (str.includes("-")) return str;
-  if (str.length !== 6) return str;
-  const dd = str.substring(0, 2);
-  const mm = str.substring(2, 4);
-  const yy = str.substring(4, 6);
-  return `${2000 + parseInt(yy, 10)}-${mm}-${dd}`;
+  if (!/^\d{6}$/.test(str)) return "";    // Poka-Yoke: รับเฉพาะ 6 หลักตัวเลข
+  const dd = parseInt(str.substring(0, 2), 10);
+  const mm = parseInt(str.substring(2, 4), 10);
+  const yy = parseInt(str.substring(4, 6), 10);
+  // Poka-Yoke: ตรวจ range ของ dd/mm
+  if (dd < 1 || dd > 31 || mm < 1 || mm > 12) return "";
+  return `${2000 + yy}-${String(mm).padStart(2,"0")}-${String(dd).padStart(2,"0")}`;
 }
 
 // แปลง ISO string "yyyy-MM-dd" → Date object ใน timezone ท้องถิ่น (ไม่ใช่ UTC)

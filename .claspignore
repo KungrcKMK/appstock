@@ -1,0 +1,4 @@
+# clasp ignore — push เฉพาะ gas_code.js + appsscript.json
+**/**
+!gas_code.js
+!appsscript.json

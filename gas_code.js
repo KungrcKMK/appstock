@@ -531,6 +531,11 @@ function doPost(e) {
     const action = data.action || "";
     const payload = data.payload || data;
 
+    // ตรวจ API key (fail-open ถ้ายังไม่ตั้งใน Config)
+    if (!_checkApiKey(data.apiKey)) {
+      return jsonResponse({ ok: false, status: "error", message: "unauthorized" });
+    }
+
     // บันทึก device info สำหรับใช้ใน Telegram/log
     _reqDeviceId   = String(data.deviceId   || "").slice(0, 50);
     _reqDeviceName = _sanitizeDeviceName(data.deviceName);

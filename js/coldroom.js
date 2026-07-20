@@ -1160,8 +1160,17 @@ async function crLookupBarcode() {
 
 // ── Overview ──
 async function crLoadOverview() {
-  const res = await crCallServer("getStartupOverview");
-  if (!res.ok) return;
+  let res, fromCache = false;
+  try {
+    res = await crCallServer("getStartupOverview");
+  } catch (e) {
+    res = cacheGet("cr_overview");      // offline → ใช้ข้อมูลเก่า
+    fromCache = true;
+    if (!res) return;
+    showToast("⏳ แสดงข้อมูลเก่า (เชื่อมต่อไม่ได้)", "warn", 4000);
+  }
+  if (!res || !res.ok) return;
+  if (!fromCache) cacheSet("cr_overview", res);   // เก็บเฉพาะข้อมูลสด
   window.crAllLotsData = res.allLots;
   $$cr("crSumProducts").textContent = res.summary.totalProducts;
   $$cr("crSumLots").textContent     = res.summary.totalLots;

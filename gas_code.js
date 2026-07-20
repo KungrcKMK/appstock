@@ -487,8 +487,29 @@ function getActivityLog(payload) {
 // ROUTER — doGet / doPost
 // ============================================================
 
+// อ่าน API key ที่ตั้งไว้ใน Config sheet (ว่าง = ปิดการตรวจ = fail-open)
+function _getApiKey() {
+  try {
+    var data = getSheet("Config").getDataRange().getValues();
+    for (var i = 1; i < data.length; i++) {
+      if (String(data[i][0]).trim() === "apiKey") return String(data[i][1] || "").trim();
+    }
+  } catch (e) {}
+  return "";
+}
+
+// ตรวจ key — ผ่านเสมอถ้ายังไม่ตั้ง apiKey ใน Config (backward compatible)
+function _checkApiKey(incoming) {
+  var expected = _getApiKey();
+  if (!expected) return true;              // ยังไม่เปิดใช้ → ผ่าน
+  return String(incoming || "") === expected;
+}
+
 function doGet(e) {
   try {
+    if (!_checkApiKey(e.parameter && e.parameter.k)) {
+      return jsonResponse({ status: "error", message: "unauthorized" });
+    }
     const module = ((e.parameter && e.parameter.module) || "MLM").toUpperCase();
     if (module === "SQF" || module === "MLM") {
       return jsonResponse(getRawMaterials(module));

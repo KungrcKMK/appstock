@@ -70,47 +70,62 @@ async function rawLoadData(startup = false) {
     const data = await (await fetch(`${GAS_URL}?module=${rawCurrentModule}`)).json();
     hideLoading();
     if (data.status && data.status !== "success") { showToast(data.message || "โหลดข้อมูลไม่สำเร็จ","error"); return; }
-    rawLastData = Array.isArray(data.materials) ? data.materials : [];
-    const inp = document.getElementById("rawAlertDaysInput");
-    if (inp) inp.value = rawAlertDays;
-    rawNextSku  = data.nextSku || MODULE_META[rawCurrentModule].skuPrefix + "0001";
-    renderRawInventory(rawLastData);
-    renderRawHistory(data.recentHistory || []);
-    renderRawStats(rawLastData, data.discontinued || []);
-    renderRawCharts(rawLastData);
-    rawCheckCritical(rawLastData, rawCurrentModule, startup);
-
-    // ── Autocomplete: rawSearch (ค้นหาวัตถุดิบ SQF/MLM) — ตั้งค่าครั้งเดียว ──
-    if (!_rawSearchAcInit) {
-      _rawSearchAcInit = true;
-      const searchEl = document.getElementById("rawSearch");
-      buildAutocomplete(
-        searchEl,
-        () => (rawLastData || []).map(m => {
-          const daysLeft = m.ExpiryDate ? (function() {
-            const ed = rawParseDate(m.ExpiryDate);
-            if (!ed) return null;
-            const tod = new Date(); tod.setHours(0,0,0,0);
-            return Math.round((ed - tod) / 86400000);
-          })() : null;
-          const expBadge = daysLeft !== null && daysLeft <= 7  ? "⚠️ " + daysLeft + "วัน"
-                         : daysLeft !== null && daysLeft <= 30 ? "🗓️ " + daysLeft + "วัน" : "";
-          return {
-            label: m.Name || m.SKU,
-            sub:   `${m.SKU} · คงเหลือ: ${m.Qty} ${m.Unit || ""}${m.Qty <= m.Min && m.Min > 0 ? " 🔴ต่ำ" : ""}`,
-            badge: expBadge,
-            value: m.SKU
-          };
-        }),
-        (item) => {
-          // เปิด edit modal ให้เลย
-          searchEl.value = "";
-          renderRawInventory(rawLastData);
-          openRawEdit(item.value);
-        }
-      );
+    cacheSet("raw_" + rawCurrentModule, data);   // เก็บ last-good ไว้ใช้ตอน offline
+    _rawApplyData(data, startup);
+  } catch(err) {
+    hideLoading();
+    // fetch fail → ลองใช้ข้อมูลเก่าจาก cache
+    const cached = cacheGet("raw_" + rawCurrentModule);
+    if (cached) {
+      _rawApplyData(cached, startup);
+      showToast("⏳ แสดงข้อมูลเก่า (เชื่อมต่อไม่ได้)", "warn", 4000);
+    } else {
+      showToast("เชื่อมต่อฐานข้อมูลล้มเหลว ❌","error");
     }
-  } catch(err) { hideLoading(); showToast("เชื่อมต่อฐานข้อมูลล้มเหลว ❌","error"); }
+  }
+}
+
+// นำข้อมูล (จาก server หรือ cache) มา render — ใช้ร่วมทั้ง 2 path
+function _rawApplyData(data, startup) {
+  rawLastData = Array.isArray(data.materials) ? data.materials : [];
+  const inp = document.getElementById("rawAlertDaysInput");
+  if (inp) inp.value = rawAlertDays;
+  rawNextSku  = data.nextSku || MODULE_META[rawCurrentModule].skuPrefix + "0001";
+  renderRawInventory(rawLastData);
+  renderRawHistory(data.recentHistory || []);
+  renderRawStats(rawLastData, data.discontinued || []);
+  renderRawCharts(rawLastData);
+  rawCheckCritical(rawLastData, rawCurrentModule, startup);
+
+  // ── Autocomplete: rawSearch (ตั้งค่าครั้งเดียว) ──
+  if (!_rawSearchAcInit) {
+    _rawSearchAcInit = true;
+    const searchEl = document.getElementById("rawSearch");
+    buildAutocomplete(
+      searchEl,
+      () => (rawLastData || []).map(m => {
+        const daysLeft = m.ExpiryDate ? (function() {
+          const ed = rawParseDate(m.ExpiryDate);
+          if (!ed) return null;
+          const tod = new Date(); tod.setHours(0,0,0,0);
+          return Math.round((ed - tod) / 86400000);
+        })() : null;
+        const expBadge = daysLeft !== null && daysLeft <= 7  ? "⚠️ " + daysLeft + "วัน"
+                       : daysLeft !== null && daysLeft <= 30 ? "🗓️ " + daysLeft + "วัน" : "";
+        return {
+          label: m.Name || m.SKU,
+          sub:   `${m.SKU} · คงเหลือ: ${m.Qty} ${m.Unit || ""}${m.Qty <= m.Min && m.Min > 0 ? " 🔴ต่ำ" : ""}`,
+          badge: expBadge,
+          value: m.SKU
+        };
+      }),
+      (item) => {
+        searchEl.value = "";
+        renderRawInventory(rawLastData);
+        openRawEdit(item.value);
+      }
+    );
+  }
 }
 
 // ── Charts ──

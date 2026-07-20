@@ -3,6 +3,68 @@
 // ─────────────────────────────────────────────
 const GAS_URL = "https://script.google.com/macros/s/AKfycbx72vWVvUgaOgZEnzAc8ltaV-a7Rfx_CL9DK1c-B5nAIOxtrlnbi8_b6bmfnDeAZ_xeaw/exec";
 
+// 🔑 API key — เว้นว่าง = ปิด (fail-open). เปิดใช้: ตั้งค่านี้ + ใส่ apiKey ใน Config sheet ให้ตรงกัน
+const API_KEY = "";
+
+// ─────────────────────────────────────────────
+// 🔒 FETCH INTERCEPTOR — แนบ API key ให้ทุก request ที่ยิงไป GAS (ที่เดียว)
+//    เว้นว่าง API_KEY → pass-through (ไม่กระทบพฤติกรรมเดิม)
+// ─────────────────────────────────────────────
+(function() {
+  const _origFetch = window.fetch.bind(window);
+  window.fetch = function(input, init) {
+    try {
+      if (API_KEY) {
+        const url = typeof input === "string" ? input : (input && input.url) || "";
+        if (url.indexOf(GAS_URL) === 0) {
+          // GET ?module=... → แนบ &k=
+          if (!init || !init.method || String(init.method).toUpperCase() === "GET") {
+            const sep = url.indexOf("?") >= 0 ? "&" : "?";
+            input = url + sep + "k=" + encodeURIComponent(API_KEY);
+          }
+          // POST JSON body → ใส่ apiKey ลงใน body
+          else if (init && init.body && typeof init.body === "string") {
+            try {
+              const b = JSON.parse(init.body);
+              b.apiKey = API_KEY;
+              init = Object.assign({}, init, { body: JSON.stringify(b) });
+            } catch (e) { /* body ไม่ใช่ JSON → ปล่อยผ่าน */ }
+          }
+        }
+      }
+    } catch (e) { /* interceptor พังก็ยัง fetch ปกติ */ }
+    return _origFetch(input, init);
+  };
+})();
+
+// ─────────────────────────────────────────────
+// 💾 OFFLINE CACHE — เก็บ last-good data ใน localStorage
+// ─────────────────────────────────────────────
+function cacheSet(key, data) {
+  try { localStorage.setItem("cache_" + key, JSON.stringify({ t: Date.now(), d: data })); } catch (e) {}
+}
+function cacheGet(key, maxAgeMs) {
+  try {
+    const raw = localStorage.getItem("cache_" + key);
+    if (!raw) return null;
+    const obj = JSON.parse(raw);
+    if (maxAgeMs && Date.now() - obj.t > maxAgeMs) return null;
+    return obj.d;
+  } catch (e) { return null; }
+}
+
+// ─────────────────────────────────────────────
+// 📶 ONLINE / OFFLINE INDICATOR
+// ─────────────────────────────────────────────
+function _updateOnlineStatus() {
+  const banner = document.getElementById("offlineBanner");
+  if (!banner) return;
+  if (navigator.onLine) banner.classList.add("hide");
+  else banner.classList.remove("hide");
+}
+window.addEventListener("online",  () => { _updateOnlineStatus(); showToast("กลับมาออนไลน์แล้ว ✅", "success"); });
+window.addEventListener("offline", () => { _updateOnlineStatus(); showToast("เน็ตหลุด — แสดงข้อมูลเก่า ⏳", "warn", 4000); });
+
 // ─────────────────────────────────────────────
 // SHARED STATE
 // ─────────────────────────────────────────────

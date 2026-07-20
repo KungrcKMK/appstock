@@ -209,7 +209,7 @@ function switchModule(mod) {
 // ─────────────────────────────────────────────
 // INIT
 // ─────────────────────────────────────────────
-window.onload = checkAuth;
+window.onload = function() { checkAuth(); _updateOnlineStatus(); };
 
 // ─────────────────────────────────────────────
 // PWA — Service Worker Registration

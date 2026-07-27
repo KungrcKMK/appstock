@@ -189,7 +189,7 @@ function switchModule(mod) {
   document.querySelectorAll(".module-section").forEach(el => el.classList.add("hide"));
 
   // update nav buttons
-  ["COLDROOM","SQF","MLM","EXEC","ROLES"].forEach(m => {
+  ["COLDROOM","SQF","MLM","EXEC","ROLES","BOMHEALTH"].forEach(m => {
     const btn = document.getElementById("navBtn-" + m);
     if (btn) btn.classList.toggle("active", m === mod);
   });
@@ -197,6 +197,9 @@ function switchModule(mod) {
   if (mod === "EXEC") {
     document.getElementById("module-EXEC").classList.remove("hide");
     loadExecDashboard();
+  } else if (mod === "BOMHEALTH") {
+    document.getElementById("module-BOMHEALTH").classList.remove("hide");
+    loadBomHealth();
   } else if (mod === "ROLES") {
     document.getElementById("module-ROLES").classList.remove("hide");
     loadPendingUsers();

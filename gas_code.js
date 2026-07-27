@@ -1016,16 +1016,24 @@ function bomHealthReport() {
   });
 
   // E) วัตถุดิบที่ถูกเบิกจริง แต่ไม่อยู่ในสูตรไหนเลย
+  //    + F2) ชื่อในประวัติที่จับคู่กับวัตถุดิบในคลังไม่ได้ (มักเกิดจากเปลี่ยนชื่อภายหลัง)
   var notInAnyBom = [];
-  Object.keys(withdrawnByName).forEach(function(nm) {
-    var sk = matByName[nm];
-    if (!sk) return;                       // จับคู่ชื่อไม่ได้ ข้าม
+  var unmatchedHistory = [];
+  Object.keys(withdrawn).forEach(function(key) {
+    var w  = withdrawn[key];
+    var sk = matByName[w.module][w.name];
+    var qty = Math.round(w.qty * 1000) / 1000;
+    if (!sk) {                             // จับคู่ชื่อไม่ได้ → ประวัติอ้างกลับไม่ได้
+      unmatchedHistory.push({ name: w.name, module: w.module, outCount: w.count, outQty: qty });
+      return;
+    }
     if (bomSkuSet[sk]) return;             // อยู่ในสูตรแล้ว
     var mat = matBySku[sk];
     if (mat && mat.discontinued) return;   // ยกเลิกใช้แล้ว ไม่ต้องเตือน
-    notInAnyBom.push({ sku: sk, name: nm, module: withdrawnByName[nm].module, outCount: withdrawnByName[nm].count, outQty: Math.round(withdrawnByName[nm].qty * 1000) / 1000 });
+    notInAnyBom.push({ sku: sk, name: w.name, module: w.module, outCount: w.count, outQty: qty });
   });
   notInAnyBom.sort(function(a, b) { return b.outCount - a.outCount; });
+  unmatchedHistory.sort(function(a, b) { return b.outCount - a.outCount; });
 
   // F) ค่าใช้ต่อวันที่ยังไม่ได้ตั้ง (ใช้เป็น baseline ไม่ได้)
   var badDailyUsage = [];

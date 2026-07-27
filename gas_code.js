@@ -93,6 +93,22 @@ function jsonResponse(data) {
 // SECURITY HELPERS
 // ============================================================
 
+// ══════════════════════════════════════════
+// 👑 SUPER ADMIN — เจ้าของระบบ มีคนเดียว
+//   • ห้ามใครเปลี่ยน role หรือรหัสผ่านของบัญชีนี้ (กันโดนล็อกออกจากระบบตัวเอง)
+//   • เป็นคนเดียวที่ตั้งคนอื่นเป็น admin ได้
+// ══════════════════════════════════════════
+var SUPER_ADMIN = "kungrc1020";   // เทียบแบบตัวพิมพ์เล็ก
+
+function _isSuperAdmin(username) {
+  return String(username || "").trim().toLowerCase() === SUPER_ADMIN;
+}
+
+// ผู้เรียก API คนนี้เป็น super admin หรือไม่ (ดูจาก token)
+function _callerIsSuperAdmin(token) {
+  return _isSuperAdmin(_getTokenUsername(token));
+}
+
 // ── Password Hashing (SHA-256) ──
 function _hashPwd(pwd) {
   if (!pwd) return "";

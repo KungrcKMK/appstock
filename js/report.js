@@ -140,6 +140,15 @@ function renderBomHealth(res) {
         { label:"รวม", align:"right", render:r => `<b>${r.outQty}</b>` } ],
       "วัตถุดิบที่เบิกล่าสุดอยู่ในสูตรครบ") +
 
+    _bhSection("🔗", "ประวัติการเบิกที่จับคู่กับวัตถุดิบไม่ได้",
+      "ประวัติเก็บแค่ชื่อ ไม่มี SKU — ถ้าเปลี่ยนชื่อวัตถุดิบภายหลัง ประวัติเก่าจะอ้างกลับไม่ได้",
+      res.unmatchedHistory || [],
+      [ { label:"ชื่อในประวัติ", render:r => `<b>${esc(r.name)}</b>` },
+        { label:"โรงงาน", align:"center", render:r => esc(r.module) },
+        { label:"เบิก", align:"right", render:r => `${r.outCount} ครั้ง` },
+        { label:"รวม", align:"right", render:r => `<b>${r.outQty}</b>` } ],
+      "ประวัติล่าสุดจับคู่กับวัตถุดิบได้ครบ") +
+
     _bhSection("📅", "ยังไม่ได้ตั้งค่า \"ใช้ต่อวัน\"",
       "ไม่กระทบการเทียบสูตร แต่ทำให้คาดการณ์ของหมดไม่ได้",
       res.badDailyUsage,

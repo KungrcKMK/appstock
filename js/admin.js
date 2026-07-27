@@ -237,6 +237,10 @@ async function loadRolesPage() {
               style="background:#6366f1;color:#fff;border:none;padding:8px 18px;border-radius:10px;font-weight:800;font-size:13px;cursor:pointer;font-family:inherit;">
               💾 บันทึก
             </button>
+            <button onclick="deleteUserRow('${safeU}', event)" title="ลบผู้ใช้ออกจากระบบ"
+              style="background:#fee2e2;color:#dc2626;border:none;padding:8px 14px;border-radius:10px;font-weight:800;font-size:14px;cursor:pointer;font-family:inherit;">
+              🗑️
+            </button>
           </div>
         </div>`;
       }).join("") + `</div>`;

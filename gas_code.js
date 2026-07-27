@@ -232,7 +232,29 @@ function verifyUser(payload) {
       return { ok: true, role, adminToken };
     }
   }
-  return { ok: false, message: "ไม่พบชื่อ \"" + username + "\" กรุณาส่งคำขอสมัครใช้งาน" };
+  // ไม่พบใน AppUsers → เช็คว่าเคยส่งคำขอไว้ไหม เพื่อให้หน้าจอบอกสถานะได้ถูก
+  var pend = _pendingStatusOf(username);
+  if (pend === "PENDING")  return { ok: false, pending: true,  message: "คำขอของ \"" + username + "\" กำลังรอ Admin อนุมัติ" };
+  if (pend === "REJECTED") return { ok: false, rejected: true, message: "คำขอของ \"" + username + "\" ถูกปฏิเสธ กรุณาติดต่อ Admin" };
+  return { ok: false, notFound: true, message: "ยังไม่มีชื่อ \"" + username + "\" ในระบบ" };
+}
+
+// สถานะคำขอล่าสุดของชื่อนี้ใน PendingUsers ("PENDING" / "REJECTED" / "")
+function _pendingStatusOf(username) {
+  try {
+    var sheet = getSheet("PendingUsers");
+    var data  = sheet.getDataRange().getValues();
+    if (data.length < 2) return "";
+    var h = data[0];
+    var uCol = h.indexOf("Username"), sCol = h.indexOf("Status");
+    var found = "";
+    for (var i = 1; i < data.length; i++) {   // ไล่จากบนลงล่าง เอาแถวท้ายสุด = ล่าสุด
+      if (String(data[i][uCol]).trim().toLowerCase() === String(username).trim().toLowerCase()) {
+        found = String(data[i][sCol] || "").toUpperCase();
+      }
+    }
+    return found;
+  } catch (e) { return ""; }
 }
 
 // ============================================================
@@ -957,7 +979,7 @@ function bomHealthReport() {
 
   // ── 5) วัตถุดิบที่ถูกเบิกจริง (อ่านประวัติ 300 แถวล่าสุดต่อโรงงาน) ──
   // ประวัติเก็บแค่ "ชื่อ" ไม่มี SKU จึงต้องจับคู่ชื่อ "ภายในโรงงานเดียวกัน" เท่านั้น
-  var withdrawn = {};   // key "MOD ชื่อ" -> { module, name, count, qty }
+  var withdrawn = {};   // key "MOD ชื่อ" -> { module, name, count, qty }
   ["SQF", "MLM"].forEach(function(mod) {
     var s = getSheet(mod + "_History");
     var last = s.getLastRow();
@@ -970,7 +992,7 @@ function bomHealthReport() {
       if (String(d[r][cA] || "") !== "เบิกออก") continue;
       var nm = String(d[r][cN] || "").trim();
       if (!nm) continue;
-      var key = mod + " " + nm;
+      var key = mod + " " + nm;
       if (!withdrawn[key]) withdrawn[key] = { module: mod, name: nm, count: 0, qty: 0 };
       withdrawn[key].count++;
       withdrawn[key].qty += Number(d[r][cQ]) || 0;

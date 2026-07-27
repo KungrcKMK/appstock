@@ -159,9 +159,11 @@ function checkAuth() {
     if (execBtn) execBtn.style.display = isExecDash ? "" : "none";
     const rolesBtn = document.getElementById("navBtn-ROLES");
     if (rolesBtn) rolesBtn.style.display = isAdmin ? "" : "none";
-    // ตรวจสูตรการผลิต — ระดับหัวหน้าขึ้นไป (ชี้ไปที่ข้อมูล ไม่ใช่ตัวบุคคล)
+    // ตรวจสูตรการผลิต — ตอนนี้เปิดให้ admin เท่านั้น
+    // (จะเปิดให้ manager ทีหลัง — เปลี่ยนเป็น isExecDash เมื่อพร้อม)
+    const canSeeBomHealth = isAdmin;
     const bomHealthBtn = document.getElementById("navBtn-BOMHEALTH");
-    if (bomHealthBtn) bomHealthBtn.style.display = isExecDash ? "" : "none";
+    if (bomHealthBtn) bomHealthBtn.style.display = canSeeBomHealth ? "" : "none";
     const actBtn = document.getElementById("activityNavBtn");
     if (actBtn) actBtn.style.display = isAdmin ? "" : "none";
     const tgBtn = document.getElementById("telegramNavBtn");

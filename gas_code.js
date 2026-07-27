@@ -1736,8 +1736,25 @@ function rmCreate(data, module) {
   return { status: "success" };
 }
 
+// ประเภทรายการที่รองรับ — IN รับเข้าจากซัพพลายเออร์ / OUT เบิกไปใช้ / RETURN คืนของที่เบิกเกิน
+// แยก RETURN ออกจาก IN เพื่อให้คำนวณยอดใช้จริงได้ถูก: ใช้จริง = เบิกออก − คืน
+var RM_TYPES = {
+  IN:     { label: "รับเข้า",      emoji: "📥 รับเข้า",     sign: "+" },
+  OUT:    { label: "เบิกออก",      emoji: "📤 เบิกออก",     sign: "-" },
+  RETURN: { label: "คืนวัตถุดิบ",  emoji: "↩️ คืนวัตถุดิบ", sign: "+" }
+};
+
 function rmUpdate(data, module) {
-  const { sku, type, qty, user } = data;
+  const { sku, user } = data;
+  // Poka-Yoke: รับเฉพาะประเภทที่รู้จัก (กันค่าตัวพิมพ์เล็ก/ค่าแปลกปลอมข้ามด่านเช็คสต๊อก)
+  const type = String(data.type || "").toUpperCase();
+  const meta = RM_TYPES[type];
+  if (!meta) return { status: "error", message: "ประเภทรายการไม่ถูกต้อง" };
+
+  // Poka-Yoke: จำนวนต้องมากกว่า 0 (กันรายการขยะที่ทำให้สถิติเพี้ยน)
+  const q = _validateQty(data.qty, true);
+  if (q <= 0) return { status: "error", message: "จำนวนต้องมากกว่า 0" };
+
   const sheet = getSheet(module + "_Materials");
   const rows  = sheet.getDataRange().getValues();
   const h = rows[0];
@@ -1745,23 +1762,21 @@ function rmUpdate(data, module) {
   for (let i = 1; i < rows.length; i++) {
     if (String(rows[i][0]) === String(sku)) {
       const cur    = Number(rows[i][h.indexOf("Qty")] || 0);
-      const q      = _validateQty(qty, true);
       const name   = rows[i][h.indexOf("Name")];
       const unit_  = rows[i][h.indexOf("Unit")] || "";
       const minQty = Number(rows[i][h.indexOf("Min")] || 0);
-      // ✅ ป้องกันเบิกเกินสต๊อก
+      // ✅ ป้องกันเบิกเกินสต๊อก (เฉพาะ OUT — IN/RETURN บวกเข้าเสมอ)
       if (type === "OUT" && q > cur) {
         return { status: "error", message: "⚠️ สต๊อกไม่เพียงพอ — มีอยู่ " + cur + " " + unit_ + " ไม่สามารถเบิก " + q + " " + unit_ + " ได้" };
       }
-      const newQty     = type === "IN" ? cur + q : cur - q;
+      const newQty     = type === "OUT" ? cur - q : cur + q;
       const dailyUsage = Number(rows[i][h.indexOf("DailyUsage")] || 0);
       sheet.getRange(i + 1, h.indexOf("Qty") + 1).setValue(newQty);
       const userWithDevice1 = _reqDeviceName ? (user||"-") + " (📱 " + _reqDeviceName + ")" : (user||"-");
-      getSheet(module + "_History").appendRow([new Date().toISOString(), name, type === "IN" ? "รับเข้า" : "เบิกออก", q, userWithDevice1]);
-      var emoji   = type === "IN" ? "📥 รับเข้า" : "📤 เบิกออก";
+      getSheet(module + "_History").appendRow([new Date().toISOString(), name, meta.label, q, userWithDevice1]);
       var summary = _stockSummaryLines(newQty, unit_, minQty, dailyUsage);
-      var msg = emoji + "\n📦 " + name + " (" + sku + ")" +
-                "\n🔢 " + (type === "IN" ? "+" : "-") + q + " " + unit_ +
+      var msg = meta.emoji + "\n📦 " + name + " (" + sku + ")" +
+                "\n🔢 " + meta.sign + q + " " + unit_ +
                 "  →  คงเหลือ: " + newQty + " " + unit_ +
                 summary +
                 "\n👤 " + (user||"-") + deviceTag();

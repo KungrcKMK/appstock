@@ -249,6 +249,46 @@ async function loadRolesPage() {
   }
 }
 
+// ➕ เพิ่มผู้ใช้ใหม่โดยตรง
+async function createNewUser(evt) {
+  const nameEl = document.getElementById("newUserName");
+  const roleEl = document.getElementById("newUserRole");
+  const pwdEl  = document.getElementById("newUserPwd");
+  const username = (nameEl?.value || "").trim();
+  if (!username) { showToast("กรุณาระบุชื่อพนักงาน", "warn"); nameEl?.focus(); return; }
+  const payload = { adminToken: _adminToken, username, role: roleEl?.value || "user" };
+  const pwd = (pwdEl?.value || "").trim();
+  if (pwd) payload.password = pwd;
+
+  await guardedClick(evt?.currentTarget, async () => {
+    try {
+      const res = await fetch(GAS_URL, {
+        method: "POST",
+        headers: { "Content-Type": "text/plain;charset=utf-8" },
+        body: JSON.stringify({ module: "SYSTEM", action: "createUser", payload })
+      }).then(r => r.json());
+      if (res.ok) { showToast(`➕ เพิ่ม "${username}" แล้ว`, "success"); loadRolesPage(); }
+      else showToast(res.message || "เพิ่มไม่สำเร็จ", "error");
+    } catch (e) { showToast("เชื่อมต่อไม่สำเร็จ: " + e.message, "error"); }
+  });
+}
+
+// 🗑️ ลบผู้ใช้ (ถาวร)
+async function deleteUserRow(username, evt) {
+  if (!confirm(`ลบผู้ใช้ "${username}" ออกจากระบบ?\n\n⚠️ ลบแล้วเข้าใช้งานไม่ได้ทันที และย้อนกลับไม่ได้\n(ประวัติการเบิก/รับ เดิมยังอยู่ครบ)`)) return;
+  await guardedClick(evt?.currentTarget, async () => {
+    try {
+      const res = await fetch(GAS_URL, {
+        method: "POST",
+        headers: { "Content-Type": "text/plain;charset=utf-8" },
+        body: JSON.stringify({ module: "SYSTEM", action: "deleteUser", payload: { adminToken: _adminToken, username } })
+      }).then(r => r.json());
+      if (res.ok) { showToast(`🗑️ ลบ "${username}" แล้ว`, "warn"); loadRolesPage(); }
+      else showToast(res.message || "ลบไม่สำเร็จ", "error");
+    } catch (e) { showToast("เชื่อมต่อไม่สำเร็จ: " + e.message, "error"); }
+  });
+}
+
 // 👑 ลด admin คนอื่นทั้งหมดเป็น user (เฉพาะเจ้าของระบบ)
 async function demoteOtherAdmins(evt) {
   if (!confirm("ลด admin คนอื่นทั้งหมดเป็น user?\n\nจะเหลือเจ้าของระบบเป็น admin คนเดียว\nเปลี่ยนกลับได้ภายหลังจากหน้านี้")) return;

@@ -68,8 +68,6 @@ function execBuildKpi(allMats) {
       ${kpiCard("⏳","ควรวางแผน (≤30วัน)", warn, "linear-gradient(135deg,#451a03,#92400e)", "#fcd34d", "วางแผนสั่งล่วงหน้า")}
       ${kpiCard("✅","ปกติ", ok, "linear-gradient(135deg,#052e16,#065f46)", "#6ee7b7", "สต๊อกเพียงพอ")}
       ${kpiCard("⚠️","สต๊อกต่ำกว่าขั้นต่ำ", lowStock, "linear-gradient(135deg,#1e1b4b,#312e81)", "#a5b4fc", "ต่ำกว่า Min")}
-      ${kpiCard("⚡","ใช้รวม/วัน", totalDaily.toLocaleString("th-TH",{maximumFractionDigits:1}), "linear-gradient(135deg,#0c1445,#1e3a8a)", "#93c5fd", "หน่วยรวมทุกรายการ")}
-      ${kpiCard("📦","ใช้รวม/เดือน", totalMonthly.toLocaleString("th-TH",{maximumFractionDigits:0}), "linear-gradient(135deg,#0d0d1a,#1e1b4b)", "#c4b5fd", "ประมาณการ 30 วัน")}
     </div>
   </div>`;
 }

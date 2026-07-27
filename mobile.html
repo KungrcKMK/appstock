@@ -1253,18 +1253,18 @@ function printQR() {
 </style>
 </head><body>
 <div class="grid" id="g"></div>
-<script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"><\/script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"><\/script>
 <script>
 const items=${JSON.stringify(items)};
 const m="${qrMod}";
 const g=document.getElementById("g");
 items.forEach((item,i)=>{
   const d=document.createElement("div");d.className="card";
-  d.innerHTML='<span class="mod">'+m+'</span><canvas id="c'+i+'"></canvas>'
+  d.innerHTML='<span class="mod">'+m+'</span><div id="c'+i+'"></div>'
     +'<div class="name">'+item.name+'</div><div class="sku">'+item.sku+'</div>';
   g.appendChild(d);
-  QRCode.toCanvas(document.getElementById("c"+i),"RAWMAT|"+m+"|"+item.sku,
-    {width:110,margin:1,color:{dark:"#000",light:"#fff"}});
+  new QRCode(document.getElementById("c"+i),
+    {text:"RAWMAT|"+m+"|"+item.sku,width:110,height:110,correctLevel:QRCode.CorrectLevel.M});
 });
 setTimeout(()=>window.print(),1200);
 <\/script></body></html>`);

@@ -792,12 +792,12 @@ function closeRawAction() { document.getElementById("rawActionModal").classList.
 
 function setRawType(t) {
   document.getElementById("rawModalType").value = t;
-  document.getElementById("rawBtnOut").className = t==="OUT"
-    ? "flex-1 py-5 rounded-[2.5rem] font-black text-lg bg-white shadow-xl text-orange-600 uppercase"
-    : "flex-1 py-5 rounded-[2.5rem] font-black text-lg text-slate-400 uppercase";
-  document.getElementById("rawBtnIn").className = t==="IN"
-    ? "flex-1 py-5 rounded-[2.5rem] font-black text-lg bg-white shadow-xl text-emerald-600 uppercase"
-    : "flex-1 py-5 rounded-[2.5rem] font-black text-lg text-slate-400 uppercase";
+  const base = "flex-1 py-4 rounded-[2.5rem] font-black text-base uppercase";
+  const on   = c => `${base} bg-white shadow-xl ${c}`;
+  const off  = `${base} text-slate-400`;
+  document.getElementById("rawBtnOut").className = t==="OUT"    ? on("text-orange-600")  : off;
+  document.getElementById("rawBtnRet").className = t==="RETURN" ? on("text-sky-600")     : off;
+  document.getElementById("rawBtnIn").className  = t==="IN"     ? on("text-emerald-600") : off;
 }
 
 function openRawQr() {

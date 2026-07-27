@@ -190,7 +190,7 @@ function _getTokenData(token) {
   return null;
 }
 function verifyAdminToken(token) { var d = _getTokenData(token); return !!(d && d.r === "admin"); }
-function verifyApproverToken(token) { var d = _getTokenData(token); return !!(d && (d.r === "admin" || d.r === "approver")); }
+function verifyApproverToken(token) { var d = _getTokenData(token); return !!(d && (d.r === "admin" || d.r === "manager")); }
 function _getTokenUsername(token) { var d = _getTokenData(token); return d ? d.u : null; }
 function revokeAdminToken(token) {
   if (token) {
@@ -313,7 +313,7 @@ function registerUser(payload) {
     }
   }
 
-  var validRoles = ["admin","approver","manager","viewer","user"];
+  var validRoles = ["admin","manager","viewer","user"];
   var requestedRole = validRoles.includes(String(payload.requestedRole || "").toLowerCase()) ? String(payload.requestedRole).toLowerCase() : "user";
   pendSheet.appendRow([username, new Date(), "PENDING", "", "", requestedRole]);
   crSendTelegramGeneric("📝 คำขอสมัครใหม่\n👤 ชื่อ: " + username + "\n🔖 ขอ Role: " + requestedRole + "\nรอการอนุมัติจาก Admin" + deviceTag());
@@ -381,7 +381,7 @@ function approveUser(payload) {
   if (String(approvedRole).toLowerCase() === "admin" && !_callerIsSuperAdmin(payload.adminToken)) {
     approvedRole = "user";
   }
-  if (!["admin","approver","manager","viewer","user"].includes(String(approvedRole).toLowerCase())) {
+  if (!["admin","manager","viewer","user"].includes(String(approvedRole).toLowerCase())) {
     approvedRole = "user";   // role เก่าที่เลิกใช้ (เช่น ceo) → ปรับเป็น user
   }
 
@@ -1863,7 +1863,7 @@ function setUserRole(payload) {
   var newRole     = String(payload.role||"user").trim();
   var newPassword = payload.password !== undefined ? String(payload.password||"").trim() : undefined;
   if (!username) return { ok: false, message: "ไม่ระบุชื่อผู้ใช้" };
-  if (!["admin","approver","manager","viewer","user"].includes(newRole)) return { ok: false, message: "Role ไม่ถูกต้อง" };
+  if (!["admin","manager","viewer","user"].includes(newRole)) return { ok: false, message: "Role ไม่ถูกต้อง" };
 
   // 👑 ป้องกันบัญชีเจ้าของระบบ — ห้ามใครแตะ ยกเว้นตัวเอง (และเปลี่ยนได้แค่รหัสผ่าน)
   if (_isSuperAdmin(username)) {

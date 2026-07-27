@@ -981,7 +981,8 @@ async function confirmAction() {
   btn.disabled = true; btn.textContent = "กำลังบันทึก...";
 
   const isCount = aType === "COUNT";
-  setLoading(true, isCount ? "กำลังบันทึกการนับ..." : aType === "OUT" ? "กำลังบันทึกการเบิก..." : "กำลังบันทึกรับเข้า...");
+  const BUSY  = { COUNT:"กำลังบันทึกการนับ...", OUT:"กำลังบันทึกการเบิก...", RETURN:"กำลังบันทึกการคืน...", IN:"กำลังบันทึกรับเข้า..." };
+  setLoading(true, BUSY[aType] || "กำลังบันทึก...");
   try {
     const r = isCount
       ? await gasPost({ module: mod, action: "VERIFY", sku: sel.sku, qty, user })

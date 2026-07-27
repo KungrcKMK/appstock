@@ -597,6 +597,8 @@ function doPost(e) {
     if (action === "getUsers")        return jsonResponse(getUsers(payload));
     if (action === "setUserRole")     return jsonResponse(setUserRole(payload));
     if (action === "demoteOtherAdmins") return jsonResponse(demoteOtherAdmins(payload));
+    if (action === "createUser")      return jsonResponse(_withLock(function(){ return createUser(payload); }));
+    if (action === "deleteUser")      return jsonResponse(_withLock(function(){ return deleteUser(payload); }));
     if (action === "submitDelivery")  return jsonResponse(_withLock(function(){ return submitDelivery(payload); }));
     if (action === "getDeliveries")   return jsonResponse(getDeliveries(payload));
     if (action === "submitStockIn")   return jsonResponse(submitStockIn(payload));

@@ -317,7 +317,18 @@
         <button id="loginBtn" onclick="login()" class="w-full bg-indigo-600 text-white py-5 rounded-3xl font-black hover:bg-slate-900 transition-all shadow-xl text-lg uppercase">
           เข้าสู่ระบบ 🚀
         </button>
-        <p onclick="showRegisterView()" style="font-size:13px;color:#6366f1;margin-top:14px;font-weight:700;cursor:pointer;">
+
+        <!-- ── กล่องขอสิทธิ์ (แสดงเมื่อไม่พบชื่อ / รออนุมัติ / ถูกปฏิเสธ) ── -->
+        <div id="accessBox" style="display:none;margin-top:14px;border-radius:20px;padding:14px 16px;text-align:left;">
+          <p id="accessMsg" style="font-size:13px;font-weight:800;line-height:1.5;margin:0;"></p>
+          <button id="accessBtn" onclick="submitAccessRequest()"
+            style="display:none;width:100%;margin-top:11px;background:#059669;color:#fff;border:none;padding:13px;border-radius:14px;font-weight:900;font-size:15px;cursor:pointer;font-family:inherit;">
+            🙋 ขอสิทธิ์เข้าใช้งานจาก Admin
+          </button>
+          <p id="accessHint" style="font-size:11px;font-weight:600;margin:9px 0 0;opacity:.8;"></p>
+        </div>
+
+        <p id="registerLink" onclick="showRegisterView()" style="font-size:13px;color:#6366f1;margin-top:14px;font-weight:700;cursor:pointer;">
           📝 ยังไม่มีบัญชี? สมัครใช้งาน →
         </p>
         <p style="font-size:10px;color:#94a3b8;margin-top:6px;font-weight:600;">v.1020</p>

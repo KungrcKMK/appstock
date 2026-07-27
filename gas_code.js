@@ -1833,6 +1833,71 @@ function getUsers(payload) {
   return { ok: true, users: users, callerIsSuper: _callerIsSuperAdmin(payload.adminToken) };
 }
 
+// ➕ เพิ่มผู้ใช้โดยตรง (ไม่ต้องรอเขาส่งคำขอ)
+function createUser(payload) {
+  if (!verifyAdminToken(payload.adminToken)) return { ok: false, message: "ไม่มีสิทธิ์" };
+  var username = String(payload.username || "").trim();
+  var role     = String(payload.role || "user").trim().toLowerCase();
+  var password = payload.password !== undefined ? String(payload.password || "").trim() : "";
+  if (!username) return { ok: false, message: "กรุณาระบุชื่อผู้ใช้" };
+  if (!["admin","manager","viewer","user"].includes(role)) return { ok: false, message: "Role ไม่ถูกต้อง" };
+  if (_isSuperAdmin(username)) return { ok: false, message: "ชื่อนี้สงวนไว้สำหรับเจ้าของระบบ" };
+  if (role === "admin" && !_callerIsSuperAdmin(payload.adminToken)) {
+    return { ok: false, message: "เฉพาะเจ้าของระบบเท่านั้นที่ตั้ง admin ได้" };
+  }
+
+  var sheet = getSheet("AppUsers");
+  ensureColumns(sheet, ["Password"]);
+  var data = sheet.getDataRange().getValues();
+  var h = data[0];
+  var uIdx = h.indexOf("Username");
+  for (var i = 1; i < data.length; i++) {
+    if (String(data[i][uIdx]).trim().toLowerCase() === username.toLowerCase()) {
+      return { ok: false, message: "ชื่อ \"" + username + "\" มีอยู่ในระบบแล้ว" };
+    }
+  }
+
+  var row = new Array(h.length).fill("");
+  var set = function(k, v) { var idx = h.indexOf(k); if (idx >= 0) row[idx] = v; };
+  set("Username", username);
+  set("Active", true);
+  set("Role", role);
+  set("Password", password ? _hashPwd(password) : "");
+  set("CreatedAt", new Date());
+  sheet.appendRow(row);
+  crSendTelegramGeneric("➕ เพิ่มผู้ใช้ใหม่\n👤 " + username + "\n🔖 " + role + "\nโดย: " + (_getTokenUsername(payload.adminToken) || "-") + deviceTag());
+  return { ok: true };
+}
+
+// 🗑️ ลบผู้ใช้ออกจากระบบ (ลบถาวร — ประวัติการทำงานเดิมยังอยู่ เพราะเก็บเป็นชื่อข้อความ)
+function deleteUser(payload) {
+  if (!verifyAdminToken(payload.adminToken)) return { ok: false, message: "ไม่มีสิทธิ์" };
+  var username = String(payload.username || "").trim();
+  if (!username) return { ok: false, message: "ไม่ระบุชื่อผู้ใช้" };
+  var caller = String(_getTokenUsername(payload.adminToken) || "").trim();
+
+  // 👑 กันลบเจ้าของระบบ และกันลบตัวเอง (กันล็อกตัวเองออก)
+  if (_isSuperAdmin(username)) return { ok: false, message: "บัญชีเจ้าของระบบ ลบไม่ได้" };
+  if (caller.toLowerCase() === username.toLowerCase()) return { ok: false, message: "ลบบัญชีตัวเองไม่ได้" };
+
+  var sheet = getSheet("AppUsers");
+  var data = sheet.getDataRange().getValues();
+  var h = data[0];
+  var uIdx = h.indexOf("Username"), rIdx = h.indexOf("Role");
+  for (var i = data.length - 1; i >= 1; i--) {
+    if (String(data[i][uIdx]).trim().toLowerCase() === username.toLowerCase()) {
+      var targetRole = String(data[i][rIdx] || "").toLowerCase();
+      if (targetRole === "admin" && !_callerIsSuperAdmin(payload.adminToken)) {
+        return { ok: false, message: "เฉพาะเจ้าของระบบเท่านั้นที่ลบ admin ได้" };
+      }
+      sheet.deleteRow(i + 1);
+      crSendTelegramGeneric("🗑️ ลบผู้ใช้\n👤 " + username + " (" + targetRole + ")\nโดย: " + (caller || "-") + deviceTag());
+      return { ok: true };
+    }
+  }
+  return { ok: false, message: "ไม่พบผู้ใช้" };
+}
+
 // 👑 ลด admin คนอื่นทั้งหมดเป็น user — เหลือเจ้าของระบบคนเดียว (เฉพาะเจ้าของระบบกดได้)
 function demoteOtherAdmins(payload) {
   if (!verifyAdminToken(payload.adminToken)) return { ok: false, message: "ไม่มีสิทธิ์" };

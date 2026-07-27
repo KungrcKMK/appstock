@@ -958,7 +958,8 @@ async function rawSubmitAction() {
     return showToast(`⚠️ สต๊อกไม่เพียงพอ — มีอยู่ ${curQty} ไม่สามารถเบิก ${qty} ได้`, "error");
   }
   setRawBusy("rawBtnSubmit",true,"กำลังบันทึก...");
-  showLoading(type==="IN"?"กำลังบันทึกรับเข้า...":"กำลังบันทึกการเบิก...");
+  const _busyText = { IN:"กำลังบันทึกรับเข้า...", RETURN:"กำลังบันทึกการคืน...", OUT:"กำลังบันทึกการเบิก..." };
+  showLoading(_busyText[type] || "กำลังบันทึก...");
   const r = await rawFetch({ action:"UPDATE", sku, type, qty, user:currentUser });
   hideLoading(); setRawBusy("rawBtnSubmit",false);
   if (r.status==="success") { closeRawAction(); showToast("บันทึกสำเร็จ ✔️","success"); rawLoadData(); }

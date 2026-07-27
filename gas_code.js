@@ -313,7 +313,7 @@ function registerUser(payload) {
     }
   }
 
-  var validRoles = ["admin","approver","manager","ceo","viewer","user"];
+  var validRoles = ["admin","approver","manager","viewer","user"];
   var requestedRole = validRoles.includes(String(payload.requestedRole || "").toLowerCase()) ? String(payload.requestedRole).toLowerCase() : "user";
   pendSheet.appendRow([username, new Date(), "PENDING", "", "", requestedRole]);
   crSendTelegramGeneric("📝 คำขอสมัครใหม่\n👤 ชื่อ: " + username + "\n🔖 ขอ Role: " + requestedRole + "\nรอการอนุมัติจาก Admin" + deviceTag());
@@ -376,6 +376,14 @@ function approveUser(payload) {
     }
   }
   if (!found) return { ok: false, message: "ไม่พบคำขอที่รอการอนุมัติ" };
+
+  // 👑 ขอมาเป็น admin ได้เฉพาะเจ้าของระบบอนุมัติ — คนอื่นอนุมัติให้ได้แค่ user
+  if (String(approvedRole).toLowerCase() === "admin" && !_callerIsSuperAdmin(payload.adminToken)) {
+    approvedRole = "user";
+  }
+  if (!["admin","approver","manager","viewer","user"].includes(String(approvedRole).toLowerCase())) {
+    approvedRole = "user";   // role เก่าที่เลิกใช้ (เช่น ceo) → ปรับเป็น user
+  }
 
   // เพิ่มเข้า AppUsers
   const appSheet = getSheet("AppUsers");

@@ -182,12 +182,13 @@ function bhRenderWhereUsed() {
 
   if (!hits.length) { out.innerHTML = '<p style="color:#94a3b8;font-weight:700;font-size:13px;">ไม่พบวัตถุดิบนี้ในสูตรใดเลย</p>'; return; }
 
-  out.innerHTML = hits.map(sku => `
+  out.innerHTML = hits.map(sku => {
+    const nm = String(wu[sku][0].name || "").trim();
+    const title = nm && nm !== sku ? nm : sku;
+    const badge = (nm && nm !== sku) ? `<span style="font-family:monospace;font-size:11px;color:#94a3b8;font-weight:700;margin-left:6px;">${escapeHtml(sku)}</span>` : "";
+    return `
     <div style="border:1px solid #e2e8f0;border-radius:12px;padding:12px 14px;margin-bottom:8px;">
-      <div style="font-weight:900;color:#0f172a;font-size:14px;">
-        ${escapeHtml(wu[sku][0].name || sku)}
-        <span style="font-family:monospace;font-size:11px;color:#94a3b8;font-weight:700;margin-left:6px;">${escapeHtml(sku)}</span>
-      </div>
+      <div style="font-weight:900;color:#0f172a;font-size:14px;">${escapeHtml(title)}${badge}</div>
       <div style="margin-top:7px;display:flex;flex-direction:column;gap:4px;">
         ${wu[sku].map(u => `
           <div style="display:flex;justify-content:space-between;gap:10px;font-size:13px;border-bottom:1px dashed #f1f5f9;padding-bottom:3px;">

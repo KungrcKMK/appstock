@@ -41,13 +41,12 @@ async function loadExecDashboard() {
 function execBuildKpi(allMats) {
   const today = new Date(); today.setHours(0,0,0,0);
   const active = allMats.filter(m => !(m.Discontinued===true||String(m.Discontinued).toUpperCase()==="TRUE"));
-  let crisis=0, urgent=0, warn=0, ok=0, totalDaily=0, totalMonthly=0, lowStock=0;
+  let crisis=0, urgent=0, warn=0, ok=0, lowStock=0;
   active.forEach(m => {
     const qty   = Number(m.Qty||0);
     const daily = Number(m.DailyUsage||0);
     const min   = Number(m.Min||0);
     const days  = daily > 0 ? Math.floor(qty/daily) : null;
-    if (daily > 0) { totalDaily += daily; totalMonthly += daily*30; }
     if (min > 0 && qty <= min) lowStock++;
     if      (days !== null && days <= 7)  crisis++;
     else if (days !== null && days <= 14) urgent++;

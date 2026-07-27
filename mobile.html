@@ -1217,10 +1217,7 @@ async function renderQrList() {
 
   // สร้าง QR data URL ก่อน แล้วค่อย render (หลีกเลี่ยงปัญหา async canvas)
   const qrContent = items.map(item => `RAWMAT|${qrMod}|${item.sku}`);
-  const dataUrls = await Promise.all(qrContent.map(text =>
-    QRCode.toDataURL(text, { width: 80, margin: 1, color: { dark: "#000", light: "#fff" } })
-      .catch(() => "")
-  ));
+  const dataUrls = await Promise.all(qrContent.map(text => qrDataUrl(text, 80)));
 
   el.innerHTML = items.map((item, i) => `
     <div class="bg-slate-800 rounded-2xl p-4 flex items-center gap-4">

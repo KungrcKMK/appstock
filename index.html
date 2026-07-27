@@ -1254,6 +1254,21 @@
   <script src="js/report.js"></script>
   <script src="js/share.js"></script>
 
+  <!-- ═══ 📜 ประวัติของฉัน (ทุก role เห็นได้ — เฉพาะรายการของตัวเอง) ═══ -->
+  <div id="myHistModal" class="hidden fixed inset-0 bg-black/70 backdrop-blur-sm z-[600] flex items-center justify-center p-4">
+    <div class="bg-white w-full max-w-2xl rounded-[2rem] shadow-2xl overflow-hidden flex flex-col" style="max-height:85vh;">
+      <div style="background:linear-gradient(135deg,#312e81,#1e1b4b);padding:18px 22px;display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;">
+        <div>
+          <div style="font-size:18px;font-weight:900;color:#e0e7ff;">📜 ประวัติของฉัน</div>
+          <div id="myHistWhoDesk" style="font-size:12px;color:#a5b4fc;font-weight:700;margin-top:2px;"></div>
+        </div>
+        <button onclick="closeMyHistory()" style="background:rgba(255,255,255,.15);color:#fff;border:none;padding:9px 18px;border-radius:12px;font-weight:800;font-size:13px;cursor:pointer;font-family:inherit;">ปิด</button>
+      </div>
+      <div id="myHistSummaryDesk" style="display:flex;gap:8px;padding:14px 22px 0;flex-wrap:wrap;"></div>
+      <div id="myHistListDesk" style="padding:14px 22px 22px;overflow-y:auto;"></div>
+    </div>
+  </div>
+
   <!-- ═══ แชร์แอปให้พนักงาน (ลิงก์ + QR) ═══ -->
   <div id="shareAppModal" class="hidden fixed inset-0 bg-black/70 backdrop-blur-sm z-[600] flex items-center justify-center p-4">
     <div class="bg-white w-full max-w-md rounded-[2rem] shadow-2xl overflow-hidden">

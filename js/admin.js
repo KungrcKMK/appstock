@@ -157,17 +157,52 @@ async function loadRolesPage() {
     if (!res.ok) { listEl.innerHTML = `<p style="color:#dc2626;text-align:center;font-weight:700;padding:40px 0;">❌ ${escapeHtml(res.message||"")}</p>`; return; }
     const roleColors  = { admin:"#f59e0b", approver:"#0ea5e9", manager:"#8b5cf6", viewer:"#10b981", user:"#94a3b8" };
     const roleLabels  = { admin:"🔧 admin", approver:"✅ approver", manager:"📋 manager", viewer:"👁️ viewer", user:"👤 user" };
-    listEl.innerHTML = `<div style="display:flex;flex-direction:column;gap:10px;">` +
+    const KNOWN = ["user","viewer","approver","manager","admin"];
+    const isSuperViewer = !!res.callerIsSuper;
+    const otherAdmins = res.users.filter(u => !u.isSuper && String(u.role).toLowerCase() === "admin");
+
+    // 👑 แถบเจ้าของระบบ + ปุ่มลด admin คนอื่น (เห็นเฉพาะเจ้าของระบบ)
+    let banner = "";
+    if (isSuperViewer && otherAdmins.length) {
+      banner = `
+      <div style="background:#fffbeb;border:2px solid #fcd34d;border-radius:16px;padding:14px 18px;margin-bottom:12px;">
+        <p style="margin:0;font-weight:900;color:#92400e;font-size:14px;">👑 มี admin คนอื่นอยู่ ${otherAdmins.length} คน</p>
+        <p style="margin:4px 0 10px;font-size:12px;color:#92400e;font-weight:600;">${escapeHtml(otherAdmins.map(u=>u.username).join(", "))}</p>
+        <button onclick="demoteOtherAdmins(event)"
+          style="background:#b45309;color:#fff;border:none;padding:10px 18px;border-radius:12px;font-weight:900;font-size:13px;cursor:pointer;font-family:inherit;">
+          ⬇️ ลดทุกคนเป็น user (เหลือเจ้าของระบบคนเดียว)
+        </button>
+      </div>`;
+    }
+
+    listEl.innerHTML = banner + `<div style="display:flex;flex-direction:column;gap:10px;">` +
       res.users.map(u => {
         const safeU  = escapeJs(u.username||"");
         const safeId = escapeAttr(u.username||"");
         const rc = roleColors[u.role] || "#94a3b8";
+        const unknownRole = !KNOWN.includes(String(u.role).toLowerCase());
+
+        // 👑 เจ้าของระบบ — ล็อกไว้ ไม่ให้แก้จากหน้าจอ
+        if (u.isSuper) {
+          return `
+          <div style="background:linear-gradient(135deg,#fffbeb,#fef3c7);border-radius:16px;padding:16px 20px;border:2px solid #f59e0b;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;">
+            <div style="flex:1;min-width:0;">
+              <p style="margin:0;font-weight:900;font-size:15px;color:#78350f;">👑 ${escapeHtml(u.username||"")}</p>
+              <p style="margin:4px 0 0;font-size:12px;font-weight:800;color:#92400e;">
+                เจ้าของระบบ (Admin สูงสุด)${u.hasPassword ? " &nbsp;🔒 มีรหัสผ่าน" : " &nbsp;🔓 ไม่มีรหัสผ่าน"}
+              </p>
+            </div>
+            <span style="font-size:12px;font-weight:800;color:#92400e;background:#fde68a;padding:8px 14px;border-radius:10px;">🔒 แก้ไขไม่ได้</span>
+          </div>`;
+        }
+
         return `
         <div style="background:#fff;border-radius:16px;padding:16px 20px;border:1.5px solid #e2e8f0;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;box-shadow:0 2px 6px rgba(0,0,0,.04);">
           <div style="flex:1;min-width:0;">
             <p style="margin:0;font-weight:900;font-size:15px;color:#0f172a;">👤 ${escapeHtml(u.username||"")}</p>
             <p style="margin:4px 0 0;font-size:12px;font-weight:700;">
               <span style="background:${rc}22;color:${rc};padding:2px 10px;border-radius:999px;font-size:12px;font-weight:800;">${escapeHtml(roleLabels[u.role]||u.role||"")}</span>
+              ${unknownRole ? `<span style="color:#dc2626;font-weight:800;">&nbsp;⚠️ role เก่า (${escapeHtml(u.role||"")}) — กดบันทึกเพื่อปรับเป็น user</span>` : ""}
               ${u.hasPassword ? "&nbsp;🔒 มีรหัสผ่าน" : "&nbsp;🔓 ไม่มีรหัสผ่าน"}
             </p>
           </div>
@@ -177,7 +212,7 @@ async function loadRolesPage() {
               <option value="viewer"   ${u.role==="viewer"  ?"selected":""}>👁️ viewer</option>
               <option value="approver" ${u.role==="approver"?"selected":""}>✅ approver</option>
               <option value="manager"  ${u.role==="manager" ?"selected":""}>📋 manager</option>
-              <option value="admin"    ${u.role==="admin"   ?"selected":""}>🔧 admin</option>
+              <option value="admin"    ${u.role==="admin"   ?"selected":""} ${isSuperViewer ? "" : "disabled"}>🔧 admin${isSuperViewer ? "" : " (เฉพาะเจ้าของระบบ)"}</option>
             </select>
             <button onclick="saveRolePageUser('${safeU}')"
               style="background:#6366f1;color:#fff;border:none;padding:8px 18px;border-radius:10px;font-weight:800;font-size:13px;cursor:pointer;font-family:inherit;">

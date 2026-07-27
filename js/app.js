@@ -163,7 +163,9 @@ function checkAuth() {
     const rolesBtn = document.getElementById("navBtn-ROLES");
     if (rolesBtn) {
       rolesBtn.style.display = (isAdmin || isManager) ? "" : "none";
-      if (isManager && !isAdmin) rolesBtn.innerHTML = '✅ อนุมัติผู้ใช้<span id="adminNavBadge" class="nav-badge" style="display:none;background:#f59e0b;"></span>';
+      // ตั้งป้ายให้ชัดทุกกรณี (ไม่ใช่แค่ตอน manager ไม่งั้นค้างจากรอบก่อน)
+      const label = isAdmin ? "👑 Admin" : "✅ อนุมัติผู้ใช้";
+      rolesBtn.innerHTML = label + '<span id="adminNavBadge" class="nav-badge" style="display:none;background:#f59e0b;"></span>';
     }
     // ตรวจสูตรการผลิต — ตอนนี้เปิดให้ admin เท่านั้น
     // (จะเปิดให้ manager ทีหลัง — เปลี่ยนเป็น isExecDash เมื่อพร้อม)

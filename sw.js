@@ -19,7 +19,8 @@ const STATIC_ASSETS = [
   "./js/exec.js",
   "./js/coldroom.js",
   "./js/raw.js",
-  "./js/alerts.js"
+  "./js/alerts.js",
+  "./js/report.js"
 ];
 
 // CDN ที่ cache ด้วย (fonts, charts, qrcode)

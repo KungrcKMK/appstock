@@ -936,8 +936,8 @@ function bomHealthReport() {
   }
 
   // ── 4) วัตถุดิบในคลัง (ทั้ง 2 โรงงาน) ──
-  var matBySku = {};    // sku -> { name, unit, dailyUsage, discontinued, module }
-  var matByName = {};   // ชื่อ -> sku  (ใช้จับคู่กับประวัติที่เก็บแค่ชื่อ)
+  var matBySku = {};                        // sku -> { name, unit, dailyUsage, discontinued, module }
+  var matByName = { SQF: {}, MLM: {} };     // แยกตามโรงงาน — ชื่อซ้ำข้ามโรงงานได้ (เช่น "น้ำตาล")
   ["SQF", "MLM"].forEach(function(mod) {
     var s = getSheet(mod + "_Materials");
     var d = s.getDataRange().getValues();
@@ -951,12 +951,13 @@ function bomHealthReport() {
       var disc = d[m][cX] === true || String(d[m][cX]).toUpperCase() === "TRUE";
       var nm = String(d[m][cN] || "").trim();
       matBySku[sk] = { name: nm, unit: String(d[m][cU] || "").trim(), dailyUsage: Number(d[m][cD]) || 0, discontinued: disc, module: mod };
-      if (nm) matByName[nm] = sk;
+      if (nm) matByName[mod][nm] = sk;
     }
   });
 
   // ── 5) วัตถุดิบที่ถูกเบิกจริง (อ่านประวัติ 300 แถวล่าสุดต่อโรงงาน) ──
-  var withdrawnByName = {};   // ชื่อ -> { count, qty, module }
+  // ประวัติเก็บแค่ "ชื่อ" ไม่มี SKU จึงต้องจับคู่ชื่อ "ภายในโรงงานเดียวกัน" เท่านั้น
+  var withdrawn = {};   // key "MOD ชื่อ" -> { module, name, count, qty }
   ["SQF", "MLM"].forEach(function(mod) {
     var s = getSheet(mod + "_History");
     var last = s.getLastRow();
@@ -969,9 +970,10 @@ function bomHealthReport() {
       if (String(d[r][cA] || "") !== "เบิกออก") continue;
       var nm = String(d[r][cN] || "").trim();
       if (!nm) continue;
-      if (!withdrawnByName[nm]) withdrawnByName[nm] = { count: 0, qty: 0, module: mod };
-      withdrawnByName[nm].count++;
-      withdrawnByName[nm].qty += Number(d[r][cQ]) || 0;
+      var key = mod + " " + nm;
+      if (!withdrawn[key]) withdrawn[key] = { module: mod, name: nm, count: 0, qty: 0 };
+      withdrawn[key].count++;
+      withdrawn[key].qty += Number(d[r][cQ]) || 0;
     }
   });
 

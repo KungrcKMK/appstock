@@ -363,34 +363,37 @@ function approveUser(payload) {
   var rbCol = ph.indexOf("ReviewedBy");
 
   var rrCol = ph.indexOf("RequestedRole");
-  var found = false;
+
+  // ── ขั้นที่ 1: หาแถวคำขอ + อ่าน role ที่ขอ (ยังไม่เขียนอะไร) ──
+  var rowIdx = -1;
   var approvedRole = "user";
   for (var i = 1; i < pendData.length; i++) {
     if (String(pendData[i][uCol]).trim().toLowerCase() === username.toLowerCase() && String(pendData[i][sCol]) === "PENDING") {
       approvedRole = rrCol >= 0 ? String(pendData[i][rrCol] || "user") : "user";
-      pendSheet.getRange(i + 1, sCol  + 1).setValue("APPROVED");
-      pendSheet.getRange(i + 1, raCol + 1).setValue(new Date());
-      pendSheet.getRange(i + 1, rbCol + 1).setValue(requester);
-      found = true;
+      rowIdx = i;
       break;
     }
   }
-  if (!found) return { ok: false, message: "ไม่พบคำขอที่รอการอนุมัติ" };
+  if (rowIdx < 0) return { ok: false, message: "ไม่พบคำขอที่รอการอนุมัติ" };
 
+  // ── ขั้นที่ 2: ตรวจสิทธิ์ให้จบก่อน แล้วค่อยเขียน (ไม่งั้นคำขอถูกกินทิ้งตอนปฏิเสธ) ──
   approvedRole = String(approvedRole || "user").toLowerCase();
   if (!["admin","manager","viewer","user"].includes(approvedRole)) {
     approvedRole = "user";   // role เก่าที่เลิกใช้ (เช่น ceo/approver) → ปรับเป็น user
   }
-
-  // 👑 ขอมาเป็น admin ได้เฉพาะเจ้าของระบบอนุมัติ — คนอื่นอนุมัติให้ได้แค่ user
+  // 👑 ตั้ง admin ได้เฉพาะเจ้าของระบบ
   if (approvedRole === "admin" && !_callerIsSuperAdmin(payload.adminToken)) {
     approvedRole = "user";
   }
-
-  // manager อนุมัติได้เฉพาะ user / viewer — ถ้าขอสิทธิ์สูงกว่านั้นต้องให้ admin จัดการ
+  // manager อนุมัติได้เฉพาะ user / viewer — สูงกว่านั้นต้องให้ admin จัดการ (คำขอยังคงค้างไว้เหมือนเดิม)
   if (!verifyAdminToken(payload.adminToken) && ["admin","manager"].indexOf(approvedRole) >= 0) {
     return { ok: false, message: "คำขอนี้ขอสิทธิ์ระดับ " + approvedRole + " — ต้องให้ผู้ดูแลระบบ (admin) อนุมัติ" };
   }
+
+  // ── ขั้นที่ 3: ผ่านทุกด่านแล้วค่อยบันทึก ──
+  pendSheet.getRange(rowIdx + 1, sCol  + 1).setValue("APPROVED");
+  pendSheet.getRange(rowIdx + 1, raCol + 1).setValue(new Date());
+  pendSheet.getRange(rowIdx + 1, rbCol + 1).setValue(requester);
 
   // เพิ่มเข้า AppUsers
   const appSheet = getSheet("AppUsers");

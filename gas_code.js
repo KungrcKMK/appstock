@@ -1828,7 +1828,23 @@ function setUserRole(payload) {
   var newRole     = String(payload.role||"user").trim();
   var newPassword = payload.password !== undefined ? String(payload.password||"").trim() : undefined;
   if (!username) return { ok: false, message: "ไม่ระบุชื่อผู้ใช้" };
-  if (!["admin","approver","manager","ceo","viewer","user"].includes(newRole)) return { ok: false, message: "Role ไม่ถูกต้อง" };
+  if (!["admin","approver","manager","viewer","user"].includes(newRole)) return { ok: false, message: "Role ไม่ถูกต้อง" };
+
+  // 👑 ป้องกันบัญชีเจ้าของระบบ — ห้ามใครแตะ ยกเว้นตัวเอง (และเปลี่ยนได้แค่รหัสผ่าน)
+  if (_isSuperAdmin(username)) {
+    if (!_callerIsSuperAdmin(payload.adminToken)) {
+      return { ok: false, message: "บัญชีเจ้าของระบบ แก้ไขไม่ได้" };
+    }
+    if (newRole !== "admin") {
+      return { ok: false, message: "บัญชีเจ้าของระบบต้องเป็น admin เสมอ" };
+    }
+  }
+
+  // 👑 ตั้งคนอื่นเป็น admin ได้เฉพาะเจ้าของระบบ
+  if (newRole === "admin" && !_isSuperAdmin(username) && !_callerIsSuperAdmin(payload.adminToken)) {
+    return { ok: false, message: "เฉพาะเจ้าของระบบเท่านั้นที่ตั้ง admin ได้" };
+  }
+
   var sheet = getSheet("AppUsers");
   ensureColumns(sheet, ["Password"]);
   var data = sheet.getDataRange().getValues(); var h = data[0];

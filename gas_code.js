@@ -591,6 +591,7 @@ function handleColdroom(action, payload) {
     case "getColdRoomProducts":   return crGetColdRoomProducts();
     case "updateProduct":         return crUpdateProduct(payload);
     case "getBomList":            return bomGetList();
+    case "getBomHealth":          return bomHealthReport();
     case "getBomForProduct":      return bomGetForProduct(payload.barcode);
     case "saveBom":               return bomSave(payload);
     case "deleteBom":             return bomDelete(payload.barcode);

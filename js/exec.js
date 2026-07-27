@@ -220,9 +220,6 @@ function execRawSection(icon, title, accentColor, bgTint, mats) {
       ${miniKpi("🟠 เร่งด่วน", urgent2, "#fdba74", "rgba(67,20,7,.5)")}
       ${miniKpi("⏳ ควรสั่ง", warn2, "#fcd34d", "rgba(69,26,3,.5)")}
       ${miniKpi("✅ ปกติ", ok2, "#6ee7b7", "rgba(5,46,22,.5)")}
-      <div style="flex:1;min-width:120px;"></div>
-      ${miniKpi("⚡ ใช้/วัน", secDaily.toLocaleString("th-TH",{maximumFractionDigits:1}), "#93c5fd", "rgba(12,20,69,.5)")}
-      ${miniKpi("📦 ใช้/เดือน", secMonthly.toLocaleString("th-TH",{maximumFractionDigits:0}), "#c4b5fd", "rgba(13,13,26,.5)")}
     </div>
     <!-- Table -->
     ${items.length === 0

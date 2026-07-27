@@ -157,8 +157,14 @@ function checkAuth() {
     const isExecDash = roleLower === "admin" || roleLower === "viewer" || roleLower === "manager";
     const execBtn = document.getElementById("navBtn-EXEC");
     if (execBtn) execBtn.style.display = isExecDash ? "" : "none";
+    // 👑 Admin เห็นทุกแท็บ · manager เห็นเฉพาะแท็บ "คำขอ" (อนุมัติ user/viewer ได้)
+    const isManager = roleLower === "manager";
+    window._appIsAdmin = isAdmin;
     const rolesBtn = document.getElementById("navBtn-ROLES");
-    if (rolesBtn) rolesBtn.style.display = isAdmin ? "" : "none";
+    if (rolesBtn) {
+      rolesBtn.style.display = (isAdmin || isManager) ? "" : "none";
+      if (isManager && !isAdmin) rolesBtn.innerHTML = '✅ อนุมัติผู้ใช้<span id="adminNavBadge" class="nav-badge" style="display:none;background:#f59e0b;"></span>';
+    }
     // ตรวจสูตรการผลิต — ตอนนี้เปิดให้ admin เท่านั้น
     // (จะเปิดให้ manager ทีหลัง — เปลี่ยนเป็น isExecDash เมื่อพร้อม)
     const canSeeBomHealth = isAdmin;

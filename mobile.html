@@ -568,6 +568,62 @@ window.addEventListener("DOMContentLoaded", () => {
 });
 
 // ─────────────────────────────────────────────
+// 📜 ประวัติของฉัน — เห็นเฉพาะที่ตัวเองทำ (ไม่มียอดสต๊อก ไม่มีของคนอื่น)
+// ─────────────────────────────────────────────
+const MYHIST_STYLE = {
+  "เบิกออก":          { icon:"📤", cls:"text-orange-300",  bg:"bg-orange-950" },
+  "รับเข้า":          { icon:"📥", cls:"text-emerald-300", bg:"bg-emerald-950" },
+  "คืนวัตถุดิบ":      { icon:"↩️", cls:"text-sky-300",     bg:"bg-sky-950" },
+  "ตรวจนับ/ปรับยอด":  { icon:"📊", cls:"text-cyan-300",    bg:"bg-cyan-950" },
+  "สร้างรายการ":      { icon:"🆕", cls:"text-violet-300",  bg:"bg-violet-950" }
+};
+
+async function openMyHistory() {
+  $("myHistSheet").classList.remove("hidden");
+  $("myHistWho").textContent = user || "";
+  $("myHistSummary").innerHTML = "";
+  $("myHistList").innerHTML = '<p class="text-slate-500 text-center py-10 font-bold">⏳ กำลังโหลด...</p>';
+  try {
+    const r = await gasPost({ module: "SYSTEM", action: "getMyHistory", username: user });
+    if (!r.ok) { $("myHistList").innerHTML = `<p class="text-red-400 text-center py-10 font-bold">${r.message || "โหลดไม่สำเร็จ"}</p>`; return; }
+
+    const sum = r.summary || {};
+    const keys = Object.keys(sum);
+    $("myHistSummary").innerHTML = keys.length
+      ? keys.map(k => {
+          const st = MYHIST_STYLE[k] || { icon:"•", cls:"text-slate-300", bg:"bg-slate-800" };
+          return `<div class="${st.bg} rounded-2xl px-4 py-2 flex-shrink-0 text-center">
+            <div class="text-xl font-black ${st.cls}">${sum[k]}</div>
+            <div class="text-[10px] font-bold text-slate-400 mt-0.5">${st.icon} ${k}</div>
+          </div>`;
+        }).join("")
+      : "";
+
+    const rows = r.rows || [];
+    $("myHistList").innerHTML = rows.length
+      ? rows.map(x => {
+          const st = MYHIST_STYLE[x.action] || { icon:"•", cls:"text-slate-300", bg:"bg-slate-800" };
+          return `<div class="bg-slate-900 border border-slate-800 rounded-2xl px-4 py-3 flex items-center gap-3">
+            <div class="${st.bg} ${st.cls} w-11 h-11 rounded-xl flex items-center justify-center text-xl flex-shrink-0">${st.icon}</div>
+            <div class="flex-1 min-w-0">
+              <div class="font-black text-white text-sm truncate">${x.name}</div>
+              <div class="text-[11px] text-slate-500 font-bold">${x.action} · ${x.module}</div>
+            </div>
+            <div class="text-right flex-shrink-0">
+              <div class="font-black ${st.cls} text-lg">${x.qty}</div>
+              <div class="text-[10px] text-slate-600 font-bold">${x.when}</div>
+            </div>
+          </div>`;
+        }).join("")
+      : '<p class="text-slate-500 text-center py-10 font-bold">ยังไม่มีรายการของคุณ</p>';
+  } catch (e) {
+    $("myHistList").innerHTML = '<p class="text-red-400 text-center py-10 font-bold">เชื่อมต่อไม่สำเร็จ</p>';
+  }
+}
+
+function closeMyHistory() { $("myHistSheet").classList.add("hidden"); }
+
+// ─────────────────────────────────────────────
 // QR helper — qrcodejs วาดลง DOM ไม่มี toDataURL ให้ตรงๆ
 // จึงวาดลง div ซ่อนไว้แล้วดึง data URL ออกมา
 // ─────────────────────────────────────────────

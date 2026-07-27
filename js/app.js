@@ -159,6 +159,9 @@ function checkAuth() {
     if (execBtn) execBtn.style.display = isExecDash ? "" : "none";
     const rolesBtn = document.getElementById("navBtn-ROLES");
     if (rolesBtn) rolesBtn.style.display = isAdmin ? "" : "none";
+    // สุขภาพข้อมูล BOM — ระดับหัวหน้าขึ้นไป (ชี้ไปที่ข้อมูล ไม่ใช่ตัวบุคคล)
+    const bomHealthBtn = document.getElementById("navBtn-BOMHEALTH");
+    if (bomHealthBtn) bomHealthBtn.style.display = isExecDash ? "" : "none";
     const actBtn = document.getElementById("activityNavBtn");
     if (actBtn) actBtn.style.display = isAdmin ? "" : "none";
     const tgBtn = document.getElementById("telegramNavBtn");

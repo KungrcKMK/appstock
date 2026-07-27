@@ -153,7 +153,7 @@ function checkAuth() {
     const roleLower  = currentRole.toLowerCase();
     const isAdmin    = roleLower === "admin";
     const isViewer   = roleLower === "viewer";
-    const isApprover = roleLower === "admin" || roleLower === "approver" || roleLower === "manager";
+    const isApprover = roleLower === "admin" || roleLower === "manager";
     const isExecDash = roleLower === "admin" || roleLower === "viewer" || roleLower === "manager";
     const execBtn = document.getElementById("navBtn-EXEC");
     if (execBtn) execBtn.style.display = isExecDash ? "" : "none";

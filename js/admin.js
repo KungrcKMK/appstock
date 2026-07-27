@@ -113,7 +113,7 @@ async function loadUsers() {
       body: JSON.stringify({ module: "SYSTEM", action: "getUsers", payload: { adminToken: _adminToken } })
     }).then(r => r.json());
     if (!res.ok) { listEl.innerHTML = `<p class="text-red-500 text-center text-sm font-bold py-4">❌ ${escapeHtml(res.message||"")}</p>`; return; }
-    const roleColors = { admin: "#f59e0b", approver: "#0ea5e9", user: "#64748b" };
+    const roleColors = { admin: "#f59e0b", manager: "#8b5cf6", user: "#64748b" };
     listEl.innerHTML = res.users.map(u => {
       const safeU = escapeJs(u.username||""); // ป้องกัน onclick injection
       const safeId = escapeAttr(u.username||""); // ป้องกัน HTML injection ใน id attribute
@@ -130,7 +130,6 @@ async function loadUsers() {
           <select id="roleSelect-${safeId}" style="padding:5px 8px;border-radius:8px;border:2px solid #e2e8f0;font-size:12px;font-weight:800;">
             <option value="user"     ${u.role==="user"    ?"selected":""}>👤 user — พนักงานทั่วไป</option>
             <option value="viewer"   ${u.role==="viewer"  ?"selected":""}>👁️ viewer — ดูข้อมูล + ภาพรวม</option>
-            <option value="approver" ${u.role==="approver"?"selected":""}>✅ approver — อนุมัติ</option>
             <option value="manager"  ${u.role==="manager" ?"selected":""}>📋 manager — ผู้จัดการ</option>
             <option value="admin"    ${u.role==="admin"   ?"selected":""}>🔧 admin — ผู้ดูแลระบบ</option>
           </select>
@@ -155,9 +154,9 @@ async function loadRolesPage() {
       body: JSON.stringify({ module: "SYSTEM", action: "getUsers", payload: { adminToken: _adminToken } })
     }).then(r => r.json());
     if (!res.ok) { listEl.innerHTML = `<p style="color:#dc2626;text-align:center;font-weight:700;padding:40px 0;">❌ ${escapeHtml(res.message||"")}</p>`; return; }
-    const roleColors  = { admin:"#f59e0b", approver:"#0ea5e9", manager:"#8b5cf6", viewer:"#10b981", user:"#94a3b8" };
-    const roleLabels  = { admin:"🔧 admin", approver:"✅ approver", manager:"📋 manager", viewer:"👁️ viewer", user:"👤 user" };
-    const KNOWN = ["user","viewer","approver","manager","admin"];
+    const roleColors  = { admin:"#f59e0b", manager:"#8b5cf6", viewer:"#10b981", user:"#94a3b8" };
+    const roleLabels  = { admin:"🔧 admin", manager:"📋 manager", viewer:"👁️ viewer", user:"👤 user" };
+    const KNOWN = ["user","viewer","manager","admin"];
     const isSuperViewer = !!res.callerIsSuper;
     const otherAdmins = res.users.filter(u => !u.isSuper && String(u.role).toLowerCase() === "admin");
 
@@ -210,7 +209,6 @@ async function loadRolesPage() {
             <select id="rpRoleSelect-${safeId}" style="padding:8px 10px;border-radius:10px;border:2px solid #e2e8f0;font-size:13px;font-weight:800;font-family:inherit;outline:none;cursor:pointer;">
               <option value="user"     ${u.role==="user"    ?"selected":""}>👤 user</option>
               <option value="viewer"   ${u.role==="viewer"  ?"selected":""}>👁️ viewer</option>
-              <option value="approver" ${u.role==="approver"?"selected":""}>✅ approver</option>
               <option value="manager"  ${u.role==="manager" ?"selected":""}>📋 manager</option>
               <option value="admin"    ${u.role==="admin"   ?"selected":""} ${isSuperViewer ? "" : "disabled"}>🔧 admin${isSuperViewer ? "" : " (เฉพาะเจ้าของระบบ)"}</option>
             </select>

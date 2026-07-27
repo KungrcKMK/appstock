@@ -226,6 +226,26 @@ async function loadRolesPage() {
   }
 }
 
+// 👑 ลด admin คนอื่นทั้งหมดเป็น user (เฉพาะเจ้าของระบบ)
+async function demoteOtherAdmins(evt) {
+  if (!confirm("ลด admin คนอื่นทั้งหมดเป็น user?\n\nจะเหลือเจ้าของระบบเป็น admin คนเดียว\nเปลี่ยนกลับได้ภายหลังจากหน้านี้")) return;
+  await guardedClick(evt?.currentTarget, async () => {
+    try {
+      const res = await fetch(GAS_URL, {
+        method: "POST",
+        headers: { "Content-Type": "text/plain;charset=utf-8" },
+        body: JSON.stringify({ module: "SYSTEM", action: "demoteOtherAdmins", payload: { adminToken: _adminToken } })
+      }).then(r => r.json());
+      if (res.ok) {
+        showToast(res.count ? `⬇️ ลด ${res.count} คนเป็น user แล้ว` : "ไม่มี admin คนอื่นให้ลด", "success");
+        loadRolesPage();
+      } else {
+        showToast(res.message || "ไม่สำเร็จ", "error");
+      }
+    } catch (e) { showToast("เชื่อมต่อไม่สำเร็จ: " + e.message, "error"); }
+  });
+}
+
 async function saveRolePageUser(username) {
   const roleEl = document.getElementById("rpRoleSelect-" + username);
   if (!roleEl) return;

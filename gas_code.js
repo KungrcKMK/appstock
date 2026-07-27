@@ -321,7 +321,7 @@ function registerUser(payload) {
 }
 
 function getPendingUsers(payload) {
-  if (!verifyAdminToken(payload.adminToken)) return { ok: false, message: "ไม่มีสิทธิ์ กรุณาเข้าสู่ระบบใหม่" };
+  if (!verifyApproverToken(payload.adminToken)) return { ok: false, message: "ไม่มีสิทธิ์ กรุณาเข้าสู่ระบบใหม่" };
 
   const pendSheet = getSheet("PendingUsers");
   const data = pendSheet.getDataRange().getValues();
@@ -348,7 +348,7 @@ function getPendingUsers(payload) {
 }
 
 function approveUser(payload) {
-  if (!verifyAdminToken(payload.adminToken)) return { ok: false, message: "ไม่มีสิทธิ์ กรุณาเข้าสู่ระบบใหม่" };
+  if (!verifyApproverToken(payload.adminToken)) return { ok: false, message: "ไม่มีสิทธิ์ กรุณาเข้าสู่ระบบใหม่" };
   var requesterRaw = _getTokenUsername(payload.adminToken) || "admin";
   var requester = requesterRaw.charAt(0).toUpperCase() + requesterRaw.slice(1);
   var username = String(payload.username || "").trim();
@@ -377,12 +377,19 @@ function approveUser(payload) {
   }
   if (!found) return { ok: false, message: "ไม่พบคำขอที่รอการอนุมัติ" };
 
+  approvedRole = String(approvedRole || "user").toLowerCase();
+  if (!["admin","manager","viewer","user"].includes(approvedRole)) {
+    approvedRole = "user";   // role เก่าที่เลิกใช้ (เช่น ceo/approver) → ปรับเป็น user
+  }
+
   // 👑 ขอมาเป็น admin ได้เฉพาะเจ้าของระบบอนุมัติ — คนอื่นอนุมัติให้ได้แค่ user
-  if (String(approvedRole).toLowerCase() === "admin" && !_callerIsSuperAdmin(payload.adminToken)) {
+  if (approvedRole === "admin" && !_callerIsSuperAdmin(payload.adminToken)) {
     approvedRole = "user";
   }
-  if (!["admin","manager","viewer","user"].includes(String(approvedRole).toLowerCase())) {
-    approvedRole = "user";   // role เก่าที่เลิกใช้ (เช่น ceo) → ปรับเป็น user
+
+  // manager อนุมัติได้เฉพาะ user / viewer — ถ้าขอสิทธิ์สูงกว่านั้นต้องให้ admin จัดการ
+  if (!verifyAdminToken(payload.adminToken) && ["admin","manager"].indexOf(approvedRole) >= 0) {
+    return { ok: false, message: "คำขอนี้ขอสิทธิ์ระดับ " + approvedRole + " — ต้องให้ผู้ดูแลระบบ (admin) อนุมัติ" };
   }
 
   // เพิ่มเข้า AppUsers
@@ -394,7 +401,7 @@ function approveUser(payload) {
 }
 
 function rejectUser(payload) {
-  if (!verifyAdminToken(payload.adminToken)) return { ok: false, message: "ไม่มีสิทธิ์ กรุณาเข้าสู่ระบบใหม่" };
+  if (!verifyApproverToken(payload.adminToken)) return { ok: false, message: "ไม่มีสิทธิ์ กรุณาเข้าสู่ระบบใหม่" };
   var requesterRaw = _getTokenUsername(payload.adminToken) || "admin";
   var requester = requesterRaw.charAt(0).toUpperCase() + requesterRaw.slice(1);
   var username = String(payload.username || "").trim();

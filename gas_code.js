@@ -241,8 +241,8 @@ function verifyUser(payload) {
 
       _clearRateLimit(username); // reset นับหลังล็อกอินสำเร็จ
       const role = String(data[i][h.indexOf("Role")] || "user");
-      // ออก token ให้ admin/approver/manager ทุกคนที่ผ่าน login
-      const needsToken = (role === "admin" || role === "approver" || role === "manager");
+      // ออก token ให้ admin/manager ทุกคนที่ผ่าน login (manager = อนุมัติได้)
+      const needsToken = (role === "admin" || role === "manager");
       const adminToken = needsToken ? _issueToken(username, role) : null;
 
       return { ok: true, role, adminToken };

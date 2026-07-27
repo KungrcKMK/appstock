@@ -1835,6 +1835,55 @@ function getUsers(payload) {
   return { ok: true, users: users, callerIsSuper: _callerIsSuperAdmin(payload.adminToken) };
 }
 
+// ══════════════════════════════════════════
+// 📜 ประวัติของฉัน — พนักงานดูรายการที่ "ตัวเองทำ" เท่านั้น
+//   ตั้งใจไม่ส่ง: ยอดคงเหลือ, ขั้นต่ำ, อัตราใช้/วัน, รายการของคนอื่น
+//   (กันข้อมูลทางการค้ารั่ว — ส่งเฉพาะสิ่งที่เจ้าตัวทำเอง ซึ่งเขารู้อยู่แล้ว)
+// ══════════════════════════════════════════
+function getMyHistory(payload) {
+  var username = String(payload.username || "").trim();
+  if (!username) return { ok: false, message: "ไม่ระบุชื่อผู้ใช้" };
+  var uLower = username.toLowerCase();
+  var limit  = Math.min(Number(payload.limit) || 60, 100);
+
+  var rows = [];
+  ["SQF", "MLM"].forEach(function(mod) {
+    var s = getSheet(mod + "_History");
+    var last = s.getLastRow();
+    if (last <= 1) return;
+    var h = s.getRange(1, 1, 1, s.getLastColumn()).getValues()[0];
+    var n = Math.min(400, last - 1);                 // ดูย้อนหลังพอประมาณแล้วค่อยกรอง
+    var d = s.getRange(last - n + 1, 1, n, h.length).getValues();
+    var cT = h.indexOf("Timestamp"), cN = h.indexOf("Name"),
+        cA = h.indexOf("Action"), cQ = h.indexOf("Qty"), cU = h.indexOf("User");
+    for (var i = d.length - 1; i >= 0; i--) {
+      // User เก็บเป็น "ชื่อ (📱 อุปกรณ์)" → ตัดส่วนอุปกรณ์ออกก่อนเทียบ
+      var raw = String(d[i][cU] || "");
+      var who = raw.split(" (")[0].trim().toLowerCase();
+      if (who !== uLower) continue;
+      var ts = d[i][cT] ? new Date(d[i][cT]) : null;
+      rows.push({
+        when:   ts && !isNaN(ts) ? Utilities.formatDate(ts, Session.getScriptTimeZone(), "dd/MM/yy HH:mm") : "",
+        _ts:    ts && !isNaN(ts) ? ts.getTime() : 0,
+        module: mod,
+        name:   String(d[i][cN] || ""),
+        action: String(d[i][cA] || ""),
+        qty:    d[i][cQ] !== "" ? String(d[i][cQ]) : ""
+      });
+    }
+  });
+
+  rows.sort(function(a, b) { return b._ts - a._ts; });
+  rows = rows.slice(0, limit);
+  rows.forEach(function(r) { delete r._ts; });
+
+  // สรุปสั้นๆ ให้เจ้าตัวเห็นภาพงานตัวเอง (นับจำนวนครั้ง ไม่ใช่ยอดสต๊อก)
+  var count = { "เบิกออก": 0, "รับเข้า": 0, "คืนวัตถุดิบ": 0, "ตรวจนับ/ปรับยอด": 0 };
+  rows.forEach(function(r) { if (count[r.action] !== undefined) count[r.action]++; });
+
+  return { ok: true, username: username, rows: rows, summary: count };
+}
+
 // ➕ เพิ่มผู้ใช้โดยตรง (ไม่ต้องรอเขาส่งคำขอ)
 function createUser(payload) {
   if (!verifyAdminToken(payload.adminToken)) return { ok: false, message: "ไม่มีสิทธิ์" };

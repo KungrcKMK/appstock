@@ -101,6 +101,79 @@ async function login() {
   }
 }
 
+// ─────────────────────────────────────────────
+// 🙋 ขอสิทธิ์เข้าใช้งาน — แสดงตรงหน้า login เลย ไม่ต้องพิมพ์ชื่อซ้ำ
+// ─────────────────────────────────────────────
+let _accessReqUser = "";
+
+function _hideAccessBox() {
+  const box = document.getElementById("accessBox");
+  if (box) box.style.display = "none";
+}
+
+// kind: notfound | pending | rejected | sent
+function _showAccessBox(kind, msg, username) {
+  const box  = document.getElementById("accessBox");
+  const msgP = document.getElementById("accessMsg");
+  const btn  = document.getElementById("accessBtn");
+  const hint = document.getElementById("accessHint");
+  if (!box) { alert(msg || ""); return; }
+  _accessReqUser = username || "";
+
+  const tone = {
+    notfound: { bg:"#fffbeb", bd:"#fcd34d", fg:"#92400e", icon:"❓",
+                hint:"กดปุ่มด้านล่างเพื่อส่งคำขอ แล้วรอหัวหน้าเปิดสิทธิ์ให้", showBtn:true },
+    pending:  { bg:"#eff6ff", bd:"#93c5fd", fg:"#1e40af", icon:"⏳",
+                hint:"หัวหน้าได้รับคำขอแล้ว เมื่ออนุมัติจะเข้าใช้งานได้ทันที", showBtn:false },
+    rejected: { bg:"#fef2f2", bd:"#fca5a5", fg:"#991b1b", icon:"🚫",
+                hint:"กรุณาติดต่อหัวหน้างานโดยตรง", showBtn:false },
+    sent:     { bg:"#f0fdf4", bd:"#86efac", fg:"#166534", icon:"✅",
+                hint:"หัวหน้าจะได้รับแจ้งเตือน เมื่ออนุมัติแล้วลองเข้าสู่ระบบอีกครั้ง", showBtn:false }
+  }[kind] || { bg:"#f8fafc", bd:"#cbd5e1", fg:"#334155", icon:"ℹ️", hint:"", showBtn:false };
+
+  box.style.background  = tone.bg;
+  box.style.border      = "2px solid " + tone.bd;
+  box.style.display     = "";
+  msgP.style.color      = tone.fg;
+  msgP.textContent      = tone.icon + " " + (msg || "");
+  hint.style.color      = tone.fg;
+  hint.textContent      = tone.hint;
+  btn.style.display     = tone.showBtn ? "" : "none";
+  btn.disabled          = false;
+  btn.textContent       = "🙋 ขอสิทธิ์เข้าใช้งานจาก Admin";
+}
+
+async function submitAccessRequest() {
+  const user = _accessReqUser || (document.getElementById("usernameInput")?.value || "").trim();
+  if (!user) { alert("กรุณาระบุชื่อก่อน"); return; }
+  const btn = document.getElementById("accessBtn");
+  await guardedClick(btn, async () => {
+    try {
+      const res = await fetch(GAS_URL, {
+        method: "POST",
+        headers: { "Content-Type": "text/plain;charset=utf-8" },
+        body: JSON.stringify({
+          module: "SYSTEM", action: "registerUser",
+          payload: { username: user, requestedRole: "user" },
+          deviceName: getDeviceInfo()
+        })
+      }).then(r => r.json());
+
+      if (res.ok) {
+        _showAccessBox("sent", "ส่งคำขอสำหรับ \"" + user + "\" เรียบร้อยแล้ว", user);
+      } else if (/รอการอนุมัติ/.test(res.message || "")) {
+        _showAccessBox("pending", res.message, user);
+      } else if (/ปฏิเสธ/.test(res.message || "")) {
+        _showAccessBox("rejected", res.message, user);
+      } else {
+        _showAccessBox("notfound", res.message || "ส่งคำขอไม่สำเร็จ", user);
+      }
+    } catch (e) {
+      alert("เชื่อมต่อไม่สำเร็จ: " + e.message);
+    }
+  });
+}
+
 async function loginWithPassword() {
   const user = (document.getElementById("usernameInput")?.value || "").trim();
   const pass = (document.getElementById("passwordInput")?.value || "").trim();

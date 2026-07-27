@@ -212,7 +212,8 @@ function switchModule(mod) {
     loadBomHealth();
   } else if (mod === "ROLES") {
     document.getElementById("module-ROLES").classList.remove("hide");
-    loadPendingUsers();
+    // ผ่าน adminSwitchTab เพื่อให้ตรรกะซ่อนแท็บตาม role ทำงานด้วย
+    adminSwitchTab("pending");
   } else if (mod === "COLDROOM") {
     document.getElementById("module-COLDROOM").classList.remove("hide");
     if (!crInitDone) initColdroom();

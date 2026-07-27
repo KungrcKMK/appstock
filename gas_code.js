@@ -1824,10 +1824,36 @@ function getUsers(payload) {
       username:    uname,
       role:        String(data[i][h.indexOf("Role")]||"user"),
       active:      data[i][h.indexOf("Active")],
-      hasPassword: String(data[i][h.indexOf("Password")]||"").trim() !== ""
+      hasPassword: String(data[i][h.indexOf("Password")]||"").trim() !== "",
+      isSuper:     _isSuperAdmin(uname)
     });
   }
-  return { ok: true, users: users };
+  // บอกหน้าจอด้วยว่าคนที่กำลังดูอยู่เป็นเจ้าของระบบหรือไม่ (ใช้ตัดสินว่าจะโชว์ปุ่มไหน)
+  return { ok: true, users: users, callerIsSuper: _callerIsSuperAdmin(payload.adminToken) };
+}
+
+// 👑 ลด admin คนอื่นทั้งหมดเป็น user — เหลือเจ้าของระบบคนเดียว (เฉพาะเจ้าของระบบกดได้)
+function demoteOtherAdmins(payload) {
+  if (!verifyAdminToken(payload.adminToken)) return { ok: false, message: "ไม่มีสิทธิ์" };
+  if (!_callerIsSuperAdmin(payload.adminToken)) {
+    return { ok: false, message: "เฉพาะเจ้าของระบบเท่านั้นที่ทำได้" };
+  }
+  var sheet = getSheet("AppUsers");
+  var data  = sheet.getDataRange().getValues();
+  var h = data[0];
+  var uIdx = h.indexOf("Username"), rIdx = h.indexOf("Role");
+  var demoted = [];
+  for (var i = 1; i < data.length; i++) {
+    var uname = String(data[i][uIdx] || "").trim();
+    if (!uname || _isSuperAdmin(uname)) continue;
+    if (String(data[i][rIdx] || "").toLowerCase() !== "admin") continue;
+    sheet.getRange(i + 1, rIdx + 1).setValue("user");
+    demoted.push(uname);
+  }
+  if (demoted.length) {
+    crSendTelegramGeneric("👑 ปรับสิทธิ์: ลด admin " + demoted.length + " คนเป็น user\n" + demoted.join(", ") + deviceTag());
+  }
+  return { ok: true, demoted: demoted, count: demoted.length };
 }
 
 function setUserRole(payload) {

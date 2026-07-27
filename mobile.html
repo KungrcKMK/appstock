@@ -549,20 +549,43 @@ window.addEventListener("DOMContentLoaded", () => {
 });
 
 // ─────────────────────────────────────────────
-// 🔗 แชร์แอป (ลิงก์ + QR) — ใช้ qrcode@1.5.3 (API toDataURL)
+// QR helper — qrcodejs วาดลง DOM ไม่มี toDataURL ให้ตรงๆ
+// จึงวาดลง div ซ่อนไว้แล้วดึง data URL ออกมา
+// ─────────────────────────────────────────────
+function qrDataUrl(text, size) {
+  return new Promise(resolve => {
+    if (typeof QRCode === "undefined") { resolve(""); return; }
+    const tmp = document.createElement("div");
+    tmp.style.cssText = "position:fixed;left:-9999px;top:0;";
+    document.body.appendChild(tmp);
+    try {
+      new QRCode(tmp, { text: text, width: size, height: size, correctLevel: QRCode.CorrectLevel.M });
+    } catch (e) { tmp.remove(); resolve(""); return; }
+    setTimeout(() => {
+      const img = tmp.querySelector("img"), cv = tmp.querySelector("canvas");
+      let url = "";
+      try { url = img ? img.src : (cv ? cv.toDataURL("image/png") : ""); } catch (e) {}
+      tmp.remove();
+      resolve(url);
+    }, 80);
+  });
+}
+
+// ─────────────────────────────────────────────
+// 🔗 แชร์แอป (ลิงก์ + QR)
 // ─────────────────────────────────────────────
 let _shareUrl = "";
 
-function openShareApp() {
+async function openShareApp() {
   const here = location.origin + location.pathname.replace(/(index|mobile)\.html$/, "");
   _shareUrl = /^https?:\/\/(localhost|127\.|192\.168\.|10\.)/.test(here)
     ? "https://stock-sqfmlm.netlify.app/"
     : here;
   $("shareUrlBox").textContent = _shareUrl;
   $("shareSheet").classList.remove("hidden");
-  QRCode.toDataURL(_shareUrl, { width: 260, margin: 1, color: { dark: "#000", light: "#fff" } })
-    .then(url => { $("shareQrImg").src = url; })
-    .catch(() => toast("สร้าง QR ไม่สำเร็จ", "err"));
+  const url = await qrDataUrl(_shareUrl, 260);
+  if (url) $("shareQrImg").src = url;
+  else toast("สร้าง QR ไม่สำเร็จ", "err");
 }
 
 function closeShareApp() { $("shareSheet").classList.add("hidden"); }

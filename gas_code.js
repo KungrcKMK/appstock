@@ -1878,9 +1878,12 @@ function getMyHistory(payload) {
   rows = rows.slice(0, limit);
   rows.forEach(function(r) { delete r._ts; });
 
-  // สรุปสั้นๆ ให้เจ้าตัวเห็นภาพงานตัวเอง (นับจำนวนครั้ง ไม่ใช่ยอดสต๊อก)
-  var count = { "เบิกออก": 0, "รับเข้า": 0, "คืนวัตถุดิบ": 0, "ตรวจนับ/ปรับยอด": 0 };
-  rows.forEach(function(r) { if (count[r.action] !== undefined) count[r.action]++; });
+  // สรุปสั้นๆ ให้เจ้าตัวเห็นภาพงานตัวเอง (นับจำนวนครั้งของทุกประเภทที่พบจริง ไม่ใช่ยอดสต๊อก)
+  var count = {};
+  rows.forEach(function(r) {
+    var k = r.action || "อื่นๆ";
+    count[k] = (count[k] || 0) + 1;
+  });
 
   return { ok: true, username: username, rows: rows, summary: count };
 }

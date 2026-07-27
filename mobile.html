@@ -547,6 +547,37 @@ window.addEventListener("DOMContentLoaded", () => {
   }
 });
 
+// ─────────────────────────────────────────────
+// 🔗 แชร์แอป (ลิงก์ + QR) — ใช้ qrcode@1.5.3 (API toDataURL)
+// ─────────────────────────────────────────────
+let _shareUrl = "";
+
+function openShareApp() {
+  const here = location.origin + location.pathname.replace(/(index|mobile)\.html$/, "");
+  _shareUrl = /^https?:\/\/(localhost|127\.|192\.168\.|10\.)/.test(here)
+    ? "https://stock-sqfmlm.netlify.app/"
+    : here;
+  $("shareUrlBox").textContent = _shareUrl;
+  $("shareSheet").classList.remove("hidden");
+  QRCode.toDataURL(_shareUrl, { width: 260, margin: 1, color: { dark: "#000", light: "#fff" } })
+    .then(url => { $("shareQrImg").src = url; })
+    .catch(() => toast("สร้าง QR ไม่สำเร็จ", "err"));
+}
+
+function closeShareApp() { $("shareSheet").classList.add("hidden"); }
+
+async function shareNative() {
+  if (navigator.share) {
+    try { await navigator.share({ title: "ระบบจัดการสต๊อก", text: "เข้าใช้งานระบบสต๊อกได้ที่ลิงก์นี้", url: _shareUrl }); }
+    catch (e) { /* ผู้ใช้กดยกเลิก */ }
+  } else { shareCopyLink(); }
+}
+
+async function shareCopyLink() {
+  try { await navigator.clipboard.writeText(_shareUrl); toast("คัดลอกลิงก์แล้ว ✅"); }
+  catch (e) { toast("คัดลอกไม่สำเร็จ กดค้างที่ลิงก์เพื่อคัดลอก", "warn"); }
+}
+
 function doLogout() {
   ["unified_stock_user","unified_stock_role","appstock_mode_pref"].forEach(k => localStorage.removeItem(k));
   user = null; role = null; mod = null; data = [];

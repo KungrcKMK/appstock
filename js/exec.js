@@ -147,8 +147,6 @@ function execRawSection(icon, title, accentColor, bgTint, mats) {
   const urgent2 = items.filter(m=>m.urgency===1).length;
   const warn2   = items.filter(m=>m.urgency===2).length;
   const ok2     = items.filter(m=>m.urgency===3||m.urgency===4).length;
-  const secDaily = items.reduce((s,m)=>s+(m.daily||0),0);
-  const secMonthly = secDaily*30;
   const lowCount = items.filter(m=>m.min>0&&m.qty<=m.min).length;
 
   const miniKpi = (label, val, fg, bg) =>

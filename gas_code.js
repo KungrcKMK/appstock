@@ -1081,6 +1081,7 @@ function bomHealthReport() {
     orphanMaterial: orphanMaterial,
     badQtyPerUnit: badQtyPerUnit,
     notInAnyBom: notInAnyBom,
+    unmatchedHistory: unmatchedHistory,
     badDailyUsage: badDailyUsage,
     whereUsed: whereUsed
   };

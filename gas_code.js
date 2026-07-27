@@ -865,6 +865,216 @@ function bomGetList() {
   return { ok: true, boms: Object.values(map) };
 }
 
+// ══════════════════════════════════════════
+// 🩺 สุขภาพข้อมูล BOM
+// ตรวจว่า "สูตรการผลิต" พร้อมพอที่จะเอาไปเทียบยอดใช้จริงหรือยัง
+// ชี้ไปที่ข้อมูลที่ขาด ไม่ได้ชี้ไปที่ตัวบุคคล
+// ══════════════════════════════════════════
+
+function bomHealthReport() {
+  // ── 1) สูตรทั้งหมด ──
+  var bomSheet = getSheet("BOM");
+  var bomData  = bomSheet.getDataRange().getValues();
+  var bomByProduct = {};   // barcode -> { name, factory, materials:[] }
+  var whereUsed    = {};   // materialSKU -> [{barcode, productName, qtyPerUnit, unit}]
+  var badQtyPerUnit = [];  // บรรทัดสูตรที่จำนวนต่อหน่วยเป็น 0/ติดลบ
+  if (bomData.length > 1) {
+    var bh = bomData[0];
+    var iBc = bh.indexOf("ProductBarcode"), iPn = bh.indexOf("ProductName"),
+        iFc = bh.indexOf("Factory"), iSku = bh.indexOf("MaterialSKU"),
+        iMn = bh.indexOf("MaterialName"), iQpu = bh.indexOf("QtyPerUnit"), iU = bh.indexOf("Unit");
+    for (var i = 1; i < bomData.length; i++) {
+      var bc  = String(bomData[i][iBc] || "").trim();
+      if (!bc) continue;
+      var sku = String(bomData[i][iSku] || "").trim();
+      var qpu = Number(bomData[i][iQpu]) || 0;
+      var un  = String(bomData[i][iU] || "").trim();
+      var pn  = String(bomData[i][iPn] || "");
+      var mn  = String(bomData[i][iMn] || "");
+      if (!bomByProduct[bc]) bomByProduct[bc] = { name: pn, factory: String(bomData[i][iFc] || ""), materials: [] };
+      bomByProduct[bc].materials.push({ sku: sku, name: mn, qtyPerUnit: qpu, unit: un });
+      if (qpu <= 0) badQtyPerUnit.push({ barcode: bc, productName: pn, materialSku: sku, materialName: mn, qtyPerUnit: qpu });
+      if (sku) {
+        if (!whereUsed[sku]) whereUsed[sku] = [];
+        whereUsed[sku].push({ barcode: bc, productName: pn, qtyPerUnit: qpu, unit: un });
+      }
+    }
+  }
+
+  // ── 2) สินค้าที่ขึ้นทะเบียนไว้ ──
+  var prodSheet = getSheet("ColdRoom_Products");
+  var prodData  = prodSheet.getDataRange().getValues();
+  var products  = {};  // barcode -> name
+  if (prodData.length > 1) {
+    var ph = prodData[0];
+    var pBc = ph.indexOf("Barcode"), pNm = ph.indexOf("ProductName");
+    for (var p = 1; p < prodData.length; p++) {
+      var pbc = String(prodData[p][pBc] || "").trim();
+      if (pbc) products[pbc] = String(prodData[p][pNm] || "");
+    }
+  }
+
+  // ── 3) สินค้าที่ "ผลิตจริง" จากใบสั่งผลิต (อ่าน 200 ใบล่าสุด) ──
+  var woSheet = getSheet("ColdRoom_WorkOrders");
+  var woLast  = woSheet.getLastRow();
+  var producedCount = {};   // barcode -> จำนวนครั้งที่ปรากฏในใบสั่งผลิต
+  if (woLast > 1) {
+    var wh  = woSheet.getRange(1, 1, 1, woSheet.getLastColumn()).getValues()[0];
+    var wN  = Math.min(200, woLast - 1);
+    var wd  = woSheet.getRange(woLast - wN + 1, 1, wN, wh.length).getValues();
+    var wIt = wh.indexOf("Items");
+    for (var w = 0; w < wd.length; w++) {
+      try {
+        var its = JSON.parse(wd[w][wIt] || "[]");
+        for (var t = 0; t < its.length; t++) {
+          var ibc = String(its[t].barcode || "").trim();
+          if (ibc) producedCount[ibc] = (producedCount[ibc] || 0) + 1;
+        }
+      } catch (e) { /* ใบที่ JSON เสีย ข้ามไป */ }
+    }
+  }
+
+  // ── 4) วัตถุดิบในคลัง (ทั้ง 2 โรงงาน) ──
+  var matBySku = {};    // sku -> { name, unit, dailyUsage, discontinued, module }
+  var matByName = {};   // ชื่อ -> sku  (ใช้จับคู่กับประวัติที่เก็บแค่ชื่อ)
+  ["SQF", "MLM"].forEach(function(mod) {
+    var s = getSheet(mod + "_Materials");
+    var d = s.getDataRange().getValues();
+    if (d.length <= 1) return;
+    var mh = d[0];
+    var cS = mh.indexOf("SKU"), cN = mh.indexOf("Name"), cU = mh.indexOf("Unit"),
+        cD = mh.indexOf("DailyUsage"), cX = mh.indexOf("Discontinued");
+    for (var m = 1; m < d.length; m++) {
+      var sk = String(d[m][cS] || "").trim();
+      if (!sk) continue;
+      var disc = d[m][cX] === true || String(d[m][cX]).toUpperCase() === "TRUE";
+      var nm = String(d[m][cN] || "").trim();
+      matBySku[sk] = { name: nm, unit: String(d[m][cU] || "").trim(), dailyUsage: Number(d[m][cD]) || 0, discontinued: disc, module: mod };
+      if (nm) matByName[nm] = sk;
+    }
+  });
+
+  // ── 5) วัตถุดิบที่ถูกเบิกจริง (อ่านประวัติ 300 แถวล่าสุดต่อโรงงาน) ──
+  var withdrawnByName = {};   // ชื่อ -> { count, qty, module }
+  ["SQF", "MLM"].forEach(function(mod) {
+    var s = getSheet(mod + "_History");
+    var last = s.getLastRow();
+    if (last <= 1) return;
+    var hh = s.getRange(1, 1, 1, s.getLastColumn()).getValues()[0];
+    var n  = Math.min(300, last - 1);
+    var d  = s.getRange(last - n + 1, 1, n, hh.length).getValues();
+    var cN = hh.indexOf("Name"), cA = hh.indexOf("Action"), cQ = hh.indexOf("Qty");
+    for (var r = 0; r < d.length; r++) {
+      if (String(d[r][cA] || "") !== "เบิกออก") continue;
+      var nm = String(d[r][cN] || "").trim();
+      if (!nm) continue;
+      if (!withdrawnByName[nm]) withdrawnByName[nm] = { count: 0, qty: 0, module: mod };
+      withdrawnByName[nm].count++;
+      withdrawnByName[nm].qty += Number(d[r][cQ]) || 0;
+    }
+  });
+
+  // ══ ตรวจสุขภาพ ══
+  var bomSkuSet = {};
+  Object.keys(whereUsed).forEach(function(sk) { bomSkuSet[sk] = true; });
+
+  // A) สินค้าที่ผลิตจริง แต่ยังไม่มีสูตร  ← ตัวชี้วัดสำคัญที่สุด
+  var producedBarcodes = Object.keys(producedCount);
+  var missingBom = [];
+  producedBarcodes.forEach(function(bc) {
+    if (!bomByProduct[bc]) {
+      missingBom.push({ barcode: bc, productName: products[bc] || "(ไม่พบในทะเบียนสินค้า)", orderCount: producedCount[bc] });
+    }
+  });
+  missingBom.sort(function(a, b) { return b.orderCount - a.orderCount; });
+
+  // B) สินค้าในทะเบียนที่ยังไม่มีสูตร (ภาพรวม)
+  var allBarcodes = Object.keys(products);
+  var registeredWithBom = allBarcodes.filter(function(bc) { return !!bomByProduct[bc]; }).length;
+
+  // C) หน่วยในสูตรไม่ตรงกับหน่วยในคลัง
+  var unitMismatch = [];
+  Object.keys(whereUsed).forEach(function(sk) {
+    var mat = matBySku[sk];
+    if (!mat || !mat.unit) return;
+    whereUsed[sk].forEach(function(u) {
+      if (u.unit && u.unit !== mat.unit) {
+        unitMismatch.push({ materialSku: sk, materialName: mat.name, bomUnit: u.unit, stockUnit: mat.unit, productName: u.productName, barcode: u.barcode });
+      }
+    });
+  });
+
+  // D) สูตรอ้างวัตถุดิบที่ไม่มีในคลัง
+  var orphanMaterial = [];
+  Object.keys(whereUsed).forEach(function(sk) {
+    if (!matBySku[sk]) {
+      orphanMaterial.push({ materialSku: sk, materialName: whereUsed[sk][0].name || "", usedIn: whereUsed[sk].length });
+    }
+  });
+
+  // E) วัตถุดิบที่ถูกเบิกจริง แต่ไม่อยู่ในสูตรไหนเลย
+  var notInAnyBom = [];
+  Object.keys(withdrawnByName).forEach(function(nm) {
+    var sk = matByName[nm];
+    if (!sk) return;                       // จับคู่ชื่อไม่ได้ ข้าม
+    if (bomSkuSet[sk]) return;             // อยู่ในสูตรแล้ว
+    var mat = matBySku[sk];
+    if (mat && mat.discontinued) return;   // ยกเลิกใช้แล้ว ไม่ต้องเตือน
+    notInAnyBom.push({ sku: sk, name: nm, module: withdrawnByName[nm].module, outCount: withdrawnByName[nm].count, outQty: Math.round(withdrawnByName[nm].qty * 1000) / 1000 });
+  });
+  notInAnyBom.sort(function(a, b) { return b.outCount - a.outCount; });
+
+  // F) ค่าใช้ต่อวันที่ยังไม่ได้ตั้ง (ใช้เป็น baseline ไม่ได้)
+  var badDailyUsage = [];
+  Object.keys(matBySku).forEach(function(sk) {
+    var m = matBySku[sk];
+    if (m.discontinued) return;
+    if (!(m.dailyUsage > 0)) badDailyUsage.push({ sku: sk, name: m.name, module: m.module, dailyUsage: m.dailyUsage });
+  });
+
+  // ══ สรุปความพร้อม ══
+  var producedTotal   = producedBarcodes.length;
+  var producedWithBom = producedTotal - missingBom.length;
+  var coveragePct     = producedTotal > 0 ? Math.round((producedWithBom / producedTotal) * 100) : 0;
+  var readiness, readinessNote;
+  if (producedTotal === 0) {
+    readiness = "ยังไม่มีข้อมูล";
+    readinessNote = "ยังไม่มีใบสั่งผลิตให้ตรวจ — สร้างใบสั่งผลิตก่อน";
+  } else if (coveragePct >= 80 && unitMismatch.length === 0) {
+    readiness = "พร้อม";
+    readinessNote = "ข้อมูลสูตรครอบคลุมพอที่จะเทียบยอดใช้จริงได้";
+  } else if (coveragePct >= 50) {
+    readiness = "เกือบพร้อม";
+    readinessNote = "ยังขาดสูตรบางส่วน ตัวเลขเทียบจะไม่ครบทุกรายการ";
+  } else {
+    readiness = "ยังไม่พร้อม";
+    readinessNote = "สูตรครอบคลุมน้อยเกินไป ถ้าเทียบตอนนี้ตัวเลขจะเพี้ยน";
+  }
+
+  return {
+    ok: true,
+    summary: {
+      readiness: readiness,
+      readinessNote: readinessNote,
+      coveragePct: coveragePct,
+      producedTotal: producedTotal,
+      producedWithBom: producedWithBom,
+      registeredTotal: allBarcodes.length,
+      registeredWithBom: registeredWithBom,
+      bomProductCount: Object.keys(bomByProduct).length,
+      bomMaterialCount: Object.keys(whereUsed).length,
+      issueCount: missingBom.length + unitMismatch.length + orphanMaterial.length + badQtyPerUnit.length
+    },
+    missingBom: missingBom,
+    unitMismatch: unitMismatch,
+    orphanMaterial: orphanMaterial,
+    badQtyPerUnit: badQtyPerUnit,
+    notInAnyBom: notInAnyBom,
+    badDailyUsage: badDailyUsage,
+    whereUsed: whereUsed
+  };
+}
+
 function bomGetForProduct(barcode) {
   if (!barcode) return { ok: false, message: "ไม่ระบุ barcode" };
   const sheet = getSheet("BOM");

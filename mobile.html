@@ -993,7 +993,8 @@ async function confirmAction() {
 
     const ok = isCount ? r.status === "success" : r.status === "success";
     if (ok) {
-      const label = isCount ? `📊 นับ → ${qty}` : aType === "OUT" ? `📤 เบิก ${qty}` : `📥 รับ ${qty}`;
+      const LABEL = { COUNT:`📊 นับ → ${qty}`, OUT:`📤 เบิก ${qty}`, RETURN:`↩️ คืน ${qty}`, IN:`📥 รับ ${qty}` };
+      const label = LABEL[aType] || `${qty}`;
       toast(`${label} ${sel.unit} · ${sel.name}`);
       closeAction();
       await loadData();

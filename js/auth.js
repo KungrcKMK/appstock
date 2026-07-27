@@ -64,6 +64,8 @@ async function login() {
   // ถ้าช่อง password แสดงอยู่แล้ว → ส่งพร้อม password
   if (_loginNeedsPassword) { await loginWithPassword(); return; }
 
+  _hideAccessBox();   // ลองชื่อใหม่ → ล้างผลครั้งก่อน
+
   _setLoginBtn("กำลังตรวจสอบ...", true);
   try {
     const res = await fetch(GAS_URL, {

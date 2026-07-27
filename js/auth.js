@@ -83,9 +83,14 @@ async function login() {
       return;
     }
     if (!res.ok) {
-      alert("❌ " + (res.message || "ไม่พบชื่อผู้ใช้ กรุณาสมัครใช้งานก่อน"));
+      // ไม่พบชื่อ / รออนุมัติ / ถูกปฏิเสธ → แสดงกล่องขอสิทธิ์แทน alert
+      if (res.notFound) { _showAccessBox("notfound", res.message, user); return; }
+      if (res.pending)  { _showAccessBox("pending",  res.message, user); return; }
+      if (res.rejected) { _showAccessBox("rejected", res.message, user); return; }
+      alert("❌ " + (res.message || "เข้าสู่ระบบไม่สำเร็จ"));
       return;
     }
+    _hideAccessBox();
     _loginSuccess(user, res.role, res.adminToken);
   } catch(e) {
     alert("เกิดข้อผิดพลาด: " + e.message);

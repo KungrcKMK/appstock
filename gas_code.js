@@ -381,13 +381,14 @@ function approveUser(payload) {
   if (!["admin","manager","viewer","user"].includes(approvedRole)) {
     approvedRole = "user";   // role เก่าที่เลิกใช้ (เช่น ceo/approver) → ปรับเป็น user
   }
-  // 👑 ตั้ง admin ได้เฉพาะเจ้าของระบบ
-  if (approvedRole === "admin" && !_callerIsSuperAdmin(payload.adminToken)) {
-    approvedRole = "user";
-  }
-  // manager อนุมัติได้เฉพาะ user / viewer — สูงกว่านั้นต้องให้ admin จัดการ (คำขอยังคงค้างไว้เหมือนเดิม)
+  // manager อนุมัติได้เฉพาะ user / viewer — ถ้า "ขอ" สิทธิ์สูงกว่านั้น ต้องให้ admin ตัดสิน
+  // (เช็คจาก role ที่ขอมาจริง ก่อนจะลดระดับใดๆ — คำขอยังค้างไว้ ไม่ถูกกินทิ้ง)
   if (!verifyAdminToken(payload.adminToken) && ["admin","manager"].indexOf(approvedRole) >= 0) {
     return { ok: false, message: "คำขอนี้ขอสิทธิ์ระดับ " + approvedRole + " — ต้องให้ผู้ดูแลระบบ (admin) อนุมัติ" };
+  }
+  // 👑 ตั้ง admin ได้เฉพาะเจ้าของระบบ (admin คนอื่นอนุมัติให้ได้แค่ user)
+  if (approvedRole === "admin" && !_callerIsSuperAdmin(payload.adminToken)) {
+    approvedRole = "user";
   }
 
   // ── ขั้นที่ 3: ผ่านทุกด่านแล้วค่อยบันทึก ──

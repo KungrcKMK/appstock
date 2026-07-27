@@ -196,5 +196,6 @@ function bhRenderWhereUsed() {
             <span style="color:#0ea5e9;font-weight:800;white-space:nowrap;">${u.qtyPerUnit} ${escapeHtml(u.unit || "")}<span style="color:#94a3b8;font-weight:600;"> / ชิ้น</span></span>
           </div>`).join("")}
       </div>
-    </div>`).join("");
+    </div>`;
+  }).join("");
 }

@@ -152,6 +152,15 @@ function _watchNavHeight() {
 
 function checkAuth() {
   loadDevice();
+  // ถูกส่งกลับมาเข้าสู่ระบบใหม่เพราะบัตรผ่านหมดอายุ → เติมชื่อไว้ให้เลย ไม่ต้องพิมพ์ซ้ำ
+  try {
+    const pre = sessionStorage.getItem("appstock_prefill_user");
+    if (pre) {
+      sessionStorage.removeItem("appstock_prefill_user");
+      const inp = document.getElementById("usernameInput");
+      if (inp) { inp.value = pre; setTimeout(() => inp.focus(), 100); }
+    }
+  } catch (e) {}
   const saved = localStorage.getItem("unified_stock_user");
   if (saved) {
     // session ยังอยู่ → ตรวจ mode session (ไม่ใช้ pref เพื่อป้องกัน auto-redirect)

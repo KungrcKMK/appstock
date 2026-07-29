@@ -211,6 +211,7 @@ async function loadRolesPage() {
       headers: { "Content-Type": "text/plain;charset=utf-8" },
       body: JSON.stringify({ module: "SYSTEM", action: "getUsers", payload: { adminToken: _adminToken } })
     }).then(r => r.json());
+    if (_adminHandleDenied(res, listEl)) return;
     if (!res.ok) { listEl.innerHTML = `<p class="sq-empty" style="color:var(--sq-crit);font-weight:700;">❌ ${escapeHtml(res.message||"")}</p>`; return; }
     // สีป้าย role — ใช้ class กลาง ไม่ใช่สีดิบ
     const roleChip    = { admin:"warn", manager:"ok", viewer:"", user:"" };

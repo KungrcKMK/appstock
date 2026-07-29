@@ -103,6 +103,16 @@ function loadDevice() {
   return currentDevice;
 }
 
+/**
+ * เอาชื่อเครื่องที่ระบบต่อท้ายชื่อคนออก ให้เหลือแค่ชื่อพนักงาน
+ *   "Kungrc1020 (📱 Win11/10/Chrome 33c4ed35)"  →  "Kungrc1020"
+ * ใช้ตอนแสดงผลเท่านั้น — ในชีตยังเก็บชื่อเครื่องไว้ครบสำหรับตรวจย้อนหลัง
+ * (หน้า 📈 ความเคลื่อนไหว ของ admin ยังเห็นชื่อเครื่องแยกช่องอยู่)
+ */
+function personName(v) {
+  return String(v == null ? "" : v).replace(/\s*\(\s*📱[\s\S]*$/, "").trim() || "-";
+}
+
 function getDeviceInfo() {
   const ua = navigator.userAgent;
   let os = "Unknown";

@@ -37,9 +37,22 @@ jobs:
         id: deployment
         uses: actions/deploy-pages@v4
 
-  # ── Job 2: Netlify ───────────────────────────────
+  # ── Job 2: Netlify — ⏸️ พักไว้ (2026-07-29) ───────
+  #
+  #   เหตุผล: token หมดอายุ deploy ขึ้น "Forbidden" ทุกครั้ง
+  #           ผู้ใช้สั่งหยุดใช้ Netlify ไปก่อน — เหลือ GitHub Pages ที่เดียว
+  #
+  #   จะเปิดใช้อีกครั้ง ทำ 3 ขั้น:
+  #     1. Netlify → User settings → Applications → New access token
+  #     2. GitHub repo → Settings → Secrets and variables → Actions
+  #        → แก้ค่า NETLIFY_AUTH_TOKEN (และเช็ค NETLIFY_SITE_ID ด้วย)
+  #     3. ลบบรรทัด `if: false` ข้างล่างนี้ออก แล้วเติมชื่องานกลับที่ `name:` ด้านบน
+  #     4. อย่าลืมเปิด Netlify กลับใน js/share.js (SHARE_TARGETS) และ mobile.html ด้วย
+  #        ไม่งั้นปุ่มแชร์แอปจะยังส่งลิงก์ Netlify ที่ข้อมูลเก่าให้พนักงาน
+  #
   deploy-netlify:
-    name: Netlify
+    name: Netlify (พักไว้)
+    if: false
     runs-on: ubuntu-latest
     steps:
       - name: Checkout

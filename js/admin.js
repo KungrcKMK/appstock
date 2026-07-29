@@ -7,8 +7,58 @@ function openAdminPanel() {
 }
 function closeAdminPanel() { /* no-op — merged into module-ROLES */ }
 
+// ═══════════════════════════════════════════════════════════
+// 🔑 บัตรผ่านของ admin/manager หมดอายุ
+//
+//   ระบบออกบัตรผ่านให้ตอนเข้าสู่ระบบ อายุจำกัด และเก็บไว้ต่อแท็บ
+//   จึงหมดอายุได้ 2 แบบ:
+//     1. ทำงานหน้าอื่น (วัตถุดิบ/คลังสินค้า) นานเกินอายุบัตร
+//        เพราะหน้าพวกนั้นไม่ได้ใช้บัตร บัตรเลยไม่ถูกต่ออายุ
+//     2. เปิดแอปในแท็บใหม่ — บัตรไม่ติดไปด้วย
+//
+//   เดิมเจอกรณีนี้แล้วขึ้นแค่ "❌ ไม่มีสิทธิ์" ค้างอยู่อย่างนั้น
+//   ผู้ใช้ไม่รู้ว่าต้องทำอะไรต่อ จึงเปลี่ยนเป็นบอกเหตุผล + ปุ่มกดแก้ได้เลย
+// ═══════════════════════════════════════════════════════════
+function _adminNeedLogin(listEl, why) {
+  if (!listEl) return;
+  listEl.innerHTML = `
+    <div class="sq-note warn" style="text-align:center;">
+      <b>🔑 ต้องเข้าสู่ระบบใหม่ก่อน</b><br>
+      ${escapeHtml(why || "บัตรผ่านหมดอายุแล้ว")}
+      <div style="margin-top:10px;">
+        <button onclick="reloginForAdmin()" class="sq-btn sq-btn-primary">เข้าสู่ระบบใหม่</button>
+      </div>
+    </div>`;
+}
+
+/** ออกจากระบบแล้วกลับไปหน้าเข้าสู่ระบบ พร้อมเติมชื่อไว้ให้ ไม่ต้องพิมพ์ซ้ำ */
+function reloginForAdmin() {
+  const u = localStorage.getItem("unified_stock_user") || "";
+  try { sessionStorage.setItem("appstock_prefill_user", u); } catch (e) {}
+  ["appstock_admin_token", "appstock_mode_session"].forEach(k => sessionStorage.removeItem(k));
+  ["unified_stock_user", "unified_stock_role"].forEach(k => localStorage.removeItem(k));
+  location.reload();
+}
+
+/** true = ยังใช้ได้ / false = แสดงกล่องให้เข้าสู่ระบบใหม่แล้ว */
+function _adminTokenReady(listEl) {
+  if (_adminToken) return true;
+  _adminNeedLogin(listEl, "เปิดแอปในแท็บใหม่ หรือปิดแอปไปแล้วเปิดใหม่ บัตรผ่านจึงไม่ติดมาด้วย");
+  return false;
+}
+
+/** ตรวจคำตอบจากเซิร์ฟเวอร์ — ถ้าโดนปฏิเสธเพราะสิทธิ์ ให้ขึ้นกล่องเข้าสู่ระบบใหม่ */
+function _adminHandleDenied(res, listEl) {
+  if (res && !res.ok && /ไม่มีสิทธิ์/.test(String(res.message || ""))) {
+    _adminNeedLogin(listEl, "บัตรผ่านหมดอายุ (ปกติเกิดเมื่อทำงานหน้าอื่นนานๆ แล้วค่อยกลับมาหน้านี้)");
+    return true;
+  }
+  return false;
+}
+
 async function loadPendingUsers() {
   const listEl = document.getElementById("adminPendingList");
+  if (!_adminTokenReady(listEl)) return;
   listEl.innerHTML = '<p class="sq-empty">กำลังโหลด...</p>';
   try {
     const res = await fetch(GAS_URL, {

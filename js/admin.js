@@ -203,6 +203,7 @@ async function loadUsers() {
 async function loadRolesPage() {
   const listEl = document.getElementById("rolesPageList");
   if (!listEl) return;
+  if (!_adminTokenReady(listEl)) return;
   listEl.innerHTML = '<p class="sq-empty">⏳ กำลังโหลด...</p>';
   try {
     const res = await fetch(GAS_URL, {

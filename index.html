@@ -740,47 +740,45 @@
   </div>
 
   <!-- ═══ ADMIN PANEL (full-page module) ═══ -->
-  <div id="module-ROLES" class="module-section hide" style="padding-top:var(--nav-h);min-height:100vh;background:#f8fafc;">
-    <div style="max-width:900px;margin:0 auto;padding:0 0 80px;">
+  <div id="module-ROLES" class="module-section hide sq-page" style="padding-top:var(--nav-h);min-height:100vh;">
+    <div class="sq-wrap sq-wrap-narrow">
 
-      <!-- Header -->
-      <div style="background:linear-gradient(135deg,#1e293b 0%,#0f172a 100%);padding:24px 24px 0;border-bottom:3px solid #f59e0b;">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;flex-wrap:wrap;gap:10px;">
-          <div>
-            <h1 style="margin:0;font-size:22px;font-weight:900;color:#fff;">👑 Admin Panel</h1>
-            <p style="margin:4px 0 0;font-size:12px;font-weight:700;color:#f59e0b;">ระบบจัดการผู้ใช้และสิทธิ์การเข้าถึง</p>
-          </div>
+      <header class="sq-head">
+        <div>
+          <h1 class="sq-h1">👑 ผู้ใช้งานระบบ</h1>
+          <div class="sq-hsub">อนุมัติคนเข้าใช้งาน และกำหนดว่าใครทำอะไรได้บ้าง</div>
         </div>
-        <!-- Tab bar -->
-        <div style="display:flex;gap:4px;">
-          <button onclick="adminSwitchTab('pending')" id="adminTab-pending"
-            style="padding:10px 18px;border-radius:10px 10px 0 0;font-size:13px;font-weight:800;background:#f59e0b;color:#1e293b;border:none;cursor:pointer;font-family:inherit;">
-            📝 คำขอสมัคร<span id="adminPendingTabBadge" style="display:none;background:#dc2626;color:#fff;border-radius:999px;padding:1px 7px;font-size:11px;margin-left:6px;"></span>
-          </button>
-          <button onclick="adminSwitchTab('roles')" id="adminTab-roles"
-            style="padding:10px 18px;border-radius:10px 10px 0 0;font-size:13px;font-weight:800;background:transparent;color:#94a3b8;border:none;cursor:pointer;font-family:inherit;">
-            🔖 จัดการ Role
-          </button>
-        </div>
+      </header>
+
+      <!-- แท็บ -->
+      <div class="sq-tabs" role="tablist">
+        <button onclick="adminSwitchTab('pending')" id="adminTab-pending" class="sq-tab is-on">
+          📝 คำขอเข้าใช้งาน<span id="adminPendingTabBadge" class="sq-tab-badge" style="display:none;"></span>
+        </button>
+        <button onclick="adminSwitchTab('roles')" id="adminTab-roles" class="sq-tab">
+          🔖 สิทธิ์ผู้ใช้
+        </button>
       </div>
 
-      <!-- Tab: คำขอสมัคร -->
-      <div id="adminTabContent-pending" style="padding:24px;">
-        <div id="adminPendingList" style="display:flex;flex-direction:column;gap:12px;">
-          <p style="color:#94a3b8;text-align:center;font-weight:700;padding:40px 0;">⏳ กำลังโหลด...</p>
+      <!-- แท็บ: คำขอเข้าใช้งาน -->
+      <div id="adminTabContent-pending">
+        <div id="adminPendingList" style="display:flex;flex-direction:column;gap:8px;">
+          <p class="sq-empty">⏳ กำลังโหลด...</p>
         </div>
-        <button onclick="loadPendingUsers()" style="margin-top:16px;width:100%;background:#f1f5f9;color:#475569;border:none;padding:14px;border-radius:14px;font-weight:800;font-size:13px;cursor:pointer;font-family:inherit;">🔄 โหลดใหม่</button>
+        <button onclick="loadPendingUsers()" class="sq-btn" style="margin-top:12px;width:100%;">🔄 โหลดใหม่</button>
       </div>
 
-      <!-- Tab: จัดการ Role -->
-      <div id="adminTabContent-roles" style="padding:24px;display:none;">
-        <div style="background:#fff3cd;border:2px solid #fde68a;border-radius:14px;padding:12px 16px;margin-bottom:18px;font-size:12px;font-weight:700;color:#92400e;">
-          👤 <b>user</b> = เบิก/รับ/คืน/นับ &nbsp;|&nbsp; 👁️ <b>viewer</b> = ดูอย่างเดียว + ภาพรวม &nbsp;|&nbsp; 📋 <b>manager</b> = ภาพรวม + อนุมัติ + เบิก/รับ/คืน/นับ &nbsp;|&nbsp; 🔧 <b>admin</b> = เต็มสิทธิ์ (ตั้งได้เฉพาะเจ้าของระบบ)
+      <!-- แท็บ: สิทธิ์ผู้ใช้ -->
+      <div id="adminTabContent-roles" style="display:none;">
+        <div class="sq-note">
+          <b>user</b> เบิก/รับ/คืน/นับ · <b>viewer</b> ดูอย่างเดียว + ภาพรวม ·
+          <b>manager</b> ภาพรวม + อนุมัติคนใหม่ + เบิก/รับ/คืน/นับ ·
+          <b>admin</b> เต็มสิทธิ์ (ตั้งได้เฉพาะเจ้าของระบบ)
         </div>
-        <div id="rolesPageList" style="display:flex;flex-direction:column;gap:10px;">
-          <p style="color:#94a3b8;text-align:center;font-weight:700;padding:40px 0;">กดโหลดเพื่อดูรายชื่อผู้ใช้</p>
+        <div id="rolesPageList" style="display:flex;flex-direction:column;gap:8px;">
+          <p class="sq-empty">กดโหลดเพื่อดูรายชื่อผู้ใช้</p>
         </div>
-        <button onclick="loadRolesPage()" style="margin-top:16px;width:100%;background:#f1f5f9;color:#475569;border:none;padding:14px;border-radius:14px;font-weight:800;font-size:13px;cursor:pointer;font-family:inherit;">🔄 โหลดรายชื่อผู้ใช้</button>
+        <button onclick="loadRolesPage()" class="sq-btn" style="margin-top:12px;width:100%;">🔄 โหลดรายชื่อผู้ใช้</button>
       </div>
 
     </div>

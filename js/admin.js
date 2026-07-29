@@ -182,26 +182,24 @@ async function loadRolesPage() {
 
     // ➕ ฟอร์มเพิ่มผู้ใช้ใหม่โดยตรง (ไม่ต้องรอเขาส่งคำขอ)
     const createForm = `
-      <div style="background:#fff;border:2px solid #c7d2fe;border-radius:16px;padding:16px 18px;margin-bottom:12px;">
-        <p style="margin:0 0 10px;font-weight:900;color:#3730a3;font-size:14px;">➕ เพิ่มผู้ใช้ใหม่</p>
-        <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
-          <input id="newUserName" type="text" placeholder="ชื่อพนักงาน"
-            onkeydown="if(event.key==='Enter') createNewUser(event)"
-            style="flex:1;min-width:150px;padding:9px 12px;border:2px solid #e2e8f0;border-radius:10px;font-family:inherit;font-size:14px;font-weight:700;outline:none;">
-          <select id="newUserRole" style="padding:9px 10px;border:2px solid #e2e8f0;border-radius:10px;font-size:13px;font-weight:800;font-family:inherit;cursor:pointer;">
+      <div class="sq-card" style="margin-bottom:12px;">
+        <div class="sq-card-head"><span class="sq-card-title">➕ เพิ่มผู้ใช้ใหม่</span>
+          <span class="sq-card-note">ใช้ได้ทันที ไม่ต้องรอเขาส่งคำขอ</span></div>
+        <div class="sq-card-body" style="display:flex;gap:7px;flex-wrap:wrap;align-items:center;">
+          <input id="newUserName" type="text" placeholder="ชื่อพนักงาน" class="sq-input"
+            onkeydown="if(event.key==='Enter') createNewUser(event)" style="flex:1;min-width:150px;">
+          <select id="newUserRole" class="sq-select">
             <option value="user">👤 user</option>
             <option value="viewer">👁️ viewer</option>
             <option value="manager">📋 manager</option>
             ${isSuperViewer ? '<option value="admin">🔧 admin</option>' : ''}
           </select>
-          <input id="newUserPwd" type="password" placeholder="รหัสผ่าน (ไม่ใส่ก็ได้)"
-            style="width:180px;padding:9px 12px;border:2px solid #e2e8f0;border-radius:10px;font-family:inherit;font-size:13px;outline:none;">
-          <button onclick="createNewUser(event)"
-            style="background:#059669;color:#fff;border:none;padding:10px 22px;border-radius:10px;font-weight:900;font-size:13px;cursor:pointer;font-family:inherit;">➕ เพิ่ม</button>
+          <input id="newUserPwd" type="password" placeholder="รหัสผ่าน (ไม่ใส่ก็ได้)" class="sq-input" style="width:180px;">
+          <button onclick="createNewUser(event)" class="sq-btn sq-btn-primary">➕ เพิ่ม</button>
         </div>
       </div>`;
 
-    listEl.innerHTML = createForm + banner + `<div style="display:flex;flex-direction:column;gap:10px;">` +
+    listEl.innerHTML = createForm + banner + `<div style="display:flex;flex-direction:column;gap:8px;">` +
       res.users.map(u => {
         const safeU  = escapeJs(u.username||"");
         const safeId = escapeAttr(u.username||"");

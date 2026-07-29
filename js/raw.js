@@ -383,20 +383,22 @@ function rawLoadMoreItems() {
 // ── Render history ──
 function renderRawHistory(h) {
   const list = document.getElementById("rawHistoryList");
+  if (!(h||[]).length) { list.innerHTML = `<p class="rm-empty">ยังไม่มีความเคลื่อนไหว</p>`; return; }
   list.innerHTML = (h||[]).map(x => {
     const act=String(x[2]||"");
-    let color="bg-slate-800 border-slate-900 text-white",emj="ℹ️";
-    if(act.includes("เบิก"))  {color="bg-orange-500 border-orange-700 text-white";  emj="📤";}
-    else if(act.includes("รับ"))   {color="bg-emerald-600 border-emerald-800 text-white";emj="📥";}
-    else if(act.includes("สร้าง")) {color="bg-blue-600 border-blue-800 text-white";    emj="🆕";}
-    else if(act.includes("นับ")||act.includes("ตรวจ")){color="bg-purple-600 border-purple-800 text-white";emj="⚖️";}
-    else if(act.includes("ลบ")||act.includes("ยกเลิก")){color="bg-red-600 border-red-800 text-white";emj="🗑️";}
-    else if(act.includes("สำรอง")){color="bg-cyan-600 border-cyan-800 text-white";emj="☁️";}
-    else if(act.includes("แก้ไข")){color="bg-sky-600 border-sky-800 text-white";  emj="✏️";}
-    return `<div class="history-item border-l-[10px] ${color} shadow-lg">
+    let color="var(--sq-muted)", emj="ℹ️";
+    if(act.includes("เบิก"))  {color="var(--sq-high)";  emj="📤";}
+    else if(act.includes("รับ"))   {color="var(--sq-accent)"; emj="📥";}
+    else if(act.includes("คืน"))   {color="var(--sq-accent)"; emj="↩️";}
+    else if(act.includes("สร้าง")) {color="var(--sq-accent)"; emj="🆕";}
+    else if(act.includes("นับ")||act.includes("ตรวจ")){color="var(--sq-ink2)"; emj="⚖️";}
+    else if(act.includes("ลบ")||act.includes("ยกเลิก")){color="var(--sq-crit)";emj="🗑️";}
+    else if(act.includes("สำรอง")){color="var(--sq-muted)";emj="☁️";}
+    else if(act.includes("แก้ไข")){color="var(--sq-ink2)"; emj="✏️";}
+    return `<div class="history-item" style="border-left-color:${color}">
       <div class="history-text-main">${emj} ${escapeHtml(x[1]||"-")}</div>
-      <div class="font-black text-xl mt-1 leading-none">${escapeHtml(act)}: ${escapeHtml(String(x[3]||"-"))}</div>
-      <div class="history-text-sub">${rawForceThaiDate(x[0])} • โดย: ${escapeHtml(x[4]||"-")}</div>
+      <div class="history-text-act" style="color:${color}">${escapeHtml(act)}: ${escapeHtml(String(x[3]||"-"))}</div>
+      <div class="history-text-sub">${rawForceThaiDate(x[0])} · โดย ${escapeHtml(x[4]||"-")}</div>
     </div>`;
   }).join("");
 }

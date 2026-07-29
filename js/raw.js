@@ -407,7 +407,7 @@ function renderRawHistory(h) {
     return `<div class="history-item" style="border-left-color:${color}">
       <div class="history-text-main">${emj} ${escapeHtml(x[1]||"-")}</div>
       <div class="history-text-act" style="color:${color}">${escapeHtml(act)}: ${escapeHtml(String(x[3]||"-"))}</div>
-      <div class="history-text-sub">${rawForceThaiDate(x[0])} · โดย ${escapeHtml(x[4]||"-")}</div>
+      <div class="history-text-sub">${rawForceThaiDate(x[0])} · โดย ${escapeHtml(personName(x[4]))}</div>
     </div>`;
   }).join("");
 }

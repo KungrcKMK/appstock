@@ -113,6 +113,30 @@ function personName(v) {
   return String(v == null ? "" : v).replace(/\s*\(\s*📱[\s\S]*$/, "").trim() || "-";
 }
 
+// ─────────────────────────────────────────────
+// 🏷️ โลโก้บริษัท — assets/logo.png
+// ─────────────────────────────────────────────
+/**
+ * ที่อยู่เต็มของไฟล์โลโก้
+ * ⚠️ ต้องเป็นที่อยู่เต็ม (https://...) ไม่ใช่ "assets/logo.png"
+ *    เพราะหน้าพิมพ์เปิดด้วย window.open("") ซึ่งเป็นหน้าเปล่า
+ *    ที่อยู่แบบย่อจะหาไฟล์ไม่เจอ โลโก้จะไม่ขึ้นบนกระดาษ
+ */
+function logoUrl() {
+  try { return new URL("assets/logo.png", location.href).href; }
+  catch (e) { return "assets/logo.png"; }
+}
+
+/**
+ * แท็กรูปโลโก้สำหรับใส่หัวใบพิมพ์
+ * ถ้าไม่มีไฟล์ → ซ่อนตัวเอง (onerror) เอกสารยังพิมพ์ได้ปกติ ไม่มีรูปแตก
+ * @param {number} h ความสูงเป็น px บนกระดาษ
+ */
+function logoImgTag(h) {
+  return `<img src="${logoUrl()}" alt="" style="height:${h || 46}px;width:auto;display:block;"
+          onerror="this.style.display='none'">`;
+}
+
 function getDeviceInfo() {
   const ua = navigator.userAgent;
   let os = "Unknown";

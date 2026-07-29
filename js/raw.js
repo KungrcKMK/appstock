@@ -941,7 +941,10 @@ function rawPrintQrAll() {
     <button onclick="window.print()" style="background:#1e293b;color:#fff;border:none;padding:10px 28px;border-radius:10px;font-size:14px;font-weight:900;cursor:pointer;margin-right:8px;">🖨️ พิมพ์</button>
     <button onclick="window.close()" style="background:#64748b;color:#fff;border:none;padding:10px 20px;border-radius:10px;font-size:14px;font-weight:900;cursor:pointer;">✕ ปิด</button>
   </div>
-  <h1>🔲 QR Code วัตถุดิบ — ${factoryLabel}</h1>
+  <div style="display:flex;align-items:center;justify-content:center;gap:14px;margin-bottom:6px;">
+    ${logoImgTag(40)}
+    <h1 style="margin:0;">🔲 QR Code วัตถุดิบ — ${factoryLabel}</h1>
+  </div>
   <div class="sub">พิมพ์วันที่ ${dateStr} &nbsp;|&nbsp; ${source.length} รายการ</div>
   <div class="grid">${cards}</div>
   </body></html>`);

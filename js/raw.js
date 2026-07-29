@@ -37,15 +37,16 @@ let rawCurrentQrSku   = "";
 let rawCurrentQrName  = "";
 
 const MODULE_META = {
-  SQF: { title:"วัตถุดิบ SQF", subtitle:"สุพรรณคิวฟู้ดส์", subtitleClass:"text-orange-600 bg-orange-100", headerBorder:"border-orange-500", skuPrefix:"SQF-" },
-  MLM: { title:"วัตถุดิบ MLM",   subtitle:"แม่ละมาย",        subtitleClass:"text-blue-600 bg-blue-100",   headerBorder:"border-blue-500",   skuPrefix:"MLM-" }
+  // subtitleClass = จุดสีหน้าชื่อโรงงาน (ส้ม = Suphan Q Foods, เขียว = แม่ละมาย ตามโลโก้)
+  SQF: { title:"วัตถุดิบ SQF", subtitle:"สุพรรณคิวฟู้ดส์", subtitleClass:"is-sqf", headerBorder:"border-orange-500", skuPrefix:"SQF-" },
+  MLM: { title:"วัตถุดิบ MLM",   subtitle:"แม่ละมาย",        subtitleClass:"is-mlm", headerBorder:"border-blue-500",   skuPrefix:"MLM-" }
 };
 
 function updateRawHeader(mod) {
   const m = MODULE_META[mod];
   document.getElementById("rawModuleTitle").innerHTML       = m.title;
   document.getElementById("rawModuleSubtitle").textContent  = m.subtitle;
-  document.getElementById("rawModuleSubtitle").className    = `text-sm font-black inline-block px-3 py-1 rounded-lg uppercase ${m.subtitleClass}`;
+  document.getElementById("rawModuleSubtitle").className    = `rm-factory ${m.subtitleClass}`;
 }
 
 async function rawFetch(payload) {

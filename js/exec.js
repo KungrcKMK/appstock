@@ -1,11 +1,13 @@
 // ══════════════════════════════════════════════════
 // 📊 EXECUTIVE DASHBOARD
+//    หน้าตาใช้ชุด class กลาง .sq-* (นิยามใน index.html)
+//    ⚠️ สูตรคำนวณและเกณฑ์ตัดสินทุกอย่างเหมือนเดิมทุกบรรทัด
 // ══════════════════════════════════════════════════
 function openExecDashboard() { switchModule("EXEC"); }
 
 async function loadExecDashboard() {
   const el = document.getElementById("execDashContent");
-  el.innerHTML = '<p style="color:#475569;text-align:center;font-weight:700;padding:80px 0;font-size:15px;">⏳ กำลังโหลดข้อมูล...</p>';
+  el.innerHTML = '<p class="sq-empty">⏳ กำลังโหลดข้อมูล...</p>';
   document.getElementById("execDashTimestamp").textContent = "กำลังดึงข้อมูล...";
   try {
     const [crRes, sqfRes, mlmRes] = await Promise.all([
@@ -15,7 +17,7 @@ async function loadExecDashboard() {
       fetch(GAS_URL + "?module=MLM").then(r=>r.json())
     ]);
     const now = new Date().toLocaleString("th-TH", { dateStyle:"medium", timeStyle:"short" });
-    document.getElementById("execDashTimestamp").textContent = "อัปเดตล่าสุด: " + now;
+    document.getElementById("execDashTimestamp").textContent = "อัปเดตล่าสุด " + now;
 
     const topProds = crRes.ok ? (crRes.totalByProduct||[]).sort((a,b)=>b.TotalQty-a.TotalQty) : [];
     const expiring = crRes.ok ? (crRes.expiringLots||[]) : [];
@@ -28,16 +30,16 @@ async function loadExecDashboard() {
 
     el.innerHTML =
       globalKpi +
-      execStockSection("❄️", "คลังสินค้า (COLDROOM)", "#0ea5e9", topProds, expiring, expired) +
-      execRawSection("🏭", "วัตถุดิบ SQF", "#f59e0b", "#fffbeb", sqfMats) +
-      execRawSection("🏭", "วัตถุดิบ MLM", "#10b981", "#f0fdf4", mlmMats);
+      execStockSection("❄️", "คลังสินค้า", "rail-cold", topProds, expiring, expired) +
+      execRawSection("🏭", "วัตถุดิบ SQF — สุพรรณคิวฟู้ดส์", "rail-sqf", sqfMats) +
+      execRawSection("🏭", "วัตถุดิบ MLM — แม่ละมาย",       "rail-mlm", mlmMats);
   } catch(e) {
     document.getElementById("execDashTimestamp").textContent = "โหลดไม่สำเร็จ";
-    el.innerHTML = `<p style="color:#ef4444;text-align:center;font-weight:700;padding:40px;">⚠️ โหลดข้อมูลไม่สำเร็จ: ${escapeHtml(e.message)}</p>`;
+    el.innerHTML = `<div class="sq-card"><p class="sq-empty" style="color:var(--sq-crit);font-weight:700;">⚠️ โหลดข้อมูลไม่สำเร็จ: ${escapeHtml(e.message)}</p></div>`;
   }
 }
 
-/** ─── Global KPI bar (รวม SQF+MLM) ─── */
+/** ─── แถบตัวเลขรวม (SQF+MLM) ─── */
 function execBuildKpi(allMats) {
   const today = new Date(); today.setHours(0,0,0,0);
   const active = allMats.filter(m => !(m.Discontinued===true||String(m.Discontinued).toUpperCase()==="TRUE"));
@@ -53,79 +55,69 @@ function execBuildKpi(allMats) {
     else if (days !== null && days <= 30) warn++;
     else ok++;
   });
-  const kpiCard = (icon, label, val, bg, fg, sub="") =>
-    `<div style="background:${bg};border-radius:16px;padding:16px 20px;flex:1;min-width:130px;border:1px solid rgba(255,255,255,.06);">
-      <div style="font-size:11px;font-weight:700;color:${fg};opacity:.7;letter-spacing:.8px;text-transform:uppercase;">${icon} ${label}</div>
-      <div style="font-size:28px;font-weight:900;color:${fg};line-height:1.1;margin-top:4px;">${val}</div>
-      ${sub?`<div style="font-size:10px;color:${fg};opacity:.6;margin-top:3px;font-weight:600;">${sub}</div>`:""}
+  const tile = (dot, label, val, note, color) =>
+    `<div class="sq-tile">
+      <div class="sq-tile-label"><span class="sq-dot" style="background:${dot}"></span>${label}</div>
+      <div class="sq-tile-num"${color?` style="color:${color}"`:""}>${val.toLocaleString()}</div>
+      <div class="sq-tile-note">${note}</div>
     </div>`;
   return `
-  <div style="margin-bottom:20px;">
-    <div style="font-size:11px;font-weight:800;color:#475569;letter-spacing:1.5px;text-transform:uppercase;margin-bottom:10px;">📌 ภาพรวมวัตถุดิบทั้งหมด (SQF + MLM)</div>
-    <div style="display:flex;gap:10px;flex-wrap:wrap;">
-      ${kpiCard("🔴","วิกฤต (≤7วัน)", crisis, "linear-gradient(135deg,#7f1d1d,#991b1b)", "#fca5a5", "ต้องสั่งทันที")}
-      ${kpiCard("🟠","เร่งด่วน (≤14วัน)", urgent, "linear-gradient(135deg,#431407,#9a3412)", "#fdba74", "ควรสั่งภายในสัปดาห์")}
-      ${kpiCard("⏳","ควรวางแผน (≤30วัน)", warn, "linear-gradient(135deg,#451a03,#92400e)", "#fcd34d", "วางแผนสั่งล่วงหน้า")}
-      ${kpiCard("✅","ปกติ", ok, "linear-gradient(135deg,#052e16,#065f46)", "#6ee7b7", "สต๊อกเพียงพอ")}
-      ${kpiCard("⚠️","สต๊อกต่ำกว่าขั้นต่ำ", lowStock, "linear-gradient(135deg,#1e1b4b,#312e81)", "#a5b4fc", "ต่ำกว่า Min")}
-    </div>
+  <div class="sq-card-note" style="margin:0 0 7px 2px;">ภาพรวมวัตถุดิบทั้งหมด (SQF + MLM)</div>
+  <div class="sq-tiles">
+    ${tile("var(--sq-crit)",  "วิกฤต ≤7 วัน",     crisis,   "ต้องสั่งทันที",        crisis   ? "var(--sq-crit)" : "")}
+    ${tile("var(--sq-high)",  "เร่งด่วน ≤14 วัน", urgent,   "ควรสั่งภายในสัปดาห์",  urgent   ? "var(--sq-high)" : "")}
+    ${tile("var(--sq-warn)",  "ควรวางแผน ≤30 วัน", warn,    "วางแผนสั่งล่วงหน้า",   warn     ? "var(--sq-warn)" : "")}
+    ${tile("var(--sq-muted)", "ปกติ",              ok,       "สต๊อกเพียงพอ",         "")}
+    ${tile("var(--sq-high)",  "ต่ำกว่าจุดสั่งซื้อ", lowStock, "ยอดต่ำกว่าที่ตั้งไว้", lowStock ? "var(--sq-high)" : "")}
   </div>`;
 }
 
-/** ─── Cold Room section ─── */
-function execStockSection(icon, title, color, products, expiring, expired) {
+/** ─── ส่วนคลังสินค้า ─── */
+function execStockSection(icon, title, railClass, products, expiring, expired) {
   const warnCount = expiring.length + expired.length;
   const rows = products.map(p => `
-    <tr style="border-bottom:1px solid rgba(255,255,255,.05);">
-      <td style="padding:9px 12px;font-weight:700;color:#e2e8f0;">${escapeHtml(p.ProductName)}</td>
-      <td style="padding:9px 12px;text-align:right;font-weight:900;color:${color};">${Number(p.TotalQty).toLocaleString()} <span style="font-size:11px;font-weight:500;color:#64748b;">${escapeHtml(p.Unit||"")}</span></td>
-      <td style="padding:9px 12px;text-align:right;color:#475569;font-size:12px;">${p.LotCount} lot</td>
+    <tr>
+      <td><span class="sq-name">${escapeHtml(p.ProductName)}</span></td>
+      <td class="n"><span class="sq-num">${Number(p.TotalQty).toLocaleString()}</span><span class="sq-unit">${escapeHtml(p.Unit||"")}</span></td>
+      <td class="n sq-dim"><span class="sq-num" style="font-weight:600;color:var(--sq-muted);">${p.LotCount}</span> lot</td>
     </tr>`).join("");
-  const expWarnHtml = expiring.length > 0 ? `
-    <div style="margin-top:14px;background:rgba(251,191,36,.08);border:1px solid rgba(251,191,36,.2);border-radius:12px;padding:12px 14px;">
-      <div style="font-size:12px;font-weight:800;color:#fbbf24;margin-bottom:8px;">⚠️ ใกล้หมดอายุ (${expiring.length} รายการ)</div>
-      ${expiring.slice(0,8).map(x=>`
-        <div style="display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px solid rgba(251,191,36,.1);font-size:12px;">
-          <span style="font-weight:700;color:#cbd5e1;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding-right:8px;">${escapeHtml(x.ProductName)}</span>
-          <span style="white-space:nowrap;"><span style="background:#f59e0b;color:#fff;border-radius:999px;padding:2px 8px;font-weight:800;font-size:11px;">${x.ExpireDays} วัน</span></span>
-        </div>`).join("")}
-      ${expiring.length > 8 ? `<p style="font-size:11px;color:#fbbf24;margin-top:6px;text-align:center;opacity:.7;">...และอีก ${expiring.length-8} รายการ</p>` : ""}
-    </div>` : "";
-  const expiredHtml = expired.length > 0 ? `
-    <div style="margin-top:10px;background:rgba(220,38,38,.08);border:1px solid rgba(220,38,38,.2);border-radius:12px;padding:12px 14px;">
-      <div style="font-size:12px;font-weight:800;color:#f87171;margin-bottom:8px;">❌ หมดอายุแล้ว (${expired.length} รายการ)</div>
-      ${expired.slice(0,8).map(x=>`
-        <div style="display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:1px solid rgba(220,38,38,.1);font-size:12px;">
-          <span style="font-weight:700;color:#cbd5e1;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;padding-right:8px;">${escapeHtml(x.ProductName)}</span>
-          <span style="background:#dc2626;color:#fff;border-radius:999px;padding:2px 8px;font-weight:800;font-size:11px;">${Math.abs(x.ExpireDays)} วัน</span>
-        </div>`).join("")}
-    </div>` : "";
+
+  const lotList = (items, cls, icon2, label, showAbs) => items.length === 0 ? "" : `
+    <div class="sq-card-body" style="border-top:1px solid var(--sq-line-soft);">
+      <div class="sq-chip ${cls}" style="margin-bottom:7px;">${icon2} ${label} ${items.length} รายการ</div>
+      <div class="sq-list">
+        ${items.slice(0,8).map(x=>`
+          <div class="sq-list-row">
+            <span class="sq-list-name">${escapeHtml(x.ProductName)}</span>
+            <span class="sq-chip ${cls}">${showAbs ? Math.abs(x.ExpireDays) : x.ExpireDays} วัน</span>
+          </div>`).join("")}
+      </div>
+      ${items.length > 8 ? `<p class="sq-meter-note" style="text-align:center;margin-top:6px;">…และอีก ${items.length-8} รายการ</p>` : ""}
+    </div>`;
+
   return `
-  <div style="background:rgba(255,255,255,.04);backdrop-filter:blur(8px);border-radius:20px;padding:20px;border:1px solid rgba(255,255,255,.08);border-left:4px solid ${color};margin-bottom:16px;">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:6px;">
-      <h3 style="margin:0;font-size:16px;font-weight:900;color:#f1f5f9;">${icon} ${title}</h3>
-      <span style="font-size:12px;font-weight:700;color:#64748b;">${products.length} ชนิด${warnCount>0?` &nbsp;·&nbsp; <span style="color:#f59e0b;">${warnCount} แจ้งเตือน</span>`:""}</span>
+  <div class="sq-card ${railClass}">
+    <div class="sq-card-head">
+      <span class="sq-card-title">${icon} ${title}</span>
+      <span class="sq-card-note">${products.length} ชนิด${warnCount>0?` · <span style="color:var(--sq-high);font-weight:700;">${warnCount} ต้องดู</span>`:""}</span>
     </div>
     ${products.length === 0
-      ? '<p style="color:#475569;text-align:center;font-size:13px;padding:20px 0;font-weight:700;">ยังไม่มีสต๊อก</p>'
-      : `<div style="overflow-x:auto;"><table style="width:100%;border-collapse:collapse;font-size:13px;">
-          <thead><tr style="border-bottom:1px solid rgba(255,255,255,.08);color:#64748b;font-size:11px;font-weight:800;">
-            <th style="text-align:left;padding:6px 12px;">สินค้า</th>
-            <th style="text-align:right;padding:6px 12px;">คงเหลือ</th>
-            <th style="text-align:right;padding:6px 12px;">Lot</th>
-          </tr></thead>
+      ? '<p class="sq-empty">ยังไม่มีสต๊อก</p>'
+      : `<div class="sq-tablewrap"><table class="sq-table">
+          <thead><tr><th>สินค้า</th><th class="n">คงเหลือ</th><th class="n">จำนวน lot</th></tr></thead>
           <tbody>${rows}</tbody>
         </table></div>`}
-    ${expWarnHtml}${expiredHtml}
+    ${lotList(expiring, "warn", "⏳", "ใกล้หมดอายุ", false)}
+    ${lotList(expired,  "crit", "⛔", "หมดอายุแล้ว", true)}
   </div>`;
 }
 
-/** ─── Raw materials section (SQF / MLM) ─── */
-function execRawSection(icon, title, accentColor, bgTint, mats) {
+/** ─── ส่วนวัตถุดิบ (SQF / MLM) ─── */
+function execRawSection(icon, title, railClass, mats) {
   const today = new Date(); today.setHours(0,0,0,0);
   const active = mats.filter(m => !(m.Discontinued===true||String(m.Discontinued).toUpperCase()==="TRUE"));
 
-  // คำนวณ metrics
+  // คำนวณ metrics — เหมือนเดิมทุกบรรทัด
   const items = active.map(m => {
     const qty   = Number(m.Qty||0);
     const daily = Number(m.DailyUsage||0);
@@ -142,99 +134,84 @@ function execRawSection(icon, title, accentColor, bgTint, mats) {
     return { ...m, qty, daily, min, days, expDays, outDate, urgency };
   }).sort((a,b) => a.urgency - b.urgency || (a.days??9999) - (b.days??9999));
 
-  // Mini KPI สำหรับ section นี้
   const crisis  = items.filter(m=>m.urgency===0).length;
   const urgent2 = items.filter(m=>m.urgency===1).length;
   const warn2   = items.filter(m=>m.urgency===2).length;
   const ok2     = items.filter(m=>m.urgency===3||m.urgency===4).length;
   const lowCount = items.filter(m=>m.min>0&&m.qty<=m.min).length;
 
-  const miniKpi = (label, val, fg, bg) =>
-    `<div style="background:${bg};border-radius:10px;padding:8px 14px;text-align:center;min-width:80px;">
-      <div style="font-size:20px;font-weight:900;color:${fg};">${val}</div>
-      <div style="font-size:10px;font-weight:700;color:${fg};opacity:.75;margin-top:1px;">${label}</div>
-    </div>`;
+  const miniKpi = (cls, icon2, label, val) =>
+    `<span class="sq-chip ${cls}">${icon2} ${label} ${val}</span>`;
 
-  const maxQty = Math.max(...items.map(m=>m.qty), 1);
+  const rows = items.map(m => {
+    const isLow = m.min>0 && m.qty<=m.min;
+    const sev = m.urgency===0 ? "sev-crit" : m.urgency===1 ? "sev-high" : m.urgency===2 ? "sev-warn" : "";
 
-  const rows = items.map((m,idx) => {
-    const isLow  = m.min>0 && m.qty<=m.min;
-    const rowBg  = idx%2===0?"rgba(255,255,255,.03)":"rgba(255,255,255,.015)";
+    // วันคงเหลือ
+    const daysCls = m.days===null ? "" : m.days<=7?"crit":m.days<=14?"high":m.days<=30?"warn":"ok";
+    const daysCell = m.days===null
+      ? `<span class="sq-dim">—</span>`
+      : `<span class="sq-chip ${daysCls}">${m.days} วัน</span>
+         <div class="sq-meter-note">ถึง ${m.outDate||""}</div>`;
 
-    // urgency row color
-    const urgencyBorder = m.urgency===0 ? "border-left:3px solid #dc2626;" :
-                          m.urgency===1 ? "border-left:3px solid #ea580c;" :
-                          m.urgency===2 ? "border-left:3px solid #f59e0b;" : "";
+    // วันหมดอายุ
+    const expCell = m.expDays===null ? `<span class="sq-dim">—</span>` :
+      m.expDays < 0   ? `<span class="sq-chip crit">⛔ หมดแล้ว</span>` :
+      m.expDays <= 30 ? `<span class="sq-chip warn">⏳ ${m.expDays} วัน</span>` :
+                        `<span class="sq-dim" style="font-family:var(--sq-mono);font-size:11.5px;">${isoToDdmmyy(String(m.ExpiryDate))}</span>`;
 
-    // days badge
-    const daysBg = m.days===null ? "" : m.days<=7?"#dc2626":m.days<=14?"#ea580c":m.days<=30?"#f59e0b":"#059669";
-    const daysBadge = m.days===null
-      ? `<span style="color:#475569;font-size:11px;">—</span>`
-      : `<div><span style="background:${daysBg};color:#fff;border-radius:999px;padding:2px 9px;font-weight:800;font-size:11px;white-space:nowrap;">${m.days} วัน</span>
-         <div style="font-size:10px;color:#64748b;margin-top:3px;white-space:nowrap;">${m.outDate||""}</div></div>`;
-
-    // expiry badge
-    const expBadge = m.expDays===null ? `<span style="color:#334155;font-size:11px;">—</span>` :
-      m.expDays < 0  ? `<span style="background:#dc2626;color:#fff;border-radius:999px;padding:2px 7px;font-weight:800;font-size:10px;">หมดแล้ว</span>` :
-      m.expDays <= 30? `<span style="background:#f59e0b;color:#fff;border-radius:999px;padding:2px 7px;font-weight:800;font-size:10px;">${m.expDays} วัน</span>` :
-                       `<span style="color:#475569;font-size:11px;">${isoToDdmmyy(String(m.ExpiryDate))}</span>`;
-
-    // progress bar (stock vs safety stock)
-    const pct    = m.min>0 ? Math.min(100, Math.round((m.qty/m.min)*100)) : null;
+    // หลอดเทียบยอดกับจุดสั่งซื้อ
+    const pct = m.min>0 ? Math.min(100, Math.round((m.qty/m.min)*100)) : null;
     const pctBar = pct===null ? "" : `
-      <div style="margin-top:4px;height:4px;background:rgba(255,255,255,.08);border-radius:4px;overflow:hidden;width:100%;">
-        <div style="height:100%;width:${pct}%;background:${pct<50?"#dc2626":pct<100?"#f59e0b":"#10b981"};border-radius:4px;transition:width .4s;"></div>
-      </div>
-      <div style="font-size:9px;color:#475569;margin-top:2px;">vs ขั้นต่ำ ${m.min.toLocaleString()} = ${pct}%</div>`;
+      <div class="sq-meter"><i style="width:${pct}%;background:${pct<50?"var(--sq-crit)":pct<100?"var(--sq-high)":"var(--sq-accent)"};"></i></div>
+      <div class="sq-meter-note">เทียบจุดสั่งซื้อ ${m.min.toLocaleString()} = ${pct}%</div>`;
 
     const monthly = m.daily>0 ? (m.daily*30).toLocaleString("th-TH",{maximumFractionDigits:0}) : "—";
 
-    return `<tr style="background:${rowBg};${urgencyBorder}">
-      <td style="padding:10px 12px;font-weight:700;color:#e2e8f0;max-width:180px;">
-        ${escapeHtml(String(m.Name))}
-        ${isLow?`<span style="font-size:10px;background:#dc2626;color:#fff;border-radius:6px;padding:1px 5px;margin-left:4px;font-weight:800;">ต่ำ</span>`:""}
+    return `<tr class="${sev}">
+      <td class="rail"></td>
+      <td>
+        <span class="sq-name">${escapeHtml(String(m.Name))}</span>
+        ${isLow?` <span class="sq-chip high">ต่ำ</span>`:""}
       </td>
-      <td style="padding:10px 12px;text-align:right;">
-        <span style="font-weight:900;color:${isLow?"#f87171":accentColor};font-size:14px;">${m.qty.toLocaleString()}</span>
-        <span style="font-size:10px;color:#475569;margin-left:3px;">${escapeHtml(String(m.Unit||""))}</span>
+      <td class="n">
+        <span class="sq-num"${isLow?' style="color:var(--sq-crit)"':""}>${m.qty.toLocaleString()}</span><span class="sq-unit">${escapeHtml(String(m.Unit||""))}</span>
         ${pctBar}
       </td>
-      <td style="padding:10px 12px;text-align:right;color:#94a3b8;font-size:12px;">${m.min>0?m.min.toLocaleString():"—"}</td>
-      <td style="padding:10px 12px;text-align:right;color:#60a5fa;font-size:12px;font-weight:700;">${m.daily>0?m.daily.toLocaleString("th-TH",{maximumFractionDigits:2}):"—"}</td>
-      <td style="padding:10px 12px;text-align:right;color:#818cf8;font-size:12px;font-weight:700;">${monthly}</td>
-      <td style="padding:10px 12px;text-align:center;">${daysBadge}</td>
-      <td style="padding:10px 12px;text-align:center;">${expBadge}</td>
+      <td class="n"><span class="sq-num sq-dim" style="font-weight:600;">${m.min>0?m.min.toLocaleString():"—"}</span></td>
+      <td class="n"><span class="sq-num" style="font-weight:600;">${m.daily>0?m.daily.toLocaleString("th-TH",{maximumFractionDigits:2}):"—"}</span></td>
+      <td class="n"><span class="sq-num" style="font-weight:600;">${monthly}</span></td>
+      <td class="c">${daysCell}</td>
+      <td class="c">${expCell}</td>
     </tr>`;
   }).join("");
 
   return `
-  <div style="background:rgba(255,255,255,.04);backdrop-filter:blur(8px);border-radius:20px;padding:20px;border:1px solid rgba(255,255,255,.08);border-left:4px solid ${accentColor};margin-bottom:16px;">
-    <!-- Section header -->
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;flex-wrap:wrap;gap:8px;">
-      <h3 style="margin:0;font-size:16px;font-weight:900;color:#f1f5f9;">${icon} ${title}</h3>
-      <span style="font-size:12px;font-weight:700;color:#64748b;">${active.length} รายการ${lowCount>0?` · <span style="color:#f87171;">${lowCount} ต่ำกว่าขั้นต่ำ</span>`:""}</span>
+  <div class="sq-card ${railClass}">
+    <div class="sq-card-head">
+      <span class="sq-card-title">${icon} ${title}</span>
+      <span class="sq-card-note">${active.length} รายการ${lowCount>0?` · <span style="color:var(--sq-high);font-weight:700;">${lowCount} ต่ำกว่าจุดสั่งซื้อ</span>`:""}</span>
     </div>
-    <!-- Mini KPI row -->
-    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;">
-      ${miniKpi("🔴 วิกฤต", crisis, "#fca5a5", "rgba(127,29,29,.5)")}
-      ${miniKpi("🟠 เร่งด่วน", urgent2, "#fdba74", "rgba(67,20,7,.5)")}
-      ${miniKpi("⏳ ควรสั่ง", warn2, "#fcd34d", "rgba(69,26,3,.5)")}
-      ${miniKpi("✅ ปกติ", ok2, "#6ee7b7", "rgba(5,46,22,.5)")}
+    <div class="sq-card-body" style="display:flex;gap:6px;flex-wrap:wrap;border-bottom:1px solid var(--sq-line-soft);">
+      ${miniKpi("crit","🔴","วิกฤต",crisis)}
+      ${miniKpi("high","🟠","เร่งด่วน",urgent2)}
+      ${miniKpi("warn","⏳","ควรสั่ง",warn2)}
+      ${miniKpi("","✓","ปกติ",ok2)}
     </div>
-    <!-- Table -->
     ${items.length === 0
-      ? '<p style="color:#475569;text-align:center;font-size:13px;padding:20px 0;font-weight:700;">ยังไม่มีรายการวัตถุดิบ</p>'
-      : `<div style="overflow-x:auto;border-radius:12px;border:1px solid rgba(255,255,255,.06);">
-          <table style="width:100%;border-collapse:collapse;font-size:13px;min-width:700px;">
+      ? '<p class="sq-empty">ยังไม่มีรายการวัตถุดิบ</p>'
+      : `<div class="sq-tablewrap">
+          <table class="sq-table" style="min-width:860px;">
             <thead>
-              <tr style="background:rgba(255,255,255,.05);">
-                <th style="padding:10px 12px;text-align:left;color:#64748b;font-size:11px;font-weight:800;border-bottom:1px solid rgba(255,255,255,.06);">วัตถุดิบ</th>
-                <th style="padding:10px 12px;text-align:right;color:#64748b;font-size:11px;font-weight:800;border-bottom:1px solid rgba(255,255,255,.06);">คงเหลือ / หน่วย</th>
-                <th style="padding:10px 12px;text-align:right;color:#64748b;font-size:11px;font-weight:800;border-bottom:1px solid rgba(255,255,255,.06);">ขั้นต่ำ</th>
-                <th style="padding:10px 12px;text-align:right;color:#60a5fa;font-size:11px;font-weight:800;border-bottom:1px solid rgba(255,255,255,.06);">ใช้/วัน</th>
-                <th style="padding:10px 12px;text-align:right;color:#818cf8;font-size:11px;font-weight:800;border-bottom:1px solid rgba(255,255,255,.06);">ใช้/เดือน</th>
-                <th style="padding:10px 12px;text-align:center;color:#64748b;font-size:11px;font-weight:800;border-bottom:1px solid rgba(255,255,255,.06);">วันคงเหลือ / ถึงวันที่</th>
-                <th style="padding:10px 12px;text-align:center;color:#64748b;font-size:11px;font-weight:800;border-bottom:1px solid rgba(255,255,255,.06);">หมดอายุ</th>
+              <tr>
+                <th class="rail" aria-hidden="true"></th>
+                <th>วัตถุดิบ</th>
+                <th class="n">คงเหลือ</th>
+                <th class="n">จุดสั่งซื้อ</th>
+                <th class="n">ใช้/วัน</th>
+                <th class="n">ใช้/เดือน</th>
+                <th class="c">วันคงเหลือ</th>
+                <th class="c">หมดอายุ</th>
               </tr>
             </thead>
             <tbody>${rows}</tbody>

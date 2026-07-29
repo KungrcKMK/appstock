@@ -84,8 +84,8 @@ async function main() {
     roundRectPath(ctx, size, size * 0.22);
     ctx.fill();
 
-    // วางตรงกลาง เว้นขอบ 14%
-    const pad = size * 0.14;
+    // วางตรงกลาง เว้นขอบ 17%
+    const pad = size * 0.17;
     const box = size - pad * 2;
     const scale = Math.min(box / sw, box / sh);
     const dw = sw * scale, dh = sh * scale;

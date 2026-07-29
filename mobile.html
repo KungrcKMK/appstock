@@ -290,13 +290,13 @@
     <!-- IN/OUT/COUNT Toggle -->
     <div id="aTypeRow" class="flex gap-1.5 px-5 pt-3">
       <button onclick="setType('OUT')"    id="aBtnOut"
-        class="flex-1 py-2.5 rounded-2xl font-black text-xs bg-orange-600 text-white">📤 เบิก</button>
+        class="flex-1 py-3.5 rounded-2xl font-black text-xs bg-orange-600 text-white">📤 เบิก</button>
       <button onclick="setType('RETURN')" id="aBtnReturn"
-        class="flex-1 py-2.5 rounded-2xl font-black text-xs bg-slate-700 text-slate-400">↩️ คืน</button>
+        class="flex-1 py-3.5 rounded-2xl font-black text-xs bg-slate-700 text-slate-400">↩️ คืน</button>
       <button onclick="setType('IN')"     id="aBtnIn"
-        class="flex-1 py-2.5 rounded-2xl font-black text-xs bg-slate-700 text-slate-400">📥 รับ</button>
+        class="flex-1 py-3.5 rounded-2xl font-black text-xs bg-slate-700 text-slate-400">📥 รับ</button>
       <button onclick="setType('COUNT')"  id="aBtnCount"
-        class="flex-1 py-2.5 rounded-2xl font-black text-xs bg-slate-700 text-slate-400">📊 นับ</button>
+        class="flex-1 py-3.5 rounded-2xl font-black text-xs bg-slate-700 text-slate-400">📊 นับ</button>
     </div>
 
     <!-- Qty -->
@@ -1138,7 +1138,7 @@ if (window.visualViewport) {
 
 function setType(t) {
   aType = t;
-  const base = "flex-1 py-2.5 rounded-2xl font-black text-xs";
+  const base = "flex-1 py-3.5 rounded-2xl font-black text-xs";
   const off  = `${base} bg-slate-700 text-slate-400`;
   $("aBtnOut").className    = t === "OUT"    ? `${base} bg-orange-600 text-white`  : off;
   $("aBtnReturn").className = t === "RETURN" ? `${base} bg-sky-600 text-white`     : off;

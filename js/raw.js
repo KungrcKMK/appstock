@@ -406,11 +406,18 @@ function renderRawStats(items, discontinued) {
   const today=new Date(); today.setHours(0,0,0,0);
   const low = items.filter(i=>Number(i.Qty)<=Number(i.Min)&&Number(i.Qty)>0).length;
   const exp = items.filter(i=>{ const d=rawParseDate(i.ExpiryDate); return d&&d<today; }).length;
-  document.getElementById("rawStatCards").innerHTML = `
-    <div class="bg-white p-8 rounded-[3.5rem] text-center shadow-lg border-b-8 border-blue-500"><p class="text-[11px] font-black text-slate-400 mb-2">📦 รายการทั้งหมด</p><p class="text-5xl font-black text-slate-800">${items.length}</p></div>
-    <div class="bg-white p-8 rounded-[3.5rem] text-center shadow-lg border-b-8 border-orange-500"><p class="text-[11px] font-black text-slate-400 mb-2">🟠 สต๊อกต่ำ</p><p class="text-5xl font-black text-orange-600">${low}</p></div>
-    <div class="bg-white p-8 rounded-[3.5rem] text-center shadow-lg border-b-8 border-red-500"><p class="text-[11px] font-black text-slate-400 mb-2">🔴 หมดอายุ</p><p class="text-5xl font-black text-red-600">${exp}</p></div>
-    <div class="bg-white p-8 rounded-[3.5rem] text-center shadow-lg border-b-8 border-slate-900"><p class="text-[11px] font-black text-slate-400 mb-2">🗑️ ยกเลิก</p><p class="text-5xl font-black text-slate-800">${Array.isArray(discontinued)?discontinued.length:0}</p></div>`;
+  const stop = Array.isArray(discontinued) ? discontinued.length : 0;
+  const tile = (dot, label, num, note, color) => `
+    <div class="rm-tile">
+      <div class="rm-tile-label"><span class="rm-dot" style="background:${dot}"></span>${label}</div>
+      <div class="rm-tile-num"${color ? ` style="color:${color}"` : ""}>${num.toLocaleString()}</div>
+      <div class="rm-tile-note">${note}</div>
+    </div>`;
+  document.getElementById("rawStatCards").innerHTML =
+      tile("var(--sq-muted)", "รายการทั้งหมด", items.length, "ในคลังนี้", "")
+    + tile("var(--sq-high)",  "ต่ำกว่าจุดสั่งซื้อ", low,  "ควรสั่งเพิ่ม",   low  ? "var(--sq-high)" : "")
+    + tile("var(--sq-crit)",  "หมดอายุแล้ว",       exp,  "ต้องจัดการด่วน", exp  ? "var(--sq-crit)" : "")
+    + tile("var(--sq-muted)", "ยกเลิกการใช้",      stop, "ไม่นับรวมข้างบน", "");
 }
 
 // ── Filter ──

@@ -6,13 +6,43 @@
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="theme-color" content="#0f172a">
+  <meta name="theme-color" content="#0d1410">
   <title>📦 AppStock Mobile</title>
   <link rel="manifest" href="manifest.json">
   <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    // ══════════════════════════════════════════════════════════
+    // สีของแอปมือถือ — ตั้งที่เดียวตรงนี้ ทุกปุ่มทุกหน้าเปลี่ยนตาม
+    //
+    //  slate  = โทนพื้น (เดิมเทาอมฟ้า → เปลี่ยนเป็นเทาอมเขียว ให้เข้าชุดกับโลโก้)
+    //  indigo = สีเน้นของแอป (เดิมคราม → เปลี่ยนเป็นเขียวแม่ละมาย #0e7a3f)
+    //
+    //  ⚠️ ตั้งใจคงพื้นดำไว้ ไม่เปลี่ยนเป็นพื้นขาวเหมือนคอมพิวเตอร์
+    //     เพราะพนักงานใช้ในห้องเย็นและกลางแจ้ง จอมืดอ่านง่ายกว่าและกินแบตน้อยกว่า
+    //
+    //  ⚠️ สีปุ่ม เบิก(ส้ม) คืน(ฟ้า) รับ(เขียว) นับ(ฟ้าคราม) คงไว้ตามเดิม
+    //     เป็นสีที่พนักงานจำได้แล้วว่าปุ่มไหนคืออะไร เปลี่ยนแล้วเสี่ยงกดผิด
+    // ══════════════════════════════════════════════════════════
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            slate: {
+              50:"#f4f7f4", 100:"#e8f0ea", 200:"#d5e0d9", 300:"#b6c8bc", 400:"#8fa39a",
+              500:"#6c8074", 600:"#3a4a40", 700:"#26342b", 800:"#18231c", 900:"#0d1410", 950:"#080d0a"
+            },
+            indigo: {
+              100:"#d8ede0", 300:"#7fcf9d", 400:"#4fb87b", 500:"#17a052",
+              600:"#0e7a3f", 700:"#0b5c30", 800:"#084córd", 900:"#062f19"
+            }
+          }
+        }
+      }
+    };
+  </script>
   <style>
     *{-webkit-tap-highlight-color:transparent;touch-action:manipulation;box-sizing:border-box}
-    body{font-family:'Segoe UI',system-ui,sans-serif;overscroll-behavior:none;background:#0f172a}
+    body{font-family:'Segoe UI',system-ui,sans-serif;overscroll-behavior:none;background:#0d1410}
     .dvh{height:100dvh}
     .pt-safe{padding-top:env(safe-area-inset-top,16px)}
     .pb-safe{padding-bottom:env(safe-area-inset-bottom,16px)}

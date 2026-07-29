@@ -68,6 +68,7 @@ async function loadPendingUsers() {
         payload: { adminToken: _adminToken } })
     }).then(r => r.json());
 
+    if (_adminHandleDenied(res, listEl)) return;
     if (!res.ok) { listEl.innerHTML = `<p class="sq-empty" style="color:var(--sq-crit);font-weight:700;">❌ ${escapeHtml(res.message||"")}</p>`; return; }
     if (!res.list || res.list.length === 0) {
       listEl.innerHTML = '<p class="sq-empty">✅ ไม่มีคำขอรอการอนุมัติ</p>';

@@ -80,15 +80,30 @@
     .act-filter-btn { padding:5px 14px;border-radius:999px;font-size:11px;font-weight:800;background:rgba(255,255,255,0.1);color:rgba(255,255,255,0.5);border:none;cursor:pointer;white-space:nowrap;transition:all .2s; }
     .act-filter-btn.active { background:rgba(52,211,153,0.3);color:#34d399; }
 
-    /* ── Coldroom custom styles ── */
-    :root { --bg:#f8fafc;--card:#fff;--line:#e2e8f0;--text:#0f172a;--muted:#64748b;--primary:#4f46e5;--primary-dark:#4338ca;--ok:#16a34a;--warn:#ea580c;--danger:#dc2626;--radius:20px;--radius-sm:12px;--shadow:0 10px 25px -5px rgba(0,0,0,.05); }
-    #module-COLDROOM { background:var(--bg); }
-    #module-COLDROOM .cr-wrap { max-width:1450px;margin:20px auto;padding:14px 14px 100px; }
-    #module-COLDROOM .cr-topbar { display:flex;justify-content:space-between;align-items:flex-start;gap:12px;margin-bottom:20px; }
-    #module-COLDROOM .cr-badge { background:#e0e7ff;color:var(--primary);padding:6px 14px;border-radius:999px;font-size:13px;font-weight:700; }
-    #module-COLDROOM .cr-tabbar { display:flex;gap:6px;margin-bottom:20px;background:#f1f5f9;padding:6px;border-radius:16px; }
-    #module-COLDROOM .cr-tab-btn { flex:1 1 0;border:none;padding:12px 4px;border-radius:12px;background:transparent;color:var(--muted);font-size:12px;font-weight:700;cursor:pointer;text-align:center;white-space:nowrap;transition:.2s;font-family:inherit; }
-    #module-COLDROOM .cr-tab-btn.active { background:#fff;color:var(--primary);box-shadow:0 4px 6px rgba(0,0,0,.05); }
+    /* ── หน้าคลังสินค้า ──
+       ตัวแปรชุดนี้ชี้ไปที่ token แบรนด์ (--sq-*) ทั้งหมด
+       กฎ CSS เดิม 100+ บรรทัดอ้างตัวแปรพวกนี้อยู่แล้ว จึงเปลี่ยนหน้าตาทั้งหน้าได้จากจุดเดียว */
+    :root {
+      --bg:var(--sq-ground); --card:var(--sq-surface); --line:var(--sq-line);
+      --text:var(--sq-ink);  --muted:var(--sq-muted);
+      --primary:var(--sq-accent); --primary-dark:var(--sq-accent);
+      --ok:var(--sq-accent); --warn:var(--sq-high); --danger:var(--sq-crit);
+      --radius:12px; --radius-sm:8px;
+      --shadow:0 1px 2px rgba(22,36,27,.06),0 4px 12px rgba(22,36,27,.05);
+    }
+    #module-COLDROOM { background:var(--bg);color:var(--sq-ink); }
+    #module-COLDROOM .cr-wrap { max-width:1400px;margin:0 auto;padding:18px 16px 60px; }
+    #module-COLDROOM .cr-topbar { display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap;margin-bottom:14px; }
+    #module-COLDROOM .cr-badge { background:var(--sq-none-bg);color:var(--sq-ink2);padding:3px 10px;border-radius:20px;font-size:12px;font-weight:700; }
+    /* แท็บแบบขีดเส้นใต้ ให้เหมือนหน้าอื่น */
+    #module-COLDROOM .cr-tabbar { display:flex;gap:4px;margin-bottom:14px;border-bottom:1px solid var(--sq-line);overflow-x:auto; }
+    #module-COLDROOM .cr-tab-btn {
+      flex:0 0 auto;border:none;border-bottom:2px solid transparent;margin-bottom:-1px;
+      padding:8px 14px;background:none;color:var(--sq-muted);
+      font-size:13px;font-weight:700;cursor:pointer;white-space:nowrap;transition:.15s;font-family:inherit;
+    }
+    #module-COLDROOM .cr-tab-btn:hover { color:var(--sq-ink); }
+    #module-COLDROOM .cr-tab-btn.active { background:none;color:var(--sq-accent);border-bottom-color:var(--sq-accent);font-weight:800;box-shadow:none; }
     #module-COLDROOM .cr-tab-panel { display:none;animation:fadeIn .3s; }
     #module-COLDROOM .cr-tab-panel.active { display:block; }
     @keyframes fadeIn { from{opacity:0;transform:translateY(4px)} to{opacity:1;transform:translateY(0)} }

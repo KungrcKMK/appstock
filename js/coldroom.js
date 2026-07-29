@@ -15,9 +15,9 @@ async function crBomSelectFactory(factory) {
     const btn = document.getElementById("crBomBtn" + f);
     if (!btn) return;
     const active = f === factory;
-    btn.style.background      = active ? (f==="SQF"?"#f59e0b":"#10b981") : "#f8fafc";
-    btn.style.color           = active ? "#fff" : "#374151";
-    btn.style.borderColor     = active ? (f==="SQF"?"#d97706":"#059669") : "#e2e8f0";
+    btn.style.background      = active ? (f==="SQF"?"var(--sq-high)":"var(--sq-accent)") : "var(--sq-raised)";
+    btn.style.color           = active ? "#fff" : "var(--sq-ink2)";
+    btn.style.borderColor     = active ? (f==="SQF"?"var(--sq-high)":"var(--sq-accent)") : "var(--sq-line)";
   });
   // โหลดวัตถุดิบของ factory นั้น
   showLoading("โหลดวัตถุดิบ " + factory + "...");
@@ -66,11 +66,11 @@ async function crBomOnProductChange() {
   const badge = document.getElementById("crBomStatusBadge");
   if (bom && bom.materials && bom.materials.length > 0) {
     badge.textContent = "มี BOM อยู่แล้ว — กำลังแสดง";
-    badge.style.background = "#dcfce7"; badge.style.color = "#166534";
+    badge.style.background = "var(--sq-accent-2)"; badge.style.color = "var(--sq-accent)";
     bom.materials.forEach(m => crBomAddRow(m));
   } else {
     badge.textContent = "ยังไม่มี BOM — เพิ่มวัตถุดิบได้เลย";
-    badge.style.background = "#fef3c7"; badge.style.color = "#92400e";
+    badge.style.background = "var(--sq-warn-bg)"; badge.style.color = "var(--sq-high)";
   }
 }
 
@@ -79,29 +79,29 @@ function crBomAddRow(preset = null) {
   const tbody = document.getElementById("crBomMatBody");
   const idx   = tbody.children.length + 1;
   const tr    = document.createElement("tr");
-  tr.style.borderBottom = "1px dashed #e2e8f0";
+  tr.style.borderBottom = "1px dashed var(--sq-line)";
   const opts  = _bomMatOptions.map(m =>
     `<option value="${escapeHtml(m.SKU)}" data-unit="${escapeHtml(m.Unit||"")}">${escapeHtml(m.Name)} (${escapeHtml(m.SKU)})</option>`
   ).join("");
   tr.innerHTML = `
-    <td style="padding:8px 6px;color:#94a3b8;font-size:12px;font-weight:700;text-align:center;">${idx}</td>
+    <td style="padding:8px 6px;color:var(--sq-muted);font-size:12px;font-weight:700;text-align:center;">${idx}</td>
     <td style="padding:8px;">
       <select class="bom-mat-select" onchange="crBomRowSyncUnit(this)"
-        style="width:100%;padding:9px 8px;border-radius:8px;border:2px solid #e2e8f0;font-family:inherit;font-size:13px;">
+        style="width:100%;padding:9px 8px;border-radius:8px;border:2px solid var(--sq-line);font-family:inherit;font-size:13px;">
         <option value="">— เลือกวัตถุดิบ —</option>${opts}
       </select>
     </td>
     <td style="padding:8px;">
       <input type="number" class="bom-qty-input" min="0" step="0.001" placeholder="0"
-        style="width:100%;padding:9px 8px;border-radius:8px;border:2px solid #e2e8f0;text-align:right;font-weight:800;font-size:14px;box-sizing:border-box;">
+        style="width:100%;padding:9px 8px;border-radius:8px;border:2px solid var(--sq-line);text-align:right;font-weight:800;font-size:14px;box-sizing:border-box;">
     </td>
     <td style="padding:8px;">
       <input type="text" class="bom-unit-input" placeholder="หน่วย"
-        style="width:100%;padding:9px 8px;border-radius:8px;border:2px solid #e2e8f0;font-size:12px;box-sizing:border-box;">
+        style="width:100%;padding:9px 8px;border-radius:8px;border:2px solid var(--sq-line);font-size:12px;box-sizing:border-box;">
     </td>
     <td style="padding:8px;text-align:center;">
       <button onclick="this.closest('tr').remove()"
-        style="background:#fee2e2;color:#dc2626;border:none;border-radius:8px;padding:6px 10px;cursor:pointer;font-size:15px;line-height:1;">✕</button>
+        style="background:var(--sq-crit-bg);color:var(--sq-crit);border:none;border-radius:8px;padding:6px 10px;cursor:pointer;font-size:15px;line-height:1;">✕</button>
     </td>`;
   tbody.appendChild(tr);
   if (preset) {
@@ -139,7 +139,7 @@ async function crSaveBom() {
     showToast(`✅ บันทึก BOM สำเร็จ (${res.saved} รายการ)`, "success");
     const badge = document.getElementById("crBomStatusBadge");
     badge.textContent = `บันทึกแล้ว ${res.saved} รายการ`;
-    badge.style.background = "#dcfce7"; badge.style.color = "#166534";
+    badge.style.background = "var(--sq-accent-2)"; badge.style.color = "var(--sq-accent)";
     crLoadBomList();
   } else {
     showToast(res.message || "บันทึกไม่สำเร็จ","error");
@@ -155,7 +155,7 @@ async function crDeleteBom() {
     showToast("ลบ BOM แล้ว","success");
     document.getElementById("crBomMatBody").innerHTML = "";
     const badge = document.getElementById("crBomStatusBadge");
-    badge.textContent = "ยังไม่มี BOM"; badge.style.background = "#fef3c7"; badge.style.color = "#92400e";
+    badge.textContent = "ยังไม่มี BOM"; badge.style.background = "var(--sq-warn-bg)"; badge.style.color = "var(--sq-high)";
     crLoadBomList();
   }
 }
@@ -163,20 +163,20 @@ async function crDeleteBom() {
 // รายการ BOM ทั้งหมด (card ล่าง)
 async function crLoadBomList() {
   const listEl = document.getElementById("crBomProductList");
-  listEl.innerHTML = '<p style="color:#94a3b8;text-align:center;font-weight:700;padding:20px 0;">⏳ กำลังโหลด...</p>';
+  listEl.innerHTML = '<p style="color:var(--sq-muted);text-align:center;font-weight:700;padding:20px 0;">⏳ กำลังโหลด...</p>';
   const res = await crCallServer("getBomList");
   const boms = res.ok ? (res.boms || []) : [];
   if (!boms.length) {
-    listEl.innerHTML = '<p style="color:#94a3b8;text-align:center;font-weight:700;padding:20px 0;">ยังไม่มี BOM ที่กำหนดไว้</p>';
+    listEl.innerHTML = '<p style="color:var(--sq-muted);text-align:center;font-weight:700;padding:20px 0;">ยังไม่มี BOM ที่กำหนดไว้</p>';
     return;
   }
   listEl.innerHTML = `<div style="display:flex;flex-direction:column;gap:8px;">` +
     boms.map(b => {
-      const fc = b.factory === "SQF" ? "#f59e0b" : "#10b981";
-      return `<div style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border:2px solid #e2e8f0;border-left:4px solid ${fc};border-radius:12px;background:#f8fafc;flex-wrap:wrap;gap:8px;">
+      const fc = b.factory === "SQF" ? "var(--sq-high)" : "var(--sq-accent)";
+      return `<div style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border:2px solid var(--sq-line);border-left:4px solid ${fc};border-radius:12px;background:var(--sq-raised);flex-wrap:wrap;gap:8px;">
         <div style="flex:1;min-width:0;">
-          <div style="font-weight:800;font-size:14px;color:#0f172a;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escapeHtml(b.name)}</div>
-          <div style="font-size:11px;color:#64748b;margin-top:2px;">${escapeHtml(b.barcode)} &nbsp;·&nbsp; ${b.materials.length} วัตถุดิบ</div>
+          <div style="font-weight:800;font-size:14px;color:var(--sq-ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escapeHtml(b.name)}</div>
+          <div style="font-size:11px;color:var(--sq-muted);margin-top:2px;">${escapeHtml(b.barcode)} &nbsp;·&nbsp; ${b.materials.length} วัตถุดิบ</div>
         </div>
         <div style="display:flex;align-items:center;gap:8px;flex-shrink:0;">
           <span style="background:${fc};color:#fff;border-radius:999px;padding:2px 10px;font-size:11px;font-weight:800;">${escapeHtml(b.factory)}</span>
@@ -282,8 +282,8 @@ function crManageSubTab(sub) {
     const btn = document.getElementById("crMngBtn-" + n);
     if (sec) sec.style.display = n === sub ? "" : "none";
     if (btn) {
-      btn.style.background = n === sub ? "#6366f1" : "#f8fafc";
-      btn.style.color      = n === sub ? "#fff"    : "#64748b";
+      btn.style.background = n === sub ? "var(--sq-accent)" : "var(--sq-raised)";
+      btn.style.color      = n === sub ? "#fff"    : "var(--sq-muted)";
     }
   });
   if (sub === "editproduct" && crEditProductCache.length === 0) crLoadEditProductList();
@@ -335,12 +335,12 @@ function crWoAddRow() {
   }).join("");
   const row = document.createElement("tr");
   row.id = `crWoRow-${idx}`;
-  row.style.cssText = "border-bottom:1px solid #e2e8f0;";
+  row.style.cssText = "border-bottom:1px solid var(--sq-line);";
   row.innerHTML = `
-    <td style="padding:8px;text-align:center;font-size:12px;color:#94a3b8;font-weight:700;">${idx+1}</td>
+    <td style="padding:8px;text-align:center;font-size:12px;color:var(--sq-muted);font-weight:700;">${idx+1}</td>
     <td style="padding:6px 8px;overflow:hidden;">
       <select id="crWoSel-${idx}" onchange="crWoOnSelectProduct(${idx}); crWoLockButtons()"
-        style="width:100%;padding:7px 8px;border:2px solid #e2e8f0;border-radius:8px;font-family:inherit;font-size:13px;font-weight:700;outline:none;background:#fff;overflow:hidden;text-overflow:ellipsis;">
+        style="width:100%;padding:7px 8px;border:2px solid var(--sq-line);border-radius:8px;font-family:inherit;font-size:13px;font-weight:700;outline:none;background:#fff;overflow:hidden;text-overflow:ellipsis;">
         <option value="">— เลือกสินค้า —</option>
         ${options}
       </select>
@@ -348,21 +348,21 @@ function crWoAddRow() {
     <td style="padding:8px;">
       <input type="text" id="crWoMfg-${idx}" maxlength="6" inputmode="numeric" placeholder="DDMMYY"
         oninput="crWoCalcExpRow(${idx})"
-        style="width:100%;padding:8px;border:2px solid #e2e8f0;border-radius:8px;text-align:center;font-size:14px;font-weight:900;font-family:monospace;outline:none;">
+        style="width:100%;padding:8px;border:2px solid var(--sq-line);border-radius:8px;text-align:center;font-size:14px;font-weight:900;font-family:monospace;outline:none;">
     </td>
     <td style="padding:8px;">
       <input type="text" id="crWoExp-${idx}" readonly
-        style="width:100%;padding:8px;border:2px solid #f0fdf4;border-radius:8px;text-align:center;font-size:13px;font-weight:900;color:#059669;background:#f0fdf4;font-family:monospace;">
+        style="width:100%;padding:8px;border:2px solid var(--sq-accent-2);border-radius:8px;text-align:center;font-size:13px;font-weight:900;color:var(--sq-accent);background:var(--sq-accent-2);font-family:monospace;">
     </td>
     <td id="crWoQtyTd-${idx}" style="padding:6px 8px;">
-      <div style="color:#94a3b8;font-size:12px;text-align:center;">← เลือกสินค้าก่อน</div>
+      <div style="color:var(--sq-muted);font-size:12px;text-align:center;">← เลือกสินค้าก่อน</div>
     </td>
     <td style="padding:6px 8px;">
       <input type="text" id="crWoUnit-${idx}" readonly
-        style="width:100%;padding:7px;border:2px solid #f1f5f9;border-radius:8px;font-size:13px;background:#f8fafc;color:#64748b;font-weight:700;">
+        style="width:100%;padding:7px;border:2px solid var(--sq-line-soft);border-radius:8px;font-size:13px;background:var(--sq-raised);color:var(--sq-muted);font-weight:700;">
     </td>
     <td style="padding:8px;text-align:center;">
-      <button onclick="crWoRemoveRow(${idx})" style="background:#fee2e2;border:none;color:#dc2626;border-radius:6px;padding:6px 10px;cursor:pointer;font-size:14px;font-weight:900;">✕</button>
+      <button onclick="crWoRemoveRow(${idx})" style="background:var(--sq-crit-bg);border:none;color:var(--sq-crit);border-radius:6px;padding:6px 10px;cursor:pointer;font-size:14px;font-weight:900;">✕</button>
     </td>`;
   $$cr("crWoItemsBody").appendChild(row);
 }
@@ -399,7 +399,7 @@ function crWoOnSelectProduct(idx) {
   if (!td) return;
 
   if (!barcode) {
-    td.innerHTML = `<div style="color:#94a3b8;font-size:12px;text-align:center;">← เลือกสินค้าก่อน</div>`;
+    td.innerHTML = `<div style="color:var(--sq-muted);font-size:12px;text-align:center;">← เลือกสินค้าก่อน</div>`;
     return;
   }
 
@@ -411,28 +411,28 @@ function crWoOnSelectProduct(idx) {
         <div style="display:flex;gap:4px;align-items:center;">
           <input type="number" id="crWoSets-${idx}" min="0" step="0.5" placeholder="${label}"
             oninput="crWoCalcQtyFromSets(${idx}); crWoLockButtons()"
-            style="width:60px;padding:6px 8px;border:2px solid #c7d2fe;border-radius:8px;text-align:right;font-size:14px;font-weight:900;outline:none;background:#eff6ff;">
-          <span style="font-size:11px;color:#6366f1;font-weight:700;white-space:nowrap;">${label}</span>
-          <span style="font-size:12px;color:#94a3b8;">×</span>
-          <span style="font-size:12px;color:#4338ca;font-weight:800;white-space:nowrap;">${ups}</span>
-          <span style="font-size:11px;color:#64748b;">=</span>
+            style="width:60px;padding:6px 8px;border:2px solid var(--sq-line);border-radius:8px;text-align:right;font-size:14px;font-weight:900;outline:none;background:var(--sq-accent-2);">
+          <span style="font-size:11px;color:var(--sq-accent);font-weight:700;white-space:nowrap;">${label}</span>
+          <span style="font-size:12px;color:var(--sq-muted);">×</span>
+          <span style="font-size:12px;color:var(--sq-accent);font-weight:800;white-space:nowrap;">${ups}</span>
+          <span style="font-size:11px;color:var(--sq-muted);">=</span>
           <input type="number" id="crWoQty-${idx}" min="0" placeholder="จำนวน"
-            style="width:90px;padding:6px 8px;border:2px solid #bbf7d0;border-radius:8px;text-align:right;font-size:14px;font-weight:900;outline:none;background:#f0fdf4;color:#15803d;">
+            style="width:90px;padding:6px 8px;border:2px solid var(--sq-line);border-radius:8px;text-align:right;font-size:14px;font-weight:900;outline:none;background:var(--sq-accent-2);color:var(--sq-accent);">
         </div>
-        <div style="font-size:10px;color:#64748b;padding:0 2px;">1 ${label} = ${ups} ${unit}</div>
+        <div style="font-size:10px;color:var(--sq-muted);padding:0 2px;">1 ${label} = ${ups} ${unit}</div>
       </div>`;
   } else {
     // ⚠️ UPS = 0 หรือ 1 โดยไม่มี SetName = ยังไม่ตั้งค่า
     td.innerHTML = `
       <div style="display:flex;flex-direction:column;gap:6px;">
-        <div style="background:#fef3c7;border:1px solid #fcd34d;border-radius:8px;padding:5px 9px;font-size:11px;color:#92400e;display:flex;align-items:center;gap:6px;">
+        <div style="background:var(--sq-warn-bg);border:1px solid var(--sq-warn);border-radius:8px;padding:5px 9px;font-size:11px;color:var(--sq-high);display:flex;align-items:center;gap:6px;">
           <span>⚠️ ยังไม่ตั้งค่า ชุด/UPS</span>
           <button onclick="crSwitchTab('editproduct');crOpenEditProduct('${escapeJs(barcode)}')"
-            style="background:#f59e0b;color:#fff;border:none;border-radius:5px;padding:2px 7px;font-size:10px;font-weight:800;cursor:pointer;">แก้ไข</button>
+            style="background:var(--sq-high);color:#fff;border:none;border-radius:5px;padding:2px 7px;font-size:10px;font-weight:800;cursor:pointer;">แก้ไข</button>
         </div>
         <div style="display:flex;gap:4px;align-items:center;">
           <input type="number" id="crWoQty-${idx}" min="1" placeholder="จำนวน${unit ? ' ('+unit+')' : ''}"
-            style="width:100%;padding:8px;border:2px solid #fcd34d;border-radius:8px;text-align:right;font-size:14px;font-weight:900;outline:none;background:#fffbeb;">
+            style="width:100%;padding:8px;border:2px solid var(--sq-warn);border-radius:8px;text-align:right;font-size:14px;font-weight:900;outline:none;background:var(--sq-warn-bg);">
         </div>
       </div>`;
   }
@@ -759,31 +759,31 @@ async function crCheckBomMaterials() {
   });
   if (!items.length) {
     resultEl.style.display = "";
-    resultEl.innerHTML = `<div style="background:#fff3cd;border:2px solid #fde68a;border-radius:12px;padding:12px 16px;font-size:13px;font-weight:700;color:#92400e;">⚠️ กรุณาเพิ่มสินค้าและระบุจำนวนก่อน</div>`;
+    resultEl.innerHTML = `<div style="background:var(--sq-warn-bg);border:2px solid var(--sq-warn-bg);border-radius:12px;padding:12px 16px;font-size:13px;font-weight:700;color:var(--sq-high);">⚠️ กรุณาเพิ่มสินค้าและระบุจำนวนก่อน</div>`;
     crWoLockButtons();
     return;
   }
   resultEl.style.display = "";
-  resultEl.innerHTML = `<div style="background:#f1f5f9;border-radius:12px;padding:14px;font-size:13px;color:#64748b;font-weight:700;text-align:center;">⏳ กำลังคำนวณวัตถุดิบ...</div>`;
+  resultEl.innerHTML = `<div style="background:var(--sq-line-soft);border-radius:12px;padding:14px;font-size:13px;color:var(--sq-muted);font-weight:700;text-align:center;">⏳ กำลังคำนวณวัตถุดิบ...</div>`;
   const res = await crCallServer("calcWorkOrderMaterials", { items });
   if (!res.ok) {
-    resultEl.innerHTML = `<div style="background:#fee2e2;border:2px solid #fca5a5;border-radius:12px;padding:12px 16px;font-size:13px;font-weight:700;color:#991b1b;">❌ ${escapeHtml(res.message||"เกิดข้อผิดพลาด")}</div>`;
+    resultEl.innerHTML = `<div style="background:var(--sq-crit-bg);border:2px solid var(--sq-crit);border-radius:12px;padding:12px 16px;font-size:13px;font-weight:700;color:var(--sq-crit);">❌ ${escapeHtml(res.message||"เกิดข้อผิดพลาด")}</div>`;
     return;
   }
   const matsByFactory = res.materials || {};
   const noBom = res.noBom || [];
   const hasShortage = Object.values(matsByFactory).some(mats => mats.some(m => !m.sufficient));
 
-  let html = `<div style="border:2px solid ${hasShortage?"#fca5a5":"#86efac"};border-radius:16px;overflow:hidden;">
-    <div style="background:${hasShortage?"#fee2e2":"#dcfce7"};padding:12px 16px;font-size:14px;font-weight:900;color:${hasShortage?"#991b1b":"#166534"};">
+  let html = `<div style="border:2px solid ${hasShortage?"var(--sq-crit)":"var(--sq-accent)"};border-radius:16px;overflow:hidden;">
+    <div style="background:${hasShortage?"var(--sq-crit-bg)":"var(--sq-accent-2)"};padding:12px 16px;font-size:14px;font-weight:900;color:${hasShortage?"var(--sq-crit)":"var(--sq-accent)"};">
       ${hasShortage?"⚠️ มีวัตถุดิบไม่เพียงพอ — ตรวจสอบด้านล่าง":"✅ วัตถุดิบเพียงพอทั้งหมด"}
     </div>`;
 
   Object.entries(matsByFactory).forEach(([fact, mats]) => {
     html += `<div style="padding:14px 16px;background:#fff;">
-      <div style="font-size:12px;font-weight:800;color:#475569;margin-bottom:10px;">🏭 ${escapeHtml(fact)}</div>
+      <div style="font-size:12px;font-weight:800;color:var(--sq-ink2);margin-bottom:10px;">🏭 ${escapeHtml(fact)}</div>
       <div style="overflow-x:auto;"><table style="width:100%;border-collapse:collapse;font-size:12px;min-width:480px;">
-        <thead><tr style="background:#f1f5f9;color:#475569;font-size:11px;font-weight:800;">
+        <thead><tr style="background:var(--sq-line-soft);color:var(--sq-ink2);font-size:11px;font-weight:800;">
           <th style="padding:8px 10px;text-align:left;">วัตถุดิบ</th>
           <th style="padding:8px 10px;text-align:right;">ต้องใช้</th>
           <th style="padding:8px 10px;text-align:right;">มีอยู่</th>
@@ -793,18 +793,18 @@ async function crCheckBomMaterials() {
         </tr></thead>
         <tbody>${mats.map(m => {
           const ok  = m.sufficient;
-          const dc  = m.daysAfter===null?"#94a3b8":m.daysAfter<=7?"#dc2626":m.daysAfter<=14?"#ea580c":m.daysAfter<=30?"#f59e0b":"#059669";
-          const dayBadge = m.daysAfter===null ? `<span style="color:#94a3b8;">—</span>`
+          const dc  = m.daysAfter===null?"var(--sq-muted)":m.daysAfter<=7?"var(--sq-crit)":m.daysAfter<=14?"var(--sq-high)":m.daysAfter<=30?"var(--sq-high)":"var(--sq-accent)";
+          const dayBadge = m.daysAfter===null ? `<span style="color:var(--sq-muted);">—</span>`
             : `<span style="background:${dc};color:#fff;border-radius:999px;padding:2px 8px;font-weight:800;">${m.daysAfter} วัน</span>`;
-          return `<tr style="border-top:1px dashed #f1f5f9;background:${ok?"#fff":"#fff5f5"};">
-            <td style="padding:8px 10px;font-weight:700;color:#334155;">${escapeHtml(m.name)}</td>
-            <td style="padding:8px 10px;text-align:right;font-weight:700;color:#6366f1;">${m.needed.toLocaleString()} ${escapeHtml(m.unit)}</td>
-            <td style="padding:8px 10px;text-align:right;color:#334155;">${m.currentQty.toLocaleString()} ${escapeHtml(m.unit)}</td>
-            <td style="padding:8px 10px;text-align:right;font-weight:900;color:${ok?"#059669":"#dc2626"};">${m.remaining.toLocaleString()} ${escapeHtml(m.unit)}</td>
+          return `<tr style="border-top:1px dashed var(--sq-line-soft);background:${ok?"#fff":"var(--sq-crit-bg)"};">
+            <td style="padding:8px 10px;font-weight:700;color:var(--sq-ink2);">${escapeHtml(m.name)}</td>
+            <td style="padding:8px 10px;text-align:right;font-weight:700;color:var(--sq-accent);">${m.needed.toLocaleString()} ${escapeHtml(m.unit)}</td>
+            <td style="padding:8px 10px;text-align:right;color:var(--sq-ink2);">${m.currentQty.toLocaleString()} ${escapeHtml(m.unit)}</td>
+            <td style="padding:8px 10px;text-align:right;font-weight:900;color:${ok?"var(--sq-accent)":"var(--sq-crit)"};">${m.remaining.toLocaleString()} ${escapeHtml(m.unit)}</td>
             <td style="padding:8px 10px;text-align:center;">${dayBadge}</td>
             <td style="padding:8px 10px;text-align:center;">${ok
-              ? `<span style="background:#dcfce7;color:#166534;border-radius:999px;padding:2px 9px;font-weight:800;font-size:11px;">✅ พอ</span>`
-              : `<span style="background:#fee2e2;color:#991b1b;border-radius:999px;padding:2px 9px;font-weight:800;font-size:11px;">❌ ขาด ${Math.abs(m.remaining).toLocaleString()}</span>`}
+              ? `<span style="background:var(--sq-accent-2);color:var(--sq-accent);border-radius:999px;padding:2px 9px;font-weight:800;font-size:11px;">✅ พอ</span>`
+              : `<span style="background:var(--sq-crit-bg);color:var(--sq-crit);border-radius:999px;padding:2px 9px;font-weight:800;font-size:11px;">❌ ขาด ${Math.abs(m.remaining).toLocaleString()}</span>`}
             </td>
           </tr>`;
         }).join("")}</tbody>
@@ -812,12 +812,12 @@ async function crCheckBomMaterials() {
   });
 
   if (noBom.length > 0) {
-    html += `<div style="background:#fff7ed;padding:10px 16px;font-size:12px;font-weight:700;color:#92400e;border-top:1px solid #fed7aa;">
+    html += `<div style="background:var(--sq-high-bg);padding:10px 16px;font-size:12px;font-weight:700;color:var(--sq-high);border-top:1px solid var(--sq-high-bg);">
       📋 ไม่พบ BOM: ${noBom.map(b=>escapeHtml(b)).join(", ")} — กรุณากำหนดที่แท็บ 📖 สูตร BOM
     </div>`;
   }
   if (!Object.keys(matsByFactory).length && !noBom.length) {
-    html += `<div style="padding:16px;text-align:center;font-size:13px;color:#94a3b8;font-weight:700;">ไม่พบ BOM สำหรับสินค้าที่เลือก</div>`;
+    html += `<div style="padding:16px;text-align:center;font-size:13px;color:var(--sq-muted);font-weight:700;">ไม่พบ BOM สำหรับสินค้าที่เลือก</div>`;
   }
   html += `</div>`;
   resultEl.innerHTML = html;
@@ -855,13 +855,13 @@ function crSiAddRow() {
   row.className = "cr-si-row";
   row.dataset.idx = idx;
   row.innerHTML = `
-    <div style="background:#f8fafc;border:1.5px solid #e2e8f0;border-radius:14px;padding:14px;position:relative;">
-      <button onclick="this.closest('.cr-si-row').remove()" style="position:absolute;top:10px;right:10px;background:none;border:none;font-size:18px;cursor:pointer;color:#94a3b8;line-height:1;">✕</button>
+    <div style="background:var(--sq-raised);border:1.5px solid var(--sq-line);border-radius:14px;padding:14px;position:relative;">
+      <button onclick="this.closest('.cr-si-row').remove()" style="position:absolute;top:10px;right:10px;background:none;border:none;font-size:18px;cursor:pointer;color:var(--sq-muted);line-height:1;">✕</button>
 
       <div style="margin-bottom:10px;">
-        <label style="font-size:11px;font-weight:700;color:#64748b;display:block;margin-bottom:4px;">📦 สินค้า</label>
+        <label style="font-size:11px;font-weight:700;color:var(--sq-muted);display:block;margin-bottom:4px;">📦 สินค้า</label>
         <select class="cr-si-product" onchange="crSiOnProductChange(this)"
-          style="width:100%;padding:10px 12px;border:1.5px solid #e2e8f0;border-radius:10px;font-size:14px;background:#fff;box-sizing:border-box;">
+          style="width:100%;padding:10px 12px;border:1.5px solid var(--sq-line);border-radius:10px;font-size:14px;background:#fff;box-sizing:border-box;">
           <option value="">— เลือกสินค้า —</option>
           ${opts}
         </select>
@@ -869,27 +869,27 @@ function crSiAddRow() {
 
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;">
         <div>
-          <label style="font-size:11px;font-weight:700;color:#64748b;display:block;margin-bottom:4px;">📅 MFG <span style="font-weight:400;opacity:.7;">(DDMMYY)</span></label>
+          <label style="font-size:11px;font-weight:700;color:var(--sq-muted);display:block;margin-bottom:4px;">📅 MFG <span style="font-weight:400;opacity:.7;">(DDMMYY)</span></label>
           <input class="cr-si-mfg" type="text" maxlength="6" inputmode="numeric" placeholder="100426"
             oninput="this.value=this.value.replace(/\D/g,''); crSiAutoExp(this)"
-            style="width:100%;padding:12px;border:1.5px solid #e2e8f0;border-radius:10px;font-size:20px;font-weight:900;text-align:center;letter-spacing:3px;box-sizing:border-box;">
+            style="width:100%;padding:12px;border:1.5px solid var(--sq-line);border-radius:10px;font-size:20px;font-weight:900;text-align:center;letter-spacing:3px;box-sizing:border-box;">
         </div>
         <div>
-          <label style="font-size:11px;font-weight:700;color:#ea580c;display:block;margin-bottom:4px;">⚠️ EXP <span style="font-weight:400;opacity:.7;">(คำนวณอัตโนมัติ)</span></label>
+          <label style="font-size:11px;font-weight:700;color:var(--sq-high);display:block;margin-bottom:4px;">⚠️ EXP <span style="font-weight:400;opacity:.7;">(คำนวณอัตโนมัติ)</span></label>
           <input class="cr-si-exp" type="text" maxlength="6" inputmode="numeric" placeholder="—" readonly
-            style="width:100%;padding:12px;border:1.5px solid #fed7aa;border-radius:10px;font-size:20px;font-weight:900;text-align:center;letter-spacing:3px;background:#fff7ed;color:#c2410c;box-sizing:border-box;">
+            style="width:100%;padding:12px;border:1.5px solid var(--sq-high-bg);border-radius:10px;font-size:20px;font-weight:900;text-align:center;letter-spacing:3px;background:var(--sq-high-bg);color:var(--sq-high);box-sizing:border-box;">
         </div>
       </div>
 
       <div style="display:grid;grid-template-columns:2fr 1fr;gap:10px;">
         <div>
-          <label style="font-size:11px;font-weight:700;color:#64748b;display:block;margin-bottom:4px;">🔢 จำนวน (ประมาณ)</label>
+          <label style="font-size:11px;font-weight:700;color:var(--sq-muted);display:block;margin-bottom:4px;">🔢 จำนวน (ประมาณ)</label>
           <input class="cr-si-qty" type="number" min="0" value="" inputmode="numeric"
-            style="width:100%;padding:12px;border:1.5px solid #e2e8f0;border-radius:10px;font-size:20px;font-weight:900;text-align:center;box-sizing:border-box;">
+            style="width:100%;padding:12px;border:1.5px solid var(--sq-line);border-radius:10px;font-size:20px;font-weight:900;text-align:center;box-sizing:border-box;">
         </div>
         <div>
-          <label style="font-size:11px;font-weight:700;color:#64748b;display:block;margin-bottom:4px;">หน่วย</label>
-          <div class="cr-si-unit-label" style="padding:12px 8px;font-size:14px;font-weight:700;color:#1e293b;text-align:center;background:#fff;border:1.5px solid #e2e8f0;border-radius:10px;">—</div>
+          <label style="font-size:11px;font-weight:700;color:var(--sq-muted);display:block;margin-bottom:4px;">หน่วย</label>
+          <div class="cr-si-unit-label" style="padding:12px 8px;font-size:14px;font-weight:700;color:var(--sq-ink);text-align:center;background:#fff;border:1.5px solid var(--sq-line);border-radius:10px;">—</div>
         </div>
       </div>
     </div>`;
@@ -978,51 +978,51 @@ async function crSiLoadReviewList(filterStatus) {
   const listEl = document.getElementById("crSiReviewList");
   const statusEl = document.getElementById("crSiReviewStatus");
   if (!listEl) return;
-  listEl.innerHTML = '<p style="text-align:center;color:#94a3b8;padding:20px;">กำลังโหลด...</p>';
+  listEl.innerHTML = '<p style="text-align:center;color:var(--sq-muted);padding:20px;">กำลังโหลด...</p>';
   crSetStatus("crSiReviewStatus","","");
   const res = await crCallServer("getStockInList", { filterStatus: filterStatus || "" });
-  if (!res.ok) { listEl.innerHTML = `<p style="color:#dc2626;text-align:center;padding:20px;">❌ ${escapeHtml(res.message||"")}</p>`; return; }
+  if (!res.ok) { listEl.innerHTML = `<p style="color:var(--sq-crit);text-align:center;padding:20px;">❌ ${escapeHtml(res.message||"")}</p>`; return; }
   const list = res.list || [];
   if (!list.length) {
-    listEl.innerHTML = `<p style="text-align:center;color:#059669;padding:20px;font-weight:900;">${filterStatus==="รอตรวจยอด" ? "✅ ไม่มีรายการรอตรวจ" : "ยังไม่มีรายการ"}</p>`;
+    listEl.innerHTML = `<p style="text-align:center;color:var(--sq-accent);padding:20px;font-weight:900;">${filterStatus==="รอตรวจยอด" ? "✅ ไม่มีรายการรอตรวจ" : "ยังไม่มีรายการ"}</p>`;
     return;
   }
-  const statusBg = { "รอตรวจยอด":"#f59e0b","เข้าคลังแล้ว":"#059669","ยกเลิก":"#94a3b8" };
+  const statusBg = { "รอตรวจยอด":"var(--sq-high)","เข้าคลังแล้ว":"var(--sq-accent)","ยกเลิก":"var(--sq-muted)" };
   listEl.innerHTML = list.map(si => {
     const items = (() => { try { return JSON.parse(String(si.Items||"[]")); } catch(e){ return []; } })();
     const isPending = si.Status === "รอตรวจยอด";
     const itemRows = items.map((it,i) => `
-      <tr style="background:${i%2===0?"#fff":"#f8fafc"}">
-        <td style="padding:8px 10px;border:1px solid #e2e8f0;font-size:13px;font-weight:700;">${escapeHtml(it.name||"-")}</td>
-        <td style="padding:8px 10px;border:1px solid #e2e8f0;text-align:center;font-size:12px;color:#6366f1;">${escapeHtml(it.mfg||"-")}</td>
-        <td style="padding:8px 10px;border:1px solid #e2e8f0;text-align:center;font-size:12px;color:#059669;">${escapeHtml(it.exp||"-")}</td>
-        <td style="padding:8px 10px;border:1px solid #e2e8f0;text-align:right;">
+      <tr style="background:${i%2===0?"#fff":"var(--sq-raised)"}">
+        <td style="padding:8px 10px;border:1px solid var(--sq-line);font-size:13px;font-weight:700;">${escapeHtml(it.name||"-")}</td>
+        <td style="padding:8px 10px;border:1px solid var(--sq-line);text-align:center;font-size:12px;color:var(--sq-accent);">${escapeHtml(it.mfg||"-")}</td>
+        <td style="padding:8px 10px;border:1px solid var(--sq-line);text-align:center;font-size:12px;color:var(--sq-accent);">${escapeHtml(it.exp||"-")}</td>
+        <td style="padding:8px 10px;border:1px solid var(--sq-line);text-align:right;">
           ${isPending
             ? `<input type="number" min="0" value="${Number(it.qty||0)}" inputmode="numeric"
                  data-si="${escapeHtml(si.StockInID)}" data-row="${i}"
                  class="cr-si-review-qty"
-                 style="width:80px;padding:6px 8px;border:2px solid #6366f1;border-radius:8px;font-size:16px;font-weight:900;text-align:center;">`
+                 style="width:80px;padding:6px 8px;border:2px solid var(--sq-accent);border-radius:8px;font-size:16px;font-weight:900;text-align:center;">`
             : `<span style="font-weight:900;font-size:14px;">${Number(it.qty||0).toLocaleString()}</span>`
           }
-          <span style="font-size:11px;color:#64748b;margin-left:4px;">${escapeHtml(it.unit||"")}</span>
+          <span style="font-size:11px;color:var(--sq-muted);margin-left:4px;">${escapeHtml(it.unit||"")}</span>
         </td>
       </tr>`).join("");
 
-    return `<div style="border:2px solid ${isPending?"#f59e0b":"#e2e8f0"};border-radius:14px;padding:16px;margin-bottom:16px;"
+    return `<div style="border:2px solid ${isPending?"var(--sq-high)":"var(--sq-line)"};border-radius:14px;padding:16px;margin-bottom:16px;"
                  id="cr-si-card-${escapeHtml(si.StockInID)}">
       <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:8px;margin-bottom:10px;">
         <div>
-          <div style="font-size:15px;font-weight:900;color:#1e293b;">${escapeHtml(si.StockInID)}</div>
-          <div style="font-size:11px;color:#94a3b8;">ส่งโดย: <b style="color:#1e293b;">${escapeHtml(si.SubmittedBy)}</b> &nbsp;|&nbsp; 🕐 ${si.SubmittedAtFmt||"-"}
+          <div style="font-size:15px;font-weight:900;color:var(--sq-ink);">${escapeHtml(si.StockInID)}</div>
+          <div style="font-size:11px;color:var(--sq-muted);">ส่งโดย: <b style="color:var(--sq-ink);">${escapeHtml(si.SubmittedBy)}</b> &nbsp;|&nbsp; 🕐 ${si.SubmittedAtFmt||"-"}
             ${si.ReviewedBy ? `&nbsp;|&nbsp; ตรวจโดย: <b>${escapeHtml(si.ReviewedBy)}</b>` : ""}
           </div>
         </div>
-        <span style="background:${statusBg[si.Status]||"#94a3b8"};color:#fff;border-radius:999px;padding:3px 12px;font-size:11px;font-weight:900;">${escapeHtml(si.Status)}</span>
+        <span style="background:${statusBg[si.Status]||"var(--sq-muted)"};color:#fff;border-radius:999px;padding:3px 12px;font-size:11px;font-weight:900;">${escapeHtml(si.Status)}</span>
       </div>
-      ${si.Note ? `<div style="background:#fef9c3;padding:8px 12px;border-radius:8px;font-size:12px;margin-bottom:10px;">💬 ${escapeHtml(si.Note)}</div>` : ""}
+      ${si.Note ? `<div style="background:var(--sq-warn-bg);padding:8px 12px;border-radius:8px;font-size:12px;margin-bottom:10px;">💬 ${escapeHtml(si.Note)}</div>` : ""}
       <div class="table-wrap" style="overflow-x:auto;margin-bottom:${isPending?"12px":"0"};">
         <table style="width:100%;border-collapse:collapse;min-width:320px;">
-          <thead><tr style="background:#1e293b;color:#fff;font-size:11px;">
+          <thead><tr style="background:var(--sq-ink);color:#fff;font-size:11px;">
             <th style="padding:7px 10px;text-align:left;">สินค้า</th>
             <th style="padding:7px 10px;text-align:center;">MFG</th>
             <th style="padding:7px 10px;text-align:center;">EXP</th>
@@ -1033,9 +1033,9 @@ async function crSiLoadReviewList(filterStatus) {
       </div>
       ${isPending ? `
       <div style="display:flex;gap:10px;flex-wrap:wrap;">
-        <button class="cr-btn btn-primary" style="flex:1;min-width:140px;padding:12px;font-size:14px;font-weight:900;background:#059669;"
+        <button class="cr-btn btn-primary" style="flex:1;min-width:140px;padding:12px;font-size:14px;font-weight:900;background:var(--sq-accent);"
           onclick="crSiApprove('${escapeJs(si.StockInID)}')">✅ ยืนยันเข้าคลัง</button>
-        <button class="cr-btn btn-light" style="flex:1;min-width:100px;padding:12px;font-size:13px;color:#dc2626;border:2px solid #dc2626;"
+        <button class="cr-btn btn-light" style="flex:1;min-width:100px;padding:12px;font-size:13px;color:var(--sq-crit);border:2px solid var(--sq-crit);"
           onclick="crSiCancel('${escapeJs(si.StockInID)}')">❌ ยกเลิก</button>
       </div>` : ""}
     </div>`;
@@ -1643,7 +1643,7 @@ function crExport(format) {
     showToast("ดาวน์โหลด CSV เรียบร้อย");
   } else {
     const w = window.open("","","width=900,height=600");
-    w.document.write(`<!DOCTYPE html><html><head><title>รายงาน</title><style>@import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@400;700');body{font-family:Sarabun,sans-serif;padding:20px}table{width:100%;border-collapse:collapse;font-size:14px}th,td{border:1px solid #cbd5e1;padding:8px;text-align:left}th{background:#f1f5f9;font-weight:700}</style></head><body><h2>รายงานสต๊อกคงเหลือ ❄️ SQF</h2><p>อัปเดต: ${new Date().toLocaleString("th-TH")}</p><table><thead><tr><th>ชื่อสินค้า</th><th>MFG</th><th>จำนวน</th><th>เหลือ(วัน)</th><th>สถานะ</th><th>QC</th></tr></thead><tbody>${sorted.map(r=>`<tr><td>${escapeHtml(r.ProductName)}</td><td>${isoToDdmmyy(r.MFG)}</td><td>${r.Qty} ${escapeHtml(r.Unit)}</td><td>${r.ExpireDays}</td><td>${r.ExpireStatus}</td><td>${r.QcShelfLifeStatus}</td></tr>`).join("")}</tbody></table></body></html>`);
+    w.document.write(`<!DOCTYPE html><html><head><title>รายงาน</title><style>@import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@400;700');body{font-family:Sarabun,sans-serif;padding:20px}table{width:100%;border-collapse:collapse;font-size:14px}th,td{border:1px solid var(--sq-muted);padding:8px;text-align:left}th{background:var(--sq-line-soft);font-weight:700}</style></head><body><h2>รายงานสต๊อกคงเหลือ ❄️ SQF</h2><p>อัปเดต: ${new Date().toLocaleString("th-TH")}</p><table><thead><tr><th>ชื่อสินค้า</th><th>MFG</th><th>จำนวน</th><th>เหลือ(วัน)</th><th>สถานะ</th><th>QC</th></tr></thead><tbody>${sorted.map(r=>`<tr><td>${escapeHtml(r.ProductName)}</td><td>${isoToDdmmyy(r.MFG)}</td><td>${r.Qty} ${escapeHtml(r.Unit)}</td><td>${r.ExpireDays}</td><td>${r.ExpireStatus}</td><td>${r.QcShelfLifeStatus}</td></tr>`).join("")}</tbody></table></body></html>`);
     w.document.close(); setTimeout(()=>{ w.focus(); w.print(); },500);
   }
 }

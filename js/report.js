@@ -190,20 +190,20 @@ function bhRenderWhereUsed() {
     return (wu[sku][0] && String(wu[sku][0].name || "").toLowerCase().includes(q));
   }).slice(0, 8);
 
-  if (!hits.length) { out.innerHTML = '<p style="color:#94a3b8;font-weight:700;font-size:13px;">ไม่พบวัตถุดิบนี้ในสูตรใดเลย</p>'; return; }
+  if (!hits.length) { out.innerHTML = '<p class="sq-empty" style="padding:16px;">ไม่พบวัตถุดิบนี้ในสูตรใดเลย</p>'; return; }
 
   out.innerHTML = hits.map(sku => {
     const nm = String(wu[sku][0].name || "").trim();
     const title = nm && nm !== sku ? nm : sku;
-    const badge = (nm && nm !== sku) ? `<span style="font-family:monospace;font-size:11px;color:#94a3b8;font-weight:700;margin-left:6px;">${escapeHtml(sku)}</span>` : "";
+    const badge = (nm && nm !== sku) ? `<span class="sq-meta" style="display:inline;margin-left:6px;">${escapeHtml(sku)}</span>` : "";
     return `
-    <div style="border:1px solid #e2e8f0;border-radius:12px;padding:12px 14px;margin-bottom:8px;">
-      <div style="font-weight:900;color:#0f172a;font-size:14px;">${escapeHtml(title)}${badge}</div>
-      <div style="margin-top:7px;display:flex;flex-direction:column;gap:4px;">
+    <div style="border:1px solid var(--sq-line);border-radius:9px;padding:10px 12px;margin-bottom:7px;">
+      <div class="sq-name">${escapeHtml(title)}${badge}</div>
+      <div class="sq-list" style="margin-top:5px;">
         ${wu[sku].map(u => `
-          <div style="display:flex;justify-content:space-between;gap:10px;font-size:13px;border-bottom:1px dashed #f1f5f9;padding-bottom:3px;">
-            <span style="color:#334155;font-weight:700;">${escapeHtml(u.productName)}</span>
-            <span style="color:#0ea5e9;font-weight:800;white-space:nowrap;">${u.qtyPerUnit} ${escapeHtml(u.unit || "")}<span style="color:#94a3b8;font-weight:600;"> / ชิ้น</span></span>
+          <div class="sq-list-row">
+            <span class="sq-list-name">${escapeHtml(u.productName)}</span>
+            <span class="sq-num" style="color:var(--sq-accent);font-size:12.5px;">${u.qtyPerUnit} ${escapeHtml(u.unit || "")}<span class="sq-unit"> / ชิ้น</span></span>
           </div>`).join("")}
       </div>
     </div>`;

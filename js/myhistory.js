@@ -9,8 +9,8 @@ const MYHIST_META = {
   "เบิกออก":         { icon:"📤", fg:"var(--sq-high)", bg:"var(--sq-high-bg)" },
   "รับเข้า":         { icon:"📥", fg:"var(--sq-accent)", bg:"var(--sq-accent-2)" },
   "คืนวัตถุดิบ":     { icon:"↩️", fg:"var(--sq-accent)", bg:"var(--sq-accent-2)" },
-  "ตรวจนับ/ปรับยอด": { icon:"📊", fg:"#0891b2", bg:"var(--sq-accent-2)" },
-  "สร้างรายการ":     { icon:"🆕", fg:"#7c3aed", bg:"var(--sq-accent-2)" }
+  "ตรวจนับ/ปรับยอด": { icon:"📊", fg:"var(--sq-accent)", bg:"var(--sq-accent-2)" },
+  "สร้างรายการ":     { icon:"🆕", fg:"var(--sq-accent)", bg:"var(--sq-accent-2)" }
 };
 const _mhMeta = a => MYHIST_META[a] || { icon:"•", fg:"var(--sq-muted)", bg:"var(--sq-raised)" };
 

@@ -123,11 +123,11 @@ function _showAccessBox(kind, msg, username) {
   const tone = {
     notfound: { bg:"var(--sq-warn-bg)", bd:"var(--sq-warn)", fg:"var(--sq-high)", icon:"❓",
                 hint:"กดปุ่มด้านล่างเพื่อส่งคำขอ แล้วรอหัวหน้าเปิดสิทธิ์ให้", showBtn:true },
-    pending:  { bg:"var(--sq-accent-2)", bd:"#93c5fd", fg:"#1e40af", icon:"⏳",
+    pending:  { bg:"var(--sq-accent-2)", bd:"var(--sq-accent)", fg:"var(--sq-accent)", icon:"⏳",
                 hint:"หัวหน้าได้รับคำขอแล้ว เมื่ออนุมัติจะเข้าใช้งานได้ทันที", showBtn:false },
     rejected: { bg:"var(--sq-crit-bg)", bd:"var(--sq-crit)", fg:"var(--sq-crit)", icon:"🚫",
                 hint:"กรุณาติดต่อหัวหน้างานโดยตรง", showBtn:false },
-    sent:     { bg:"var(--sq-accent-2)", bd:"#86efac", fg:"var(--sq-accent)", icon:"✅",
+    sent:     { bg:"var(--sq-accent-2)", bd:"var(--sq-accent)", fg:"var(--sq-accent)", icon:"✅",
                 hint:"หัวหน้าจะได้รับแจ้งเตือน เมื่ออนุมัติแล้วลองเข้าสู่ระบบอีกครั้ง", showBtn:false }
   }[kind] || { bg:"var(--sq-raised)", bd:"var(--sq-line)", fg:"var(--sq-ink2)", icon:"ℹ️", hint:"", showBtn:false };
 

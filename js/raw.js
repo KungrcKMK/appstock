@@ -736,10 +736,13 @@ function openStockReport() {
     @media print{body{padding:12px 20px;} .no-print{display:none;}}
   </style></head><body>
   <div class="report-header">
-    <div>
-      <h1>📑 ใบรายงานสต๊อกวัตถุดิบ</h1>
-      <div class="sub">🏭 โรงงาน: <b>${factoryName}</b> &nbsp;|&nbsp; 📅 <b>${dateStr}</b> เวลา <b>${timeStr} น.</b></div>
-      <div class="sub" style="margin-top:4px;">👤 ผู้จัดทำ: <b>${currentUser}</b> &nbsp;|&nbsp; 📋 ขอบเขต: <b>${scopeLabel}</b></div>
+    <div style="display:flex;align-items:center;gap:14px;">
+      ${logoImgTag(46)}
+      <div>
+        <h1>📑 ใบรายงานสต๊อกวัตถุดิบ</h1>
+        <div class="sub">🏭 โรงงาน: <b>${factoryName}</b> &nbsp;|&nbsp; 📅 <b>${dateStr}</b> เวลา <b>${timeStr} น.</b></div>
+        <div class="sub" style="margin-top:4px;">👤 ผู้จัดทำ: <b>${personName(currentUser)}</b> &nbsp;|&nbsp; 📋 ขอบเขต: <b>${scopeLabel}</b></div>
+      </div>
     </div>
     <div style="text-align:right;">
       <button class="no-print" onclick="window.print()" style="background:#1e293b;color:#fff;border:none;padding:10px 24px;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;">🖨️ พิมพ์</button>

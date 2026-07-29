@@ -306,32 +306,40 @@ function rawRenderItemRow(item) {
   const qty      = Number(item.Qty||0);
   const daysLeft = daily > 0 ? Math.floor(qty / daily) : null;
   const outDate  = daysLeft !== null ? (() => { const d=new Date(today); d.setDate(d.getDate()+daysLeft); return `${String(d.getDate()).padStart(2,"0")}/${String(d.getMonth()+1).padStart(2,"0")}/${d.getFullYear()+543}`; })() : null;
-  let bc="bg-emerald-600 text-white", bi="✅", bt="ปลอดภัย";
-  let rowBg="", rowBorder="";
-  if(isExp)                             {bc="bg-red-600 text-white";    bi="🔴"; bt="หมดอายุ";   rowBg="bg-red-50";    rowBorder="border-l-4 border-red-500";}
-  else if(daysLeft!==null&&daysLeft<=7) {bc="bg-red-600 text-white";    bi="🔴"; bt="วิกฤต";    rowBg="bg-red-50";    rowBorder="border-l-4 border-red-500";}
-  else if(isLow)                        {bc="bg-orange-500 text-white"; bi="🟠"; bt="ต่ำ";       rowBg="bg-orange-50"; rowBorder="border-l-4 border-orange-500";}
-  else if(daysLeft!==null&&daysLeft<=14){bc="bg-orange-500 text-white"; bi="🟠"; bt="เร่งด่วน"; rowBg="bg-orange-50"; rowBorder="border-l-4 border-orange-500";}
-  else if(nearAlert||daysLeft!==null&&daysLeft<=30){bc="bg-amber-500 text-white";bi="⏳"; bt="ควรสั่ง"; rowBg="bg-amber-50"; rowBorder="border-l-4 border-amber-400";}
-  return `<tr class="border-b transition-colors ${rowBg} ${rowBorder} hover:brightness-95">
-    <td class="p-8 text-center"><input type="checkbox" class="raw-checkbox" data-sku="${escapeAttr(item.SKU)}"></td>
-    <td class="p-8"><span class="badge-status ${bc} uppercase"><span>${bi}</span><span>${bt}</span></span></td>
-    <td class="p-8">
-      <div class="font-black text-slate-800 text-base leading-snug" style="max-width:220px;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;" title="${escapeAttr(item.Name||"-")}">${escapeHtml(item.Name||"-")}</div>
-      <div class="text-[12px] text-slate-400 font-mono font-black mt-3">📦 ${escapeHtml(item.SKU||"-")} • 📅 Exp: ${rawForceThaiDate(item.ExpiryDate)}</div>
+  // เกณฑ์ตัดสินสถานะ — ลำดับเงื่อนไขเหมือนเดิมทุกข้อ เปลี่ยนแค่หน้าตาที่แสดง
+  // sev = แถบสีขอบซ้ายแถว · bg = สีป้าย · bi + bt = ไอคอนกับคำ (ไม่ได้ใช้สีอย่างเดียว)
+  let sev="", bg="", bi="✓", bt="ปกติ";
+  if(isExp)                             {sev="sev-crit"; bg="crit"; bi="⛔"; bt="หมดอายุ";}
+  else if(daysLeft!==null&&daysLeft<=7) {sev="sev-crit"; bg="crit"; bi="🔴"; bt="วิกฤต";}
+  else if(isLow)                        {sev="sev-high"; bg="high"; bi="🟠"; bt="ต่ำกว่าจุดสั่งซื้อ";}
+  else if(daysLeft!==null&&daysLeft<=14){sev="sev-high"; bg="high"; bi="🟠"; bt="เร่งด่วน";}
+  else if(nearAlert||daysLeft!==null&&daysLeft<=30){sev="sev-warn"; bg="warn"; bi="⏳"; bt="ควรสั่ง";}
+
+  const runoutCls = daysLeft===null ? "" : daysLeft<=7 ? "crit" : daysLeft<=14 ? "high" : daysLeft<=30 ? "warn" : "";
+
+  return `<tr class="${sev}">
+    <td class="rm-rail"></td>
+    <td><input type="checkbox" class="raw-checkbox" data-sku="${escapeAttr(item.SKU)}" aria-label="เลือก ${escapeAttr(item.Name||item.SKU)}"></td>
+    <td><span class="badge-status ${bg}"><span>${bi}</span><span>${bt}</span></span></td>
+    <td>
+      <div class="rm-name" title="${escapeAttr(item.Name||"-")}">${escapeHtml(item.Name||"-")}</div>
+      <div class="rm-meta">
+        <span>${escapeHtml(item.SKU||"-")}</span>
+        <span>หมดอายุ ${rawForceThaiDate(item.ExpiryDate)}</span>
+        <span>นับล่าสุด ${rawForceThaiDate(item.LastVerified)}</span>
+      </div>
     </td>
-    <td class="p-8 text-right">
-      <div class="font-black text-4xl text-slate-900 tracking-tighter">${qty.toLocaleString()}</div>
-      <div class="text-[11px] font-black text-emerald-600 uppercase mt-2 tracking-widest">${escapeHtml(item.Unit||"-")}</div>
-      ${daysLeft !== null ? `<div class="text-[11px] font-black mt-1 ${daysLeft<=7?"text-red-500":daysLeft<=14?"text-orange-500":daysLeft<=30?"text-amber-500":"text-slate-400"}" style="white-space:nowrap;">⏱ เหลือ ${daysLeft} วัน <span class="font-normal opacity-75">(ถึงวันที่ ${outDate})</span></div>` : ""}
+    <td class="n">
+      <div class="rm-qty">${qty.toLocaleString()}<span class="rm-unit">${escapeHtml(item.Unit||"-")}</span></div>
+      ${daysLeft !== null ? `<div class="rm-runout ${runoutCls}">พอใช้อีก ${daysLeft} วัน (ถึง ${outDate})</div>` : ""}
     </td>
-    <td class="p-8 text-center">
-      <div class="text-[11px] font-black text-slate-800 leading-none mb-2">นับจริง: ${rawForceThaiDate(item.LastVerified)}</div>
-      ${window._appIsViewer ? "" : `<div class="grid grid-cols-2 gap-2">
-        <button onclick="openRawAction('${escapeJs(item.SKU)}','${escapeJs(item.Name)}','${escapeJs(item.Unit)}',${Number(item.Qty)||0})" class="bg-blue-600 text-white px-3 py-3 rounded-2xl text-[10px] font-black hover:bg-black uppercase">📥 รับ/เบิก</button>
-        <button onclick="openRawVerify('${escapeJs(item.SKU)}','${escapeJs(item.Name)}')"  class="bg-purple-600 text-white px-3 py-3 rounded-2xl text-[10px] font-black hover:bg-black uppercase">นับสต๊อก</button>
-        <button onclick="openRawEdit('${escapeJs(item.SKU)}')"                             class="bg-sky-600    text-white px-3 py-3 rounded-2xl text-[10px] font-black hover:bg-black uppercase">แก้ไข</button>
-        <button onclick="rawDelete('${escapeJs(item.SKU)}','${escapeJs(item.Name)}')"       class="bg-red-50 text-red-600 px-3 py-3 rounded-2xl text-[10px] font-black hover:bg-red-600 hover:text-white uppercase">ลบ</button>
+    <td class="n"><span class="rm-min">${Number(item.Min||0).toLocaleString()}</span></td>
+    <td class="n">
+      ${window._appIsViewer ? "" : `<div class="rm-rowacts">
+        <button onclick="openRawAction('${escapeJs(item.SKU)}','${escapeJs(item.Name)}','${escapeJs(item.Unit)}',${Number(item.Qty)||0})" class="rm-mini solid">รับ / เบิก</button>
+        <button onclick="openRawVerify('${escapeJs(item.SKU)}','${escapeJs(item.Name)}')" class="rm-mini">นับ</button>
+        <button onclick="openRawEdit('${escapeJs(item.SKU)}')" class="rm-mini">แก้ไข</button>
+        <button onclick="rawDelete('${escapeJs(item.SKU)}','${escapeJs(item.Name)}')" class="rm-mini danger">ลบ</button>
       </div>`}
     </td>
   </tr>`;

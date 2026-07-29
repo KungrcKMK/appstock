@@ -129,6 +129,24 @@ async function forceRefresh() {
   location.reload(true);
 }
 
+// ─────────────────────────────────────────────
+// 📏 NAV HEIGHT — แถบเมนูเป็น 2 แถว ความสูงเปลี่ยนตามความกว้างจอ/จำนวนปุ่มตาม role
+//    วัดจริงแล้วเขียนลง --nav-h ให้ทุกโมดูลเว้นระยะบนได้พอดี ไม่โดนเมนูทับ
+// ─────────────────────────────────────────────
+function _syncNavHeight() {
+  const nav = document.getElementById("mainNav");
+  if (!nav) return;
+  const h = Math.ceil(nav.getBoundingClientRect().height);
+  if (h > 0) document.documentElement.style.setProperty("--nav-h", h + "px");
+}
+function _watchNavHeight() {
+  const nav = document.getElementById("mainNav");
+  if (!nav) return;
+  _syncNavHeight();
+  window.addEventListener("resize", _syncNavHeight);
+  if (window.ResizeObserver) new ResizeObserver(_syncNavHeight).observe(nav);
+}
+
 function checkAuth() {
   loadDevice();
   const saved = localStorage.getItem("unified_stock_user");

@@ -206,6 +206,7 @@ function checkAuth() {
     }
     window._appIsViewer = isViewer;
     if (isViewer) document.querySelectorAll(".viewer-hide").forEach(el => el.style.display = "none");
+    _watchNavHeight();   // ปุ่มถูกซ่อน/แสดงตาม role ครบแล้ว ค่อยวัดความสูงเมนู
     switchModule(isViewer ? "EXEC" : "COLDROOM");
   }
 }

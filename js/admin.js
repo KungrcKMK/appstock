@@ -38,22 +38,22 @@ async function loadPendingUsers() {
       const safeU = escapeJs(u.username||"");
       const roleLabel = u.requestedRole || "user";
       return `
-      <div style="background:#fff;border:1.5px solid #e2e8f0;border-radius:16px;padding:16px 20px;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;box-shadow:0 2px 6px rgba(0,0,0,.04);">
-        <div>
-          <p style="margin:0;font-weight:900;font-size:15px;color:#0f172a;">👤 ${escapeHtml(u.username||"")}</p>
-          <p style="margin:3px 0 0;font-size:12px;font-weight:700;color:#94a3b8;">📅 ${escapeHtml(u.requestedAt||"")}</p>
-          <p style="margin:4px 0 0;font-size:12px;font-weight:800;color:#6366f1;">🔖 ขอ Role: ${escapeHtml(roleLabel)}</p>
+      <div class="sq-row">
+        <div class="sq-row-id">
+          <p class="sq-row-name">👤 ${escapeHtml(u.username||"")}</p>
+          <p class="sq-row-meta">
+            <span class="sq-chip">ขอสิทธิ์ ${escapeHtml(roleLabel)}</span>
+            <span>ส่งคำขอ ${escapeHtml(u.requestedAt||"")}</span>
+          </p>
         </div>
-        <div style="display:flex;gap:8px;">
-          <button onclick="adminApprove('${safeU}', event)"
-            style="background:#059669;color:#fff;border:none;padding:9px 18px;border-radius:10px;font-weight:800;font-size:13px;cursor:pointer;font-family:inherit;">✅ อนุมัติ</button>
-          <button onclick="adminReject('${safeU}', event)"
-            style="background:#dc2626;color:#fff;border:none;padding:9px 18px;border-radius:10px;font-weight:800;font-size:13px;cursor:pointer;font-family:inherit;">❌ ปฏิเสธ</button>
+        <div class="sq-row-acts">
+          <button onclick="adminApprove('${safeU}', event)" class="sq-btn sq-btn-primary">✅ อนุมัติ</button>
+          <button onclick="adminReject('${safeU}', event)" class="sq-btn">❌ ปฏิเสธ</button>
         </div>
       </div>`;
     }).join("");
   } catch(e) {
-    listEl.innerHTML = `<p class="text-red-500 text-center text-sm font-bold py-8">เกิดข้อผิดพลาด: ${e.message}</p>`;
+    listEl.innerHTML = `<p class="sq-empty" style="color:var(--sq-crit);font-weight:700;">เกิดข้อผิดพลาด: ${escapeHtml(e.message||"")}</p>`;
   }
 }
 

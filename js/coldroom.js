@@ -696,13 +696,16 @@ function crOpenWorkOrderPrint(o) {
     @media print{body{padding:16px 24px;} .no-print{display:none;}}
   </style></head><body>
   <div class="hd">
-    <div>
-      <h1>📋 ใบสั่งผลิต</h1>
-      <div class="sub">❄️ คลังสินค้า SQF — สุพรรณคิวฟู้ดส์</div>
+    <div style="display:flex;align-items:center;gap:14px;">
+      ${logoImgTag(46)}
+      <div>
+        <h1>📋 ใบสั่งผลิต</h1>
+        <div class="sub">❄️ คลังสินค้า SQF — สุพรรณคิวฟู้ดส์</div>
+      </div>
     </div>
     <div style="text-align:right;">
-      <div style="font-size:22px;font-weight:900;color:#6366f1;">${escapeHtml(o.OrderID||"-")}</div>
-      <div class="sub">วันที่: <b>${dateStr}</b> &nbsp;|&nbsp; ผู้สั่ง: <b>${escapeHtml(o.CreatedBy||"-")}</b></div>
+      <div style="font-size:22px;font-weight:900;color:#0e7a3f;">${escapeHtml(o.OrderID||"-")}</div>
+      <div class="sub">วันที่: <b>${dateStr}</b> &nbsp;|&nbsp; ผู้สั่ง: <b>${escapeHtml(personName(o.CreatedBy))}</b></div>
       <button class="no-print" onclick="window.print()" style="margin-top:8px;background:#1e293b;color:#fff;border:none;padding:8px 20px;border-radius:6px;font-size:12px;font-weight:700;cursor:pointer;">🖨️ พิมพ์</button>
     </div>
   </div>

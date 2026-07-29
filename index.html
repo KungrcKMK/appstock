@@ -1349,98 +1349,103 @@
     </div>
 
     <!-- Main Content -->
-    <div class="max-w-7xl mx-auto p-4 md:p-8">
-      <header class="flex flex-col lg:flex-row justify-between items-start lg:items-center mb-10 gap-6 border-b-4 border-white pb-8">
+    <div class="rm-wrap">
+
+      <!-- ── หัวหน้า: ชื่อคลัง + ปุ่มหลัก ── -->
+      <header class="rm-head">
         <div>
-          <h1 id="rawModuleTitle" class="text-4xl font-black text-slate-900 tracking-tighter uppercase italic leading-none mb-3">วัตถุดิบ</h1>
-          <p id="rawModuleSubtitle" class="text-sm font-black inline-block px-3 py-1 rounded-lg uppercase">Loading...</p>
-          <div class="mt-4 flex flex-wrap items-center gap-4 font-bold">
-            <span class="bg-white px-5 py-2 rounded-full shadow-sm text-sm">👤 <span id="rawCurrentUser" class="text-blue-600"></span></span>
-            <button onclick="rawRunBackup()" class="text-xs font-black text-emerald-600 hover:underline">☁️ สำรองข้อมูล</button>
+          <div class="rm-headline">
+            <h1 id="rawModuleTitle" class="rm-title">วัตถุดิบ</h1>
+            <span id="rawModuleSubtitle" class="rm-factory">กำลังโหลด…</span>
           </div>
+          <div class="rm-sub">ผู้ใช้งาน: <span id="rawCurrentUser"></span></div>
         </div>
-        <div class="flex flex-wrap gap-3" id="rawActionBtns">
-          <button onclick="rawExportSelected()" class="bg-indigo-600 text-white px-5 py-3 rounded-2xl font-black shadow-lg hover:bg-black transition-all text-xs uppercase">📊 ส่งออก</button>
-          <button onclick="rawExportPdf()"       class="bg-purple-600  text-white px-5 py-3 rounded-2xl font-black shadow-lg hover:bg-black transition-all text-xs uppercase">📄 ส่งออก PDF</button>
-          <button onclick="openRawCreate()"      class="bg-emerald-600 text-white px-5 py-3 rounded-2xl font-black shadow-lg hover:bg-black transition-all text-xs uppercase viewer-hide">➕ เพิ่มวัตถุดิบ</button>
-          <button onclick="openPurchaseRequest()" class="bg-teal-600   text-white px-5 py-3 rounded-2xl font-black shadow-lg hover:bg-black transition-all text-xs uppercase viewer-hide">📋 ใบขอซื้อ</button>
-          <button onclick="openStockReport()"    class="bg-slate-800   text-white px-5 py-3 rounded-2xl font-black shadow-lg hover:bg-black transition-all text-xs uppercase viewer-hide">📑 ใบรายงาน</button>
-          <button onclick="rawPrintQrAll()"      class="bg-pink-600    text-white px-5 py-3 rounded-2xl font-black shadow-lg hover:bg-black transition-all text-xs uppercase viewer-hide">🔲 พิมพ์ QR</button>
-          <button onclick="openRawScanner()"     class="bg-orange-500  text-white px-5 py-3 rounded-2xl font-black shadow-lg hover:bg-black transition-all text-xs uppercase">📷 สแกน QR</button>
+
+        <div class="rm-head-actions" id="rawActionBtns">
+          <button onclick="openRawScanner()" class="rm-btn">📷 สแกน QR</button>
+          <button onclick="openRawCreate()" class="rm-btn rm-btn-primary viewer-hide">+ เพิ่มวัตถุดิบ</button>
+          <details class="rm-more" id="rawMoreMenu">
+            <summary class="rm-btn">⋯ เพิ่มเติม</summary>
+            <div class="rm-more-menu">
+              <button onclick="rawExportSelected()">📊 ส่งออก CSV (ที่เลือกไว้)</button>
+              <button onclick="rawExportPdf()">📄 ส่งออก PDF</button>
+              <button onclick="openPurchaseRequest()" class="viewer-hide">📋 ใบขอซื้อ</button>
+              <button onclick="openStockReport()" class="viewer-hide">📑 ใบรายงาน</button>
+              <button onclick="rawPrintQrAll()" class="viewer-hide">🔲 พิมพ์ QR ทั้งหมด</button>
+              <button onclick="rawRunBackup()">☁️ สำรองข้อมูล</button>
+            </div>
+          </details>
         </div>
       </header>
 
-      <div id="rawStatCards" class="grid grid-cols-2 md:grid-cols-4 gap-6 mb-10"></div>
+      <!-- ── ตัวเลขสรุป (raw.js เป็นคนเติม) ── -->
+      <div id="rawStatCards" class="rm-tiles"></div>
 
-      <div class="grid grid-cols-1 xl:grid-cols-3 gap-8 mb-10">
-        <div class="xl:col-span-2 bg-white rounded-[3.5rem] shadow-xl border-4 border-white p-8">
-          <div class="flex items-center justify-between mb-6">
-            <h3 class="font-black text-xl text-slate-800 uppercase tracking-tight">📅 วันที่ใช้งานได้คงเหลือ</h3>
-            <span class="text-xs font-black text-slate-400 uppercase">เฉพาะที่มีข้อมูล ใช้/วัน</span>
-          </div>
-          <div class="chart-wrap"><canvas id="rawBarChart"></canvas></div>
-        </div>
-        <div class="bg-white rounded-[3.5rem] shadow-xl border-4 border-white p-8">
-          <div class="flex items-center justify-between mb-6">
-            <h3 class="font-black text-xl text-slate-800 uppercase tracking-tight">🧭 สถานะรวม</h3>
-            <span class="text-xs font-black text-slate-400 uppercase">Safe/Low/Exp</span>
-          </div>
-          <div class="chart-wrap-small"><canvas id="rawDonutChart"></canvas></div>
-        </div>
-      </div>
+      <!-- ── ตาราง + ความเคลื่อนไหว ── -->
+      <div class="rm-main">
 
-      <div class="bg-white p-4 rounded-[3.5rem] shadow-xl border-4 border-white mb-10">
-        <div class="flex flex-col xl:flex-row gap-4">
-          <div class="flex-1 relative">
-            <input type="text" id="rawSearch" onkeyup="renderRawInventory(rawLastData)" placeholder="ค้นหา SKU หรือชื่อวัตถุดิบ..."
-              class="w-full bg-slate-50 pl-14 pr-6 py-5 rounded-[2rem] border-4 border-transparent focus:border-blue-600 outline-none font-black text-xl">
-            <span class="absolute left-6 top-1/2 -translate-y-1/2 text-2xl">🔍</span>
+        <div class="rm-card">
+          <div class="rm-toolbar">
+            <div class="rm-search">
+              <input type="text" id="rawSearch" onkeyup="renderRawInventory(rawLastData)"
+                     placeholder="ค้นหาชื่อ หรือ SKU" aria-label="ค้นหาวัตถุดิบ">
+            </div>
+            <div class="rm-chips" role="group" aria-label="กรองรายการ">
+              <button id="rawFilter-all"  onclick="setRawFilter('all')"  class="rm-chip filter-active">ทั้งหมด</button>
+              <button id="rawFilter-low"  onclick="setRawFilter('low')"  class="rm-chip">🟠 ต่ำกว่าจุดสั่งซื้อ</button>
+              <button id="rawFilter-exp"  onclick="setRawFilter('exp')"  class="rm-chip">⛔ หมดอายุ</button>
+              <button id="rawFilter-near" onclick="setRawFilter('near')" class="rm-chip">⏳ ใกล้หมดอายุ</button>
+            </div>
+            <div class="rm-alertdays">
+              <label for="rawAlertDaysInput">เตือนล่วงหน้า</label>
+              <input type="number" id="rawAlertDaysInput" min="1" max="365" value="7" onchange="rawSetAlertDays(this.value)">
+              <span>วัน</span>
+            </div>
           </div>
-          <div class="flex flex-wrap gap-2 p-1 bg-slate-100 rounded-[2rem]">
-            <button id="rawFilter-all"   onclick="setRawFilter('all')"   class="px-5 py-3 rounded-[1.5rem] text-[11px] font-black uppercase filter-active transition-all">🌈 ทั้งหมด</button>
-            <button id="rawFilter-low"   onclick="setRawFilter('low')"   class="px-5 py-3 rounded-[1.5rem] text-[11px] font-black uppercase bg-white text-slate-400 hover:text-black">⚠️ ต่ำ</button>
-            <button id="rawFilter-exp"   onclick="setRawFilter('exp')"   class="px-5 py-3 rounded-[1.5rem] text-[11px] font-black uppercase bg-white text-slate-400 hover:text-black">🔴 หมดอายุ</button>
-            <button id="rawFilter-near"  onclick="setRawFilter('near')"  class="px-5 py-3 rounded-[1.5rem] text-[11px] font-black uppercase bg-white text-slate-400 hover:text-black">⏳ ใกล้หมด</button>
-          </div>
-        </div>
-        <!-- ⚙️ ตั้งค่าวันแจ้งเตือน -->
-        <div class="flex items-center gap-3 mt-3 px-2">
-          <span class="text-xs font-black text-slate-500 uppercase tracking-wide">⚙️ แจ้งเตือนล่วงหน้า</span>
-          <input type="number" id="rawAlertDaysInput" min="1" max="365" value="7"
-            onchange="rawSetAlertDays(this.value)"
-            class="w-20 bg-slate-100 border-2 border-slate-200 px-3 py-1.5 rounded-xl font-black text-sm text-center focus:border-blue-500 outline-none">
-          <span class="text-xs font-black text-slate-500">วัน ก่อนหมดอายุ</span>
-        </div>
-      </div>
 
-      <div class="grid grid-cols-1 lg:grid-cols-4 gap-10">
-        <div class="lg:col-span-3 bg-white rounded-[4rem] shadow-2xl border-4 border-white overflow-hidden">
-          <div class="overflow-x-auto">
-            <table class="w-full text-left">
-              <thead class="bg-slate-50 text-[11px] font-black uppercase text-slate-400 border-b">
+          <div class="rm-tablewrap">
+            <table class="rm-table">
+              <thead>
                 <tr>
-                  <th class="p-8 text-center"><input type="checkbox" id="rawSelectAll" onclick="rawToggleAll()"></th>
-                  <th class="p-8 cursor-pointer select-none hover:text-slate-700 transition-colors" onclick="rawSetSort('status')">
-                    สถานะ <span id="rawSortIcon-status" class="opacity-40">↕</span>
-                  </th>
-                  <th class="p-8 cursor-pointer select-none hover:text-slate-700 transition-colors" onclick="rawSetSort('name')">
-                    ข้อมูลสินค้า <span id="rawSortIcon-name" class="opacity-40">↕</span>
-                  </th>
-                  <th class="p-8 text-right cursor-pointer select-none hover:text-slate-700 transition-colors" onclick="rawSetSort('qty')">
-                    ยอดคงเหลือ <span id="rawSortIcon-qty" class="opacity-40">↕</span>
-                  </th>
-                  <th class="p-8 text-center">จัดการ</th>
+                  <th class="rm-rail" aria-hidden="true"></th>
+                  <th><input type="checkbox" id="rawSelectAll" onclick="rawToggleAll()" aria-label="เลือกทั้งหมด"></th>
+                  <th class="s" onclick="rawSetSort('status')">สถานะ <span id="rawSortIcon-status" style="opacity:.4">↕</span></th>
+                  <th class="s" onclick="rawSetSort('name')">วัตถุดิบ <span id="rawSortIcon-name" style="opacity:.4">↕</span></th>
+                  <th class="s n" onclick="rawSetSort('qty')">คงเหลือ <span id="rawSortIcon-qty" style="opacity:.4">↕</span></th>
+                  <th class="n">จุดสั่งซื้อ</th>
+                  <th class="n">จัดการ</th>
                 </tr>
               </thead>
-              <tbody id="rawInventoryList" class="divide-y divide-slate-100 font-bold"></tbody>
+              <tbody id="rawInventoryList"></tbody>
             </table>
           </div>
         </div>
-        <div class="bg-white rounded-[3.5rem] shadow-2xl p-8 h-fit border-4 border-white">
-          <h3 class="font-black text-lg mb-8 border-b-4 border-slate-50 pb-4 flex items-center gap-2 uppercase italic tracking-tighter text-slate-400">📈 ความเคลื่อนไหว</h3>
-          <div id="rawHistoryList" class="space-y-4"></div>
+
+        <div class="rm-card">
+          <div class="rm-card-head">
+            <span class="rm-card-title">📈 ความเคลื่อนไหวล่าสุด</span>
+          </div>
+          <div id="rawHistoryList" style="padding:10px;display:flex;flex-direction:column;gap:6px;max-height:640px;overflow-y:auto;"></div>
         </div>
       </div>
+
+      <!-- ── กราฟวิเคราะห์ (อยู่ล่าง เพราะเป็นข้อมูลประกอบ ไม่ใช่งานที่ต้องทำ) ── -->
+      <div class="rm-charts">
+        <div class="rm-card">
+          <div class="rm-card-head">
+            <span class="rm-card-title">📅 วันที่ใช้งานได้คงเหลือ</span>
+            <span class="rm-card-note">เฉพาะรายการที่กรอกอัตราใช้ต่อวันไว้</span>
+          </div>
+          <div style="padding:12px;"><div class="chart-wrap"><canvas id="rawBarChart"></canvas></div></div>
+        </div>
+        <div class="rm-card">
+          <div class="rm-card-head">
+            <span class="rm-card-title">🧭 สถานะรวม</span>
+          </div>
+          <div style="padding:12px;"><div class="chart-wrap-small"><canvas id="rawDonutChart"></canvas></div></div>
+        </div>
+      </div>
+
     </div>
   </div><!-- /module-RAW -->
 

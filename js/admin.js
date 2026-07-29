@@ -9,7 +9,7 @@ function closeAdminPanel() { /* no-op — merged into module-ROLES */ }
 
 async function loadPendingUsers() {
   const listEl = document.getElementById("adminPendingList");
-  listEl.innerHTML = '<p class="text-slate-400 text-center text-sm font-bold py-8">กำลังโหลด...</p>';
+  listEl.innerHTML = '<p class="sq-empty">กำลังโหลด...</p>';
   try {
     const res = await fetch(GAS_URL, {
       method: "POST",

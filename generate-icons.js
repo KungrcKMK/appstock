@@ -1,16 +1,18 @@
 // รัน: node generate-icons.js
-// สร้างไอคอนแอป (PWA) จากโลโก้บริษัท assets/logo.png
+// สร้างไอคอนแอป (PWA) จากโลโก้บริษัท
 //
-// โลโก้เป็นแนวนอน ~5:1 แต่ไอคอนแอปต้องเป็นสี่เหลี่ยมจัตุรัส
-// จึงตัดเอาเฉพาะ "ตัว Q สีส้ม" มาใช้ โดยหาขอบเขตสีส้มจากพิกเซลจริง
-// ไม่ได้กำหนดพิกัดตายตัว — ถ้าเปลี่ยนไฟล์โลโก้ก็ยังหาเจอเอง
+// ใช้ assets/logo-square.png เป็นหลัก (โลโก้แบบวางซ้อน เกือบจัตุรัส — ใส่ทั้งใบได้เลย)
+// ถ้าไม่มีไฟล์นั้น จะถอยไปใช้ assets/logo.png (แบบแนวนอน 5:1)
+//   แล้วตัดเอาเฉพาะ "ตัว Q สีส้ม" โดยหาขอบเขตสีส้มจากพิกเซลจริง
+//   ไม่ได้กำหนดพิกัดตายตัว — เปลี่ยนไฟล์โลโก้ก็ยังหาเจอเอง
 
 const { createCanvas, loadImage } = require("canvas");
 const fs = require("fs");
 const path = require("path");
 
-const LOGO    = path.join(__dirname, "assets", "logo.png");
-const OUT_DIR = path.join(__dirname, "icons");
+const LOGO_SQUARE = path.join(__dirname, "assets", "logo-square.png");
+const LOGO_WIDE   = path.join(__dirname, "assets", "logo.png");
+const OUT_DIR     = path.join(__dirname, "icons");
 
 // พื้นไอคอนต้องทึบ เพราะ iOS ไม่รองรับไอคอนพื้นโปร่งใส (จะกลายเป็นดำ)
 const BG = "#ffffff";

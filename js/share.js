@@ -3,10 +3,12 @@
 //   ใช้ QRCode.js ที่โหลดอยู่แล้วใน index.html
 // ═════════════════════════════════════════════
 
-// ที่อยู่แอปบน production (2 ที่ สำรองกัน)
+// ที่อยู่แอปบน production
+// ⏸️ Netlify พักไว้ตั้งแต่ 2026-07-29 (token หมดอายุ + ผู้ใช้สั่งหยุดใช้)
+//    เอาออกจากลิสต์เพราะข้อมูลที่นั่นค้างอยู่รุ่นเก่า — ถ้าแชร์ไปพนักงานจะได้แอปเก่า
+//    จะกลับมาใช้: เปิด job ใน .github/workflows/deploy.yml ก่อน แล้วค่อยเติมกลับตรงนี้
 const SHARE_TARGETS = [
-  { key: "netlify", label: "Netlify (แนะนำ)", url: "https://stock-sqfmlm.netlify.app/" },
-  { key: "pages",   label: "GitHub Pages",     url: "https://kungrckmk.github.io/appstock/" }
+  { key: "pages", label: "GitHub Pages", url: "https://kungrckmk.github.io/appstock/" }
 ];
 
 let _shareUrl = "";

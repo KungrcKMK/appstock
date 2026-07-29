@@ -881,7 +881,7 @@
     <div class="cr-modal-box">
       <h3 id="crModalTitle">Title</h3>
       <p  id="crModalMessage">Message</p>
-      <input type="text" id="crModalInput" style="display:none;width:100%;padding:12px;border:1px solid #e2e8f0;border-radius:12px;font-size:16px;margin-bottom:4px;" autocomplete="off">
+      <input type="text" id="crModalInput" style="display:none;width:100%;padding:12px;border:1px solid var(--sq-line);border-radius:12px;font-size:16px;margin-bottom:4px;" autocomplete="off">
       <div class="cr-modal-actions">
         <button class="cr-btn btn-light" id="crModalCancel">ยกเลิก</button>
         <button class="cr-btn btn-primary" id="crModalConfirm">ตกลง</button>
@@ -945,16 +945,16 @@
               <button id="crBtnEditProductInline" class="cr-btn btn-light" style="display:none;padding:4px 10px;font-size:11px;" onclick="crOpenEditProductFromCurrent()">✏️ แก้ไขสินค้า</button>
             </div>
             <select id="crProductDropdown" onchange="crSelectProductFromDropdown(this.value)"
-              style="width:100%;padding:10px 12px;border-radius:8px;border:2px solid #e2e8f0;font-family:inherit;font-size:14px;font-weight:700;background:#fff;color:#1e293b;margin-bottom:6px;outline:none;cursor:pointer;">
+              style="width:100%;padding:10px 12px;border-radius:8px;border:2px solid var(--sq-line);font-family:inherit;font-size:14px;font-weight:700;background:#fff;color:#1e293b;margin-bottom:6px;outline:none;cursor:pointer;">
               <option value="">🔍 หรือเลือกจากรายการสินค้าทั้งหมด...</option>
             </select>
-            <input type="text" id="crProductName" readonly autocomplete="off" placeholder="(จะแสดงหลังค้นหา / เลือกสินค้า)" style="font-weight:700;color:#6366f1;">
+            <input type="text" id="crProductName" readonly autocomplete="off" placeholder="(จะแสดงหลังค้นหา / เลือกสินค้า)" style="font-weight:700;color:var(--sq-accent);">
           </div></div>
           <div class="row">
             <div class="field"><label>📅 วันผลิต (MFG) 6 หลัก *</label><input type="text" id="crMfg" placeholder="เช่น 170326" maxlength="6" inputmode="numeric" autocomplete="off"></div>
             <div class="field"><label>⏳ วันหมดอายุ (EXP) *</label><input type="text" id="crExp" placeholder="คำนวณอัตโนมัติ" maxlength="6" inputmode="numeric" autocomplete="off"></div>
           </div>
-          <div style="background:#f1f5f9;padding:15px;border-radius:15px;">
+          <div style="background:var(--sq-line-soft);padding:15px;border-radius:15px;">
             <div class="field full"><label>📦 จำนวน *</label><input type="text" id="crNewQty" placeholder="เช่น 16*48+5" style="font-size:24px;height:60px;border:2px solid var(--primary);" autocomplete="off"></div>
             <div class="field full" style="margin-top:10px;"><label>💬 หมายเหตุ</label><textarea id="crNote" placeholder="เช่น รับสินค้าใหม่, ส่งขายหมดแล้ว" autocomplete="off"></textarea></div>
           </div>
@@ -981,7 +981,7 @@
               <button id="crBtnBulkEdit"   class="cr-btn btn-light"  style="padding:6px 12px;font-size:12px;display:none;" onclick="crBulkEdit()">✏️ แก้ไข</button>
               <button id="crBtnBulkRemove" class="cr-btn btn-light"  style="padding:6px 12px;font-size:12px;color:var(--danger);border-color:var(--danger);display:none;" onclick="crBulkRemove()">🗑️ นำออก</button>
               <!-- Divider -->
-              <div style="width:1px;height:22px;background:#e2e8f0;margin:0 2px;"></div>
+              <div style="width:1px;height:22px;background:var(--sq-line);margin:0 2px;"></div>
               <button class="cr-btn btn-light"   style="padding:8px 12px;font-size:12px;" onclick="crExport('csv')">📄 CSV</button>
               <button class="cr-btn btn-primary" style="padding:8px 12px;font-size:12px;background:#dc2626;" onclick="crExport('pdf')">🖨️ PDF</button>
             </div>
@@ -999,17 +999,17 @@
       <!-- Tab: ⚙️ จัดการสินค้า (รวม 3 ฟังก์ชัน) -->
       <div class="cr-tab-panel" id="cr-tab-manage">
         <!-- Sub-tab bar -->
-        <div style="display:flex;gap:8px;padding:16px 16px 0;border-bottom:2px solid #e2e8f0;margin-bottom:0;overflow-x:auto;">
+        <div style="display:flex;gap:8px;padding:16px 16px 0;border-bottom:2px solid var(--sq-line);margin-bottom:0;overflow-x:auto;">
           <button id="crMngBtn-newproduct"  onclick="crManageSubTab('newproduct')"
-            style="flex-shrink:0;padding:8px 18px;border-radius:12px 12px 0 0;border:2px solid #e2e8f0;border-bottom:none;font-weight:900;font-size:13px;cursor:pointer;background:#6366f1;color:#fff;font-family:inherit;">
+            style="flex-shrink:0;padding:8px 18px;border-radius:12px 12px 0 0;border:2px solid var(--sq-line);border-bottom:none;font-weight:900;font-size:13px;cursor:pointer;background:var(--sq-accent);color:#fff;font-family:inherit;">
             ➕ สินค้าใหม่
           </button>
           <button id="crMngBtn-editproduct" onclick="crManageSubTab('editproduct')"
-            style="flex-shrink:0;padding:8px 18px;border-radius:12px 12px 0 0;border:2px solid #e2e8f0;border-bottom:none;font-weight:900;font-size:13px;cursor:pointer;background:#f8fafc;color:#64748b;font-family:inherit;">
+            style="flex-shrink:0;padding:8px 18px;border-radius:12px 12px 0 0;border:2px solid var(--sq-line);border-bottom:none;font-weight:900;font-size:13px;cursor:pointer;background:var(--sq-raised);color:#64748b;font-family:inherit;">
             ✏️ แก้ไขสินค้า
           </button>
           <button id="crMngBtn-bom"         onclick="crManageSubTab('bom')"
-            style="flex-shrink:0;padding:8px 18px;border-radius:12px 12px 0 0;border:2px solid #e2e8f0;border-bottom:none;font-weight:900;font-size:13px;cursor:pointer;background:#f8fafc;color:#64748b;font-family:inherit;">
+            style="flex-shrink:0;padding:8px 18px;border-radius:12px 12px 0 0;border:2px solid var(--sq-line);border-bottom:none;font-weight:900;font-size:13px;cursor:pointer;background:var(--sq-raised);color:#64748b;font-family:inherit;">
             📖 สูตร BOM
           </button>
         </div>
@@ -1065,7 +1065,7 @@
           <!-- Dropdown เลือกสินค้า -->
           <div style="margin-bottom:16px;">
             <label style="font-size:13px;font-weight:600;color:#475569;display:block;margin-bottom:6px;">🔍 เลือกสินค้าที่ต้องการแก้ไข</label>
-            <select id="crEditProductSelect" onchange="crSelectEditProduct()" style="width:100%;padding:12px;font-size:15px;border:2px solid #e2e8f0;border-radius:12px;background:#fff;cursor:pointer;">
+            <select id="crEditProductSelect" onchange="crSelectEditProduct()" style="width:100%;padding:12px;font-size:15px;border:2px solid var(--sq-line);border-radius:12px;background:#fff;cursor:pointer;">
               <option value="">-- กดโหลดรายการ หรือเปิด Tab นี้เพื่อโหลดอัตโนมัติ --</option>
             </select>
           </div>
@@ -1076,7 +1076,7 @@
 
           <!-- ฟิลด์แก้ไข (ซ่อนจนกว่าจะเลือกสินค้า) -->
           <div id="crEditProductFields" style="display:none;">
-            <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:12px 16px;margin-bottom:16px;font-size:13px;color:#64748b;">
+            <div style="background:var(--sq-raised);border:1px solid var(--sq-line);border-radius:12px;padding:12px 16px;margin-bottom:16px;font-size:13px;color:#64748b;">
               🏷️ บาร์โค้ด: <strong id="crEditBarcodeDisplay" style="color:#1e293b;font-size:14px;letter-spacing:1px;"></strong>
             </div>
             <div class="row">
@@ -1135,15 +1135,15 @@
                   <label>① 🏭 โรงงานวัตถุดิบ</label>
                   <div style="display:flex;gap:8px;">
                     <button id="crBomBtnSQF" onclick="crBomSelectFactory('SQF')"
-                      style="flex:1;padding:12px;border-radius:10px;border:2px solid #e2e8f0;background:#f8fafc;font-weight:800;font-size:13px;cursor:pointer;font-family:inherit;transition:.15s;">🏭 SQF</button>
+                      style="flex:1;padding:12px;border-radius:10px;border:2px solid var(--sq-line);background:var(--sq-raised);font-weight:800;font-size:13px;cursor:pointer;font-family:inherit;transition:.15s;">🏭 SQF</button>
                     <button id="crBomBtnMLM" onclick="crBomSelectFactory('MLM')"
-                      style="flex:1;padding:12px;border-radius:10px;border:2px solid #e2e8f0;background:#f8fafc;font-weight:800;font-size:13px;cursor:pointer;font-family:inherit;transition:.15s;">🏭 MLM</button>
+                      style="flex:1;padding:12px;border-radius:10px;border:2px solid var(--sq-line);background:var(--sq-raised);font-weight:800;font-size:13px;cursor:pointer;font-family:inherit;transition:.15s;">🏭 MLM</button>
                   </div>
                 </div>
                 <div class="field">
                   <label>② 📦 สินค้าที่ผลิต</label>
                   <select id="crBomProductSel" onchange="crBomOnProductChange()"
-                    style="width:100%;padding:11px;border-radius:8px;border:2px solid #e2e8f0;font-family:inherit;font-weight:700;background:#f8fafc;">
+                    style="width:100%;padding:11px;border-radius:8px;border:2px solid var(--sq-line);font-family:inherit;font-weight:700;background:var(--sq-raised);">
                     <option value="">— เลือกสินค้าก่อน —</option>
                   </select>
                 </div>
@@ -1151,7 +1151,7 @@
               <div id="crBomMatSection" style="display:none;margin-top:8px;">
                 <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
                   <div style="font-size:12px;font-weight:800;color:#64748b;text-transform:uppercase;">③ ⚗️ วัตถุดิบที่ใช้ <span style="font-weight:600;text-transform:none;">(ต่อสินค้า 1 หน่วย)</span></div>
-                  <span id="crBomStatusBadge" style="font-size:11px;font-weight:800;padding:2px 10px;border-radius:999px;background:#e2e8f0;color:#64748b;"></span>
+                  <span id="crBomStatusBadge" style="font-size:11px;font-weight:800;padding:2px 10px;border-radius:999px;background:var(--sq-line);color:#64748b;"></span>
                 </div>
                 <div style="overflow-x:auto;">
                   <table style="width:100%;border-collapse:collapse;min-width:520px;">
@@ -1166,13 +1166,13 @@
                   </table>
                 </div>
                 <button class="cr-btn btn-light" onclick="crBomAddRow()"
-                  style="margin-top:10px;width:100%;border:2px dashed #c7d2fe;background:#eef2ff;color:#4338ca;font-weight:900;">➕ เพิ่มวัตถุดิบ</button>
+                  style="margin-top:10px;width:100%;border:2px dashed var(--sq-line);background:var(--sq-accent-2);color:var(--sq-accent);font-weight:900;">➕ เพิ่มวัตถุดิบ</button>
                 <div style="display:flex;gap:10px;margin-top:14px;flex-wrap:wrap;">
                   <button class="cr-btn btn-primary" onclick="crSaveBom()" style="flex:1;">💾 บันทึก BOM</button>
                   <button class="cr-btn btn-light" onclick="crDeleteBom()" style="background:#fff1f2;color:#dc2626;border:2px solid #fca5a5;">🗑️ ลบ BOM นี้</button>
                 </div>
               </div>
-              <div id="crBomPlaceholder" style="text-align:center;padding:28px 0;color:#cbd5e1;font-size:13px;font-weight:700;">เลือกโรงงานและสินค้าเพื่อเริ่มกำหนดสูตร</div>
+              <div id="crBomPlaceholder" style="text-align:center;padding:28px 0;color:var(--sq-line);font-size:13px;font-weight:700;">เลือกโรงงานและสินค้าเพื่อเริ่มกำหนดสูตร</div>
             </div>
             <!-- รายการ BOM ที่มีอยู่ -->
             <div class="card">
@@ -1200,11 +1200,11 @@
           <!-- เลขที่ + วันที่ + ผู้สั่ง + โรงงาน -->
           <div class="row">
             <div class="field"><label>🏷️ เลขที่ใบสั่งผลิต</label>
-              <input type="text" id="crWoOrderId" readonly style="background:#f1f5f9;color:#6366f1;font-weight:900;font-size:18px;"></div>
+              <input type="text" id="crWoOrderId" readonly style="background:var(--sq-line-soft);color:var(--sq-accent);font-weight:900;font-size:18px;"></div>
             <div class="field"><label>📅 วันที่สั่งผลิต</label><input type="date" id="crWoDate"></div>
-            <div class="field"><label>👤 ผู้สั่งผลิต</label><input type="text" id="crWoCreatedBy" readonly style="background:#f1f5f9;"></div>
+            <div class="field"><label>👤 ผู้สั่งผลิต</label><input type="text" id="crWoCreatedBy" readonly style="background:var(--sq-line-soft);"></div>
             <div class="field"><label>🏭 โรงงานวัตถุดิบ</label>
-              <select id="crWoFactory" onchange="crCheckBomMaterials()" style="width:100%;padding:10px;border-radius:8px;border:2px solid #e2e8f0;font-family:inherit;font-weight:700;background:#f8fafc;">
+              <select id="crWoFactory" onchange="crCheckBomMaterials()" style="width:100%;padding:10px;border-radius:8px;border:2px solid var(--sq-line);font-family:inherit;font-weight:700;background:var(--sq-raised);">
                 <option value="">— เลือกโรงงาน —</option>
                 <option value="SQF">🏭 SQF (สุพรรณคิวฟู้ดส์)</option>
                 <option value="MLM">🏭 MLM (แม่ละมาย)</option>
@@ -1239,19 +1239,19 @@
               <tbody id="crWoItemsBody"></tbody>
             </table>
           </div>
-          <button class="cr-btn btn-light" onclick="crWoAddRow()" style="margin-top:10px;width:100%;border:2px dashed #cbd5e1;background:#f8fafc;color:#6366f1;font-weight:900;">
+          <button class="cr-btn btn-light" onclick="crWoAddRow()" style="margin-top:10px;width:100%;border:2px dashed var(--sq-line);background:var(--sq-raised);color:var(--sq-accent);font-weight:900;">
             ➕ เพิ่มสินค้า
           </button>
 
           <!-- ตรวจสอบวัตถุดิบ BOM -->
           <div style="margin-top:14px;">
-            <button class="cr-btn btn-light" onclick="crCheckBomMaterials()" style="width:100%;border:2px dashed #818cf8;background:#eef2ff;color:#4338ca;font-weight:900;">
+            <button class="cr-btn btn-light" onclick="crCheckBomMaterials()" style="width:100%;border:2px dashed var(--sq-accent);background:var(--sq-accent-2);color:var(--sq-accent);font-weight:900;">
               🔬 ตรวจสอบวัตถุดิบที่ต้องใช้
             </button>
             <div id="crWoBomResult" style="display:none;margin-top:10px;"></div>
             <div id="crWoActionBtns" style="display:none;margin-top:12px;gap:10px;">
               <button class="cr-btn btn-primary" onclick="crPrintWorkOrder()" id="crWoBtnPrint"
-                style="flex:1;padding:14px;font-size:15px;font-weight:900;background:#6366f1;">🖨️ พิมพ์ใบสั่งผลิต</button>
+                style="flex:1;padding:14px;font-size:15px;font-weight:900;background:var(--sq-accent);">🖨️ พิมพ์ใบสั่งผลิต</button>
               <button class="cr-btn btn-light" onclick="crClearWorkOrder()"
                 style="padding:14px;font-size:15px;font-weight:900;">🧹 ใหม่</button>
             </div>
@@ -1261,7 +1261,7 @@
           <div class="row" style="margin-top:14px;">
             <div class="field full">
               <label>💬 หมายเหตุ / คำสั่งพิเศษ</label>
-              <textarea id="crWoNote" rows="2" placeholder="ระบุคำสั่งพิเศษหรือรายละเอียดเพิ่มเติม" style="width:100%;padding:10px;border-radius:8px;border:2px solid #e2e8f0;font-family:inherit;resize:vertical;box-sizing:border-box;"></textarea>
+              <textarea id="crWoNote" rows="2" placeholder="ระบุคำสั่งพิเศษหรือรายละเอียดเพิ่มเติม" style="width:100%;padding:10px;border-radius:8px;border:2px solid var(--sq-line);font-family:inherit;resize:vertical;box-sizing:border-box;"></textarea>
             </div>
           </div>
         </div>
@@ -1284,7 +1284,7 @@
 
           <div style="margin-bottom:12px;">
             <label style="font-size:12px;color:#64748b;font-weight:700;display:block;margin-bottom:4px;">หมายเหตุ (ถ้ามี)</label>
-            <input id="crSiNote" type="text" placeholder="เช่น รุ่นการผลิต, กะ, เลขที่ใบสั่งผลิต..." style="width:100%;padding:10px 12px;border:1.5px solid #e2e8f0;border-radius:10px;font-size:14px;box-sizing:border-box;">
+            <input id="crSiNote" type="text" placeholder="เช่น รุ่นการผลิต, กะ, เลขที่ใบสั่งผลิต..." style="width:100%;padding:10px 12px;border:1.5px solid var(--sq-line);border-radius:10px;font-size:14px;box-sizing:border-box;">
           </div>
 
           <button class="cr-btn btn-primary" onclick="crSiSubmit()" style="width:100%;padding:16px;font-size:16px;font-weight:900;letter-spacing:0.5px;">

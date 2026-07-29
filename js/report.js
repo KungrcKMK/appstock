@@ -62,39 +62,42 @@ function _bhSection(icon, title, why, rows, cols, emptyMsg) {
 
 function renderBomHealth(res) {
   const s = res.summary;
-  const tone = { "พร้อม":       { bg:"#052e16", bd:"#16a34a", fg:"#86efac", icon:"✅" },
-                 "เกือบพร้อม":  { bg:"#451a03", bd:"#f59e0b", fg:"#fcd34d", icon:"⚠️" },
-                 "ยังไม่พร้อม": { bg:"#450a0a", bd:"#dc2626", fg:"#fca5a5", icon:"🔴" },
-                 "ยังไม่มีข้อมูล": { bg:"#1e293b", bd:"#64748b", fg:"#cbd5e1", icon:"📭" } }[s.readiness]
-              || { bg:"#1e293b", bd:"#64748b", fg:"#cbd5e1", icon:"❔" };
-
-  const kpi = (label, val, sub) => `
-    <div style="background:#fff;border:1px solid #e2e8f0;border-radius:14px;padding:14px 16px;flex:1;min-width:130px;">
-      <div style="font-size:11px;font-weight:800;color:#94a3b8;text-transform:uppercase;letter-spacing:.5px;">${escapeHtml(label)}</div>
-      <div style="font-size:24px;font-weight:900;color:#0f172a;line-height:1.15;margin-top:3px;">${val}</div>
-      ${sub ? `<div style="font-size:11px;color:#94a3b8;font-weight:600;margin-top:2px;">${escapeHtml(sub)}</div>` : ""}
-    </div>`;
+  // สีตามความพร้อม — ใช้ token เดียวกับทั้งระบบ
+  const tone = { "พร้อม":          { chip:"ok",   bar:"var(--sq-accent)", icon:"✅" },
+                 "เกือบพร้อม":     { chip:"warn", bar:"var(--sq-warn)",   icon:"⚠️" },
+                 "ยังไม่พร้อม":    { chip:"crit", bar:"var(--sq-crit)",   icon:"🔴" },
+                 "ยังไม่มีข้อมูล": { chip:"",     bar:"var(--sq-muted)",  icon:"📭" } }[s.readiness]
+              || { chip:"", bar:"var(--sq-muted)", icon:"❔" };
 
   const banner = `
-    <div style="background:${tone.bg};border-left:5px solid ${tone.bd};border-radius:16px;padding:20px 22px;margin-bottom:18px;">
-      <div style="font-size:22px;font-weight:900;color:${tone.fg};">${tone.icon} ${escapeHtml(s.readiness)}</div>
-      <div style="font-size:13px;color:${tone.fg};opacity:.85;font-weight:600;margin-top:5px;">${escapeHtml(s.readinessNote)}</div>
-      <div style="margin-top:14px;">
-        <div style="display:flex;justify-content:space-between;font-size:12px;font-weight:800;color:${tone.fg};margin-bottom:5px;">
-          <span>สินค้าที่ผลิตจริงและมีสูตรแล้ว</span><span>${s.producedWithBom}/${s.producedTotal} · ${s.coveragePct}%</span>
+    <div class="sq-card">
+      <div class="sq-card-head">
+        <span class="sq-card-title">${tone.icon} ${escapeHtml(s.readiness)}</span>
+        <span class="sq-chip ${tone.chip}">${s.coveragePct}% ของที่ผลิตจริงมีสูตรแล้ว</span>
+      </div>
+      <div class="sq-card-body">
+        <p style="margin:0 0 12px;font-size:13px;color:var(--sq-ink2);">${escapeHtml(s.readinessNote)}</p>
+        <div style="display:flex;justify-content:space-between;font-size:11.5px;font-weight:700;color:var(--sq-muted);margin-bottom:4px;">
+          <span>สินค้าที่ผลิตจริงและมีสูตรแล้ว</span>
+          <span style="font-family:var(--sq-mono);">${s.producedWithBom} / ${s.producedTotal}</span>
         </div>
-        <div style="height:9px;background:rgba(255,255,255,.15);border-radius:9px;overflow:hidden;">
-          <div style="height:100%;width:${s.coveragePct}%;background:${tone.bd};border-radius:9px;transition:width .4s;"></div>
-        </div>
-        <div style="font-size:11px;color:${tone.fg};opacity:.7;font-weight:600;margin-top:6px;">เกณฑ์ที่ควรถึงก่อนเริ่มเทียบยอดใช้จริง: 80%</div>
+        <div class="sq-meter" style="height:7px;"><i style="width:${s.coveragePct}%;background:${tone.bar};"></i></div>
+        <div class="sq-meter-note">เกณฑ์ที่ควรถึงก่อนเริ่มเทียบยอดใช้จริง 80%</div>
       </div>
     </div>`;
 
+  const tile = (label, val, sub) => `
+    <div class="sq-tile">
+      <div class="sq-tile-label"><span class="sq-dot"></span>${escapeHtml(label)}</div>
+      <div class="sq-tile-num">${val}</div>
+      ${sub ? `<div class="sq-tile-note">${escapeHtml(sub)}</div>` : ""}
+    </div>`;
+
   const stats = `
-    <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:18px;">
-      ${kpi("สินค้ามีสูตร", s.bomProductCount, `จากทะเบียน ${s.registeredTotal} ชนิด`)}
-      ${kpi("วัตถุดิบในสูตร", s.bomMaterialCount, "ชนิดที่ถูกอ้างถึง")}
-      ${kpi("จุดที่ต้องแก้", s.issueCount, s.issueCount ? "ดูรายละเอียดด้านล่าง" : "ไม่มี")}
+    <div class="sq-tiles">
+      ${tile("สินค้ามีสูตร", s.bomProductCount, `จากทะเบียน ${s.registeredTotal} ชนิด`)}
+      ${tile("วัตถุดิบในสูตร", s.bomMaterialCount, "ชนิดที่ถูกอ้างถึง")}
+      ${tile("จุดที่ต้องแก้", s.issueCount, s.issueCount ? "ดูรายละเอียดด้านล่าง" : "ไม่มี")}
     </div>`;
 
   const esc = v => escapeHtml(String(v ?? ""));

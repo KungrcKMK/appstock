@@ -15,8 +15,8 @@ window.rawSetSort = function(key) {
   ["status","name","qty"].forEach(k => {
     const el = document.getElementById("rawSortIcon-" + k);
     if (!el) return;
-    if (k === rawSortKey) { el.textContent = rawSortAsc ? "↑" : "↓"; el.classList.remove("opacity-40"); el.classList.add("opacity-100","text-blue-500"); }
-    else                  { el.textContent = "↕"; el.classList.add("opacity-40"); el.classList.remove("opacity-100","text-blue-500"); }
+    if (k === rawSortKey) { el.textContent = rawSortAsc ? "↑" : "↓"; el.style.opacity = "1";  el.style.color = "var(--sq-accent)"; }
+    else                  { el.textContent = "↕";                    el.style.opacity = ".4"; el.style.color = ""; }
   });
   renderRawInventory(rawLastData);
 };

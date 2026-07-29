@@ -65,17 +65,15 @@ async function main() {
     console.warn("⚠️ หาตัว Q สีส้มไม่เจอ — ใช้โลโก้เต็มใบย่อลงแทน");
     sx = 0; sy = 0; sw = W; sh = H;
   } else {
-    // ครอบตัว Q เป็นจัตุรัส เผื่อขอบรอบตัว 24%
-    const cx = (minX + maxX) / 2, cy = (minY + maxY) / 2;
-    const side = Math.max(maxX - minX, maxY - minY) * 1.24;
-    sx = Math.max(0, Math.min(cx - side / 2, W - side));
-    sy = Math.max(0, Math.min(cy - side / 2, H - side));
-    sw = Math.min(side, W - sx);
-    sh = Math.min(side, H - sy);
+    // ตัดพอดีขอบตัว Q เป๊ะๆ ไม่เผื่อขอบในภาพต้นฉบับ
+    // เพราะขยายกรอบออกไปจะดูดตัวหนังสือเขียวที่อยู่ข้างๆ ติดเข้ามาด้วย
+    // ระยะขอบสวยๆ ไปเว้นเอาตอนวางลงผืนผ้าใบแทน
+    sx = minX; sy = minY;
+    sw = maxX - minX + 1;
+    sh = maxY - minY + 1;
     console.log("พบตัว Q: x " + minX + "-" + maxX + ", y " + minY + "-" + maxY +
                 " (" + count.toLocaleString() + " พิกเซล)");
-    console.log("ตัดกรอบ: " + Math.round(sx) + "," + Math.round(sy) +
-                " ขนาด " + Math.round(sw) + "x" + Math.round(sh));
+    console.log("ตัดกรอบพอดีตัว Q: " + sw + " x " + sh);
   }
 
   for (const size of [192, 512]) {

@@ -365,26 +365,35 @@
 
   <!-- ═══ NAVIGATION BAR ═══ -->
   <nav id="mainNav" class="fixed top-0 left-0 right-0 z-[150] bg-slate-900 shadow-2xl" style="display:none">
-    <div class="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between gap-3">
-      <span class="text-white font-black text-sm shrink-0">
-        👤 <span id="navUser" class="text-indigo-400"></span>
-        <span id="navDevice" style="display:none;"></span>
-      </span>
-      <div class="flex gap-1 overflow-x-auto">
+    <div class="max-w-7xl mx-auto px-4 py-2">
+
+      <!-- แถวที่ 1 — ผู้ใช้ + เลือกคลังที่กำลังทำงาน -->
+      <div class="nav-row">
+        <span class="text-white font-black text-sm shrink-0 mr-2">
+          👤 <span id="navUser" class="text-indigo-400"></span>
+          <span id="navDevice" style="display:none;"></span>
+        </span>
         <button id="navBtn-COLDROOM" class="nav-btn" onclick="switchModule('COLDROOM')">❄️ คลังสินค้า<span id="badge-COLDROOM" class="nav-badge" style="display:none"></span></button>
         <button id="navBtn-SQF"      class="nav-btn" onclick="switchModule('SQF')">🏭 วัตถุดิบ SQF<span id="badge-SQF" class="nav-badge" style="display:none"></span></button>
         <button id="navBtn-MLM"      class="nav-btn" onclick="switchModule('MLM')">🏭 วัตถุดิบ MLM<span id="badge-MLM" class="nav-badge" style="display:none"></span></button>
+        <button onclick="logout()" class="text-red-400 font-black text-xs hover:text-red-300 shrink-0 nav-btn ml-auto">🔴 ออก</button>
       </div>
-      <button id="navBtn-EXEC"  onclick="switchModule('EXEC')"  class="nav-btn" style="display:none;background:rgba(99,102,241,0.18);color:#a5b4fc;">📊 ภาพรวม</button>
-      <button id="navBtn-BOMHEALTH" onclick="switchModule('BOMHEALTH')" class="nav-btn" style="display:none;background:rgba(14,165,233,0.18);color:#7dd3fc;">📋 ตรวจสูตร</button>
-      <button id="navBtn-ROLES" onclick="switchModule('ROLES')" class="nav-btn" style="display:none;background:rgba(234,179,8,0.18);color:#fbbf24;">👑 Admin<span id="adminNavBadge" class="nav-badge" style="display:none;background:#f59e0b;"></span></button>
-      <button id="activityNavBtn" onclick="openActivityPanel()" class="nav-btn" style="display:none;background:rgba(16,185,129,0.2);color:#34d399;">📈 ความเคลื่อนไหว</button>
-      <button id="telegramNavBtn" onclick="openUnifiedSettings()" class="nav-btn" style="display:none;background:rgba(255,255,255,0.1);color:#fff;">⚙️ Telegram</button>
-      <button onclick="openMyHistory()" class="nav-btn" style="background:rgba(99,102,241,0.2);color:#a5b4fc;" title="ดูรายการที่ตัวเองทำ">📜 ของฉัน</button>
-      <button onclick="openShareApp()" class="nav-btn" style="background:rgba(14,165,233,0.15);color:#7dd3fc;" title="แชร์แอปให้พนักงาน (ลิงก์ + QR)">🔗 แชร์แอป</button>
-      <button onclick="switchToMobile()" class="nav-btn" style="background:rgba(99,102,241,0.15);color:#a5b4fc;" title="เปลี่ยนเป็นโหมดมือถือ">📱</button>
-      <button onclick="forceRefresh()" title="อัปเดตแอปล่าสุด (ล้าง cache)" class="nav-btn" style="background:rgba(99,102,241,0.15);color:#a5b4fc;">🔄 อัปเดต</button>
-      <button onclick="logout()" class="text-red-400 font-black text-xs hover:text-red-300 shrink-0 nav-btn">🔴 ออก</button>
+
+      <div class="nav-sep"></div>
+
+      <!-- แถวที่ 2 — เครื่องมือ -->
+      <div class="nav-row">
+        <button id="navBtn-EXEC"  onclick="switchModule('EXEC')"  class="nav-btn" style="display:none;background:rgba(99,102,241,0.18);color:#a5b4fc;">📊 ภาพรวม</button>
+        <button id="navBtn-BOMHEALTH" onclick="switchModule('BOMHEALTH')" class="nav-btn" style="display:none;background:rgba(14,165,233,0.18);color:#7dd3fc;">📋 ตรวจสูตร</button>
+        <button id="navBtn-ROLES" onclick="switchModule('ROLES')" class="nav-btn" style="display:none;background:rgba(234,179,8,0.18);color:#fbbf24;">👑 Admin<span id="adminNavBadge" class="nav-badge" style="display:none;background:#f59e0b;"></span></button>
+        <button id="activityNavBtn" onclick="openActivityPanel()" class="nav-btn" style="display:none;background:rgba(16,185,129,0.2);color:#34d399;">📈 ความเคลื่อนไหว</button>
+        <button id="telegramNavBtn" onclick="openUnifiedSettings()" class="nav-btn" style="display:none;background:rgba(255,255,255,0.1);color:#fff;">⚙️ Telegram</button>
+        <button onclick="openMyHistory()" class="nav-btn" style="background:rgba(99,102,241,0.2);color:#a5b4fc;" title="ดูรายการที่ตัวเองทำ">📜 ของฉัน</button>
+        <button onclick="openShareApp()" class="nav-btn" style="background:rgba(14,165,233,0.15);color:#7dd3fc;" title="แชร์แอปให้พนักงาน (ลิงก์ + QR)">🔗 แชร์แอป</button>
+        <button onclick="switchToMobile()" class="nav-btn" style="background:rgba(99,102,241,0.15);color:#a5b4fc;" title="เปลี่ยนเป็นโหมดมือถือ">📱</button>
+        <button onclick="forceRefresh()" title="อัปเดตแอปล่าสุด (ล้าง cache)" class="nav-btn" style="background:rgba(99,102,241,0.15);color:#a5b4fc;">🔄 อัปเดต</button>
+      </div>
+
     </div>
 
     <!-- Datalist สำหรับหน่วยนับ (ใช้ร่วมทุก module) -->

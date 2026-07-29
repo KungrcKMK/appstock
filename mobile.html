@@ -60,6 +60,15 @@
      SCREEN 2 : MODULE SELECT
 ══════════════════════════════════════════ -->
 <div id="sModule" class="hidden flex-col p-4 pt-safe gap-2">
+  <!-- โลโก้บริษัท — ขึ้นเองเมื่อวางไฟล์ assets/logo.png
+       วางบนแผ่นขาว เพราะตัวหนังสือในโลโก้เป็นเขียวเข้ม ถ้าวางบนพื้นดำจะอ่านไม่ออก -->
+  <div id="mLogoBox" class="bg-white rounded-2xl px-4 py-2.5 mb-1" style="display:none;">
+    <img src="assets/logo.png" alt="แม่ละมาย · สุพรรณคิวฟู้ดส์"
+         onload="document.getElementById('mLogoBox').style.display='block'"
+         onerror="document.getElementById('mLogoBox').remove()"
+         style="display:block;width:100%;max-width:230px;height:auto;margin:0 auto;">
+  </div>
+
   <div class="pt-1 pb-1 flex items-start justify-between">
     <div>
       <p class="text-slate-400 text-xs">สวัสดี 👋</p>

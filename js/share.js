@@ -111,6 +111,8 @@ function sharePrintQr() {
       .note{margin-top:18px;font-size:13px;color:#6c8074;}
       @media print{ body{padding:20px;} .noprint{display:none;} }
     </style></head><body>
+    <img src="${logoUrl()}" alt="" onerror="this.style.display='none'"
+         style="width:100%;max-width:420px;height:auto;margin:0 auto 18px;display:block;">
     <h1>📦 ระบบจัดการสต๊อก</h1>
     <div class="sub">สุพรรณคิวฟู้ดส์ | แม่ละมาย</div>
     <img src="${src}" alt="QR">

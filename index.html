@@ -704,18 +704,19 @@
   <!-- adminPanelModal removed — merged into module-ROLES -->
 
   <!-- ═══ EXECUTIVE DASHBOARD (full-page module) ═══ -->
-  <div id="module-EXEC" class="module-section hide" style="padding-top:var(--nav-h);min-height:100vh;background:linear-gradient(135deg,#0f172a 0%,#1e293b 100%);">
-    <!-- Header bar -->
-    <div style="background:rgba(255,255,255,.04);backdrop-filter:blur(10px);border-bottom:1px solid rgba(255,255,255,.08);padding:16px 24px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;position:sticky;top:var(--nav-h);z-index:10;">
-      <div>
-        <div style="font-size:20px;font-weight:900;color:#f1f5f9;letter-spacing:-.5px;">📊 ภาพรวมผู้บริหาร</div>
-        <div style="font-size:11px;font-weight:600;color:#6366f1;margin-top:2px;" id="execDashTimestamp">—</div>
-      </div>
-      <button onclick="loadExecDashboard()" style="background:linear-gradient(135deg,#6366f1,#8b5cf6);color:#fff;border:none;padding:9px 20px;border-radius:12px;font-weight:800;font-size:13px;cursor:pointer;font-family:inherit;box-shadow:0 4px 14px rgba(99,102,241,.4);">🔄 รีเฟรช</button>
-    </div>
-    <div style="max-width:1400px;margin:0 auto;padding:24px 16px 80px;">
+  <div id="module-EXEC" class="module-section hide sq-page" style="padding-top:var(--nav-h);min-height:100vh;">
+    <div class="sq-wrap">
+      <header class="sq-head">
+        <div>
+          <h1 class="sq-h1">📊 ภาพรวมผู้บริหาร</h1>
+          <div class="sq-hsub" id="execDashTimestamp">—</div>
+        </div>
+        <div class="sq-head-actions">
+          <button onclick="loadExecDashboard()" class="sq-btn sq-btn-primary">🔄 รีเฟรช</button>
+        </div>
+      </header>
       <div id="execDashContent">
-        <p style="color:#475569;text-align:center;font-weight:700;padding:60px 0;">⏳ กำลังโหลดข้อมูล...</p>
+        <p class="sq-empty">⏳ กำลังโหลดข้อมูล...</p>
       </div>
     </div>
   </div>

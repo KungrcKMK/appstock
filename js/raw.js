@@ -594,13 +594,16 @@ function openPurchaseRequest() {
     <span style="font-size:12px;color:#64748b;">✏️ แก้ไขช่อง <b style="color:#6366f1;">สั่งจริง</b> ได้ก่อนพิมพ์ — ระบบจะคำนวณ <b style="color:#059669;">ใช้ได้กี่วัน</b> ให้อัตโนมัติ</span>
   </div>
   <div class="header">
-    <div>
-      <h1>📋 ใบขอซื้อวัตถุดิบ</h1>
-      <div class="sub">🏭 โรงงาน: <b>${factoryName}</b></div>
+    <div style="display:flex;align-items:center;gap:14px;">
+      ${logoImgTag(44)}
+      <div>
+        <h1>📋 ใบขอซื้อวัตถุดิบ</h1>
+        <div class="sub">🏭 โรงงาน: <b>${factoryName}</b></div>
+      </div>
     </div>
     <div class="doc-no">
       <div>วันที่: <b>${dateStr}</b></div>
-      <div>ผู้จัดทำ: <b>${currentUser}</b></div>
+      <div>ผู้จัดทำ: <b>${personName(currentUser)}</b></div>
       <div>รายการทั้งหมด: <b>${lowItems.length} รายการ</b></div>
     </div>
   </div>

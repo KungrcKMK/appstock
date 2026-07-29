@@ -101,14 +101,14 @@ function sharePrintQr() {
     <style>
       @import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@400;700;800&display=swap');
       body{font-family:Sarabun,sans-serif;text-align:center;padding:40px 30px;margin:0;}
-      h1{font-size:34px;font-weight:800;margin:0 0 6px;color:var(--sq-ink);}
-      .sub{font-size:17px;color:var(--sq-ink2);font-weight:700;margin-bottom:26px;}
-      img{width:340px;height:340px;border:10px solid var(--sq-ink);border-radius:20px;}
-      .url{font-family:monospace;font-size:15px;color:var(--sq-ink2);margin-top:18px;word-break:break-all;}
-      .steps{margin:32px auto 0;max-width:520px;text-align:left;background:var(--sq-raised);border:1px solid var(--sq-line);border-radius:16px;padding:20px 24px;}
-      .steps h2{font-size:18px;margin:0 0 12px;color:var(--sq-ink);}
-      .steps ol{margin:0;padding-left:22px;font-size:15px;line-height:1.9;color:var(--sq-ink);}
-      .note{margin-top:18px;font-size:13px;color:var(--sq-muted);}
+      h1{font-size:34px;font-weight:800;margin:0 0 6px;color:#16241b;}
+      .sub{font-size:17px;color:#435349;font-weight:700;margin-bottom:26px;}
+      img{width:340px;height:340px;border:10px solid #16241b;border-radius:20px;}
+      .url{font-family:monospace;font-size:15px;color:#435349;margin-top:18px;word-break:break-all;}
+      .steps{margin:32px auto 0;max-width:520px;text-align:left;background:#fafbfa;border:1px solid #dfe6e0;border-radius:16px;padding:20px 24px;}
+      .steps h2{font-size:18px;margin:0 0 12px;color:#16241b;}
+      .steps ol{margin:0;padding-left:22px;font-size:15px;line-height:1.9;color:#16241b;}
+      .note{margin-top:18px;font-size:13px;color:#6c8074;}
       @media print{ body{padding:20px;} .noprint{display:none;} }
     </style></head><body>
     <h1>📦 ระบบจัดการสต๊อก</h1>
@@ -120,7 +120,8 @@ function sharePrintQr() {
       <ol>
         <li>เปิดกล้องมือถือ แล้วสแกน QR ด้านบน</li>
         <li>กดลิงก์ที่ขึ้นมา ระบบจะเปิดในเบราว์เซอร์</li>
-        <li>ใส่ชื่อพนักงานเพื่อเข้าใช้งาน (ถ้ายังไม่มีบัญชี กด "สมัครใช้งาน" แล้วรอหัวหน้าอนุมัติ)</li>
+        <li>พิมพ์ชื่อพนักงาน แล้วกด "เข้าสู่ระบบ"<br>
+            ถ้ายังไม่มีชื่อในระบบ จะมีกล่องขึ้นมาให้กด <b>"ขอสิทธิ์เข้าใช้งานจาก Admin"</b> แล้วรอหัวหน้าอนุมัติ</li>
         <li><b>ติดตั้งลงหน้าจอโฮม</b> เพื่อเปิดง่ายครั้งต่อไป:<br>
             • Android: กดเมนู ⋮ → "เพิ่มลงในหน้าจอหลัก"<br>
             • iPhone: กดปุ่มแชร์ ⬆️ → "เพิ่มไปยังหน้าจอโฮม"</li>

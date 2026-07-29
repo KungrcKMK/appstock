@@ -106,24 +106,24 @@ function renderBomHealth(res) {
     _bhSection("🔴", "สินค้าที่ผลิตแล้ว แต่ยังไม่มีสูตร",
       "สำคัญที่สุด — ถ้าไม่มีสูตร ระบบไม่รู้ว่าควรใช้วัตถุดิบเท่าไร จึงเทียบไม่ได้เลย",
       res.missingBom,
-      [ { label:"สินค้า", render:r => `<b>${esc(r.productName)}</b>` },
-        { label:"บาร์โค้ด", render:r => `<span style="font-family:monospace;color:#64748b;">${esc(r.barcode)}</span>` },
-        { label:"พบในใบสั่งผลิต", align:"right", render:r => `<b style="color:#dc2626;">${r.orderCount}</b> ครั้ง` } ],
+      [ { label:"สินค้า", render:r => `<span class="sq-name">${esc(r.productName)}</span>` },
+        { label:"บาร์โค้ด", render:r => `<span class="sq-meta">${esc(r.barcode)}</span>` },
+        { label:"พบในใบสั่งผลิต", align:"right", render:r => `<span class="sq-num" style="color:var(--sq-crit)">${r.orderCount}</span> ครั้ง` } ],
       "สินค้าที่ผลิตทุกตัวมีสูตรครบแล้ว") +
 
     _bhSection("📏", "หน่วยในสูตรไม่ตรงกับหน่วยในคลัง",
       "ทำให้ตัวเลขผิดแบบเงียบๆ เช่น สูตรเขียน กก. แต่คลังนับเป็น กระสอบ",
       res.unitMismatch,
-      [ { label:"วัตถุดิบ", render:r => `<b>${esc(r.materialName || r.materialSku)}</b>` },
+      [ { label:"วัตถุดิบ", render:r => `<span class="sq-name">${esc(r.materialName || r.materialSku)}</span>` },
         { label:"ในสูตรของ", render:r => esc(r.productName) },
-        { label:"หน่วยในสูตร", align:"center", render:r => `<span style="background:#fee2e2;color:#991b1b;padding:2px 8px;border-radius:6px;font-weight:800;">${esc(r.bomUnit)}</span>` },
-        { label:"หน่วยในคลัง", align:"center", render:r => `<span style="background:#dcfce7;color:#166534;padding:2px 8px;border-radius:6px;font-weight:800;">${esc(r.stockUnit)}</span>` } ],
+        { label:"หน่วยในสูตร", align:"center", render:r => `<span class="sq-chip crit">${esc(r.bomUnit)}</span>` },
+        { label:"หน่วยในคลัง", align:"center", render:r => `<span class="sq-chip ok">${esc(r.stockUnit)}</span>` } ],
       "หน่วยตรงกันทั้งหมด") +
 
     _bhSection("❓", "สูตรอ้างวัตถุดิบที่ไม่มีในคลัง",
       "อาจลบวัตถุดิบไปแล้ว หรือพิมพ์ SKU ผิด — บรรทัดสูตรนี้จะคำนวณไม่ได้",
       res.orphanMaterial,
-      [ { label:"SKU ในสูตร", render:r => `<span style="font-family:monospace;">${esc(r.materialSku)}</span>` },
+      [ { label:"SKU ในสูตร", render:r => `<span class="sq-meta">${esc(r.materialSku)}</span>` },
         { label:"ชื่อในสูตร", render:r => esc(r.materialName) },
         { label:"ใช้ในสูตร", align:"right", render:r => `${r.usedIn} สินค้า` } ],
       "ทุก SKU ในสูตรมีอยู่จริงในคลัง") +
@@ -133,44 +133,48 @@ function renderBomHealth(res) {
       res.badQtyPerUnit,
       [ { label:"สินค้า", render:r => esc(r.productName) },
         { label:"วัตถุดิบ", render:r => esc(r.materialName || r.materialSku) },
-        { label:"ต่อหน่วย", align:"right", render:r => `<b style="color:#dc2626;">${r.qtyPerUnit}</b>` } ],
+        { label:"ต่อหน่วย", align:"right", render:r => `<span class="sq-num" style="color:var(--sq-crit)">${r.qtyPerUnit}</span>` } ],
       "ทุกบรรทัดสูตรมีจำนวนต่อหน่วยแล้ว") +
 
     _bhSection("📦", "วัตถุดิบที่เบิกจริง แต่ไม่อยู่ในสูตรไหนเลย",
       "ไม่ได้แปลว่าผิด — อาจเป็นของใช้ทั่วไป (ถุงมือ น้ำยาล้าง) หรือสูตรยังไม่ได้ใส่",
       res.notInAnyBom,
-      [ { label:"วัตถุดิบ", render:r => `<b>${esc(r.name)}</b>` },
-        { label:"SKU", render:r => `<span style="font-family:monospace;color:#64748b;">${esc(r.sku)}</span>` },
+      [ { label:"วัตถุดิบ", render:r => `<span class="sq-name">${esc(r.name)}</span>` },
+        { label:"SKU", render:r => `<span class="sq-meta">${esc(r.sku)}</span>` },
         { label:"โรงงาน", align:"center", render:r => esc(r.module) },
         { label:"เบิก", align:"right", render:r => `${r.outCount} ครั้ง` },
-        { label:"รวม", align:"right", render:r => `<b>${r.outQty}</b>` } ],
+        { label:"รวม", align:"right", render:r => `<span class="sq-num">${r.outQty}</span>` } ],
       "วัตถุดิบที่เบิกล่าสุดอยู่ในสูตรครบ") +
 
     _bhSection("🔗", "ประวัติการเบิกที่จับคู่กับวัตถุดิบไม่ได้",
       "ประวัติเก็บแค่ชื่อ ไม่มี SKU — ถ้าเปลี่ยนชื่อวัตถุดิบภายหลัง ประวัติเก่าจะอ้างกลับไม่ได้",
       res.unmatchedHistory || [],
-      [ { label:"ชื่อในประวัติ", render:r => `<b>${esc(r.name)}</b>` },
+      [ { label:"ชื่อในประวัติ", render:r => `<span class="sq-name">${esc(r.name)}</span>` },
         { label:"โรงงาน", align:"center", render:r => esc(r.module) },
         { label:"เบิก", align:"right", render:r => `${r.outCount} ครั้ง` },
-        { label:"รวม", align:"right", render:r => `<b>${r.outQty}</b>` } ],
+        { label:"รวม", align:"right", render:r => `<span class="sq-num">${r.outQty}</span>` } ],
       "ประวัติล่าสุดจับคู่กับวัตถุดิบได้ครบ") +
 
     _bhSection("📅", "ยังไม่ได้ตั้งค่า \"ใช้ต่อวัน\"",
       "ไม่กระทบการเทียบสูตร แต่ทำให้คาดการณ์ของหมดไม่ได้",
       res.badDailyUsage,
       [ { label:"วัตถุดิบ", render:r => esc(r.name) },
-        { label:"SKU", render:r => `<span style="font-family:monospace;color:#64748b;">${esc(r.sku)}</span>` },
+        { label:"SKU", render:r => `<span class="sq-meta">${esc(r.sku)}</span>` },
         { label:"โรงงาน", align:"center", render:r => esc(r.module) } ],
       "ตั้งค่าใช้ต่อวันครบทุกรายการ");
 
   // ── ค้นหาย้อนกลับ: วัตถุดิบตัวนี้ใช้ในสินค้าอะไรบ้าง ──
   const whereUsed = `
-    <div style="background:#fff;border:1px solid #e2e8f0;border-radius:16px;padding:18px;box-shadow:0 2px 6px rgba(0,0,0,.03);">
-      <div style="font-size:15px;font-weight:900;color:#0f172a;margin-bottom:6px;">🔍 วัตถุดิบตัวนี้ใช้ในสินค้าอะไรบ้าง</div>
-      <div style="font-size:12px;color:#64748b;font-weight:600;margin-bottom:10px;">พิมพ์ชื่อหรือ SKU เพื่อดูว่าอยู่ในสูตรของสินค้าใด</div>
-      <input id="bhWhereInput" type="text" placeholder="เช่น น้ำตาล หรือ SQF-0001" oninput="bhRenderWhereUsed()"
-        style="width:100%;padding:11px 14px;border:2px solid #e2e8f0;border-radius:12px;font-family:inherit;font-size:14px;font-weight:700;outline:none;box-sizing:border-box;">
-      <div id="bhWhereResult" style="margin-top:12px;"></div>
+    <div class="sq-card">
+      <div class="sq-card-head">
+        <span class="sq-card-title">🔍 วัตถุดิบตัวนี้ใช้ในสินค้าอะไรบ้าง</span>
+        <span class="sq-card-note">พิมพ์ชื่อหรือ SKU เพื่อดูว่าอยู่ในสูตรของสินค้าใด</span>
+      </div>
+      <div class="sq-card-body">
+        <input id="bhWhereInput" type="text" class="sq-input" style="width:100%;"
+               placeholder="เช่น น้ำตาล หรือ SQF-0001" oninput="bhRenderWhereUsed()">
+        <div id="bhWhereResult" style="margin-top:10px;"></div>
+      </div>
     </div>`;
 
   document.getElementById("bomHealthContent").innerHTML = banner + stats + sections + whereUsed;

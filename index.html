@@ -310,6 +310,108 @@
     #module-RAW .rm-charts { display:grid;grid-template-columns:minmax(0,2fr) minmax(0,1fr);gap:12px;margin-top:12px; }
     @media (max-width:1100px) { #module-RAW .rm-charts { grid-template-columns:minmax(0,1fr); } }
 
+    /* ═══════════════════════════════════════════════════════
+       ชุด class กลาง .sq-* — ใช้ร่วมกันได้ทุกหน้า
+       (หน้าวัตถุดิบใช้ .rm-* ของตัวเอง ไม่แตะ เพราะทดสอบผ่านแล้ว)
+       ═══════════════════════════════════════════════════════ */
+    .sq-page { background:var(--sq-ground);color:var(--sq-ink); }
+    .sq-wrap { max-width:1400px;margin:0 auto;padding:18px 16px 60px; }
+    .sq-wrap-narrow { max-width:1040px; }
+
+    .sq-head { display:flex;align-items:flex-start;gap:12px;flex-wrap:wrap;margin-bottom:14px; }
+    .sq-h1 { font-size:22px;font-weight:800;letter-spacing:-.01em;line-height:1.2;margin:0; }
+    .sq-hsub { font-size:12px;color:var(--sq-muted);margin-top:3px; }
+    .sq-head-actions { margin-left:auto;display:flex;gap:6px;flex-wrap:wrap;align-items:center; }
+
+    .sq-btn {
+      font:inherit;font-size:13px;font-weight:700;padding:7px 13px;border-radius:7px;cursor:pointer;
+      border:1px solid var(--sq-line);background:var(--sq-surface);color:var(--sq-ink);
+      white-space:nowrap;transition:background .12s,border-color .12s;
+    }
+    .sq-btn:hover { background:var(--sq-raised);border-color:var(--sq-muted); }
+    .sq-btn:focus-visible { outline:2px solid var(--sq-accent);outline-offset:1px; }
+    .sq-btn-primary { background:var(--sq-accent);border-color:var(--sq-accent);color:var(--sq-accent-ink); }
+    .sq-btn-primary:hover { filter:brightness(1.08);background:var(--sq-accent);border-color:var(--sq-accent); }
+    .sq-btn-sm { font-size:11.5px;padding:4px 9px;border-radius:6px; }
+
+    .sq-card {
+      background:var(--sq-surface);border:1px solid var(--sq-line);
+      border-radius:12px;box-shadow:var(--sq-shadow);overflow:hidden;margin-bottom:12px;
+    }
+    .sq-card-head {
+      display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;
+      padding:11px 14px;border-bottom:1px solid var(--sq-line);
+    }
+    .sq-card-title { font-size:14px;font-weight:800;letter-spacing:-.01em;display:flex;align-items:center;gap:7px; }
+    .sq-card-note { font-size:11.5px;color:var(--sq-muted);font-weight:600; }
+    .sq-card-body { padding:12px 14px; }
+    /* แถบสีบอกว่าการ์ดนี้เป็นของคลังไหน */
+    .sq-card.rail-cold { border-left:3px solid #0369a1; }
+    .sq-card.rail-sqf  { border-left:3px solid var(--sq-orange); }
+    .sq-card.rail-mlm  { border-left:3px solid var(--sq-green); }
+
+    .sq-tiles {
+      display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));
+      background:var(--sq-surface);border:1px solid var(--sq-line);border-radius:12px;
+      box-shadow:var(--sq-shadow);overflow:hidden;margin-bottom:12px;
+    }
+    .sq-tile { padding:11px 14px;border-right:1px solid var(--sq-line-soft); }
+    .sq-tile:last-child { border-right:0; }
+    .sq-tile-label { font-size:11.5px;color:var(--sq-muted);font-weight:600;display:flex;align-items:center;gap:5px; }
+    .sq-dot { width:7px;height:7px;border-radius:50%;flex:none;background:var(--sq-muted); }
+    .sq-tile-num { font:800 25px/1.15 var(--sq-mono);font-variant-numeric:tabular-nums;letter-spacing:-.02em;margin-top:3px; }
+    .sq-tile-note { font-size:11px;color:var(--sq-muted); }
+
+    .sq-tablewrap { overflow-x:auto; }
+    table.sq-table { width:100%;border-collapse:collapse;font-size:13px; }
+    .sq-table thead th {
+      background:var(--sq-surface);font-size:11px;font-weight:700;color:var(--sq-muted);
+      letter-spacing:.03em;text-align:left;padding:9px 12px;
+      border-bottom:1px solid var(--sq-line);white-space:nowrap;
+    }
+    .sq-table th.n, .sq-table td.n { text-align:right; }
+    .sq-table th.c, .sq-table td.c { text-align:center; }
+    .sq-table tbody tr { border-bottom:1px solid var(--sq-line-soft); }
+    .sq-table tbody tr:last-child { border-bottom:0; }
+    .sq-table tbody tr:hover { background:var(--sq-raised); }
+    .sq-table td { padding:8px 12px;vertical-align:middle; }
+    .sq-table td.rail { padding:0;width:3px;border-left:3px solid transparent; }
+    .sq-table tr.sev-crit td.rail { border-left-color:var(--sq-crit); }
+    .sq-table tr.sev-high td.rail { border-left-color:var(--sq-high); }
+    .sq-table tr.sev-warn td.rail { border-left-color:var(--sq-warn); }
+
+    .sq-name { font-weight:700;font-size:13.5px;line-height:1.35;color:var(--sq-ink); }
+    .sq-meta { font:500 11px/1.5 var(--sq-mono);color:var(--sq-muted);margin-top:2px;display:flex;gap:9px;flex-wrap:wrap; }
+    .sq-num  { font:700 14px/1.2 var(--sq-mono);font-variant-numeric:tabular-nums;letter-spacing:-.01em; }
+    .sq-num-lg { font-size:17px; }
+    .sq-unit { font-size:11px;color:var(--sq-muted);font-weight:600;margin-left:3px;font-family:inherit; }
+    .sq-dim  { color:var(--sq-muted); }
+
+    /* ป้ายสถานะกลาง — สี + ไอคอน + คำ เสมอ */
+    .sq-chip {
+      display:inline-flex;align-items:center;gap:4px;font-size:11.5px;font-weight:700;
+      white-space:nowrap;padding:3px 8px;border-radius:5px;
+      background:var(--sq-none-bg);color:var(--sq-none);
+    }
+    .sq-chip.crit { background:var(--sq-crit-bg);color:var(--sq-crit); }
+    .sq-chip.high { background:var(--sq-high-bg);color:var(--sq-high); }
+    .sq-chip.warn { background:var(--sq-warn-bg);color:var(--sq-warn); }
+    .sq-chip.ok   { background:var(--sq-accent-2);color:var(--sq-accent); }
+
+    /* หลอดเทียบยอดกับจุดสั่งซื้อ */
+    .sq-meter { height:4px;background:var(--sq-line-soft);border-radius:4px;overflow:hidden;margin-top:4px; }
+    .sq-meter > i { display:block;height:100%;border-radius:4px; }
+    .sq-meter-note { font:500 10px/1.4 var(--sq-mono);color:var(--sq-muted);margin-top:2px; }
+
+    .sq-empty { padding:32px 16px;text-align:center;color:var(--sq-muted);font-size:13px; }
+    .sq-list { display:flex;flex-direction:column;gap:1px; }
+    .sq-list-row {
+      display:flex;justify-content:space-between;align-items:center;gap:10px;
+      padding:7px 0;border-bottom:1px solid var(--sq-line-soft);font-size:12.5px;
+    }
+    .sq-list-row:last-child { border-bottom:0; }
+    .sq-list-name { font-weight:600;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap; }
+
     /* ── Raw Materials (SQF/MLM) custom ── */
     /* ป้ายสถานะ: มีทั้งไอคอนและคำเสมอ ไม่ได้ใช้สีอย่างเดียว */
     .badge-status {

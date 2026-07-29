@@ -156,7 +156,7 @@ function getDeviceInfo() {
   function getPreview(el){
     if(el._mathPreview) return el._mathPreview;
     const d = document.createElement("div");
-    d.style.cssText="font-size:11px;font-weight:800;color:#6366f1;margin-top:3px;min-height:14px;letter-spacing:.5px;";
+    d.style.cssText="font-size:11px;font-weight:800;color:var(--sq-accent);margin-top:3px;min-height:14px;letter-spacing:.5px;";
     d.setAttribute("data-math-preview","1");
     el.parentNode.insertBefore(d, el.nextSibling);
     el._mathPreview = d;

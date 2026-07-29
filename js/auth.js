@@ -121,15 +121,15 @@ function _showAccessBox(kind, msg, username) {
   _accessReqUser = username || "";
 
   const tone = {
-    notfound: { bg:"#fffbeb", bd:"#fcd34d", fg:"#92400e", icon:"❓",
+    notfound: { bg:"var(--sq-warn-bg)", bd:"var(--sq-warn)", fg:"var(--sq-high)", icon:"❓",
                 hint:"กดปุ่มด้านล่างเพื่อส่งคำขอ แล้วรอหัวหน้าเปิดสิทธิ์ให้", showBtn:true },
-    pending:  { bg:"#eff6ff", bd:"#93c5fd", fg:"#1e40af", icon:"⏳",
+    pending:  { bg:"var(--sq-accent-2)", bd:"#93c5fd", fg:"#1e40af", icon:"⏳",
                 hint:"หัวหน้าได้รับคำขอแล้ว เมื่ออนุมัติจะเข้าใช้งานได้ทันที", showBtn:false },
-    rejected: { bg:"#fef2f2", bd:"#fca5a5", fg:"#991b1b", icon:"🚫",
+    rejected: { bg:"var(--sq-crit-bg)", bd:"var(--sq-crit)", fg:"var(--sq-crit)", icon:"🚫",
                 hint:"กรุณาติดต่อหัวหน้างานโดยตรง", showBtn:false },
-    sent:     { bg:"#f0fdf4", bd:"#86efac", fg:"#166534", icon:"✅",
+    sent:     { bg:"var(--sq-accent-2)", bd:"#86efac", fg:"var(--sq-accent)", icon:"✅",
                 hint:"หัวหน้าจะได้รับแจ้งเตือน เมื่ออนุมัติแล้วลองเข้าสู่ระบบอีกครั้ง", showBtn:false }
-  }[kind] || { bg:"#f8fafc", bd:"#cbd5e1", fg:"#334155", icon:"ℹ️", hint:"", showBtn:false };
+  }[kind] || { bg:"var(--sq-raised)", bd:"var(--sq-line)", fg:"var(--sq-ink2)", icon:"ℹ️", hint:"", showBtn:false };
 
   box.style.background  = tone.bg;
   box.style.border      = "2px solid " + tone.bd;

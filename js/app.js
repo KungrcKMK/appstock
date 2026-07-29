@@ -186,7 +186,7 @@ function checkAuth() {
       rolesBtn.style.display = (isAdmin || isManager) ? "" : "none";
       // ตั้งป้ายให้ชัดทุกกรณี (ไม่ใช่แค่ตอน manager ไม่งั้นค้างจากรอบก่อน)
       const label = isAdmin ? "👑 Admin" : "✅ อนุมัติผู้ใช้";
-      rolesBtn.innerHTML = label + '<span id="adminNavBadge" class="nav-badge" style="display:none;background:#f59e0b;"></span>';
+      rolesBtn.innerHTML = label + '<span id="adminNavBadge" class="nav-badge" style="display:none;background:var(--sq-high);"></span>';
     }
     // ตรวจสูตรการผลิต — ตอนนี้เปิดให้ admin เท่านั้น
     // (จะเปิดให้ manager ทีหลัง — เปลี่ยนเป็น isExecDash เมื่อพร้อม)

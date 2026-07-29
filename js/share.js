@@ -50,7 +50,7 @@ function shareRenderQr() {
   try {
     new QRCode(box, { text: _shareUrl, width: 230, height: 230, correctLevel: QRCode.CorrectLevel.M });
   } catch (e) {
-    box.innerHTML = '<p style="color:#dc2626;font-weight:700;">สร้าง QR ไม่สำเร็จ</p>';
+    box.innerHTML = '<p style="color:var(--sq-crit);font-weight:700;">สร้าง QR ไม่สำเร็จ</p>';
   }
 }
 
@@ -101,14 +101,14 @@ function sharePrintQr() {
     <style>
       @import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@400;700;800&display=swap');
       body{font-family:Sarabun,sans-serif;text-align:center;padding:40px 30px;margin:0;}
-      h1{font-size:34px;font-weight:800;margin:0 0 6px;color:#0f172a;}
-      .sub{font-size:17px;color:#475569;font-weight:700;margin-bottom:26px;}
-      img{width:340px;height:340px;border:10px solid #0f172a;border-radius:20px;}
-      .url{font-family:monospace;font-size:15px;color:#334155;margin-top:18px;word-break:break-all;}
-      .steps{margin:32px auto 0;max-width:520px;text-align:left;background:#f8fafc;border:1px solid #e2e8f0;border-radius:16px;padding:20px 24px;}
-      .steps h2{font-size:18px;margin:0 0 12px;color:#0f172a;}
-      .steps ol{margin:0;padding-left:22px;font-size:15px;line-height:1.9;color:#1e293b;}
-      .note{margin-top:18px;font-size:13px;color:#64748b;}
+      h1{font-size:34px;font-weight:800;margin:0 0 6px;color:var(--sq-ink);}
+      .sub{font-size:17px;color:var(--sq-ink2);font-weight:700;margin-bottom:26px;}
+      img{width:340px;height:340px;border:10px solid var(--sq-ink);border-radius:20px;}
+      .url{font-family:monospace;font-size:15px;color:var(--sq-ink2);margin-top:18px;word-break:break-all;}
+      .steps{margin:32px auto 0;max-width:520px;text-align:left;background:var(--sq-raised);border:1px solid var(--sq-line);border-radius:16px;padding:20px 24px;}
+      .steps h2{font-size:18px;margin:0 0 12px;color:var(--sq-ink);}
+      .steps ol{margin:0;padding-left:22px;font-size:15px;line-height:1.9;color:var(--sq-ink);}
+      .note{margin-top:18px;font-size:13px;color:var(--sq-muted);}
       @media print{ body{padding:20px;} .noprint{display:none;} }
     </style></head><body>
     <h1>📦 ระบบจัดการสต๊อก</h1>

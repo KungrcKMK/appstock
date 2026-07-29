@@ -18,9 +18,9 @@ async function loadPendingUsers() {
         payload: { adminToken: _adminToken } })
     }).then(r => r.json());
 
-    if (!res.ok) { listEl.innerHTML = `<p class="text-red-500 text-center text-sm font-bold py-8">❌ ${res.message}</p>`; return; }
+    if (!res.ok) { listEl.innerHTML = `<p class="sq-empty" style="color:var(--sq-crit);font-weight:700;">❌ ${escapeHtml(res.message||"")}</p>`; return; }
     if (!res.list || res.list.length === 0) {
-      listEl.innerHTML = '<p style="color:#94a3b8;text-align:center;font-weight:700;padding:40px 0;">✅ ไม่มีคำขอรอการอนุมัติ</p>';
+      listEl.innerHTML = '<p class="sq-empty">✅ ไม่มีคำขอรอการอนุมัติ</p>';
       const badge = document.getElementById("adminNavBadge");
       const tabBadge = document.getElementById("adminPendingTabBadge");
       if (badge) badge.style.display = "none";

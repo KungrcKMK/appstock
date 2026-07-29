@@ -152,15 +152,16 @@ async function loadUsers() {
 async function loadRolesPage() {
   const listEl = document.getElementById("rolesPageList");
   if (!listEl) return;
-  listEl.innerHTML = '<p style="color:#94a3b8;text-align:center;font-weight:700;padding:40px 0;">⏳ กำลังโหลด...</p>';
+  listEl.innerHTML = '<p class="sq-empty">⏳ กำลังโหลด...</p>';
   try {
     const res = await fetch(GAS_URL, {
       method: "POST",
       headers: { "Content-Type": "text/plain;charset=utf-8" },
       body: JSON.stringify({ module: "SYSTEM", action: "getUsers", payload: { adminToken: _adminToken } })
     }).then(r => r.json());
-    if (!res.ok) { listEl.innerHTML = `<p style="color:#dc2626;text-align:center;font-weight:700;padding:40px 0;">❌ ${escapeHtml(res.message||"")}</p>`; return; }
-    const roleColors  = { admin:"#f59e0b", manager:"#8b5cf6", viewer:"#10b981", user:"#94a3b8" };
+    if (!res.ok) { listEl.innerHTML = `<p class="sq-empty" style="color:var(--sq-crit);font-weight:700;">❌ ${escapeHtml(res.message||"")}</p>`; return; }
+    // สีป้าย role — ใช้ class กลาง ไม่ใช่สีดิบ
+    const roleChip    = { admin:"warn", manager:"ok", viewer:"", user:"" };
     const roleLabels  = { admin:"🔧 admin", manager:"📋 manager", viewer:"👁️ viewer", user:"👤 user" };
     const KNOWN = ["user","viewer","manager","admin"];
     const isSuperViewer = !!res.callerIsSuper;

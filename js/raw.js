@@ -491,10 +491,16 @@ function rawExportPdf() {
     th{padding:10px 12px;border:1px solid #334155;text-align:left;font-size:12px;font-weight:700;}
     td{font-size:12px;}
     .footer{margin-top:32px;font-size:11px;color:#94a3b8;text-align:right;}
+    .doc-head{display:flex;align-items:center;gap:16px;border-bottom:2px solid #1e293b;padding-bottom:12px;margin-bottom:16px;}
     @media print{body{padding:16px;}}
   </style></head><body>
-  <h1>📦 รายงานสต๊อกวัตถุดิบ</h1>
-  <h2>🏭 โรงงาน: ${factoryName} &nbsp;|&nbsp; 📅 วันที่พิมพ์: ${dateStr} &nbsp;|&nbsp; 👤 ผู้พิมพ์: ${currentUser}</h2>
+  <div class="doc-head">
+    ${logoImgTag(46)}
+    <div>
+      <h1 style="margin:0 0 2px;">📦 รายงานสต๊อกวัตถุดิบ</h1>
+      <h2 style="margin:0;">🏭 โรงงาน: ${factoryName} &nbsp;|&nbsp; 📅 วันที่พิมพ์: ${dateStr} &nbsp;|&nbsp; 👤 ผู้พิมพ์: ${personName(currentUser)}</h2>
+    </div>
+  </div>
   <table>
     <thead><tr><th>รหัส SKU</th><th>ชื่อวัตถุดิบ</th><th style="text-align:right">คงเหลือ</th><th style="text-align:right">ขั้นต่ำ</th><th>หน่วย</th><th>วันหมดอายุ</th><th style="text-align:center">สถานะ</th></tr></thead>
     <tbody>${rows}</tbody>

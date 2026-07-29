@@ -345,10 +345,16 @@ function rawRenderItemRow(item) {
   </tr>`;
 }
 
+const RAW_TABLE_COLS = 7;   // จำนวนช่องในตาราง — ใช้กับ colspan ต้องตรงกับ thead
+
 function rawLoadMoreItems() {
   const items = window._rawFiltered || [];
   const list = document.getElementById("rawInventoryList");
-  if (!list || !items.length) return;
+  if (!list) return;
+  if (!items.length) {
+    list.innerHTML = `<tr><td colspan="${RAW_TABLE_COLS}"><p class="rm-empty">ไม่พบรายการที่ตรงกับที่ค้นหาหรือตัวกรอง</p></td></tr>`;
+    return;
+  }
 
   const start = window._rawShown || 0;
   const end = Math.min(start + RAW_ITEMS_PER_PAGE, items.length);

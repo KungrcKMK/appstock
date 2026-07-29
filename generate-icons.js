@@ -89,7 +89,22 @@ async function main() {
     const box = size - pad * 2;
     const scale = Math.min(box / sw, box / sh);
     const dw = sw * scale, dh = sh * scale;
-    ctx.drawImage(img, sx, sy, sw, sh, (size - dw) / 2, (size - dh) / 2, dw, dh);
+    const dx = (size - dw) / 2, dy = (size - dh) / 2;
+
+    // วาดตัว Q ลงผืนผ้าใบชั่วคราวก่อน เพื่อลบสีเขียวออกให้หมด
+    // (กรอบสี่เหลี่ยมของตัว Q คาบเกี่ยวกับตัวหนังสือเขียวที่อยู่ติดกัน
+    //  ตัดยังไงก็ยังติดมานิดหน่อย จึงต้องลบด้วยสีอีกชั้น)
+    const tmp = createCanvas(Math.ceil(dw), Math.ceil(dh));
+    const tctx = tmp.getContext("2d");
+    tctx.drawImage(img, sx, sy, sw, sh, 0, 0, dw, dh);
+    const td = tctx.getImageData(0, 0, tmp.width, tmp.height);
+    const d = td.data;
+    for (let i = 0; i < d.length; i += 4) {
+      // เขียวเด่นกว่าแดงและน้ำเงินชัดเจน = ตัวหนังสือ ไม่ใช่ตัว Q → ลบทิ้ง
+      if (d[i + 3] > 0 && d[i + 1] > d[i] + 12 && d[i + 1] > d[i + 2] + 12) d[i + 3] = 0;
+    }
+    tctx.putImageData(td, 0, 0);
+    ctx.drawImage(tmp, dx, dy);
 
     const out = path.join(OUT_DIR, "icon-" + size + ".png");
     fs.writeFileSync(out, c.toBuffer("image/png"));

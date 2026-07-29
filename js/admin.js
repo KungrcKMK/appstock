@@ -171,13 +171,12 @@ async function loadRolesPage() {
     let banner = "";
     if (isSuperViewer && otherAdmins.length) {
       banner = `
-      <div style="background:#fffbeb;border:2px solid #fcd34d;border-radius:16px;padding:14px 18px;margin-bottom:12px;">
-        <p style="margin:0;font-weight:900;color:#92400e;font-size:14px;">👑 มี admin คนอื่นอยู่ ${otherAdmins.length} คน</p>
-        <p style="margin:4px 0 10px;font-size:12px;color:#92400e;font-weight:600;">${escapeHtml(otherAdmins.map(u=>u.username).join(", "))}</p>
-        <button onclick="demoteOtherAdmins(event)"
-          style="background:#b45309;color:#fff;border:none;padding:10px 18px;border-radius:12px;font-weight:900;font-size:13px;cursor:pointer;font-family:inherit;">
-          ⬇️ ลดทุกคนเป็น user (เหลือเจ้าของระบบคนเดียว)
-        </button>
+      <div class="sq-note warn">
+        <b>👑 มี admin คนอื่นอยู่ ${otherAdmins.length} คน</b><br>
+        ${escapeHtml(otherAdmins.map(u=>u.username).join(", "))}
+        <div style="margin-top:8px;">
+          <button onclick="demoteOtherAdmins(event)" class="sq-btn">⬇️ ลดทุกคนเป็น user (เหลือเจ้าของระบบคนเดียว)</button>
+        </div>
       </div>`;
     }
 

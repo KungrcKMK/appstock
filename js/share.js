@@ -14,7 +14,7 @@ const SHARE_TARGETS = [
 let _shareUrl = "";
 
 function _shareDefaultUrl() {
-  // ถ้าเปิดจาก production อยู่แล้ว ใช้ที่อยู่นั้น — ไม่งั้นใช้ Netlify
+  // ถ้าเปิดจาก production อยู่แล้ว ใช้ที่อยู่นั้น — ถ้าทดสอบในเครื่องใช้ GitHub Pages
   const here = location.origin + location.pathname.replace(/(index|mobile)\.html$/, "");
   if (/^https?:\/\/(localhost|127\.|192\.168\.|10\.)/.test(here)) return SHARE_TARGETS[0].url;
   return here;

@@ -653,8 +653,9 @@ let _shareUrl = "";
 
 async function openShareApp() {
   const here = location.origin + location.pathname.replace(/(index|mobile)\.html$/, "");
+  // ⏸️ Netlify พักไว้ตั้งแต่ 2026-07-29 — ที่นั่นข้อมูลค้างรุ่นเก่า ใช้ GitHub Pages แทน
   _shareUrl = /^https?:\/\/(localhost|127\.|192\.168\.|10\.)/.test(here)
-    ? "https://stock-sqfmlm.netlify.app/"
+    ? "https://kungrckmk.github.io/appstock/"
     : here;
   $("shareUrlBox").textContent = _shareUrl;
   $("shareSheet").classList.remove("hidden");

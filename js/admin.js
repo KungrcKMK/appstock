@@ -203,53 +203,46 @@ async function loadRolesPage() {
       res.users.map(u => {
         const safeU  = escapeJs(u.username||"");
         const safeId = escapeAttr(u.username||"");
-        const rc = roleColors[u.role] || "#94a3b8";
+        const chip = roleChip[u.role] || "";
         const unknownRole = !KNOWN.includes(String(u.role).toLowerCase());
+        const pwdNote = u.hasPassword ? "🔒 มีรหัสผ่าน" : "🔓 ไม่มีรหัสผ่าน";
 
         // 👑 เจ้าของระบบ — ล็อกไว้ ไม่ให้แก้จากหน้าจอ
         if (u.isSuper) {
           return `
-          <div style="background:linear-gradient(135deg,#fffbeb,#fef3c7);border-radius:16px;padding:16px 20px;border:2px solid #f59e0b;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;">
-            <div style="flex:1;min-width:0;">
-              <p style="margin:0;font-weight:900;font-size:15px;color:#78350f;">👑 ${escapeHtml(u.username||"")}</p>
-              <p style="margin:4px 0 0;font-size:12px;font-weight:800;color:#92400e;">
-                เจ้าของระบบ (Admin สูงสุด)${u.hasPassword ? " &nbsp;🔒 มีรหัสผ่าน" : " &nbsp;🔓 ไม่มีรหัสผ่าน"}
-              </p>
+          <div class="sq-row is-super">
+            <div class="sq-row-id">
+              <p class="sq-row-name">👑 ${escapeHtml(u.username||"")}</p>
+              <p class="sq-row-meta"><span>เจ้าของระบบ (admin สูงสุด)</span><span>${pwdNote}</span></p>
             </div>
-            <span style="font-size:12px;font-weight:800;color:#92400e;background:#fde68a;padding:8px 14px;border-radius:10px;">🔒 แก้ไขไม่ได้</span>
+            <span class="sq-chip warn">🔒 แก้ไขไม่ได้</span>
           </div>`;
         }
 
         return `
-        <div style="background:#fff;border-radius:16px;padding:16px 20px;border:1.5px solid #e2e8f0;display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;box-shadow:0 2px 6px rgba(0,0,0,.04);">
-          <div style="flex:1;min-width:0;">
-            <p style="margin:0;font-weight:900;font-size:15px;color:#0f172a;">👤 ${escapeHtml(u.username||"")}</p>
-            <p style="margin:4px 0 0;font-size:12px;font-weight:700;">
-              <span style="background:${rc}22;color:${rc};padding:2px 10px;border-radius:999px;font-size:12px;font-weight:800;">${escapeHtml(roleLabels[u.role]||u.role||"")}</span>
-              ${unknownRole ? `<span style="color:#dc2626;font-weight:800;">&nbsp;⚠️ role เก่า (${escapeHtml(u.role||"")}) — กดบันทึกเพื่อปรับเป็น user</span>` : ""}
-              ${u.hasPassword ? "&nbsp;🔒 มีรหัสผ่าน" : "&nbsp;🔓 ไม่มีรหัสผ่าน"}
+        <div class="sq-row">
+          <div class="sq-row-id">
+            <p class="sq-row-name">👤 ${escapeHtml(u.username||"")}</p>
+            <p class="sq-row-meta">
+              <span class="sq-chip ${chip}">${escapeHtml(roleLabels[u.role]||u.role||"")}</span>
+              ${unknownRole ? `<span class="sq-chip crit">⚠️ role เก่า (${escapeHtml(u.role||"")}) — กดบันทึกเพื่อปรับเป็น user</span>` : ""}
+              <span>${pwdNote}</span>
             </p>
           </div>
-          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
-            <select id="rpRoleSelect-${safeId}" style="padding:8px 10px;border-radius:10px;border:2px solid #e2e8f0;font-size:13px;font-weight:800;font-family:inherit;outline:none;cursor:pointer;">
+          <div class="sq-row-acts">
+            <select id="rpRoleSelect-${safeId}" class="sq-select">
               <option value="user"     ${u.role==="user"    ?"selected":""}>👤 user</option>
               <option value="viewer"   ${u.role==="viewer"  ?"selected":""}>👁️ viewer</option>
               <option value="manager"  ${u.role==="manager" ?"selected":""}>📋 manager</option>
               <option value="admin"    ${u.role==="admin"   ?"selected":""} ${isSuperViewer ? "" : "disabled"}>🔧 admin${isSuperViewer ? "" : " (เฉพาะเจ้าของระบบ)"}</option>
             </select>
-            <button onclick="saveRolePageUser('${safeU}')"
-              style="background:#6366f1;color:#fff;border:none;padding:8px 18px;border-radius:10px;font-weight:800;font-size:13px;cursor:pointer;font-family:inherit;">
-              💾 บันทึก
-            </button>
-            <button onclick="deleteUserRow('${safeU}', event)" title="ลบผู้ใช้ออกจากระบบ"
-              style="background:#fee2e2;color:#dc2626;border:none;padding:8px 14px;border-radius:10px;font-weight:800;font-size:14px;cursor:pointer;font-family:inherit;">
-              🗑️
-            </button>
+            <button onclick="saveRolePageUser('${safeU}')" class="sq-btn sq-btn-primary">💾 บันทึก</button>
+            <button onclick="deleteUserRow('${safeU}', event)" title="ลบผู้ใช้ออกจากระบบ" class="sq-btn">🗑️</button>
           </div>
         </div>`;
       }).join("") + `</div>`;
   } catch(e) {
-    listEl.innerHTML = `<p style="color:#dc2626;text-align:center;font-weight:700;padding:40px 0;">เกิดข้อผิดพลาด: ${escapeHtml(e.message||"")}</p>`;
+    listEl.innerHTML = `<p class="sq-empty" style="color:var(--sq-crit);font-weight:700;">เกิดข้อผิดพลาด: ${escapeHtml(e.message||"")}</p>`;
   }
 }
 

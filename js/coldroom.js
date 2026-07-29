@@ -581,12 +581,15 @@ async function crPrintActualReport(o) {
     @media print{body{padding:14px 22px;} .no-print{display:none;}}
   </style></head><body>
   <div class="hd">
-    <div><h1>📊 รายงานยอดผลิตจริง</h1>
-      <div class="sub">อ้างอิงใบสั่งผลิต: <b>${escapeHtml(o.OrderID||"-")}</b> &nbsp;|&nbsp; ❄️ คลังสินค้า SQF</div>
-      <div class="sub">วันที่สั่งผลิต: <b>${dateStr}</b> &nbsp;|&nbsp; ผู้สั่ง: <b>${escapeHtml(o.CreatedBy||"-")}</b></div>
+    <div style="display:flex;align-items:center;gap:14px;">
+      ${logoImgTag(46)}
+      <div><h1>📊 รายงานยอดผลิตจริง</h1>
+        <div class="sub">อ้างอิงใบสั่งผลิต: <b>${escapeHtml(o.OrderID||"-")}</b> &nbsp;|&nbsp; ❄️ คลังสินค้า SQF</div>
+        <div class="sub">วันที่สั่งผลิต: <b>${dateStr}</b> &nbsp;|&nbsp; ผู้สั่ง: <b>${escapeHtml(personName(o.CreatedBy))}</b></div>
+      </div>
     </div>
     <div style="text-align:right;">
-      <div class="sub">วันที่พิมพ์: <b>${printDate}</b> &nbsp;|&nbsp; ผู้พิมพ์: <b>${currentUser}</b></div>
+      <div class="sub">วันที่พิมพ์: <b>${printDate}</b> &nbsp;|&nbsp; ผู้พิมพ์: <b>${personName(currentUser)}</b></div>
       <button class="no-print" onclick="window.print()" style="margin-top:8px;background:#0f766e;color:#fff;border:none;padding:8px 20px;border-radius:6px;font-size:12px;font-weight:700;cursor:pointer;">🖨️ พิมพ์</button>
     </div>
   </div>

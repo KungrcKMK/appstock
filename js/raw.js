@@ -373,10 +373,8 @@ function rawLoadMoreItems() {
   if (end < items.length) {
     list.insertAdjacentHTML("beforeend", `
       <tr id="rawLoadMoreRow">
-        <td colspan="5" style="text-align:center;padding:16px;">
-          <button onclick="rawLoadMoreItems()" class="bg-indigo-600 text-white px-6 py-3 rounded-2xl font-black text-sm hover:bg-indigo-700 transition-all" style="font-family:inherit;">
-            โหลดเพิ่ม (${end}/${items.length}) ▼
-          </button>
+        <td colspan="${RAW_TABLE_COLS}" style="text-align:center;padding:12px;">
+          <button onclick="rawLoadMoreItems()" class="rm-loadmore">แสดงเพิ่ม (${end} จาก ${items.length}) ▼</button>
         </td>
       </tr>`);
   }

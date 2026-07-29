@@ -21,6 +21,15 @@ window.rawSetSort = function(key) {
   renderRawInventory(rawLastData);
 };
 
+// เมนู "⋯ เพิ่มเติม" — <details> ปกติไม่ปิดเองเวลากดที่อื่น เลยต้องสั่งปิดให้
+document.addEventListener("click", function(e) {
+  const menu = document.getElementById("rawMoreMenu");
+  if (!menu || !menu.open) return;
+  if (!menu.contains(e.target)) { menu.open = false; return; }
+  // กดเลือกเมนูไหนก็ตาม → ปิดเมนูทิ้ง
+  if (e.target.closest(".rm-more-menu button")) menu.open = false;
+});
+
 function rawSetAlertDays(v) {
   rawAlertDays = Math.max(1, Math.min(365, parseInt(v) || 7));
   localStorage.setItem("rawAlertDays", rawAlertDays);

@@ -403,6 +403,52 @@
     .sq-meter > i { display:block;height:100%;border-radius:4px; }
     .sq-meter-note { font:500 10px/1.4 var(--sq-mono);color:var(--sq-muted);margin-top:2px; }
 
+    /* แท็บ */
+    .sq-tabs { display:flex;gap:4px;border-bottom:1px solid var(--sq-line);margin-bottom:14px; }
+    .sq-tab {
+      font:inherit;font-size:13px;font-weight:700;padding:8px 14px;cursor:pointer;
+      background:none;border:0;border-bottom:2px solid transparent;color:var(--sq-muted);
+      margin-bottom:-1px;white-space:nowrap;
+    }
+    .sq-tab:hover { color:var(--sq-ink); }
+    .sq-tab:focus-visible { outline:2px solid var(--sq-accent);outline-offset:-2px; }
+    .sq-tab.is-on { color:var(--sq-accent);border-bottom-color:var(--sq-accent);font-weight:800; }
+    .sq-tab-badge {
+      display:inline-flex;align-items:center;justify-content:center;min-width:17px;height:17px;
+      padding:0 5px;border-radius:999px;font:800 10px/1 var(--sq-mono);
+      background:var(--sq-crit);color:#fff;margin-left:5px;vertical-align:middle;
+    }
+
+    /* กล่องคำอธิบาย */
+    .sq-note {
+      background:var(--sq-accent-2);border:1px solid var(--sq-line);border-radius:9px;
+      padding:10px 13px;margin-bottom:12px;font-size:12px;line-height:1.7;color:var(--sq-ink2);
+    }
+    .sq-note b { color:var(--sq-accent); }
+    .sq-note.warn { background:var(--sq-warn-bg);border-color:transparent;color:var(--sq-warn); }
+    .sq-note.warn b { color:var(--sq-warn); }
+
+    /* แถวรายชื่อคน */
+    .sq-row {
+      background:var(--sq-surface);border:1px solid var(--sq-line);border-radius:10px;
+      padding:11px 14px;display:flex;align-items:center;justify-content:space-between;
+      gap:10px;flex-wrap:wrap;box-shadow:var(--sq-shadow);
+    }
+    .sq-row.is-super { background:var(--sq-warn-bg);border-color:transparent; }
+    .sq-row-id { flex:1;min-width:0; }
+    .sq-row-name { font-weight:800;font-size:14px;color:var(--sq-ink);margin:0; }
+    .sq-row-meta { margin:3px 0 0;font-size:11.5px;color:var(--sq-muted);font-weight:600;display:flex;gap:8px;flex-wrap:wrap;align-items:center; }
+    .sq-row-acts { display:flex;align-items:center;gap:6px;flex-wrap:wrap; }
+
+    /* ช่องกรอก */
+    .sq-input, .sq-select {
+      font:inherit;font-size:13px;font-weight:600;padding:7px 10px;
+      border:1px solid var(--sq-line);border-radius:7px;background:var(--sq-surface);
+      color:var(--sq-ink);outline:none;box-sizing:border-box;
+    }
+    .sq-input:focus, .sq-select:focus { outline:2px solid var(--sq-accent);outline-offset:-1px;border-color:transparent; }
+    .sq-select { cursor:pointer; }
+
     .sq-empty { padding:32px 16px;text-align:center;color:var(--sq-muted);font-size:13px; }
     .sq-list { display:flex;flex-direction:column;gap:1px; }
     .sq-list-row {

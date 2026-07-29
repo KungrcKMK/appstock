@@ -722,19 +722,19 @@
   </div>
 
   <!-- ═══ ตรวจสูตรการผลิต (full-page module) ═══ -->
-  <div id="module-BOMHEALTH" class="module-section hide" style="padding-top:var(--nav-h);min-height:100vh;background:#f8fafc;">
-    <div style="max-width:1000px;margin:0 auto;padding:0 0 80px;">
-      <div style="background:linear-gradient(135deg,#0c4a6e 0%,#082f49 100%);padding:24px;border-bottom:3px solid #0ea5e9;">
-        <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;">
-          <div>
-            <div style="font-size:20px;font-weight:900;color:#f0f9ff;">📋 ตรวจสูตรการผลิต</div>
-            <div style="font-size:12px;font-weight:600;color:#7dd3fc;margin-top:3px;">เช็คว่าสูตรครบถูกต้องพอที่จะเทียบยอดใช้จริงหรือยัง — ชี้ที่ข้อมูลที่ขาด ไม่ใช่ตัวบุคคล</div>
-          </div>
-          <button onclick="loadBomHealth()" style="background:#0ea5e9;color:#fff;border:none;padding:10px 20px;border-radius:12px;font-weight:800;font-size:13px;cursor:pointer;font-family:inherit;">🔄 ตรวจใหม่</button>
+  <div id="module-BOMHEALTH" class="module-section hide sq-page" style="padding-top:var(--nav-h);min-height:100vh;">
+    <div class="sq-wrap sq-wrap-narrow">
+      <header class="sq-head">
+        <div>
+          <h1 class="sq-h1">📋 ตรวจสูตรการผลิต</h1>
+          <div class="sq-hsub">เช็คว่าสูตรครบพอจะเทียบยอดใช้จริงหรือยัง — ชี้ที่ข้อมูลที่ขาด ไม่ใช่ตัวบุคคล</div>
         </div>
-      </div>
-      <div id="bomHealthContent" style="padding:20px 24px;">
-        <p style="color:#64748b;text-align:center;font-weight:700;padding:60px 0;">⏳ กำลังตรวจข้อมูล...</p>
+        <div class="sq-head-actions">
+          <button onclick="loadBomHealth()" class="sq-btn sq-btn-primary">🔄 ตรวจใหม่</button>
+        </div>
+      </header>
+      <div id="bomHealthContent">
+        <p class="sq-empty">⏳ กำลังตรวจข้อมูล...</p>
       </div>
     </div>
   </div>

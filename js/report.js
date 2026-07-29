@@ -31,30 +31,33 @@ async function loadBomHealth() {
 // ── ตารางย่อย: แสดงรายการที่ต้องแก้ หรือ ✅ ถ้าผ่าน ──
 function _bhSection(icon, title, why, rows, cols, emptyMsg) {
   const n = rows.length;
+  const align = c => c.align === "right" ? "n" : c.align === "center" ? "c" : "";
   const head = `
-    <div style="display:flex;justify-content:space-between;align-items:baseline;gap:10px;flex-wrap:wrap;margin-bottom:6px;">
-      <div style="font-size:15px;font-weight:900;color:#0f172a;">${icon} ${escapeHtml(title)}</div>
-      <div style="font-size:12px;font-weight:800;color:${n ? "#dc2626" : "#059669"};">${n ? n + " รายการ" : "✅ ผ่าน"}</div>
+    <div class="sq-card-head">
+      <span class="sq-card-title">${icon} ${escapeHtml(title)}</span>
+      <span class="sq-chip ${n ? "crit" : "ok"}">${n ? "⚠️ " + n + " รายการ" : "✓ ผ่าน"}</span>
     </div>
-    <div style="font-size:12px;color:#64748b;font-weight:600;margin-bottom:10px;">${escapeHtml(why)}</div>`;
+    <div class="sq-card-body" style="padding-bottom:0;">
+      <p class="sq-card-note" style="margin:0 0 10px;">${escapeHtml(why)}</p>
+    </div>`;
 
   const body = n === 0
-    ? `<div style="background:#f0fdf4;border:1px solid #bbf7d0;border-radius:12px;padding:14px;color:#166534;font-weight:700;font-size:13px;">${escapeHtml(emptyMsg)}</div>`
-    : `<div style="overflow-x:auto;border:1px solid #e2e8f0;border-radius:12px;">
-        <table style="width:100%;border-collapse:collapse;font-size:13px;background:#fff;">
-          <thead><tr style="background:#f8fafc;">
-            ${cols.map(c => `<th style="text-align:${c.align || "left"};padding:9px 12px;font-size:11px;font-weight:800;color:#64748b;border-bottom:1px solid #e2e8f0;white-space:nowrap;">${escapeHtml(c.label)}</th>`).join("")}
+    ? `<div class="sq-card-body" style="padding-top:0;"><div class="sq-note">${escapeHtml(emptyMsg)}</div></div>`
+    : `<div class="sq-tablewrap">
+        <table class="sq-table">
+          <thead><tr>
+            ${cols.map(c => `<th class="${align(c)}">${escapeHtml(c.label)}</th>`).join("")}
           </tr></thead>
           <tbody>
-            ${rows.slice(0, 50).map(r => `<tr style="border-bottom:1px solid #f1f5f9;">
-              ${cols.map(c => `<td style="text-align:${c.align || "left"};padding:9px 12px;color:#1e293b;">${c.render(r)}</td>`).join("")}
+            ${rows.slice(0, 50).map(r => `<tr>
+              ${cols.map(c => `<td class="${align(c)}">${c.render(r)}</td>`).join("")}
             </tr>`).join("")}
           </tbody>
         </table>
-        ${n > 50 ? `<div style="padding:8px 12px;font-size:12px;color:#94a3b8;font-weight:700;background:#f8fafc;">…และอีก ${n - 50} รายการ</div>` : ""}
+        ${n > 50 ? `<p class="sq-card-note" style="padding:8px 12px;background:var(--sq-raised);margin:0;">…และอีก ${n - 50} รายการ</p>` : ""}
       </div>`;
 
-  return `<div style="background:#fff;border:1px solid #e2e8f0;border-radius:16px;padding:18px;margin-bottom:16px;box-shadow:0 2px 6px rgba(0,0,0,.03);">${head}${body}</div>`;
+  return `<div class="sq-card">${head}${body}</div>`;
 }
 
 function renderBomHealth(res) {

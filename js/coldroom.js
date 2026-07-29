@@ -624,7 +624,7 @@ async function crPrintActualReport(o) {
   </table>
   ${o.Note ? `<div style="background:#fef9c3;border-left:5px solid #eab308;padding:10px 14px;border-radius:6px;margin:16px 0;font-size:12px;">💬 <b>หมายเหตุ:</b> ${escapeHtml(o.Note)}</div>` : ""}
   <div class="sign">
-    <div class="sign-box">ผู้จัดทำรายงาน<br><br>( ${currentUser} )</div>
+    <div class="sign-box">ผู้จัดทำรายงาน<br><br>( ${personName(currentUser)} )</div>
     <div class="sign-box">ผู้ควบคุมการผลิต<br><br>( .......................... )</div>
     <div class="sign-box">QC / ผู้อนุมัติ<br><br>( .......................... )</div>
   </div>
@@ -734,7 +734,7 @@ function crOpenWorkOrderPrint(o) {
   </table>
   ${o.Note ? `<div class="note-box">💬 <b>หมายเหตุ:</b> ${escapeHtml(o.Note)}</div>` : ""}
   <div class="sign">
-    <div class="sign-box">ผู้สั่งผลิต<br><br>( ${escapeHtml(o.CreatedBy||"...")} )</div>
+    <div class="sign-box">ผู้สั่งผลิต<br><br>( ${escapeHtml(personName(o.CreatedBy) || "...")} )</div>
     <div class="sign-box">ผู้ควบคุมการผลิต<br><br>( .......................... )</div>
     <div class="sign-box">QC ตรวจรับ<br><br>( .......................... )</div>
   </div>
@@ -1019,8 +1019,8 @@ async function crSiLoadReviewList(filterStatus) {
       <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:8px;margin-bottom:10px;">
         <div>
           <div style="font-size:15px;font-weight:900;color:var(--sq-ink);">${escapeHtml(si.StockInID)}</div>
-          <div style="font-size:11px;color:var(--sq-muted);">ส่งโดย: <b style="color:var(--sq-ink);">${escapeHtml(si.SubmittedBy)}</b> &nbsp;|&nbsp; 🕐 ${si.SubmittedAtFmt||"-"}
-            ${si.ReviewedBy ? `&nbsp;|&nbsp; ตรวจโดย: <b>${escapeHtml(si.ReviewedBy)}</b>` : ""}
+          <div style="font-size:11px;color:var(--sq-muted);">ส่งโดย: <b style="color:var(--sq-ink);">${escapeHtml(personName(si.SubmittedBy))}</b> &nbsp;|&nbsp; 🕐 ${si.SubmittedAtFmt||"-"}
+            ${si.ReviewedBy ? `&nbsp;|&nbsp; ตรวจโดย: <b>${escapeHtml(personName(si.ReviewedBy))}</b>` : ""}
           </div>
         </div>
         <span style="background:${statusBg[si.Status]||"var(--sq-muted)"};color:#fff;border-radius:999px;padding:3px 12px;font-size:11px;font-weight:900;">${escapeHtml(si.Status)}</span>

@@ -629,7 +629,7 @@ function openPurchaseRequest() {
     <tbody>${rows}</tbody>
   </table>
   <div class="sign-section">
-    <div class="sign-box">ผู้จัดทำ<br><br>( ${currentUser} )</div>
+    <div class="sign-box">ผู้จัดทำ<br><br>( ${personName(currentUser)} )</div>
     <div class="sign-box">ผู้ตรวจสอบ<br><br>( .......................... )</div>
     <div class="sign-box">ผู้อนุมัติ<br><br>( .......................... )</div>
   </div>
@@ -764,7 +764,7 @@ function openStockReport() {
   ${buildSection("✅ สต๊อกปกติ","#059669","#f0fdf4",okItems)}
 
   <div class="sign-section">
-    <div class="sign-box">ผู้จัดทำรายงาน<br><br>( ${currentUser} )</div>
+    <div class="sign-box">ผู้จัดทำรายงาน<br><br>( ${personName(currentUser)} )</div>
     <div class="sign-box">ผู้ตรวจสอบ<br><br>( .......................... )</div>
     <div class="sign-box">ผู้จัดการ / ผู้อนุมัติ<br><br>( .......................... )</div>
   </div>

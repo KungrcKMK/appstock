@@ -158,10 +158,18 @@ function _withLock(fn) {
 // SYSTEM — verifyUser
 // ============================================================
 
-// ── Generalized Token (CacheService — TTL 30 นาที) ──
+// ── Generalized Token (CacheService) ──
+// อายุ 6 ชั่วโมง = ค่าสูงสุดที่ CacheService ของ GAS เก็บได้
+//
+// เดิมตั้งไว้ 30 นาที แล้วเจอปัญหาจริง: admin ทำงานหน้าวัตถุดิบ/คลังสินค้า
+// ซึ่งไม่ได้ส่ง token ไปด้วย บัตรจึงไม่ถูกต่ออายุ พอกลับมาหน้าผู้ใช้งาน
+// ขึ้น "ไม่มีสิทธิ์" ทั้งที่ยังล็อกอินอยู่ และไม่มีอะไรบอกว่าต้องทำยังไงต่อ
+//
+// 6 ชม. = เข้าสู่ระบบตอนเช้าครั้งเดียว ใช้ได้ทั้งวันทำงาน
+var TOKEN_TTL_SEC = 21600;
 function _issueToken(username, role) {
   var token = Utilities.getUuid();
-  CacheService.getScriptCache().put("tk_" + token, JSON.stringify({ u: username.toLowerCase(), r: role }), 1800);
+  CacheService.getScriptCache().put("tk_" + token, JSON.stringify({ u: username.toLowerCase(), r: role }), TOKEN_TTL_SEC);
   return token;
 }
 function _issueAdminToken(username) { return _issueToken(username, "admin"); }
@@ -173,8 +181,8 @@ function _getTokenData(token) {
   if (cached) {
     try {
       var data = JSON.parse(cached);
-      // Sliding window: ต่ออายุ token อีก 30 นาทีทุกครั้งที่ใช้งาน
-      cache.put("tk_" + token, cached, 1800);
+      // ต่ออายุบัตรทุกครั้งที่ใช้งาน
+      cache.put("tk_" + token, cached, TOKEN_TTL_SEC);
       return data;
     } catch(e) { return null; }
   }
@@ -183,7 +191,7 @@ function _getTokenData(token) {
   if (old) {
     // upgrade เป็นรูปแบบใหม่ + ต่ออายุ
     var upgraded = JSON.stringify({ u: old, r: "admin" });
-    cache.put("tk_" + token, upgraded, 1800);
+    cache.put("tk_" + token, upgraded, TOKEN_TTL_SEC);
     cache.remove("at_" + token);
     return { u: old, r: "admin" };
   }

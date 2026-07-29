@@ -139,10 +139,13 @@ function _syncNavHeight() {
   const h = Math.ceil(nav.getBoundingClientRect().height);
   if (h > 0) document.documentElement.style.setProperty("--nav-h", h + "px");
 }
+let _navWatchOn = false;
 function _watchNavHeight() {
   const nav = document.getElementById("mainNav");
   if (!nav) return;
   _syncNavHeight();
+  if (_navWatchOn) return;          // checkAuth ถูกเรียกได้หลายรอบ — ผูก listener ครั้งเดียวพอ
+  _navWatchOn = true;
   window.addEventListener("resize", _syncNavHeight);
   if (window.ResizeObserver) new ResizeObserver(_syncNavHeight).observe(nav);
 }

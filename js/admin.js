@@ -102,7 +102,7 @@ function adminSwitchTab(tab) {
     const btn  = document.getElementById("adminTab-" + t);
     const pane = document.getElementById("adminTabContent-" + t);
     const isActive = t === tab;
-    if (btn)  { btn.style.background = isActive ? "#f59e0b" : "transparent"; btn.style.color = isActive ? "#1e293b" : "#94a3b8"; }
+    if (btn)  btn.classList.toggle("is-on", isActive);
     if (pane) pane.style.display = isActive ? "" : "none";
   });
   if (tab === "pending") loadPendingUsers();

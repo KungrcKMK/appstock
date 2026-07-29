@@ -815,7 +815,8 @@ function openRawAction(sku, name, unit, currentQty) {
   document.getElementById("rawModalQty").value         = "1";
   document.getElementById("rawModalCurrentQty").value  = qty;
   document.getElementById("rawModalStock").textContent = qty + " " + (unit||"");
-  document.getElementById("rawModalStock").style.color = qty <= 0 ? "#dc2626" : qty < 10 ? "#ea580c" : "#1d4ed8";
+  document.getElementById("rawModalStock").style.color =
+    qty <= 0 ? "var(--sq-crit)" : qty < 10 ? "var(--sq-high)" : "var(--sq-accent)";
   document.getElementById("rawActionModal").classList.remove("hidden");
   setRawType("OUT");
 }

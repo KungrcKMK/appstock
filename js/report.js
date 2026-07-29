@@ -9,18 +9,18 @@ let _bomHealth = null;
 async function loadBomHealth() {
   const el = document.getElementById("bomHealthContent");
   if (!el) return;
-  el.innerHTML = '<p style="color:#64748b;text-align:center;font-weight:700;padding:60px 0;">⏳ กำลังตรวจข้อมูล...</p>';
+  el.innerHTML = '<p class="sq-empty">⏳ กำลังตรวจข้อมูล...</p>';
   let res;
   try {
     res = await crCallServer("getBomHealth");
   } catch (e) {
     const cached = cacheGet("bom_health");
     if (cached) { _bomHealth = cached; renderBomHealth(cached); showToast("⏳ แสดงผลตรวจครั้งก่อน (เชื่อมต่อไม่ได้)", "warn", 4000); return; }
-    el.innerHTML = `<p style="color:#dc2626;text-align:center;font-weight:700;padding:60px 0;">❌ เชื่อมต่อไม่สำเร็จ</p>`;
+    el.innerHTML = `<p class="sq-empty" style="color:var(--sq-crit);font-weight:700;">❌ เชื่อมต่อไม่สำเร็จ</p>`;
     return;
   }
   if (!res || !res.ok) {
-    el.innerHTML = `<p style="color:#dc2626;text-align:center;font-weight:700;padding:60px 0;">❌ ${escapeHtml((res && res.message) || "โหลดไม่สำเร็จ")}</p>`;
+    el.innerHTML = `<p class="sq-empty" style="color:var(--sq-crit);font-weight:700;">❌ ${escapeHtml((res && res.message) || "โหลดไม่สำเร็จ")}</p>`;
     return;
   }
   _bomHealth = res;

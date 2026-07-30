@@ -288,9 +288,16 @@ if ("serviceWorker" in navigator) {
   function _appIsBusy() {
     // ⚠️ ห้ามใช้ offsetParent เช็คว่ามองเห็นอยู่มั๊ย
     //    หน้าต่างทุกอันในแอปเป็น position:fixed ซึ่ง offsetParent เป็น null เสมอ
-    //    ใช้ getClientRects() แทน — ซ่อนอยู่จะได้ 0 กล่อง
+    //    ใช้ getClientRects() แทน — ซ่อนด้วย display:none จะได้ 0 กล่อง
+    //    แต่บางอัน (เช่น crModal ของหน้าคลังสินค้า) ซ่อนด้วย opacity:0 ไม่ใช่ display
+    //    จึงต้องเช็ค opacity/visibility ด้วย ไม่งั้นจะนับว่าเปิดอยู่ตลอดเวลา
     const openBox = [...document.querySelectorAll('[id$="Modal"],[id$="Overlay"],[id$="Sheet"]')]
-      .some(el => el.id !== "loadingOverlay" && el.getClientRects().length > 0);
+      .some(el => {
+        if (el.id === "loadingOverlay") return false;
+        if (el.getClientRects().length === 0) return false;
+        const cs = getComputedStyle(el);
+        return cs.opacity !== "0" && cs.visibility !== "hidden";
+      });
     if (openBox) return true;
     const a = document.activeElement;
     return !!(a && (a.tagName === "INPUT" || a.tagName === "TEXTAREA") && a.type !== "search");

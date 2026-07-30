@@ -169,11 +169,20 @@ async function slipDraw(s) {
     x.textAlign = "left";
     y += 74;
   }
-  y += 90;
+  y += 40;
 
-  // ── ช่องเซ็น 3 ช่อง ──
+  // ── ช่องหมายเหตุ — เติมช่องว่างกลางหน้าให้เป็นประโยชน์ เขียนด้วยมือได้ ──
+  x.fillStyle = MUTED; x.font = "26px " + F;
+  x.fillText("หมายเหตุ", M, y + 26);
+  x.strokeStyle = LINE; x.lineWidth = 2;
+  for (let i = 0; i < 3; i++) {
+    const ly = y + 66 + i * 54;
+    x.beginPath(); x.moveTo(M, ly); x.lineTo(M + tW, ly); x.stroke();
+  }
+
+  // ── ช่องเซ็น 3 ช่อง — ยึดไว้ท้ายกระดาษ ไม่ให้ลอยอยู่กลางหน้า ──
   const roles = [KIND.who, "ผู้ตรวจสอบ", "ผู้อนุมัติ"];
-  const sw = tW / 3, sy = y + 90;
+  const sw = tW / 3, sy = SLIP_H - M - 210;
   roles.forEach((r, i) => {
     const sx = M + sw * i;
     x.strokeStyle = INK; x.lineWidth = 2;

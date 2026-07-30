@@ -1156,6 +1156,14 @@ function setType(t) {
   $("aBtnIn").className     = t === "IN"     ? `${base} bg-emerald-600 text-white` : off;
   $("aBtnCount").className  = t === "COUNT"  ? `${base} bg-cyan-600 text-white`    : off;
 
+  // ช่อง "ใช้กับงาน" — บังคับเฉพาะเบิกออก / ตอนนับสต๊อกไม่ต้องใช้เลย
+  const _pw = $("aPurposeWrap"), _pr = $("aPurposeReq"), _pi = $("aPurposeIn");
+  if (_pw) _pw.style.display = (t === "COUNT") ? "none" : "";
+  if (_pr) _pr.style.display = (t === "OUT") ? "" : "none";
+  if (_pi) _pi.placeholder = (t === "OUT")
+    ? "เช่น ผลิตวุ้นมะพร้าว ล็อต 3"
+    : "ระบุหรือไม่ก็ได้";
+
   const confirmBtn = $("aConfirm");
   if (t === "COUNT") {
     // pre-fill ด้วยยอดปัจจุบัน
@@ -1187,12 +1195,20 @@ async function confirmAction() {
   btn.disabled = true; btn.textContent = "กำลังบันทึก...";
 
   const isCount = aType === "COUNT";
+  // เบิกออกต้องระบุว่าเอาไปใช้กับงานอะไร — ข้อมูลนี้ต้องขึ้นใบเบิกให้ออดิเตอร์ตรวจ
+  if (aType === "OUT" && !($("aPurposeIn").value || "").trim()) {
+    toast("กรุณาระบุว่าเบิกไปใช้กับงานอะไร", "warn");
+    $("aPurposeIn").focus();
+    btn.disabled = false;
+    return;
+  }
   const BUSY  = { COUNT:"กำลังบันทึกการนับ...", OUT:"กำลังบันทึกการเบิก...", RETURN:"กำลังบันทึกการคืน...", IN:"กำลังบันทึกรับเข้า..." };
   setLoading(true, BUSY[aType] || "กำลังบันทึก...");
   try {
     const r = isCount
       ? await gasPost({ module: mod, action: "VERIFY", sku: sel.sku, qty, user })
-      : await gasPost({ module: mod, action: "UPDATE", sku: sel.sku, type: aType, qty, user });
+      : await gasPost({ module: mod, action: "UPDATE", sku: sel.sku, type: aType, qty,
+                        purpose: ($("aPurposeIn").value || "").trim(), user });
 
     setLoading(false); btn.disabled = false;
     btn.textContent = isCount ? "📊 บันทึกการนับ" : "✅ ยืนยัน";

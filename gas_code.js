@@ -2085,6 +2085,7 @@ function handleRawMaterial(action, data, module) {
     case "EDIT":   return rmEdit(data, module);
     case "DELETE": return rmDelete(data, module);
     case "BACKUP": return rmBackup(data, module);
+    case "IMPORT": return _withLock(function(){ return rmImport(data, module); });
     default: return { status: "error", message: "Unknown action: " + action };
   }
 }

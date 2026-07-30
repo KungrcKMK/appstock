@@ -309,6 +309,17 @@
         <button onclick="adjQty(1)"
           class="btn-tap flex-shrink-0 w-12 h-12 text-3xl text-slate-400 font-black flex items-center justify-center">+</button>
       </div>
+
+      <!-- ใช้กับงานอะไร — บังคับกรอกตอนเบิก ข้อมูลนี้ขึ้นบนใบเบิกให้ออดิเตอร์ตรวจ -->
+      <div id="aPurposeWrap" class="mt-2">
+        <label for="aPurposeIn" class="text-slate-400 text-xs font-black block mb-1">
+          ใช้กับงานอะไร <span id="aPurposeReq" class="text-red-400">*</span>
+        </label>
+        <input id="aPurposeIn" type="text" list="aPurposeList" maxlength="120"
+               placeholder="เช่น ผลิตวุ้นมะพร้าว ล็อต 3"
+               class="w-full bg-slate-900 text-white py-3 px-3 rounded-xl outline-none border border-slate-700 focus:border-indigo-500 text-base">
+        <datalist id="aPurposeList"></datalist>
+      </div>
     </div>
 
     <!-- Confirm (sticky bottom so keyboard can't hide it) -->

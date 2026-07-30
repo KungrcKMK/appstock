@@ -2137,7 +2137,7 @@ function getRawMaterials(module) {
       // ช่องที่ 6 เป็นต้นไปเพิ่มทีหลัง — หน้าจอเดิมอ่านแค่ 0-4 จึงไม่กระทบ
       // ใส่มาเพื่อให้กดพิมพ์ใบเบิกซ้ำจากหน้าประวัติได้ (ออดิเตอร์ขอใบที่หาย)
       return [o.Timestamp, o.Name, o.Action, o.Qty, o.User,
-              o.DocNo || "", o.SKU || "", o.Unit || ""];
+              o.DocNo || "", o.SKU || "", o.Unit || "", o.Purpose || ""];
     });
   }
 
@@ -2426,6 +2426,8 @@ function _nextDocNo(module, type) {
 
 function rmUpdate(data, module) {
   const { sku, user } = data;
+  // ใช้กับงานอะไร — บังคับกรอกเฉพาะตอนเบิกออก เพราะเป็นข้อมูลที่ออดิเตอร์ถามหา
+  const purpose = String(data.purpose == null ? "" : data.purpose).trim().slice(0, 120);
   // Poka-Yoke: รับเฉพาะประเภทที่รู้จัก (กันค่าตัวพิมพ์เล็ก/ค่าแปลกปลอมข้ามด่านเช็คสต๊อก)
   const type = String(data.type || "").toUpperCase();
   const meta = RM_TYPES[type];
@@ -2458,7 +2460,7 @@ function rmUpdate(data, module) {
       // คอลัมน์ DocNo/SKU/Unit ต่อท้ายของเดิม ไม่แทรกกลาง
       // เพราะ getMyHistory / bomHealthReport / getActivityLog อ่านด้วยลำดับคอลัมน์เดิมอยู่
       const hist = getSheet(module + "_History");
-      ensureColumns(hist, ["DocNo", "SKU", "Unit"]);
+      ensureColumns(hist, ["DocNo", "SKU", "Unit", "Purpose"]);
       const hHead = hist.getRange(1, 1, 1, hist.getLastColumn()).getValues()[0];
       const docNo = _nextDocNo(module, type);   // ออกเลขให้ทุกประเภท เบิก/รับ/คืน
       const histRow = hHead.map(function (c) {
@@ -2470,6 +2472,7 @@ function rmUpdate(data, module) {
         if (c === "DocNo")     return docNo;
         if (c === "SKU")       return sku;
         if (c === "Unit")      return unit_;
+        if (c === "Purpose")   return purpose;
         return "";
       });
       hist.appendRow(histRow);
@@ -2488,7 +2491,7 @@ function rmUpdate(data, module) {
           docNo: docNo, type: type, action: meta.label,
           sku: String(sku), name: String(name), qty: q,
           unit: String(unit_), balance: newQty, user: String(user || "-"),
-          module: module, at: new Date().toISOString()
+          purpose: purpose, module: module, at: new Date().toISOString()
         }
       };
     }

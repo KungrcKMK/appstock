@@ -706,7 +706,6 @@ async function openShareApp() {
   _shareUrl = /^https?:\/\/(localhost|127\.|192\.168\.|10\.)/.test(here)
     ? "https://kungrckmk.github.io/appstock/"
     : here;
-  $("shareUrlBox").textContent = _shareUrl;
   $("shareSheet").classList.remove("hidden");
   const url = await qrDataUrl(_shareUrl, 260);
   if (url) $("shareQrImg").src = url;

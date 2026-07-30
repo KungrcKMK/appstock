@@ -22,13 +22,6 @@ function _shareDefaultUrl() {
 
 function openShareApp() {
   _shareUrl = _shareDefaultUrl();
-  const sel = document.getElementById("shareTargetSel");
-  if (sel) {
-    const opts = SHARE_TARGETS.slice();
-    if (!opts.some(o => o.url === _shareUrl)) opts.unshift({ key: "current", label: "ลิงก์ที่ใช้อยู่ตอนนี้", url: _shareUrl });
-    sel.innerHTML = opts.map(o => `<option value="${escapeAttr(o.url)}">${escapeHtml(o.label)}</option>`).join("");
-    sel.value = _shareUrl;
-  }
   document.getElementById("shareAppModal").classList.remove("hidden");
   shareRenderQr();
 }
@@ -37,16 +30,10 @@ function closeShareApp() {
   document.getElementById("shareAppModal").classList.add("hidden");
 }
 
-function shareOnTargetChange() {
-  _shareUrl = document.getElementById("shareTargetSel").value;
-  shareRenderQr();
-}
-
 function shareRenderQr() {
   const box = document.getElementById("shareQrBox");
   if (!box) return;
   box.innerHTML = "";
-  document.getElementById("shareUrlText").textContent = _shareUrl;
   try {
     new QRCode(box, { text: _shareUrl, width: 230, height: 230, correctLevel: QRCode.CorrectLevel.M });
   } catch (e) {

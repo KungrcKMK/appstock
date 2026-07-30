@@ -247,7 +247,9 @@ function switchModule(mod) {
     adminSwitchTab("pending");
   } else if (mod === "COLDROOM") {
     document.getElementById("module-COLDROOM").classList.remove("hide");
+    // เปิดครั้งแรกโหลดเต็ม / กลับเข้ามาอีกครั้งดึงยอดใหม่ กันเห็นเลขเก่าค้าง
     if (!crInitDone) initColdroom();
+    else if (typeof crRefreshIfStale === "function") crRefreshIfStale();
   } else {
     document.getElementById("module-RAW").classList.remove("hide");
     rawCurrentModule = mod;

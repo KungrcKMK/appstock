@@ -2544,6 +2544,55 @@ function _nextDocNo(module, type) {
   return pf + "-" + module + "-" + y + "-" + String(next).padStart(4, "0");
 }
 
+/**
+ * ⚠️ ใช้ครั้งเดียวก่อนเปิดใช้งานจริง — รีเซ็ตเลขที่เอกสารกลับไปเริ่มที่ 0001
+ *
+ * ลบแค่ตัวนับใน Config ไม่พอ เพราะ _nextDocNo จะไล่ดูเลขในชีตประวัติแล้วนับต่อ
+ * (กันเลขซ้ำตอนตัวนับหาย) ต้องล้าง DocNo ในประวัติด้วย ไม่งั้นเลขใหม่จะไปชนของเดิม
+ *
+ * ไม่ส่ง confirm มา = ดูอย่างเดียว ไม่แตะข้อมูล
+ */
+function rmResetDocSeq(data, module) {
+  const dry = data.confirm !== "RESET";
+  const out = { status: "success", โหมด: dry ? "ดูอย่างเดียว" : "ลบจริง" };
+
+  // 1) ตัวนับใน Config
+  const cfg = getSheet("Config");
+  const cv = cfg.getDataRange().getValues();
+  const kill = [];
+  for (let i = 1; i < cv.length; i++) {
+    const k = String(cv[i][0]).trim();
+    if (k.indexOf("docSeq_") === 0 && k.indexOf("_" + module + "_") > 0) {
+      kill.push({ row: i + 1, key: k, value: cv[i][1] });
+    }
+  }
+  out.ตัวนับที่จะลบ = kill.map(x => x.key + " = " + x.value);
+
+  // 2) เลขที่ที่ออกไปแล้วในประวัติ
+  const hs = getSheet(module + "_History");
+  const hh = hs.getRange(1, 1, 1, hs.getLastColumn()).getValues()[0];
+  const dc = hh.indexOf("DocNo");
+  const hits = [];
+  if (dc >= 0 && hs.getLastRow() > 1) {
+    const col = hs.getRange(2, dc + 1, hs.getLastRow() - 1, 1).getValues();
+    for (let j = 0; j < col.length; j++) {
+      const v = String(col[j][0] || "").trim();
+      if (v) hits.push({ row: j + 2, doc: v });
+    }
+  }
+  out.เลขที่ในประวัติที่จะล้าง = hits.map(x => "แถว " + x.row + " · " + x.doc);
+
+  if (dry) return out;
+
+  hits.forEach(x => hs.getRange(x.row, dc + 1).clearContent());
+  // ลบจากแถวล่างขึ้นบน ไม่งั้นเลขแถวที่จำไว้จะเลื่อน
+  kill.sort((a, b) => b.row - a.row).forEach(x => cfg.deleteRow(x.row));
+
+  out.ล้างเลขที่ = hits.length;
+  out.ลบตัวนับ = kill.length;
+  return out;
+}
+
 function rmUpdate(data, module) {
   const { sku, user } = data;
   // ใช้กับงานอะไร — บังคับกรอกเฉพาะตอนเบิกออก เพราะเป็นข้อมูลที่ออดิเตอร์ถามหา

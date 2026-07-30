@@ -2373,6 +2373,105 @@ function rmImport(data, module) {
   };
 }
 
+// ============================================================
+// 📋 รายงานใบเบิกรายเดือน + การรับทราบ
+//
+//   ใช้เทียบกับแฟ้มกระดาษเดือนละครั้ง จะได้รู้ว่าใบไหนขาดภายใน 30 วัน
+//   ไม่ต้องรอออดิเตอร์มาปีละครั้งถึงจะรู้
+//
+//   "รับทราบ" = หัวหน้าเข้ามากดว่าเห็นแล้ว ระบบบันทึกว่าใครกดและกดเมื่อไหร่
+//   ใครกดก็ได้ (ไม่ล็อกสิทธิ์) แต่บันทึกชื่อไว้เสมอ
+//   กดครั้งแรกเท่านั้นที่นับ — กดซ้ำไม่ทับของเดิม เพื่อไม่ให้หลักฐานเดิมหาย
+// ============================================================
+
+/** แปลงเวลาที่เก็บไว้ให้เป็น "ปี-เดือน" ตามเขตเวลาไทย */
+function _docYearMonth(ts) {
+  if (!ts) return "";
+  var d = (ts instanceof Date) ? ts : new Date(String(ts));
+  if (isNaN(d.getTime())) return "";
+  // ⚠️ ห้ามตัดสตริง ISO ตรงๆ — ISO เป็นเวลา UTC
+  //    รายการตอนตี 6 ของวันที่ 1 จะกลายเป็นวันสุดท้ายของเดือนก่อน
+  return Utilities.formatDate(d, Session.getScriptTimeZone(), "yyyy-MM");
+}
+
+function rmDocReport(data, module) {
+  var ym = String(data.month || "").trim();          // รูปแบบ "2026-07" (ค.ศ.)
+  var sheet = getSheet(module + "_History");
+  ensureColumns(sheet, ["DocNo", "SKU", "Unit", "Purpose", "AckBy", "AckAt"]);
+  if (sheet.getLastRow() < 2) return { status: "success", rows: [], months: [] };
+
+  var rows = sheet.getDataRange().getValues();
+  var h = rows[0];
+  var ix = {};
+  h.forEach(function (c, i) { ix[c] = i; });
+
+  var out = [], monthSet = {};
+  for (var i = 1; i < rows.length; i++) {
+    var doc = String(rows[i][ix["DocNo"]] || "").trim();
+    if (!doc) continue;                               // เอาเฉพาะรายการที่มีเลขที่เอกสาร
+    var m = _docYearMonth(rows[i][ix["Timestamp"]]);
+    if (m) monthSet[m] = true;
+    if (ym && m !== ym) continue;
+    out.push({
+      docNo:   doc,
+      at:      String(rows[i][ix["Timestamp"]] || ""),
+      action:  String(rows[i][ix["Action"]]  || ""),
+      name:    String(rows[i][ix["Name"]]    || ""),
+      sku:     String(rows[i][ix["SKU"]]     || ""),
+      qty:     rows[i][ix["Qty"]],
+      unit:    String(rows[i][ix["Unit"]]    || ""),
+      purpose: String(rows[i][ix["Purpose"]] || ""),
+      user:    String(rows[i][ix["User"]]    || ""),
+      ackBy:   String(rows[i][ix["AckBy"]]   || ""),
+      ackAt:   String(rows[i][ix["AckAt"]]   || "")
+    });
+  }
+  out.sort(function (a, b) { return a.docNo < b.docNo ? 1 : a.docNo > b.docNo ? -1 : 0; });
+
+  var months = Object.keys(monthSet).sort().reverse();
+  return { status: "success", rows: out, months: months };
+}
+
+function rmAckDocs(data, module) {
+  var list = Array.isArray(data.docNos) ? data.docNos : (data.docNo ? [data.docNo] : []);
+  var user = String(data.user || "-").trim();
+  if (!list.length) return { status: "error", message: "ไม่ได้ระบุเลขที่เอกสาร" };
+  if (list.length > 300) return { status: "error", message: "รับทราบได้ครั้งละไม่เกิน 300 ใบ" };
+
+  var sheet = getSheet(module + "_History");
+  ensureColumns(sheet, ["DocNo", "SKU", "Unit", "Purpose", "AckBy", "AckAt"]);
+  var rows = sheet.getDataRange().getValues();
+  var h = rows[0];
+  var cDoc = h.indexOf("DocNo"), cBy = h.indexOf("AckBy"), cAt = h.indexOf("AckAt");
+  if (cDoc < 0 || cBy < 0 || cAt < 0) return { status: "error", message: "ชีตประวัติไม่มีคอลัมน์ที่ต้องใช้" };
+
+  var want = {};
+  list.forEach(function (d) { want[String(d).trim()] = true; });
+
+  var userWithDevice = _reqDeviceName ? (user + " (📱 " + _reqDeviceName + ")") : user;
+  var nowIso = new Date().toISOString();
+  var done = 0, already = 0, results = [];
+
+  for (var i = 1; i < rows.length; i++) {
+    var doc = String(rows[i][cDoc] || "").trim();
+    if (!doc || !want[doc]) continue;
+    var prev = String(rows[i][cBy] || "").trim();
+    if (prev) {
+      already++;
+      results.push({ docNo: doc, status: "already", ackBy: prev, ackAt: String(rows[i][cAt] || "") });
+      continue;                                       // รับทราบไปแล้ว ไม่ทับของเดิม
+    }
+    rows[i][cBy] = userWithDevice;
+    rows[i][cAt] = nowIso;
+    done++;
+    results.push({ docNo: doc, status: "ok", ackBy: userWithDevice, ackAt: nowIso });
+  }
+
+  if (done > 0) sheet.getRange(1, 1, rows.length, h.length).setValues(rows);
+
+  return { status: "success", acked: done, already: already, results: results };
+}
+
 // ประเภทรายการที่รองรับ — IN รับเข้าจากซัพพลายเออร์ / OUT เบิกไปใช้ / RETURN คืนของที่เบิกเกิน
 // แยก RETURN ออกจาก IN เพื่อให้คำนวณยอดใช้จริงได้ถูก: ใช้จริง = เบิกออก − คืน
 var RM_TYPES = {

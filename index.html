@@ -1650,6 +1650,29 @@
     </div>
   </div>
 
+  <!-- ═══ 📋 รายงานใบเบิกรายเดือน ═══
+       เอาไว้เทียบกับแฟ้มกระดาษเดือนละครั้ง จะได้รู้ว่าใบไหนขาดภายใน 30 วัน -->
+  <div id="drModal" class="hidden fixed inset-0 z-[630] flex items-center justify-center p-4"
+       style="background:rgba(22,36,27,.55);backdrop-filter:blur(3px);">
+    <div class="sq-page" style="width:100%;max-width:1080px;border-radius:14px;overflow:hidden;
+                box-shadow:0 20px 50px rgba(0,0,0,.3);display:flex;flex-direction:column;max-height:94vh;">
+
+      <div style="background:var(--sq-surface);border-bottom:1px solid var(--sq-line);
+                  padding:13px 16px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+        <div style="flex:1;min-width:190px;">
+          <div class="sq-card-title">📋 รายงานใบเบิกรายเดือน</div>
+          <div class="sq-card-note"><b id="drTarget">—</b> · เทียบกับแฟ้มกระดาษ แล้วกดรับทราบ</div>
+        </div>
+        <select id="drMonthSel" onchange="drOnMonthChange()" class="sq-select"></select>
+        <button onclick="drPrint()" class="sq-btn">🖨️ พิมพ์</button>
+        <button onclick="drAckAll(event)" id="drAckAllBtn" class="sq-btn sq-btn-primary" style="display:none;">✅ รับทราบทั้งหมด</button>
+        <button onclick="closeDocReport()" class="sq-btn">ปิด</button>
+      </div>
+
+      <div id="drBody" style="padding:14px 16px;overflow-y:auto;"></div>
+    </div>
+  </div>
+
   <!-- ═══ 🧾 ใบเบิก / ใบรับ / ใบคืน ═══
        ใบถูกวาดลง canvas แล้วแปลงเป็นรูป — ทั้งดูบนจอ พิมพ์ และดาวน์โหลด
        ใช้รูปเดียวกันทั้งหมด จึงตรงกันแน่นอน -->

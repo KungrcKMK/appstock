@@ -286,8 +286,11 @@ if ("serviceWorker" in navigator) {
    * เกณฑ์ที่ถูก: ยุ่ง = มีหน้าต่างเปิดค้าง หรือ กำลังพิมพ์อยู่จริงๆ
    */
   function _appIsBusy() {
+    // ⚠️ ห้ามใช้ offsetParent เช็คว่ามองเห็นอยู่มั๊ย
+    //    หน้าต่างทุกอันในแอปเป็น position:fixed ซึ่ง offsetParent เป็น null เสมอ
+    //    ใช้ getClientRects() แทน — ซ่อนอยู่จะได้ 0 กล่อง
     const openBox = [...document.querySelectorAll('[id$="Modal"],[id$="Overlay"],[id$="Sheet"]')]
-      .some(el => el.id !== "loadingOverlay" && el.offsetParent !== null);
+      .some(el => el.id !== "loadingOverlay" && el.getClientRects().length > 0);
     if (openBox) return true;
     const a = document.activeElement;
     return !!(a && (a.tagName === "INPUT" || a.tagName === "TEXTAREA") && a.type !== "search");

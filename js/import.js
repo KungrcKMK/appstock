@@ -273,7 +273,9 @@ function impBuildPreview(text) {
   const nBad = view.length - nOk;
 
   // ── วาดตาราง ──
-  const fmt = v => v === null || v === undefined ? '<span class="sq-dim">—</span>'
+  // ค่าที่อ่านไม่ออกให้โชว์ — ไม่ใช่ NaN จะได้ไม่งง (เหตุผลจริงอยู่ในป้ายสถานะแล้ว)
+  const fmt = v => (v === null || v === undefined || Number.isNaN(v))
+                  ? '<span class="sq-dim">—</span>'
                   : `<span class="sq-num" style="font-size:12.5px;">${Number(v).toLocaleString()}</span>`;
   const body = view.map(v => `
     <tr class="${v.ok ? "" : "sev-crit"}">

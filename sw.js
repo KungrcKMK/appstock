@@ -3,7 +3,7 @@
 // Cache static assets สำหรับใช้งาน offline บางส่วน
 // =====================================================
 
-const CACHE_NAME = "appstock-v34";
+const CACHE_NAME = "appstock-v35";
 
 // ไฟล์ที่ cache ไว้ใช้ offline
 const STATIC_ASSETS = [
@@ -22,7 +22,8 @@ const STATIC_ASSETS = [
   "./js/alerts.js",
   "./js/report.js",
   "./js/share.js",
-  "./js/myhistory.js"
+  "./js/myhistory.js",
+  "./js/import.js"
 ];
 
 // CDN ที่ cache ด้วย (fonts, charts, qrcode)

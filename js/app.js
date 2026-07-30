@@ -313,9 +313,14 @@ if ("serviceWorker" in navigator) {
     document.body.appendChild(bar);
   }
 
-  // SW ตัวใหม่เข้าคุมเมื่อไหร่ = ไฟล์ชุดใหม่พร้อมแล้ว
+  // ⚠️ ตอนติดตั้ง SW ครั้งแรก (เครื่องใหม่ / เพิ่งล้างข้อมูล) controllerchange ก็ยิงเหมือนกัน
+  //    ถ้าไม่กันไว้ จะรีโหลดหน้าโดยไม่มีเหตุผลตั้งแต่เปิดแอปครั้งแรก
+  //    ของใหม่จริงๆ จะมี controller เดิมอยู่ก่อนแล้วเสมอ
+  const _hadControllerAtStart = !!navigator.serviceWorker.controller;
+
   let _reloadingForUpdate = false;
   navigator.serviceWorker.addEventListener("controllerchange", () => {
+    if (!_hadControllerAtStart) return;               // ติดตั้งครั้งแรก ไม่ใช่การอัปเดต
     if (_reloadingForUpdate) return;                  // กันสั่งโหลดซ้ำซ้อน
     // ⚠️ กรณีกำลังทำงานค้างอยู่ ห้ามตั้งธง — ไม่งั้นรอบต่อไปจะไม่อัปเดตให้อีกเลย
     //    (เคยพลาดตรงนี้: ตั้งธงก่อนเช็ค พอผู้ใช้ยุ่งครั้งเดียวก็ค้างเวอร์ชันเก่าทั้งวัน)

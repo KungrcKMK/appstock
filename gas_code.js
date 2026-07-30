@@ -2405,7 +2405,7 @@ function _nextDocNo(module, type) {
       var dc = hh.indexOf("DocNo");
       if (dc >= 0 && hs.getLastRow() > 1) {
         var col = hs.getRange(2, dc + 1, hs.getLastRow() - 1, 1).getValues();
-        var prefix = "RQ-" + module + "-" + y + "-";
+        var prefix = pf + "-" + module + "-" + y + "-";
         for (var j = 0; j < col.length; j++) {
           var v = String(col[j][0] || "");
           if (v.indexOf(prefix) === 0) {
@@ -2421,7 +2421,7 @@ function _nextDocNo(module, type) {
   if (rowAt >= 0) sheet.getRange(rowAt + 1, 2).setValue(next);
   else            sheet.appendRow([key, next]);
 
-  return "RQ-" + module + "-" + y + "-" + String(next).padStart(4, "0");
+  return pf + "-" + module + "-" + y + "-" + String(next).padStart(4, "0");
 }
 
 function rmUpdate(data, module) {
@@ -2460,7 +2460,7 @@ function rmUpdate(data, module) {
       const hist = getSheet(module + "_History");
       ensureColumns(hist, ["DocNo", "SKU", "Unit"]);
       const hHead = hist.getRange(1, 1, 1, hist.getLastColumn()).getValues()[0];
-      const docNo = (type === "OUT") ? _nextDocNo(module) : "";
+      const docNo = _nextDocNo(module, type);   // ออกเลขให้ทุกประเภท เบิก/รับ/คืน
       const histRow = hHead.map(function (c) {
         if (c === "Timestamp") return new Date().toISOString();
         if (c === "Name")      return name;
@@ -2484,11 +2484,12 @@ function rmUpdate(data, module) {
       return {
         status: "success",
         docNo: docNo,
-        slip: (type === "OUT") ? {
-          docNo: docNo, sku: String(sku), name: String(name), qty: q,
+        slip: {
+          docNo: docNo, type: type, action: meta.label,
+          sku: String(sku), name: String(name), qty: q,
           unit: String(unit_), balance: newQty, user: String(user || "-"),
           module: module, at: new Date().toISOString()
-        } : null
+        }
       };
     }
   }

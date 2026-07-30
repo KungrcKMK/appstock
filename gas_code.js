@@ -2094,7 +2094,6 @@ function handleRawMaterial(action, data, module) {
     case "IMPORT": return _withLock(function(){ return rmImport(data, module); });
     case "DOCREPORT": return rmDocReport(data, module);
     case "ACKDOC":    return _withLock(function(){ return rmAckDocs(data, module); });
-    case "RESETDOCSEQ": return _withLock(function(){ return rmResetDocSeq(data, module); }); // ชั่วคราว ลบทิ้งหลังใช้
     default: return { status: "error", message: "Unknown action: " + action };
   }
 }

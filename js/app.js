@@ -261,25 +261,65 @@ function switchModule(mod) {
 // ─────────────────────────────────────────────
 window.onload = function() { checkAuth(); _updateOnlineStatus(); };
 
-// ─────────────────────────────────────────────
-// PWA — Service Worker Registration
-// ─────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════
+// PWA — ตัวจัดการอัปเดตแอป
+//
+//   ของเดิมมีปัญหา 3 อย่าง ทำให้ผู้ใช้ค้างอยู่กับเวอร์ชันเก่าโดยไม่รู้ตัว:
+//     1. เด้ง confirm() ถามว่าจะอัปเดตไหม — กดยกเลิกทีเดียวคือค้างเวอร์ชันเก่าตลอด
+//     2. สั่ง location.reload() ทันทีหลัง postMessage โดยไม่รอ SW ตัวใหม่เข้าคุม
+//        โหลดใหม่ก็ยังได้ไฟล์เก่าจาก SW ตัวเดิมอยู่ดี
+//     3. ส่ง postMessage SKIP_WAITING ไปทั้งที่ sw.js ไม่มีตัวรับข้อความเลย (ไม่มีผล)
+//
+//   ของใหม่: sw.js เรียก skipWaiting() ตั้งแต่ตอนติดตั้งอยู่แล้ว
+//   จึงรอสัญญาณ controllerchange = SW ตัวใหม่เข้าคุมเรียบร้อย ค่อยโหลดหน้าใหม่
+//   ถ้ากำลังกรอกข้อมูลหรือเปิดหน้าต่างอยู่ จะไม่รีเฟรชทับ แต่ขึ้นแถบให้กดเอง
+// ═══════════════════════════════════════════════════════════
 if ("serviceWorker" in navigator) {
+
+  /** กำลังทำอะไรค้างอยู่มั๊ย — ถ้าใช่ ห้ามรีเฟรชทับ เดี๋ยวของที่กรอกหาย */
+  function _appIsBusy() {
+    const openBox = [...document.querySelectorAll('[id$="Modal"],[id$="Overlay"],[id$="Sheet"]')]
+      .some(el => el.id !== "loadingOverlay" && el.offsetParent !== null);
+    if (openBox) return true;
+    return [...document.querySelectorAll("input,textarea")].some(el =>
+      el.offsetParent !== null && el.type !== "search" && el.type !== "checkbox" &&
+      el.id !== "rawSearch" && String(el.value || "").trim() !== "");
+  }
+
+  function _showUpdateBar() {
+    if (document.getElementById("swUpdateBar")) return;
+    const bar = document.createElement("div");
+    bar.id = "swUpdateBar";
+    bar.style.cssText =
+      "position:fixed;left:16px;right:16px;bottom:16px;z-index:9999;display:flex;align-items:center;" +
+      "gap:12px;flex-wrap:wrap;justify-content:center;background:#0e7a3f;color:#fff;" +
+      "padding:12px 16px;border-radius:10px;font-weight:700;font-size:13px;" +
+      "box-shadow:0 8px 24px rgba(0,0,0,.25);font-family:inherit;";
+    bar.innerHTML =
+      '<span>🔄 มีเวอร์ชันใหม่พร้อมใช้งานแล้ว</span>' +
+      '<button onclick="location.reload()" style="background:#fff;color:#0e7a3f;border:none;' +
+      'padding:7px 16px;border-radius:7px;font-weight:800;font-size:13px;cursor:pointer;font-family:inherit;">' +
+      'โหลดเลย</button>';
+    document.body.appendChild(bar);
+  }
+
+  // SW ตัวใหม่เข้าคุมเมื่อไหร่ = ไฟล์ชุดใหม่พร้อมแล้ว
+  let _reloadingForUpdate = false;
+  navigator.serviceWorker.addEventListener("controllerchange", () => {
+    if (_reloadingForUpdate) return;      // กันโหลดวน
+    _reloadingForUpdate = true;
+    if (_appIsBusy()) { _showUpdateBar(); return; }
+    location.reload();
+  });
+
   window.addEventListener("load", () => {
     navigator.serviceWorker.register("./sw.js")
       .then(reg => {
-        // เช็คอัปเดตใหม่
-        reg.addEventListener("updatefound", () => {
-          const newSW = reg.installing;
-          newSW.addEventListener("statechange", () => {
-            if (newSW.state === "installed" && navigator.serviceWorker.controller) {
-              // มี version ใหม่ → แจ้ง user
-              if (confirm("🔄 มีอัปเดตใหม่! กด OK เพื่อโหลด version ล่าสุด")) {
-                newSW.postMessage({ type: "SKIP_WAITING" });
-                location.reload();
-              }
-            }
-          });
+        // เปิดแอปค้างไว้ทั้งวันก็ยังได้ของใหม่ — เช็คทุก 10 นาที
+        setInterval(() => { reg.update().catch(() => {}); }, 10 * 60 * 1000);
+        // กลับมาที่แท็บนี้เมื่อไหร่ก็เช็คด้วย
+        document.addEventListener("visibilitychange", () => {
+          if (!document.hidden) reg.update().catch(() => {});
         });
       })
       .catch(err => console.warn("SW register failed:", err));

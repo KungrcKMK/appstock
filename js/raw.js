@@ -422,9 +422,30 @@ function rawLoadMoreItems() {
   }
 }
 
+// ─────────────────────────────────────────────
+// 📜 หน้าต่างประวัติการใช้งานของคลังนี้
+//    เนื้อหาถูกเติมไว้แล้วตอนโหลดข้อมูล เปิดมาจึงเห็นทันที
+// ─────────────────────────────────────────────
+function openRawHistory() {
+  const m = document.getElementById("rawHistModal");
+  if (!m) return;
+  const sub = document.getElementById("rawHistSub");
+  if (sub) {
+    const n = document.querySelectorAll("#rawHistoryList .history-item").length;
+    sub.textContent = (rawCurrentModule === "SQF" ? "วัตถุดิบ SQF" : "วัตถุดิบ MLM")
+      + (n ? ` · ${n} รายการล่าสุด · ของทุกคนในคลังนี้` : "");
+  }
+  m.classList.remove("hidden");
+}
+function closeRawHistory() {
+  const m = document.getElementById("rawHistModal");
+  if (m) m.classList.add("hidden");
+}
+
 // ── Render history ──
 function renderRawHistory(h) {
   const list = document.getElementById("rawHistoryList");
+  if (!list) return;
   if (!(h||[]).length) { list.innerHTML = `<p class="rm-empty">ยังไม่มีความเคลื่อนไหว</p>`; return; }
   list.innerHTML = (h||[]).map(x => {
     const act=String(x[2]||"");

@@ -2473,7 +2473,16 @@ function rmUpdate(data, module) {
                 summary +
                 "\n👤 " + (user||"-") + deviceTag();
       sendAlert(msg, module);
-      return { status: "success" };
+      // ส่งข้อมูลกลับให้หน้าจอเอาไปออกใบเบิกได้เลย โดยไม่ต้องยิงถามใหม่
+      return {
+        status: "success",
+        docNo: docNo,
+        slip: (type === "OUT") ? {
+          docNo: docNo, sku: String(sku), name: String(name), qty: q,
+          unit: String(unit_), balance: newQty, user: String(user || "-"),
+          module: module, at: new Date().toISOString()
+        } : null
+      };
     }
   }
   return { status: "error", message: "ไม่พบ SKU" };

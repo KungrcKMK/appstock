@@ -319,9 +319,9 @@
     }
     #module-RAW .rm-loadmore:hover { background:var(--sq-accent-2);border-color:var(--sq-accent);color:var(--sq-accent); }
 
-    /* ผังหลัก: ตาราง + ความเคลื่อนไหว */
-    #module-RAW .rm-main { display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:12px;align-items:start; }
-    @media (max-width:1100px) { #module-RAW .rm-main { grid-template-columns:minmax(0,1fr); } }
+    /* ผังหลัก — ตารางเต็มความกว้าง
+       (ความเคลื่อนไหวย้ายไปอยู่หลังปุ่ม 📜 ประวัติการใช้งาน แล้ว) */
+    #module-RAW .rm-main { display:block; }
     @media (max-width:720px)  { #module-RAW .rm-tiles { grid-template-columns:repeat(2,minmax(0,1fr)); }
                                 #module-RAW .rm-tile:nth-child(-n+2) { border-bottom:1px solid var(--sq-line-soft); }
                                 #module-RAW .rm-tile:nth-child(2) { border-right:0; } }

@@ -2382,9 +2382,13 @@ var RM_TYPES = {
 //   ตัวนับเก็บใน Config sheet แยกตามโรงงานและปี พ.ศ. (ขึ้นปีใหม่เริ่ม 0001)
 //   เรียกจากใน _withLock อยู่แล้ว จึงไม่มีทางออกเลขซ้ำกัน
 // ═══════════════════════════════════════════════════════════
-function _nextDocNo(module) {
+// อักษรนำหน้าเลขที่ แยกตามประเภทรายการ จะได้ดูออกทันทีว่าเป็นเอกสารอะไร
+var DOC_PREFIX = { OUT: "RQ", IN: "RC", RETURN: "RT" };
+
+function _nextDocNo(module, type) {
+  var pf = DOC_PREFIX[type] || "RQ";
   var y = new Date().getFullYear() + 543;                 // ปี พ.ศ.
-  var key = "docSeq_RQ_" + module + "_" + y;
+  var key = "docSeq_" + pf + "_" + module + "_" + y;
   var sheet = getSheet("Config");
   var data = sheet.getDataRange().getValues();
 

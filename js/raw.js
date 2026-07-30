@@ -155,8 +155,11 @@ function openRawCharts() {
       + ` · ทั้งหมด ${rawLastData.length} รายการ · กรอกอัตราใช้ต่อวันไว้ ${withDaily} รายการ`;
   }
   m.classList.remove("hidden");
-  // รอให้กล่องมีขนาดจริงก่อนค่อยวาด
-  requestAnimationFrame(() => renderRawCharts(rawLastData));
+  // บังคับให้เบราว์เซอร์คำนวณขนาดกล่องเดี๋ยวนี้ แล้วค่อยวาด
+  // (เคยใช้ requestAnimationFrame แล้วเจอปัญหา: ถ้าแท็บไม่ได้วาดภาพอยู่
+  //  เช่นสลับไปแท็บอื่น มันจะไม่ทำงาน กราฟขึ้นเป็นกล่องเปล่า)
+  void m.offsetHeight;
+  renderRawCharts(rawLastData);
 }
 
 function closeRawCharts() {
@@ -192,7 +195,7 @@ function renderRawCharts(items) {
                        "rgb(5,150,105)"
   );
 
-  const ctx1 = document.getElementById("rawBarChart").getContext("2d");
+  const ctx1 = barEl.getContext("2d");
   if (rawBarChart) rawBarChart.destroy();
   rawBarChart = new Chart(ctx1, {
     type: "bar",
@@ -249,7 +252,7 @@ function renderRawCharts(items) {
     const isExp = ed && ed < today;
     if (isExp) exp++; else if (isLow) low++; else safe++;
   });
-  const ctx2 = document.getElementById("rawDonutChart").getContext("2d");
+  const ctx2 = donutEl.getContext("2d");
   if (rawDonutChart) rawDonutChart.destroy();
   rawDonutChart = new Chart(ctx2, { type:"doughnut", data:{ labels:["ปลอดภัย","สต๊อกต่ำ","หมดอายุ"], datasets:[{ data:[safe,low,exp], borderWidth:2, hoverOffset:8 }] }, options:{ responsive:true, maintainAspectRatio:false, cutout:"62%", plugins:{ legend:{position:"bottom",labels:{font:{family:"Sarabun",weight:"bold"},padding:18}}, tooltip:{titleFont:{family:"Sarabun",weight:"bold"},bodyFont:{family:"Sarabun"}} } } });
 }

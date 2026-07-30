@@ -274,6 +274,33 @@ function crSwitchTab(tab) {
   if (tab === "workorder") crInitWorkOrder();
   if (tab === "submit")    crSiInitSubmit();
   if (tab === "receive")   crSiInitReceive();
+  // เข้าแท็บที่โชว์ยอด → ดึงข้อมูลใหม่ทุกครั้ง กันเห็นเลขเก่าค้าง
+  if (tab === "report" || tab === "balance") crRefreshIfStale();
+  if (tab === "stock")  crRefreshLookupIfIdle();
+}
+
+// ═══════════════════════════════════════════════════════════
+// 🔄 ดึงข้อมูลใหม่อัตโนมัติ
+//   เดิมหน้าคลังสินค้าโหลดข้อมูลครั้งเดียวตอนเปิดแอป
+//   สลับแท็บไปมาเห็นเลขเก่าค้างจนกว่าจะกดปุ่มอัปเดตเอง
+// ═══════════════════════════════════════════════════════════
+let _crLastLoad = 0;
+const CR_STALE_MS = 8000;   // เพิ่งโหลดไปไม่ถึง 8 วิ ไม่ต้องยิงซ้ำ กันถล่มเซิร์ฟเวอร์ตอนกดสลับแท็บรัวๆ
+
+async function crRefreshIfStale(force) {
+  if (!force && Date.now() - _crLastLoad < CR_STALE_MS) return;
+  _crLastLoad = Date.now();
+  try { await crLoadOverview(); } catch (e) { /* ออฟไลน์ก็ใช้ของเดิมไป */ }
+}
+
+/** แท็บนับสต๊อก — ดึงยอดล็อตใหม่ ถ้ายังไม่ได้พิมพ์จำนวนค้างไว้ */
+function crRefreshLookupIfIdle() {
+  const bc  = ($$cr("crBarcode")?.value || "").trim();
+  const qty = ($$cr("crNewQty")?.value || "").trim();
+  if (!bc || qty) return;          // ยังไม่ได้ค้นหา หรือกำลังกรอกอยู่ → ไม่แตะ
+  if (Date.now() - _crLastLoad < CR_STALE_MS) return;
+  _crLastLoad = Date.now();
+  try { crLookupBarcode(); } catch (e) {}
 }
 
 function crManageSubTab(sub) {

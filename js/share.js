@@ -66,7 +66,11 @@ async function shareCopyLink() {
   let ok = false;
   try { ok = document.execCommand("copy"); } catch (e2) { ok = false; }
   ta.remove();
-  showToast(ok ? "คัดลอกลิงก์แล้ว ✅" : "คัดลอกไม่สำเร็จ ใช้ปุ่ม 📤 ส่งต่อ แทน", ok ? "success" : "warn");
+  if (ok) { showToast("คัดลอกลิงก์แล้ว ✅", "success"); return; }
+
+  // ทางออกสุดท้าย — ตอนนี้ไม่โชว์ลิงก์บนหน้าจอแล้ว ถ้าคัดลอกไม่ได้จะไม่เหลือทางเอาลิงก์ออกมาเลย
+  // เด้งกล่องให้เห็นลิงก์เต็มๆ ผู้ใช้ลากคัดลอกเองได้
+  window.prompt("คัดลอกลิงก์นี้ไปให้พนักงาน", _shareUrl);
 }
 
 async function shareNative() {

@@ -1659,6 +1659,48 @@
     </div>
   </div>
 
+  <!-- ═══ 📥 นำเข้าวัตถุดิบจากไฟล์ ═══ -->
+  <div id="impModal" class="hidden fixed inset-0 z-[620] flex items-center justify-center p-4"
+       style="background:rgba(22,36,27,.55);backdrop-filter:blur(3px);">
+    <div class="sq-page" style="width:100%;max-width:900px;border-radius:14px;overflow:hidden;
+                box-shadow:0 20px 50px rgba(0,0,0,.3);display:flex;flex-direction:column;max-height:92vh;">
+
+      <div style="background:var(--sq-surface);border-bottom:1px solid var(--sq-line);
+                  padding:13px 16px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+        <div style="flex:1;min-width:0;">
+          <div class="sq-card-title">📥 นำเข้าวัตถุดิบจากไฟล์</div>
+          <div class="sq-card-note">นำเข้าเข้า <b id="impTargetName">—</b> · เห็นตารางตรวจทานก่อนบันทึกทุกครั้ง</div>
+        </div>
+        <button onclick="closeRawImport()" class="sq-btn">ปิด</button>
+      </div>
+
+      <div style="padding:14px 16px;overflow-y:auto;">
+        <div class="sq-note">
+          <b>ขั้นตอน</b> &nbsp;1. กดดาวน์โหลดไฟล์ตัวอย่าง &nbsp;→&nbsp; 2. กรอกข้อมูลใน Excel
+          &nbsp;→&nbsp; 3. <b>Save As → CSV UTF-8</b> &nbsp;→&nbsp; 4. ลากไฟล์มาวางข้างล่าง
+        </div>
+
+        <div style="display:flex;gap:7px;flex-wrap:wrap;margin-bottom:12px;">
+          <button onclick="impDownloadTemplate()" class="sq-btn sq-btn-primary">⬇️ ดาวน์โหลดไฟล์ตัวอย่าง</button>
+        </div>
+
+        <div id="impResult"></div>
+
+        <div id="impDropZone" class="imp-drop"
+             onclick="document.getElementById('impFileInput').click()"
+             ondrop="impOnDrop(event)" ondragover="impOnDragOver(event)" ondragleave="impOnDragLeave()">
+          <div class="imp-drop-icon">📄</div>
+          <div class="imp-drop-main">ลากไฟล์ .csv มาวางที่นี่ หรือคลิกเพื่อเลือกไฟล์</div>
+          <div class="imp-drop-sub">นำเข้าได้ครั้งละไม่เกิน 500 รายการ</div>
+          <input type="file" id="impFileInput" accept=".csv,text/csv" style="display:none"
+                 onchange="impOnFile(this)">
+        </div>
+
+        <div id="impPreviewWrap" style="display:none;"></div>
+      </div>
+    </div>
+  </div>
+
   <!-- ═══ แชร์แอปให้พนักงาน (ลิงก์ + QR) ═══ -->
   <div id="shareAppModal" class="hidden fixed inset-0 bg-black/70 backdrop-blur-sm z-[600] flex items-center justify-center p-4">
     <div class="bg-white w-full max-w-md rounded-[2rem] shadow-2xl overflow-hidden">

@@ -2446,7 +2446,26 @@ function rmUpdate(data, module) {
       const dailyUsage = Number(rows[i][h.indexOf("DailyUsage")] || 0);
       sheet.getRange(i + 1, h.indexOf("Qty") + 1).setValue(newQty);
       const userWithDevice1 = _reqDeviceName ? (user||"-") + " (📱 " + _reqDeviceName + ")" : (user||"-");
-      getSheet(module + "_History").appendRow([new Date().toISOString(), name, meta.label, q, userWithDevice1]);
+
+      // ── บันทึกประวัติ ──
+      // คอลัมน์ DocNo/SKU/Unit ต่อท้ายของเดิม ไม่แทรกกลาง
+      // เพราะ getMyHistory / bomHealthReport / getActivityLog อ่านด้วยลำดับคอลัมน์เดิมอยู่
+      const hist = getSheet(module + "_History");
+      ensureColumns(hist, ["DocNo", "SKU", "Unit"]);
+      const hHead = hist.getRange(1, 1, 1, hist.getLastColumn()).getValues()[0];
+      const docNo = (type === "OUT") ? _nextDocNo(module) : "";
+      const histRow = hHead.map(function (c) {
+        if (c === "Timestamp") return new Date().toISOString();
+        if (c === "Name")      return name;
+        if (c === "Action")    return meta.label;
+        if (c === "Qty")       return q;
+        if (c === "User")      return userWithDevice1;
+        if (c === "DocNo")     return docNo;
+        if (c === "SKU")       return sku;
+        if (c === "Unit")      return unit_;
+        return "";
+      });
+      hist.appendRow(histRow);
       var summary = _stockSummaryLines(newQty, unit_, minQty, dailyUsage);
       var msg = meta.emoji + "\n📦 " + name + " (" + sku + ")" +
                 "\n🔢 " + meta.sign + q + " " + unit_ +

@@ -467,6 +467,16 @@
     .sq-input:focus, .sq-select:focus { outline:2px solid var(--sq-accent);outline-offset:-1px;border-color:transparent; }
     .sq-select { cursor:pointer; }
 
+    /* ── กล่องลากไฟล์มาวาง (หน้านำเข้า) ── */
+    .imp-drop {
+      border:2px dashed var(--sq-line);border-radius:12px;background:var(--sq-raised);
+      padding:30px 20px;text-align:center;cursor:pointer;transition:border-color .15s,background .15s;
+    }
+    .imp-drop:hover, .imp-drop.drag { border-color:var(--sq-accent);background:var(--sq-accent-2); }
+    .imp-drop-icon { font-size:38px;line-height:1; }
+    .imp-drop-main { font-size:14px;font-weight:800;color:var(--sq-ink);margin-top:8px; }
+    .imp-drop-sub  { font-size:12px;color:var(--sq-muted);margin-top:3px; }
+
     .sq-empty { padding:32px 16px;text-align:center;color:var(--sq-muted);font-size:13px; }
     .sq-list { display:flex;flex-direction:column;gap:1px; }
     .sq-list-row {

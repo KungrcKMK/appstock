@@ -61,17 +61,24 @@ async function slipDraw(s) {
     x.fillText("สุพรรณคิวฟู้ดส์ · แม่ละมาย", M, y + 40); y += 76;
   }
 
+  const KIND = {
+    OUT:    { title:"ใบเบิกวัตถุดิบ", who:"ผู้เบิก",  bal:"ยอดคงเหลือหลังเบิก" },
+    IN:     { title:"ใบรับวัตถุดิบ",  who:"ผู้รับเข้า", bal:"ยอดคงเหลือหลังรับ" },
+    RETURN: { title:"ใบคืนวัตถุดิบ",  who:"ผู้คืน",   bal:"ยอดคงเหลือหลังคืน" }
+  }[s.type] || { title:"ใบเบิกวัตถุดิบ", who:"ผู้เบิก", bal:"ยอดคงเหลือหลังทำรายการ" };
+
   x.fillStyle = INK; x.font = "bold 52px " + F;
-  x.fillText("ใบเบิกวัตถุดิบ", M, y + 44);
+  x.fillText(KIND.title, M, y + 44);
 
   // กล่องเลขที่เอกสาร มุมขวาบน
   const bw = 400, bh = 108, bx = SLIP_W - M - bw, by = M;
-  x.strokeStyle = GREEN; x.lineWidth = 3;
+  const noDoc = !s.docNo;
+  x.strokeStyle = noDoc ? "#c0362c" : GREEN; x.lineWidth = 3;
   x.strokeRect(bx, by, bw, bh);
   x.fillStyle = MUTED; x.font = "24px " + F;
   x.fillText("เลขที่เอกสาร", bx + 18, by + 34);
-  x.fillStyle = GREEN; x.font = "bold 38px " + F;
-  x.fillText(s.docNo || "-", bx + 18, by + 80);
+  x.fillStyle = noDoc ? "#c0362c" : GREEN; x.font = "bold 38px " + F;
+  x.fillText(s.docNo || "ไม่มีเลขที่", bx + 18, by + 80);
 
   y += 78;
   x.strokeStyle = INK; x.lineWidth = 4;

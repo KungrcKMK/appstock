@@ -1639,6 +1639,28 @@
     </div>
   </div>
 
+  <!-- ═══ 📜 ประวัติการใช้งานของคลังนี้ ═══
+       ต่างจาก "📜 ของฉัน" บนแถบเมนู — อันนั้นเห็นเฉพาะรายการที่ตัวเองทำ
+       อันนี้เห็นของทุกคนในคลังที่กำลังเปิดอยู่ -->
+  <div id="rawHistModal" class="hidden fixed inset-0 z-[610] flex items-center justify-center p-4"
+       style="background:rgba(22,36,27,.55);backdrop-filter:blur(3px);">
+    <div class="sq-page" style="width:100%;max-width:620px;border-radius:14px;overflow:hidden;
+                box-shadow:0 20px 50px rgba(0,0,0,.3);display:flex;flex-direction:column;max-height:92vh;">
+
+      <div style="background:var(--sq-surface);border-bottom:1px solid var(--sq-line);
+                  padding:13px 16px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+        <div style="flex:1;min-width:0;">
+          <div class="sq-card-title">📜 ประวัติการใช้งาน</div>
+          <div class="sq-card-note" id="rawHistSub">—</div>
+        </div>
+        <button onclick="closeRawHistory()" class="sq-btn">ปิด</button>
+      </div>
+
+      <div id="rawHistoryList"
+           style="padding:12px 14px;overflow-y:auto;display:flex;flex-direction:column;gap:6px;"></div>
+    </div>
+  </div>
+
   <!-- ═══ 📈 กราฟวิเคราะห์วัตถุดิบ ═══
        ย้ายออกจากหน้าหลักมาอยู่ในหน้าต่างนี้ เพราะเป็นข้อมูลประกอบ
        ไม่ใช่งานที่ต้องทำทุกวัน หน้าหลักจะได้เหลือแต่ตารางที่ใช้จริง

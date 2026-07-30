@@ -102,7 +102,8 @@ function _rawApplyData(data, startup) {
   if (inp) inp.value = rawAlertDays;
   rawNextSku  = data.nextSku || MODULE_META[rawCurrentModule].skuPrefix + "0001";
   renderRawInventory(rawLastData);
-  renderRawHistory(data.recentHistory || []);
+  window._rawRecentHistory = data.recentHistory || [];
+  renderRawHistory(window._rawRecentHistory);
   renderRawStats(rawLastData, data.discontinued || []);
   // ⚠️ ไม่วาดกราฟตรงนี้ — กราฟย้ายไปอยู่ในหน้าต่าง 📈 กราฟ ที่ต้องกดเปิด
   //    Chart.js วาดในกล่องที่ซ่อนอยู่ไม่ได้ (ความสูงเป็น 0) จึงวาดตอนเปิดหน้าต่างแทน
@@ -458,10 +459,22 @@ function renderRawHistory(h) {
     else if(act.includes("ลบ")||act.includes("ยกเลิก")){color="var(--sq-crit)";emj="🗑️";}
     else if(act.includes("สำรอง")){color="var(--sq-muted)";emj="☁️";}
     else if(act.includes("แก้ไข")){color="var(--sq-ink2)"; emj="✏️";}
+    // แถวที่เป็นการเบิก/รับ/คืน กดออกใบเอกสารซ้ำได้ (ออดิเตอร์ขอใบที่หาย)
+    const canSlip = /เบิก|รับ|คืน/.test(act);
+    const slipArg = canSlip ? encodeURIComponent(JSON.stringify({
+      docNo: String(x[5]||""), sku: String(x[6]||""), name: String(x[1]||""),
+      qty: Number(x[3])||0, unit: String(x[7]||""), purpose: String(x[8]||""),
+      user: String(x[4]||""), at: x[0],
+      type: act.includes("เบิก") ? "OUT" : act.includes("คืน") ? "RETURN" : "IN",
+      module: rawCurrentModule
+    })) : "";
     return `<div class="history-item" style="border-left-color:${color}">
       <div class="history-text-main">${emj} ${escapeHtml(x[1]||"-")}</div>
       <div class="history-text-act" style="color:${color}">${escapeHtml(act)}: ${escapeHtml(String(x[3]||"-"))}</div>
+      ${x[8] ? `<div class="history-text-sub" style="color:var(--sq-ink2);">ใช้กับงาน: ${escapeHtml(String(x[8]))}</div>` : ""}
       <div class="history-text-sub">${rawForceThaiDate(x[0])} · โดย ${escapeHtml(personName(x[4]))}</div>
+      ${canSlip ? `<button onclick="rawSlipFromHistory('${slipArg}')" class="rm-mini" style="margin-top:6px;">
+        🧾 ออกใบ${x[5] ? " (" + escapeHtml(String(x[5])) + ")" : "ย้อนหลัง"}</button>` : ""}
     </div>`;
   }).join("");
 }
@@ -881,6 +894,10 @@ function openRawAction(sku, name, unit, currentQty) {
   document.getElementById("rawModalQty").value         = "1";
   document.getElementById("rawModalCurrentQty").value  = qty;
   document.getElementById("rawModalStock").textContent = qty + " " + (unit||"");
+    // ล้างช่อง "ใช้กับงาน" ทุกครั้ง กันเผลอใช้ค่าเดิมของรายการก่อน
+  const _pp = document.getElementById("rawModalPurpose");
+  if (_pp) _pp.value = "";
+  rawFillPurposeList();
   document.getElementById("rawModalStock").style.color =
     qty <= 0 ? "var(--sq-crit)" : qty < 10 ? "var(--sq-high)" : "var(--sq-accent)";
   document.getElementById("rawActionModal").classList.remove("hidden");
@@ -896,6 +913,13 @@ function setRawType(t) {
   document.getElementById("rawBtnOut").className = t==="OUT"    ? on("text-orange-600")  : off;
   document.getElementById("rawBtnRet").className = t==="RETURN" ? on("text-sky-600")     : off;
   document.getElementById("rawBtnIn").className  = t==="IN"     ? on("text-emerald-600") : off;
+  // เบิกออกบังคับกรอก "ใช้กับงาน" ส่วนรับ/คืน กรอกก็ได้ไม่กรอกก็ได้
+  const _req = document.getElementById("rawPurposeReq");
+  const _pin = document.getElementById("rawModalPurpose");
+  if (_req) _req.style.display = (t === "OUT") ? "" : "none";
+  if (_pin) _pin.placeholder = (t === "OUT")
+    ? "เช่น ผลิตวุ้นมะพร้าว ล็อต 3"
+    : "ระบุหรือไม่ก็ได้ เช่น รับจากซัพพลายเออร์ ก";
 }
 
 function openRawQr() {
@@ -1058,12 +1082,24 @@ async function rawSubmitAction() {
   if (type === "OUT" && qty > curQty) {
     return showToast(`⚠️ สต๊อกไม่เพียงพอ — มีอยู่ ${curQty} ไม่สามารถเบิก ${qty} ได้`, "error");
   }
+  // ใช้กับงานอะไร — บังคับกรอกเฉพาะตอนเบิก เพราะเป็นข้อมูลที่ต้องขึ้นใบเบิกให้ออดิเตอร์ตรวจ
+  const purpose = (document.getElementById("rawModalPurpose")?.value || "").trim();
+  if (type === "OUT" && !purpose) {
+    showToast("กรุณาระบุว่าเบิกไปใช้กับงานอะไร", "warn");
+    document.getElementById("rawModalPurpose")?.focus();
+    return;
+  }
   setRawBusy("rawBtnSubmit",true,"กำลังบันทึก...");
   const _busyText = { IN:"กำลังบันทึกรับเข้า...", RETURN:"กำลังบันทึกการคืน...", OUT:"กำลังบันทึกการเบิก..." };
   showLoading(_busyText[type] || "กำลังบันทึก...");
-  const r = await rawFetch({ action:"UPDATE", sku, type, qty, user:currentUser });
+  const r = await rawFetch({ action:"UPDATE", sku, type, qty, purpose, user:currentUser });
   hideLoading(); setRawBusy("rawBtnSubmit",false);
-  if (r.status==="success") { closeRawAction(); showToast("บันทึกสำเร็จ ✔️","success"); rawLoadData(); }
+  if (r.status==="success") {
+    closeRawAction();
+    showToast("บันทึกสำเร็จ ✔️","success");
+    rawLoadData();
+    if (r.slip && typeof openWithdrawSlip === "function") openWithdrawSlip(r.slip);
+  }
   else showToast(r.message||"ไม่สำเร็จ","error");
 }
 
@@ -1123,3 +1159,27 @@ function setRawBusy(id, busy, txt="กำลังบันทึก...") {
   btn.innerHTML = busy ? txt : btn.dataset.orig;
 }
 
+
+
+/** เติมตัวเลือก "ใช้กับงาน" จากที่เคยพิมพ์ไว้ในประวัติ — ครั้งหน้าจะได้เลือกแทนพิมพ์ */
+function rawFillPurposeList() {
+  const dl = document.getElementById("rawPurposeList");
+  if (!dl) return;
+  const seen = [];
+  (window._rawRecentHistory || []).forEach(x => {
+    const p = String(x[8] || "").trim();
+    if (p && seen.indexOf(p) < 0) seen.push(p);
+  });
+  dl.innerHTML = seen.slice(0, 15).map(p => '<option value="' + escapeAttr(p) + '">').join("");
+}
+
+
+/** กดออกใบเอกสารซ้ำจากรายการในประวัติ */
+function rawSlipFromHistory(payload) {
+  try {
+    const s = JSON.parse(decodeURIComponent(payload));
+    // ประวัติไม่ได้เก็บยอดคงเหลือ ณ ตอนนั้นไว้ จึงไม่แสดงตัวเลขนี้ในใบย้อนหลัง
+    s.balance = null;
+    if (typeof openWithdrawSlip === "function") openWithdrawSlip(s);
+  } catch (e) { showToast("เปิดใบไม่สำเร็จ", "error"); }
+}

@@ -145,16 +145,31 @@ async function slipDraw(s) {
   x.textAlign = "left";
   y += rowH + 30;
 
-  // ── ยอดคงเหลือหลังเบิก ──
-  x.fillStyle = "#f4f7f4"; x.fillRect(M, y, tW, 74);
-  x.strokeStyle = LINE; x.strokeRect(M, y, tW, 74);
+  // ── ใช้กับงานอะไร ──
+  x.fillStyle = "#ffffff"; x.fillRect(M, y, tW, 74);
+  x.strokeStyle = LINE; x.lineWidth = 2; x.strokeRect(M, y, tW, 74);
   x.fillStyle = MUTED; x.font = "26px " + F;
-  x.fillText(KIND.bal, M + 20, y + 46);
-  x.fillStyle = INK; x.font = "bold 34px " + F;
-  x.textAlign = "right";
-  x.fillText(Number(s.balance || 0).toLocaleString() + " " + (s.unit || ""), M + tW - 20, y + 47);
-  x.textAlign = "left";
-  y += 74 + 90;
+  x.fillText("ใช้กับงาน", M + 20, y + 46);
+  x.fillStyle = INK; x.font = "bold 28px " + F;
+  let pTxt = String(s.purpose || "").trim() || "— ไม่ได้ระบุ —";
+  while (x.measureText(pTxt).width > tW - 220 && pTxt.length > 6) pTxt = pTxt.slice(0, -2);
+  x.fillText(pTxt, M + 190, y + 47);
+  y += 74;
+
+  // ── ยอดคงเหลือหลังทำรายการ ──
+  // ใบย้อนหลังจากประวัติไม่มีตัวเลขนี้ (ประวัติไม่ได้เก็บยอด ณ ตอนนั้นไว้)
+  if (s.balance !== null && s.balance !== undefined) {
+    x.fillStyle = "#f4f7f4"; x.fillRect(M, y, tW, 74);
+    x.strokeStyle = LINE; x.strokeRect(M, y, tW, 74);
+    x.fillStyle = MUTED; x.font = "26px " + F;
+    x.fillText(KIND.bal, M + 20, y + 46);
+    x.fillStyle = INK; x.font = "bold 34px " + F;
+    x.textAlign = "right";
+    x.fillText(Number(s.balance).toLocaleString() + " " + (s.unit || ""), M + tW - 20, y + 47);
+    x.textAlign = "left";
+    y += 74;
+  }
+  y += 90;
 
   // ── ช่องเซ็น 3 ช่อง ──
   const roles = [KIND.who, "ผู้ตรวจสอบ", "ผู้อนุมัติ"];

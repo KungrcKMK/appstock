@@ -276,14 +276,21 @@ window.onload = function() { checkAuth(); _updateOnlineStatus(); };
 // ═══════════════════════════════════════════════════════════
 if ("serviceWorker" in navigator) {
 
-  /** กำลังทำอะไรค้างอยู่มั๊ย — ถ้าใช่ ห้ามรีเฟรชทับ เดี๋ยวของที่กรอกหาย */
+  /**
+   * กำลังทำอะไรค้างอยู่มั๊ย — ถ้าใช่ ห้ามรีเฟรชทับ เดี๋ยวของที่กรอกหาย
+   *
+   * ⚠️ เคยเขียนกว้างเกินไป: เช็คว่ามีช่องกรอกไหนมีค่าอยู่บ้างหรือเปล่า
+   *    แต่หน้าวัตถุดิบมีช่อง "เตือนล่วงหน้า" ที่มีค่า 7 ติดมาตลอด
+   *    เลยนับว่ายุ่งตลอดเวลา อัปเดตอัตโนมัติไม่มีวันทำงานเลย
+   *
+   * เกณฑ์ที่ถูก: ยุ่ง = มีหน้าต่างเปิดค้าง หรือ กำลังพิมพ์อยู่จริงๆ
+   */
   function _appIsBusy() {
     const openBox = [...document.querySelectorAll('[id$="Modal"],[id$="Overlay"],[id$="Sheet"]')]
       .some(el => el.id !== "loadingOverlay" && el.offsetParent !== null);
     if (openBox) return true;
-    return [...document.querySelectorAll("input,textarea")].some(el =>
-      el.offsetParent !== null && el.type !== "search" && el.type !== "checkbox" &&
-      el.id !== "rawSearch" && String(el.value || "").trim() !== "");
+    const a = document.activeElement;
+    return !!(a && (a.tagName === "INPUT" || a.tagName === "TEXTAREA") && a.type !== "search");
   }
 
   function _showUpdateBar() {

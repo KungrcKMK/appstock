@@ -2134,7 +2134,10 @@ function getRawMaterials(module) {
     const histData = histSheet.getRange(histLastRow - histNum + 1, 1, histNum, hh.length).getValues();
     recentHistory = histData.reverse().map(row => {
       const o = {}; hh.forEach((k, i) => { o[k] = row[i]; });
-      return [o.Timestamp, o.Name, o.Action, o.Qty, o.User];
+      // ช่องที่ 6 เป็นต้นไปเพิ่มทีหลัง — หน้าจอเดิมอ่านแค่ 0-4 จึงไม่กระทบ
+      // ใส่มาเพื่อให้กดพิมพ์ใบเบิกซ้ำจากหน้าประวัติได้ (ออดิเตอร์ขอใบที่หาย)
+      return [o.Timestamp, o.Name, o.Action, o.Qty, o.User,
+              o.DocNo || "", o.SKU || "", o.Unit || ""];
     });
   }
 

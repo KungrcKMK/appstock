@@ -139,8 +139,37 @@ function _rawApplyData(data, startup) {
   }
 }
 
+// ─────────────────────────────────────────────
+// 📈 หน้าต่างกราฟวิเคราะห์
+//    วาดกราฟตอนเปิดเท่านั้น เพราะ Chart.js คำนวณขนาดจากกล่องที่มองเห็นอยู่
+// ─────────────────────────────────────────────
+function openRawCharts() {
+  const m = document.getElementById("rawChartModal");
+  if (!m) return;
+  if (!rawLastData.length) { showToast("ยังไม่มีข้อมูลให้วาดกราฟ", "warn"); return; }
+
+  const sub = document.getElementById("rawChartSub");
+  if (sub) {
+    const withDaily = rawLastData.filter(i => Number(i.DailyUsage || 0) > 0).length;
+    sub.textContent = (rawCurrentModule === "SQF" ? "วัตถุดิบ SQF" : "วัตถุดิบ MLM")
+      + ` · ทั้งหมด ${rawLastData.length} รายการ · กรอกอัตราใช้ต่อวันไว้ ${withDaily} รายการ`;
+  }
+  m.classList.remove("hidden");
+  // รอให้กล่องมีขนาดจริงก่อนค่อยวาด
+  requestAnimationFrame(() => renderRawCharts(rawLastData));
+}
+
+function closeRawCharts() {
+  const m = document.getElementById("rawChartModal");
+  if (m) m.classList.add("hidden");
+}
+
 // ── Charts ──
 function renderRawCharts(items) {
+  // กราฟอยู่ในหน้าต่างที่อาจยังไม่ถูกเปิด — ไม่มี canvas ก็ไม่ต้องทำอะไร
+  const barEl   = document.getElementById("rawBarChart");
+  const donutEl = document.getElementById("rawDonutChart");
+  if (!barEl || !donutEl) return;
   // กราฟวันคงเหลือ — เฉพาะรายการที่มี DailyUsage > 0
   const withDaily = items.filter(i => Number(i.DailyUsage||0) > 0);
   const sorted = [...withDaily]

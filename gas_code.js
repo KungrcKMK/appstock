@@ -2580,8 +2580,7 @@ function rmUpdate(data, module) {
       // คอลัมน์ DocNo/SKU/Unit ต่อท้ายของเดิม ไม่แทรกกลาง
       // เพราะ getMyHistory / bomHealthReport / getActivityLog อ่านด้วยลำดับคอลัมน์เดิมอยู่
       const hist = getSheet(module + "_History");
-      ensureColumns(hist, ["DocNo", "SKU", "Unit", "Purpose"]);
-      const hHead = hist.getRange(1, 1, 1, hist.getLastColumn()).getValues()[0];
+      const hHead = ensureColumns(hist, ["DocNo", "SKU", "Unit", "Purpose"]);
       const docNo = _nextDocNo(module, type);   // ออกเลขให้ทุกประเภท เบิก/รับ/คืน
       const histRow = hHead.map(function (c) {
         if (c === "Timestamp") return new Date().toISOString();

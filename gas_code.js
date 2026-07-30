@@ -2099,16 +2099,29 @@ function handleRawMaterial(action, data, module) {
 }
 
 // ตรวจสอบและเพิ่มคอลัมน์ที่หายไปใน sheet เก่า
+/**
+ * เพิ่มคอลัมน์ที่ยังไม่มีต่อท้ายชีต แล้วคืนหัวตารางชุดใหม่กลับไป
+ *
+ * ⚠️ บั๊กเดิม: อ่านหัวตารางมาครั้งเดียวแล้วไม่อัปเดตตอนเพิ่มคอลัมน์
+ *    เวลาต้องเพิ่มหลายคอลัมน์พร้อมกัน h.length ไม่ขยับ
+ *    ทุกคอลัมน์จึงถูกเขียนทับกันที่ตำแหน่งเดียว เหลือรอดแค่ตัวสุดท้าย
+ *    (ทำให้ DocNo กับ SKU หายไปจากชีตประวัติ ทั้งที่โค้ดสั่งเขียนแล้ว)
+ *
+ * และคืนหัวตารางกลับไปด้วย เพื่อไม่ต้อง getLastColumn() ซ้ำ
+ * ซึ่งอาจได้ค่าเก่าเพราะการเขียนยังไม่ถูก flush
+ */
 function ensureColumns(sheet, requiredHeaders) {
   const data = sheet.getDataRange().getValues();
-  const h = data[0] || [];
+  const h = (data[0] || []).slice();
   requiredHeaders.forEach(col => {
-    if (!h.includes(col)) {
+    if (h.indexOf(col) < 0) {
       const newColIdx = h.length + 1;
       sheet.getRange(1, newColIdx).setValue(col);
       sheet.getRange(1, newColIdx).setFontWeight("bold").setBackground("#1e293b").setFontColor("#ffffff");
+      h.push(col);                 // ← ที่ขาดไป ทำให้คอลัมน์ถัดไปทับตำแหน่งเดิม
     }
   });
+  return h;
 }
 
 function getRawMaterials(module) {

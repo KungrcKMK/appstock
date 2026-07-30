@@ -2187,6 +2187,181 @@ function rmCreate(data, module) {
   return { status: "success" };
 }
 
+// ============================================================
+// 📥 นำเข้าวัตถุดิบเป็นชุดจากไฟล์
+//
+//   data.rows = [{ sku, name, qty, unit, min, dailyUsage, expiryDate, alertDays }]
+//   data.mode = "skip"      → ของที่มีอยู่แล้วให้ข้ามไป (ค่าเริ่มต้น ปลอดภัยสุด)
+//               "overwrite" → อัปเดตทับ เฉพาะช่องที่กรอกมาในไฟล์
+//
+//   ฝั่งหน้าจอตรวจข้อมูลมาแล้วชั้นหนึ่ง แต่ที่นี่ตรวจซ้ำทั้งหมด
+//   เพราะห้ามเชื่อข้อมูลที่ส่งมาจากเบราว์เซอร์
+// ============================================================
+var RM_IMPORT_MAX_ROWS = 500;   // กัน GAS ทำงานเกิน 6 นาทีแล้วถูกตัด
+
+function rmImport(data, module) {
+  var mode = data.mode === "overwrite" ? "overwrite" : "skip";
+  var user = data.user || "-";
+  var inRows = Array.isArray(data.rows) ? data.rows : [];
+
+  if (!inRows.length) return { status: "error", message: "ไม่มีข้อมูลให้นำเข้า" };
+  if (inRows.length > RM_IMPORT_MAX_ROWS) {
+    return { status: "error",
+             message: "นำเข้าได้ครั้งละไม่เกิน " + RM_IMPORT_MAX_ROWS + " รายการ (ส่งมา " + inRows.length + ")" };
+  }
+
+  var sheet = getSheet(module + "_Materials");
+  ensureColumns(sheet, ["DailyUsage", "AlertDays"]);
+  var sheetRows = sheet.getDataRange().getValues();
+  var h = sheetRows[0];
+  var col = {};
+  for (var c = 0; c < h.length; c++) col[h[c]] = c;
+
+  // ── ทำดัชนีของที่มีอยู่แล้ว เทียบทั้ง SKU และชื่อ ──
+  var bySku = {}, byName = {};
+  var prefix = module === "SQF" ? "SQF-" : "MLM-";
+  var maxNum = 0;
+  for (var i = 1; i < sheetRows.length; i++) {
+    var sk = String(sheetRows[i][col["SKU"]] || "").trim();
+    var nm = String(sheetRows[i][col["Name"]] || "").trim();
+    if (sk) bySku[sk.toLowerCase()] = i;
+    if (nm) byName[nm.toLowerCase()] = i;
+    if (sk.indexOf(prefix) === 0) {
+      var n = parseInt(sk.replace(prefix, ""), 10);
+      if (!isNaN(n) && n > maxNum) maxNum = n;
+    }
+  }
+
+  var num = function (v) {
+    var s = String(v == null ? "" : v).replace(/,/g, "").trim();
+    if (s === "") return null;
+    var f = Number(s);
+    return isNaN(f) ? NaN : f;
+  };
+
+  var results = [], newRows = [], histRows = [];
+  var nCreated = 0, nUpdated = 0, nSkipped = 0, nError = 0;
+  var nowIso = new Date().toISOString();
+  var userWithDevice = _reqDeviceName ? (user + " (📱 " + _reqDeviceName + ")") : user;
+  var seenInFile = {};   // กันไฟล์เดียวกันมีชื่อซ้ำกันเอง
+
+  for (var r = 0; r < inRows.length; r++) {
+    var src  = inRows[r] || {};
+    var line = r + 1;
+    var name = String(src.name == null ? "" : src.name).trim();
+    var sku  = String(src.sku  == null ? "" : src.sku ).trim();
+    var unit = String(src.unit == null ? "" : src.unit).trim();
+
+    // ── ตรวจข้อมูล ──
+    if (!name) { results.push({ line: line, name: "", status: "error", message: "ไม่ได้กรอกชื่อวัตถุดิบ" }); nError++; continue; }
+
+    var qty   = num(src.qty);
+    var min   = num(src.min);
+    var daily = num(src.dailyUsage);
+    var alert = num(src.alertDays);
+
+    if (qty !== null && isNaN(qty))     { results.push({ line: line, name: name, status: "error", message: "จำนวนคงเหลือไม่ใช่ตัวเลข" }); nError++; continue; }
+    if (min !== null && isNaN(min))     { results.push({ line: line, name: name, status: "error", message: "จุดสั่งซื้อไม่ใช่ตัวเลข" }); nError++; continue; }
+    if (daily !== null && isNaN(daily)) { results.push({ line: line, name: name, status: "error", message: "ใช้ต่อวันไม่ใช่ตัวเลข" }); nError++; continue; }
+    if (qty !== null && qty < 0)        { results.push({ line: line, name: name, status: "error", message: "จำนวนคงเหลือติดลบ" }); nError++; continue; }
+    if (min !== null && min < 0)        { results.push({ line: line, name: name, status: "error", message: "จุดสั่งซื้อติดลบ" }); nError++; continue; }
+    if (daily !== null && daily < 0)    { results.push({ line: line, name: name, status: "error", message: "ใช้ต่อวันติดลบ" }); nError++; continue; }
+
+    var nameKey = name.toLowerCase();
+    if (seenInFile[nameKey]) {
+      results.push({ line: line, name: name, status: "error",
+                     message: "ชื่อซ้ำกับบรรทัดที่ " + seenInFile[nameKey] + " ในไฟล์เดียวกัน" });
+      nError++; continue;
+    }
+    seenInFile[nameKey] = line;
+
+    // ── ของนี้มีอยู่แล้วหรือยัง ──
+    var hit = -1;
+    if (sku && bySku[sku.toLowerCase()] !== undefined)   hit = bySku[sku.toLowerCase()];
+    else if (byName[nameKey] !== undefined)              hit = byName[nameKey];
+
+    if (hit >= 0) {
+      if (mode === "skip") {
+        results.push({ line: line, name: name, sku: String(sheetRows[hit][col["SKU"]] || ""),
+                       status: "skipped", message: "มีอยู่แล้วในระบบ" });
+        nSkipped++; continue;
+      }
+      // อัปเดตทับ — เฉพาะช่องที่กรอกมาในไฟล์ ช่องว่างไว้ = คงค่าเดิม
+      var changed = [];
+      if (qty   !== null && col["Qty"]         !== undefined) { sheetRows[hit][col["Qty"]] = qty;          changed.push("คงเหลือ"); }
+      if (unit  !== ""   && col["Unit"]        !== undefined) { sheetRows[hit][col["Unit"]] = unit;        changed.push("หน่วย"); }
+      if (min   !== null && col["Min"]         !== undefined) { sheetRows[hit][col["Min"]] = min;          changed.push("จุดสั่งซื้อ"); }
+      if (daily !== null && col["DailyUsage"]  !== undefined) { sheetRows[hit][col["DailyUsage"]] = daily; changed.push("ใช้ต่อวัน"); }
+      if (src.expiryDate && col["ExpiryDate"]  !== undefined) { sheetRows[hit][col["ExpiryDate"]] = src.expiryDate; changed.push("วันหมดอายุ"); }
+      if (alert !== null && !isNaN(alert) && col["AlertDays"] !== undefined) { sheetRows[hit][col["AlertDays"]] = alert; changed.push("เตือนล่วงหน้า"); }
+
+      if (!changed.length) {
+        results.push({ line: line, name: name, sku: String(sheetRows[hit][col["SKU"]] || ""),
+                       status: "skipped", message: "ไม่มีช่องไหนให้อัปเดต" });
+        nSkipped++; continue;
+      }
+      results.push({ line: line, name: name, sku: String(sheetRows[hit][col["SKU"]] || ""),
+                     status: "updated", message: "อัปเดต: " + changed.join(", ") });
+      histRows.push([nowIso, name, "นำเข้าจากไฟล์ (อัปเดต)", qty === null ? "" : qty, userWithDevice]);
+      nUpdated++; continue;
+    }
+
+    // ── เพิ่มใหม่ ──
+    if (!unit) { results.push({ line: line, name: name, status: "error", message: "ไม่ได้กรอกหน่วยนับ" }); nError++; continue; }
+
+    var newSku = sku;
+    if (!newSku) { maxNum++; newSku = prefix + String(maxNum).padStart(4, "0"); }
+    else if (bySku[newSku.toLowerCase()] !== undefined) {
+      results.push({ line: line, name: name, status: "error", message: "SKU " + newSku + " ถูกใช้ไปแล้ว" });
+      nError++; continue;
+    }
+
+    var row = h.map(function (cname) {
+      if (cname === "SKU")          return newSku;
+      if (cname === "Name")         return name;
+      if (cname === "Qty")          return qty === null ? 0 : qty;
+      if (cname === "Unit")         return unit;
+      if (cname === "Min")          return min === null ? 0 : min;
+      if (cname === "DailyUsage")   return daily === null ? 0 : daily;
+      if (cname === "ExpiryDate")   return src.expiryDate || "";
+      if (cname === "AlertDays")    return (alert === null || isNaN(alert)) ? 7 : alert;
+      if (cname === "LastVerified") return "";
+      if (cname === "Discontinued") return false;
+      return "";
+    });
+    newRows.push(row);
+    bySku[newSku.toLowerCase()] = -1;   // จองไว้ กันซ้ำในไฟล์เดียวกัน
+    byName[nameKey] = -1;
+    results.push({ line: line, name: name, sku: newSku, status: "created",
+                   message: "เพิ่มใหม่ " + (qty === null ? 0 : qty) + " " + unit });
+    histRows.push([nowIso, name, "นำเข้าจากไฟล์ (เพิ่มใหม่)", qty === null ? 0 : qty, userWithDevice]);
+    nCreated++;
+  }
+
+  // ── เขียนลงชีตทีเดียว (appendRow ทีละแถวช้ามากใน GAS) ──
+  if (nUpdated > 0) {
+    sheet.getRange(1, 1, sheetRows.length, h.length).setValues(sheetRows);
+  }
+  if (newRows.length > 0) {
+    sheet.getRange(sheetRows.length + 1, 1, newRows.length, h.length).setValues(newRows);
+  }
+  if (histRows.length > 0) {
+    var hs = getSheet(module + "_History");
+    hs.getRange(hs.getLastRow() + 1, 1, histRows.length, 5).setValues(histRows);
+  }
+
+  if (nCreated || nUpdated) {
+    sendAlert("📥 นำเข้าวัตถุดิบจากไฟล์\n➕ เพิ่มใหม่ " + nCreated + " รายการ\n🔄 อัปเดต " + nUpdated +
+              " รายการ\n⏭️ ข้าม " + nSkipped + "\n⚠️ ผิดพลาด " + nError + "\n👤 " + user + deviceTag(), module);
+  }
+
+  return {
+    status: "success",
+    summary: { created: nCreated, updated: nUpdated, skipped: nSkipped, error: nError, total: inRows.length },
+    results: results
+  };
+}
+
 // ประเภทรายการที่รองรับ — IN รับเข้าจากซัพพลายเออร์ / OUT เบิกไปใช้ / RETURN คืนของที่เบิกเกิน
 // แยก RETURN ออกจาก IN เพื่อให้คำนวณยอดใช้จริงได้ถูก: ใช้จริง = เบิกออก − คืน
 var RM_TYPES = {

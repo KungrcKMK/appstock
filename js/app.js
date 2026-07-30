@@ -258,6 +258,28 @@ function switchModule(mod) {
   }
 }
 
+// ═══════════════════════════════════════════════════════════
+// 🔄 กลับมาที่หน้าต่างแอป → ดึงข้อมูลของหน้าที่เปิดอยู่ใหม่
+//    (สลับไปทำอย่างอื่นแล้วกลับมา ไม่ควรเห็นเลขเก่าค้าง)
+//    ข้ามให้ถ้ากำลังกรอกข้อมูลหรือเปิดหน้าต่างอยู่ เดี๋ยวของที่พิมพ์หาย
+// ═══════════════════════════════════════════════════════════
+let _lastFocusRefresh = 0;
+function _refreshActiveModule() {
+  if (Date.now() - _lastFocusRefresh < 8000) return;   // กันยิงรัวตอนสลับหน้าต่างไปมา
+  const openBox = [...document.querySelectorAll('[id$="Modal"],[id$="Overlay"],[id$="Sheet"]')]
+    .some(el => el.id !== "loadingOverlay" && el.getClientRects().length > 0 &&
+                getComputedStyle(el).opacity !== "0");
+  if (openBox) return;
+  _lastFocusRefresh = Date.now();
+  try {
+    if (activeModule === "COLDROOM" && typeof crRefreshIfStale === "function") crRefreshIfStale(true);
+    else if ((activeModule === "SQF" || activeModule === "MLM") && typeof rawLoadData === "function") rawLoadData();
+    else if (activeModule === "EXEC" && typeof loadExecDashboard === "function") loadExecDashboard();
+  } catch (e) {}
+}
+document.addEventListener("visibilitychange", () => { if (!document.hidden) _refreshActiveModule(); });
+window.addEventListener("focus", _refreshActiveModule);
+
 // ─────────────────────────────────────────────
 // INIT
 // ─────────────────────────────────────────────

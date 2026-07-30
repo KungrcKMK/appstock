@@ -2370,6 +2370,53 @@ var RM_TYPES = {
   RETURN: { label: "คืนวัตถุดิบ",  emoji: "↩️ คืนวัตถุดิบ", sign: "+" }
 };
 
+// ═══════════════════════════════════════════════════════════
+// 🧾 เลขที่ใบเบิก — RQ-SQF-2569-0001
+//
+//   ออกให้เฉพาะรายการ "เบิกออก" เพื่อใช้เป็นเลขอ้างอิงกับใบที่พิมพ์ไปเซ็น
+//   ออดิเตอร์ถือใบมาถามเลขไหน เปิดหาในระบบได้ทันที
+//
+//   ตัวนับเก็บใน Config sheet แยกตามโรงงานและปี พ.ศ. (ขึ้นปีใหม่เริ่ม 0001)
+//   เรียกจากใน _withLock อยู่แล้ว จึงไม่มีทางออกเลขซ้ำกัน
+// ═══════════════════════════════════════════════════════════
+function _nextDocNo(module) {
+  var y = new Date().getFullYear() + 543;                 // ปี พ.ศ.
+  var key = "docSeq_RQ_" + module + "_" + y;
+  var sheet = getSheet("Config");
+  var data = sheet.getDataRange().getValues();
+
+  var rowAt = -1, cur = 0;
+  for (var i = 1; i < data.length; i++) {
+    if (String(data[i][0]).trim() === key) { rowAt = i; cur = parseInt(data[i][1], 10) || 0; break; }
+  }
+
+  // ยังไม่เคยมีตัวนับของปีนี้ → ไล่ดูในประวัติก่อน เผื่อเคยออกเลขไปแล้วแต่ตัวนับหาย
+  if (rowAt < 0) {
+    try {
+      var hs = getSheet(module + "_History");
+      var hh = hs.getRange(1, 1, 1, hs.getLastColumn()).getValues()[0];
+      var dc = hh.indexOf("DocNo");
+      if (dc >= 0 && hs.getLastRow() > 1) {
+        var col = hs.getRange(2, dc + 1, hs.getLastRow() - 1, 1).getValues();
+        var prefix = "RQ-" + module + "-" + y + "-";
+        for (var j = 0; j < col.length; j++) {
+          var v = String(col[j][0] || "");
+          if (v.indexOf(prefix) === 0) {
+            var n = parseInt(v.substring(prefix.length), 10);
+            if (!isNaN(n) && n > cur) cur = n;
+          }
+        }
+      }
+    } catch (e) { /* ไม่มีคอลัมน์/ชีต ก็เริ่มที่ 0 */ }
+  }
+
+  var next = cur + 1;
+  if (rowAt >= 0) sheet.getRange(rowAt + 1, 2).setValue(next);
+  else            sheet.appendRow([key, next]);
+
+  return "RQ-" + module + "-" + y + "-" + String(next).padStart(4, "0");
+}
+
 function rmUpdate(data, module) {
   const { sku, user } = data;
   // Poka-Yoke: รับเฉพาะประเภทที่รู้จัก (กันค่าตัวพิมพ์เล็ก/ค่าแปลกปลอมข้ามด่านเช็คสต๊อก)

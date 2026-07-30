@@ -3,12 +3,14 @@
 // Cache static assets สำหรับใช้งาน offline บางส่วน
 // =====================================================
 
-const CACHE_NAME = "appstock-v43";
+const CACHE_NAME = "appstock-v44";
 
 // ไฟล์ที่ cache ไว้ใช้ offline
+// ⚠️ addAll เป็น all-or-nothing — ไฟล์เดียวโหลดไม่ได้ = ติดตั้งไม่สำเร็จทั้งชุด
 const STATIC_ASSETS = [
   "./",
   "./index.html",
+  "./manual.html",
   "./manifest.json",
   "./icons/icon-192.png",
   "./icons/icon-512.png",

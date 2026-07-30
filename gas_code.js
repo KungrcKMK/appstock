@@ -702,6 +702,12 @@ function crGetProductAndBalances(payload) {
     if (String(row[sh.indexOf("Barcode")]) === String(product.Barcode) && Number(row[sh.indexOf("Qty")]) > 0) {
       const b = {};
       sh.forEach((key, idx) => { b[key] = row[idx]; });
+      // ⚠️ ห้ามส่ง Date object ดิบๆ ออกไป
+      //    ตอนแปลงเป็น JSON มันจะกลายเป็นเวลา UTC (เที่ยงคืนวันที่ 28 เวลาไทย = 17:00 ของวันที่ 27 UTC)
+      //    หน้าจอจึงแสดง MFG/EXP ผิดไป 1 วัน และจับคู่ล็อตไม่เจอเวลากดเลือก
+      //    ต้องแปลงเป็น yyyy-MM-dd ตามเขตเวลาของสคริปต์ก่อน เหมือนที่ getStartupOverview ทำ
+      b.MFG = formatCellDate(row[sh.indexOf("MFG")]);
+      b.EXP = formatCellDate(row[sh.indexOf("EXP")]);
       balances.push(b);
     }
   }

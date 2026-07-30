@@ -11,6 +11,7 @@
 const SLIP_W = 1165, SLIP_H = 1654;
 let _slipDataUrl = "";
 let _slipDocNo   = "";
+let _slipTitle   = "ใบเบิก";
 
 /** โหลดโลโก้ไว้ล่วงหน้า ถ้าไม่มีไฟล์ก็วาดใบได้ตามปกติ */
 let _slipLogo = null, _slipLogoTried = false;
@@ -90,7 +91,7 @@ async function slipDraw(s) {
   const info = [
     ["โรงงาน", factory],
     ["วันที่เบิก", _slipThaiDate(s.at)],
-    ["ผู้เบิก", (typeof personName === "function" ? personName(s.user) : s.user) || "-"]
+    [KIND.who, (typeof personName === "function" ? personName(s.user) : s.user) || "-"]
   ];
   x.font = "28px " + F;
   info.forEach(([k, v]) => {
@@ -148,7 +149,7 @@ async function slipDraw(s) {
   x.fillStyle = "#f4f7f4"; x.fillRect(M, y, tW, 74);
   x.strokeStyle = LINE; x.strokeRect(M, y, tW, 74);
   x.fillStyle = MUTED; x.font = "26px " + F;
-  x.fillText("ยอดคงเหลือหลังเบิก", M + 20, y + 46);
+  x.fillText(KIND.bal, M + 20, y + 46);
   x.fillStyle = INK; x.font = "bold 34px " + F;
   x.textAlign = "right";
   x.fillText(Number(s.balance || 0).toLocaleString() + " " + (s.unit || ""), M + tW - 20, y + 47);
@@ -156,7 +157,7 @@ async function slipDraw(s) {
   y += 74 + 90;
 
   // ── ช่องเซ็น 3 ช่อง ──
-  const roles = ["ผู้เบิก", "ผู้ตรวจสอบ", "ผู้อนุมัติ"];
+  const roles = [KIND.who, "ผู้ตรวจสอบ", "ผู้อนุมัติ"];
   const sw = tW / 3, sy = y + 90;
   roles.forEach((r, i) => {
     const sx = M + sw * i;
@@ -185,15 +186,16 @@ async function slipDraw(s) {
 // เปิดหน้าต่างใบเบิก
 // ─────────────────────────────────────────────
 async function openWithdrawSlip(s) {
-  if (!s || !s.docNo) { showToast("รายการนี้ไม่มีเลขที่ใบเบิก", "warn"); return; }
-  _slipDocNo = s.docNo;
+  if (!s) return;
+  _slipDocNo = s.docNo || "";
+  _slipTitle = { OUT:"ใบเบิก", IN:"ใบรับ", RETURN:"ใบคืน" }[s.type] || "ใบเบิก";
   const modal = document.getElementById("slipModal");
   const box   = document.getElementById("slipPreview");
   if (!modal || !box) return;
 
   box.innerHTML = '<p class="sq-empty">⏳ กำลังสร้างใบเบิก...</p>';
   modal.classList.remove("hidden");
-  document.getElementById("slipDocNo").textContent = s.docNo;
+  document.getElementById("slipDocNo").textContent = s.docNo || "รายการเก่า — ไม่มีเลขที่";
 
   const canvas = await slipDraw(s);
   _slipDataUrl = canvas.toDataURL("image/png");
@@ -214,7 +216,7 @@ function slipDownload() {
   if (!_slipDataUrl) return;
   const a = document.createElement("a");
   a.href = _slipDataUrl;
-  a.download = "ใบเบิก_" + (_slipDocNo || "slip") + ".png";
+  a.download = (_slipTitle || "ใบเบิก") + "_" + (_slipDocNo || "ย้อนหลัง") + ".png";
   a.click();
   showToast("บันทึกรูปใบเบิกแล้ว — นำไปพิมพ์และเซ็นได้", "success", 4500);
 }

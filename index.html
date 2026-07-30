@@ -1638,6 +1638,33 @@
     </div>
   </div>
 
+  <!-- ═══ 🧾 ใบเบิก / ใบรับ / ใบคืน ═══
+       ใบถูกวาดลง canvas แล้วแปลงเป็นรูป — ทั้งดูบนจอ พิมพ์ และดาวน์โหลด
+       ใช้รูปเดียวกันทั้งหมด จึงตรงกันแน่นอน -->
+  <div id="slipModal" class="hidden fixed inset-0 z-[640] flex items-center justify-center p-4"
+       style="background:rgba(22,36,27,.6);backdrop-filter:blur(3px);">
+    <div class="sq-page" style="width:100%;max-width:620px;border-radius:14px;overflow:hidden;
+                box-shadow:0 20px 50px rgba(0,0,0,.3);display:flex;flex-direction:column;max-height:94vh;">
+
+      <div style="background:var(--sq-surface);border-bottom:1px solid var(--sq-line);
+                  padding:13px 16px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+        <div style="flex:1;min-width:0;">
+          <div class="sq-card-title">🧾 เอกสารพร้อมพิมพ์</div>
+          <div class="sq-card-note">เลขที่ <b id="slipDocNo">—</b></div>
+        </div>
+        <button onclick="closeWithdrawSlip()" class="sq-btn">ปิด</button>
+      </div>
+
+      <div id="slipPreview" style="padding:14px 16px;overflow-y:auto;background:var(--sq-ground);"></div>
+
+      <div style="background:var(--sq-surface);border-top:1px solid var(--sq-line);
+                  padding:11px 16px;display:flex;gap:7px;flex-wrap:wrap;justify-content:flex-end;">
+        <button onclick="slipDownload()" class="sq-btn">🖼️ บันทึกเป็นรูป</button>
+        <button onclick="slipPrint()" class="sq-btn sq-btn-primary">🖨️ พิมพ์</button>
+      </div>
+    </div>
+  </div>
+
   <!-- ═══ 📜 ประวัติการใช้งานของคลังนี้ ═══
        ต่างจาก "📜 ของฉัน" บนแถบเมนู — อันนั้นเห็นเฉพาะรายการที่ตัวเองทำ
        อันนี้เห็นของทุกคนในคลังที่กำลังเปิดอยู่ -->

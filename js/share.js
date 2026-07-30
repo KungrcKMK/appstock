@@ -51,14 +51,22 @@ async function shareCopyLink() {
   try {
     await navigator.clipboard.writeText(_shareUrl);
     showToast("คัดลอกลิงก์แล้ว ✅", "success");
-  } catch (e) {
-    // สำรอง: เลือกข้อความให้ผู้ใช้กด Ctrl+C เอง
-    const r = document.createRange();
-    r.selectNode(document.getElementById("shareUrlText"));
-    getSelection().removeAllRanges();
-    getSelection().addRange(r);
-    showToast("กด Ctrl+C เพื่อคัดลอก", "warn");
-  }
+    return;
+  } catch (e) { /* เบราว์เซอร์เก่า หรือหน้าไม่ได้รันบน https → ใช้ทางสำรอง */ }
+
+  // สำรอง: ยัดลิงก์ลงช่องข้อความชั่วคราวแล้วสั่งคัดลอก
+  // (เมื่อก่อนใช้วิธี select ข้อความบนหน้าจอ แต่ตอนนี้ไม่โชว์ลิงก์แล้ว เลยต้องสร้างเอง)
+  const ta = document.createElement("textarea");
+  ta.value = _shareUrl;
+  ta.setAttribute("readonly", "");
+  ta.style.cssText = "position:fixed;top:0;left:0;opacity:0;";
+  document.body.appendChild(ta);
+  ta.select();
+  ta.setSelectionRange(0, _shareUrl.length);   // iOS ไม่ยอมกับ select() เฉยๆ
+  let ok = false;
+  try { ok = document.execCommand("copy"); } catch (e2) { ok = false; }
+  ta.remove();
+  showToast(ok ? "คัดลอกลิงก์แล้ว ✅" : "คัดลอกไม่สำเร็จ ใช้ปุ่ม 📤 ส่งต่อ แทน", ok ? "success" : "warn");
 }
 
 async function shareNative() {

@@ -63,10 +63,10 @@ async function slipDraw(s) {
   }
 
   const KIND = {
-    OUT:    { title:"ใบเบิกวัตถุดิบ", who:"ผู้เบิก",  bal:"ยอดคงเหลือหลังเบิก" },
-    IN:     { title:"ใบรับวัตถุดิบ",  who:"ผู้รับเข้า", bal:"ยอดคงเหลือหลังรับ" },
-    RETURN: { title:"ใบคืนวัตถุดิบ",  who:"ผู้คืน",   bal:"ยอดคงเหลือหลังคืน" }
-  }[s.type] || { title:"ใบเบิกวัตถุดิบ", who:"ผู้เบิก", bal:"ยอดคงเหลือหลังทำรายการ" };
+    OUT:    { title:"ใบเบิกวัตถุดิบ", who:"ผู้เบิก",   bal:"ยอดคงเหลือหลังเบิก", dateLabel:"วันที่เบิก" },
+    IN:     { title:"ใบรับวัตถุดิบ",  who:"ผู้รับเข้า", bal:"ยอดคงเหลือหลังรับ",  dateLabel:"วันที่รับ" },
+    RETURN: { title:"ใบคืนวัตถุดิบ",  who:"ผู้คืน",     bal:"ยอดคงเหลือหลังคืน",  dateLabel:"วันที่คืน" }
+  }[s.type] || { title:"ใบเบิกวัตถุดิบ", who:"ผู้เบิก", bal:"ยอดคงเหลือหลังทำรายการ", dateLabel:"วันที่" };
 
   x.fillStyle = INK; x.font = "bold 52px " + F;
   x.fillText(KIND.title, M, y + 44);
@@ -90,7 +90,7 @@ async function slipDraw(s) {
   const factory = s.module === "SQF" ? "สุพรรณคิวฟู้ดส์ (SQF)" : "แม่ละมาย (MLM)";
   const info = [
     ["โรงงาน", factory],
-    ["วันที่เบิก", _slipThaiDate(s.at)],
+    [KIND.dateLabel, _slipThaiDate(s.at)],
     [KIND.who, (typeof personName === "function" ? personName(s.user) : s.user) || "-"]
   ];
   x.font = "28px " + F;

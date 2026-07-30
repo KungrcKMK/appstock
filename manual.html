@@ -85,7 +85,10 @@
 
   /* ── ตาราง ── */
   .tw{overflow-x:auto;margin:16px 0;-webkit-overflow-scrolling:touch}
-  table{border-collapse:collapse;width:100%;min-width:520px;font-size:15px}
+  /* ตารางแคบให้พอดีจอมือถือไปเลย บังคับ min-width เฉพาะตารางที่คอลัมน์เยอะจริงๆ
+     ไม่งั้นตาราง 2 คอลัมน์ก็ต้องเลื่อนซ้ายขวาโดยไม่จำเป็น */
+  table{border-collapse:collapse;width:100%;font-size:15px}
+  table.wide{min-width:520px}
   th,td{border:1px solid var(--line);padding:9px 12px;text-align:left;vertical-align:top}
   th{background:var(--raised);font-weight:800;font-size:13.5px;color:var(--ink2)}
   td.c,th.c{text-align:center}

@@ -654,7 +654,6 @@ function doPost(e) {
     _reqDeviceName = _sanitizeDeviceName(data.deviceName);
 
     // SYSTEM actions (ไม่ขึ้นกับ module)
-    if (action === "CFGSET")          return jsonResponse(_cfgSetTemp(payload));   // ชั่วคราว ลบทิ้งหลังใช้
     if (action === "verifyUser")      return jsonResponse(verifyUser(payload));
     if (action === "registerUser")    return jsonResponse(registerUser(payload));
     if (action === "logoutAdmin")     { revokeAdminToken(payload.adminToken); return jsonResponse({ ok: true }); }

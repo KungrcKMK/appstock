@@ -146,7 +146,9 @@ function _superAdminName() {
 }
 
 function _isSuperAdmin(username) {
-  return String(username || "").trim().toLowerCase() === SUPER_ADMIN;
+  var sa = _superAdminName();
+  if (!sa) return false;   // ไม่มีแถวในชีต = ไม่มี super admin (ห้ามให้ "" ไปเทียบเจอ "" แล้วกลายเป็นจริง)
+  return String(username || "").trim().toLowerCase() === sa;
 }
 
 // ผู้เรียก API คนนี้เป็น super admin หรือไม่ (ดูจาก token)

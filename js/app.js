@@ -235,7 +235,11 @@ function switchModule(mod) {
     if (btn) btn.classList.toggle("active", m === mod);
   });
 
-  if (mod === "EXEC") {
+  if (mod === "HOME") {
+    document.getElementById("module-HOME").classList.remove("hide");
+    const hu = document.getElementById("homeUser");
+    if (hu) hu.textContent = currentUser || "";
+  } else if (mod === "EXEC") {
     document.getElementById("module-EXEC").classList.remove("hide");
     loadExecDashboard();
   } else if (mod === "BOMHEALTH") {

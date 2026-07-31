@@ -2546,6 +2546,125 @@ function _nextDocNo(module, type) {
   return pf + "-" + module + "-" + y + "-" + String(next).padStart(4, "0");
 }
 
+// ═══════════════════════════════════════════════════════════
+// 📐 จุดสั่งซื้อแนะนำ — คำนวณจากประวัติการเบิกจริง
+//
+// ฝั่งนี้คืนแค่สถิติดิบต่อ SKU (ใช้เฉลี่ยวันละเท่าไหร่ + ผันผวนแค่ไหน)
+// สูตรจุดสั่งซื้อไปคิดที่หน้าจอ เพราะผู้ใช้ปรับ "รอของกี่วัน" ได้สดๆ
+// จะได้ไม่ต้องยิงมาคำนวณใหม่ทุกครั้งที่ขยับตัวเลข
+// ═══════════════════════════════════════════════════════════
+
+var ROP_WINDOW_DAYS = 90;   // มองย้อนหลังกี่วัน
+
+function rmRopStats(data, module) {
+  const tz = Session.getScriptTimeZone();
+  const now = new Date();
+  const winStart = new Date(now.getTime() - ROP_WINDOW_DAYS * 86400000);
+
+  const hs = getSheet(module + "_History");
+  if (hs.getLastRow() < 2) return { status: "success", windowDays: ROP_WINDOW_DAYS, items: {} };
+  const rows = hs.getDataRange().getValues();
+  const h = rows[0];
+  const cT = h.indexOf("Timestamp"), cN = h.indexOf("Name"), cA = h.indexOf("Action"),
+        cQ = h.indexOf("Qty"), cS = h.indexOf("SKU");
+
+  // ชื่อ→SKU สำหรับแถวเก่าที่ยังไม่มีคอลัมน์ SKU (คอลัมน์นี้เพิ่งเพิ่ม ก.ค. 69)
+  const ms = getSheet(module + "_Materials");
+  const mRows = ms.getDataRange().getValues();
+  const mh = mRows[0];
+  const nameToSku = {};
+  for (var i = 1; i < mRows.length; i++) {
+    nameToSku[String(mRows[i][mh.indexOf("Name")]).trim()] = String(mRows[i][0]);
+  }
+
+  // เก็บยอดเบิกสุทธิรายวันต่อ SKU (เบิก = +, คืน = -)
+  // และวันที่เห็น SKU ครั้งแรกในประวัติ (ทุก action) ไว้กำหนดช่วงสังเกต —
+  // ของที่เพิ่งเข้าระบบ 10 วัน ห้ามหารด้วย 90 ไม่งั้นค่าเฉลี่ยเจือจางเกินจริง
+  const daily = {};      // sku → { "yyyy-MM-dd": qty }
+  const firstSeen = {};  // sku → Date แรกที่โผล่ในประวัติ
+  const txCount = {};    // sku → จำนวนครั้งที่เบิกในช่วง
+  const lastOut = {};    // sku → วันที่เบิกล่าสุด
+
+  for (var r = 1; r < rows.length; r++) {
+    const ts = rows[r][cT] ? new Date(rows[r][cT]) : null;
+    if (!ts || isNaN(ts)) continue;
+    var sku = cS >= 0 ? String(rows[r][cS] || "").trim() : "";
+    if (!sku) sku = nameToSku[String(rows[r][cN] || "").trim()] || "";
+    if (!sku) continue;
+
+    if (!firstSeen[sku] || ts < firstSeen[sku]) firstSeen[sku] = ts;
+    if (ts < winStart) continue;
+
+    const act = String(rows[r][cA] || "");
+    const q = Number(rows[r][cQ]);
+    if (!isFinite(q) || q <= 0) continue;
+
+    var delta = 0;
+    if (act === "เบิกออก") { delta = q; txCount[sku] = (txCount[sku] || 0) + 1;
+                             if (!lastOut[sku] || ts > lastOut[sku]) lastOut[sku] = ts; }
+    else if (act === "คืนวัตถุดิบ") delta = -q;   // คืน = ไม่ได้ใช้จริง หักออก
+    else continue;
+
+    const day = Utilities.formatDate(ts, tz, "yyyy-MM-dd");
+    if (!daily[sku]) daily[sku] = {};
+    daily[sku][day] = (daily[sku][day] || 0) + delta;
+  }
+
+  // สรุปสถิติต่อ SKU — วันที่ไม่มีการเบิกนับเป็น 0 ด้วย ไม่งั้น σ ต่ำเกินจริง
+  const items = {};
+  Object.keys(daily).forEach(function (sku) {
+    const obsStart = firstSeen[sku] > winStart ? firstSeen[sku] : winStart;
+    const days = Math.max(1, Math.ceil((now - obsStart) / 86400000));
+    const buckets = daily[sku];
+    var total = 0;
+    Object.keys(buckets).forEach(function (d) { total += Math.max(0, buckets[d]); });
+    const avg = total / days;
+    var ss = 0;
+    // วนตามปฏิทินจริงของช่วงสังเกต (รวมวันที่เป็น 0)
+    for (var dOff = 0; dOff < days; dOff++) {
+      const dKey = Utilities.formatDate(new Date(now.getTime() - dOff * 86400000), tz, "yyyy-MM-dd");
+      const v = Math.max(0, buckets[dKey] || 0);
+      ss += (v - avg) * (v - avg);
+    }
+    const sigma = Math.sqrt(ss / days);
+    items[sku] = {
+      avgDaily: Math.round(avg * 1000) / 1000,
+      sigma:    Math.round(sigma * 1000) / 1000,
+      days:     days,
+      txCount:  txCount[sku] || 0,
+      lastOut:  lastOut[sku] ? Utilities.formatDate(lastOut[sku], tz, "yyyy-MM-dd") : ""
+    };
+  });
+
+  return { status: "success", windowDays: ROP_WINDOW_DAYS, items: items };
+}
+
+// รับค่าจุดสั่งซื้อแนะนำ — แก้ Min อย่างเดียว
+// ตั้งใจไม่ใช้ rmEdit เพราะมันเขียนทับ ExpiryDate/DailyUsage ด้วยเสมอ
+function rmSetMin(data, module) {
+  const sku = String(data.sku || "");
+  const min = Number(data.min);
+  if (!sku || !isFinite(min) || min < 0) return { status: "error", message: "ข้อมูลไม่ถูกต้อง" };
+
+  const sheet = getSheet(module + "_Materials");
+  const rows  = sheet.getDataRange().getValues();
+  const h = rows[0];
+  for (var i = 1; i < rows.length; i++) {
+    if (String(rows[i][0]) === sku) {
+      const oldMin = Number(rows[i][h.indexOf("Min")] || 0);
+      const name   = rows[i][h.indexOf("Name")];
+      sheet.getRange(i + 1, h.indexOf("Min") + 1).setValue(min);
+      const who = _reqDeviceName ? (data.user || "-") + " (📱 " + _reqDeviceName + ")" : (data.user || "-");
+      getSheet(module + "_History").appendRow(
+        [new Date().toISOString(), name, "ปรับจุดสั่งซื้อ " + oldMin + "→" + min, "-", who]);
+      sendAlert("📐 ปรับจุดสั่งซื้อ (จากคำแนะนำ)\n📦 " + name + " (" + sku + ")\n🔢 " +
+                oldMin + " → " + min + "\n👤 " + (data.user || "-") + deviceTag(), module);
+      return { status: "success", oldMin: oldMin, newMin: min };
+    }
+  }
+  return { status: "error", message: "ไม่พบ SKU" };
+}
+
 function rmUpdate(data, module) {
   const { sku, user } = data;
   // ใช้กับงานอะไร — บังคับกรอกเฉพาะตอนเบิกออก เพราะเป็นข้อมูลที่ออดิเตอร์ถามหา

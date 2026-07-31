@@ -76,9 +76,11 @@ function initSheet(sheet, name) {
       .setBackground("#1e293b")
       .setFontColor("#ffffff");
     sheet.setFrozenRows(1);
-    // Seed admin account เมื่อสร้าง AppUsers ครั้งแรก
+    // Seed admin account เมื่อสร้าง AppUsers ครั้งแรก — ใช้ชื่อจากชีต Config
+    // (ถ้ายังไม่มีแถว superAdmin ใน Config ให้เพิ่มบัญชีแรกในชีตเองมือ)
     if (name === "AppUsers") {
-      sheet.appendRow(["Kungrc1020", true, "admin", new Date()]);
+      var sa = _superAdminName();
+      if (sa) sheet.appendRow([sa, true, "admin", new Date()]);
     }
   }
 }

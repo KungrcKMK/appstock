@@ -216,7 +216,8 @@ function checkAuth() {
     window._appIsViewer = isViewer;
     if (isViewer) document.querySelectorAll(".viewer-hide").forEach(el => el.style.display = "none");
     _watchNavHeight();   // ปุ่มถูกซ่อน/แสดงตาม role ครบแล้ว ค่อยวัดความสูงเมนู
-    switchModule(isViewer ? "EXEC" : "COLDROOM");
+    // เข้าระบบแล้วเจอหน้าเลือกคลังก่อน (เหมือนมือถือ) — viewer ไปหน้าภาพรวมซึ่งเป็นหน้าหลักของเขา
+    switchModule(isViewer ? "EXEC" : "HOME");
   }
 }
 

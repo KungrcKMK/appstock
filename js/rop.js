@@ -137,7 +137,7 @@ async function ropAccept(sku, min, btn) {
     if (r.status !== "success") throw new Error(r.message || "ไม่สำเร็จ");
     showToast(`ปรับจุดสั่งซื้อเป็น ${min} แล้ว ✅`, "success");
     // อัปเดตค่าในตารางหลักที่ค้างในหน่วยความจำ แล้ววาดใหม่ทั้งคู่
-    const mat = (rawLastData.materials || []).find(m => String(m.SKU) === String(sku));
+    const mat = (Array.isArray(rawLastData) ? rawLastData : []).find(m => String(m.SKU) === String(sku));
     if (mat) mat.Min = min;
     renderRawInventory(rawLastData);
     renderRawStats(rawLastData);

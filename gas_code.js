@@ -339,8 +339,8 @@ function registerUser(payload) {
   const username = String(payload.username || "").trim();
   if (!username) return { ok: false, message: "กรุณาระบุชื่อ" };
 
-  // ห้ามใช้ชื่อ admin
-  if (username.toLowerCase() === "kungrc1020") {
+  // ห้ามสมัครด้วยชื่อบัญชีเจ้าของระบบ
+  if (_isSuperAdmin(username)) {
     return { ok: false, message: "ไม่สามารถใช้ชื่อนี้ได้" };
   }
 

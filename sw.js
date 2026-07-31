@@ -27,7 +27,8 @@ const STATIC_ASSETS = [
   "./js/myhistory.js",
   "./js/import.js",
   "./js/slip.js",
-  "./js/docreport.js"
+  "./js/docreport.js",
+  "./js/rop.js"
 ];
 
 // CDN ที่ cache ด้วย (fonts, charts, qrcode)

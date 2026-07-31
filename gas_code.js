@@ -83,9 +83,36 @@ function initSheet(sheet, name) {
   }
 }
 
+// ── พรางชื่อ login ของเจ้าของระบบในทุกอย่างที่ออกจากเซิร์ฟเวอร์ ──
+// กันพนักงานเห็นชื่อบัญชีในประวัติแล้วเอาไปลองสุ่มรหัสผ่าน
+// ปิดที่ทางออกจุดเดียว (jsonResponse + Telegram) ชีตยังเก็บชื่อจริงไว้ตรวจสอบได้
+// เปลี่ยนชื่อที่แสดง: เพิ่มแถว aliasSuperAdmin ในชีต Config
+var _aliasCache = null;
+function _superAdminAlias() {
+  if (_aliasCache !== null) return _aliasCache;
+  var alias = "ผู้ดูแลระบบ";
+  try {
+    var rows = getSheet("Config").getDataRange().getValues();
+    for (var i = 1; i < rows.length; i++) {
+      if (String(rows[i][0]).trim() === "aliasSuperAdmin" && String(rows[i][1]).trim()) {
+        alias = String(rows[i][1]).trim();
+        break;
+      }
+    }
+  } catch (e) { /* ใช้ค่าเริ่มต้น */ }
+  // กัน JSON พัง ถ้าใครใส่เครื่องหมายคำพูดมาในชื่อ
+  _aliasCache = alias.replace(/[\\"]/g, "").slice(0, 40) || "ผู้ดูแลระบบ";
+  return _aliasCache;
+}
+
+function _maskNames(s) {
+  if (s.toLowerCase().indexOf(SUPER_ADMIN) < 0) return s;   // เร็ว: ส่วนใหญ่ไม่เจอ
+  return s.replace(new RegExp(SUPER_ADMIN, "gi"), _superAdminAlias());
+}
+
 function jsonResponse(data) {
   return ContentService
-    .createTextOutput(JSON.stringify(data))
+    .createTextOutput(_maskNames(JSON.stringify(data)))
     .setMimeType(ContentService.MimeType.JSON);
 }
 

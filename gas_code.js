@@ -106,8 +106,9 @@ function _superAdminAlias() {
 }
 
 function _maskNames(s) {
-  if (s.toLowerCase().indexOf(SUPER_ADMIN) < 0) return s;   // เร็ว: ส่วนใหญ่ไม่เจอ
-  return s.replace(new RegExp(SUPER_ADMIN, "gi"), _superAdminAlias());
+  var sa = _superAdminName();
+  if (!sa || s.toLowerCase().indexOf(sa) < 0) return s;   // เร็ว: ส่วนใหญ่ไม่เจอ
+  return s.replace(new RegExp(sa, "gi"), _superAdminAlias());
 }
 
 function jsonResponse(data) {

@@ -125,25 +125,24 @@ function jsonResponse(data) {
 //   • ห้ามใครเปลี่ยน role หรือรหัสผ่านของบัญชีนี้ (กันโดนล็อกออกจากระบบตัวเอง)
 //   • เป็นคนเดียวที่ตั้งคนอื่นเป็น admin ได้
 // ══════════════════════════════════════════
-var SUPER_ADMIN = "kungrc1020";   // เทียบแบบตัวพิมพ์เล็ก
-
-// ⚠️ ชั่วคราว — ใส่ค่าลงชีต Config โดยไม่ให้ค่าผ่านโค้ด (ลบทิ้งหลังใช้)
-function _cfgSetTemp(p) {
-  var key = String(p.key || "");
-  if (key !== "superAdmin" && key !== "aliasSuperAdmin")
-    return { status: "error", message: "key นี้ไม่อนุญาต" };
-  var val = String(p.value || "").trim().slice(0, 60);
-  if (!val) return { status: "error", message: "ไม่มีค่า" };
-  var sheet = getSheet("Config");
-  var rows = sheet.getDataRange().getValues();
-  for (var i = 1; i < rows.length; i++) {
-    if (String(rows[i][0]).trim() === key) {
-      sheet.getRange(i + 1, 2).setValue(val);
-      return { status: "success", key: key, mode: "update" };
+// ชื่อบัญชีเจ้าของระบบอ่านจากชีต Config (แถว superAdmin) — ไม่เก็บในโค้ด
+// เพราะ repo นี้เป็นสาธารณะ ใครก็เปิดอ่านได้ (ย้ายออกเมื่อ 2026-07-31)
+// ⚠️ ถ้าแถวนี้หายไป เกราะกันแก้ไข super admin จะปิดเงียบๆ — อย่าลบแถวนี้ในชีต
+var _superAdminCache = null;
+function _superAdminName() {
+  if (_superAdminCache !== null) return _superAdminCache;
+  var name = "";
+  try {
+    var rows = getSheet("Config").getDataRange().getValues();
+    for (var i = 1; i < rows.length; i++) {
+      if (String(rows[i][0]).trim() === "superAdmin") {
+        name = String(rows[i][1]).trim().toLowerCase();
+        break;
+      }
     }
-  }
-  sheet.appendRow([key, val]);
-  return { status: "success", key: key, mode: "append" };
+  } catch (e) { /* ไม่มีชีต → ไม่มี super admin */ }
+  _superAdminCache = name;
+  return name;
 }
 
 function _isSuperAdmin(username) {

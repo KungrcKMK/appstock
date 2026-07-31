@@ -10,7 +10,7 @@ frontend (GitHub Pages, vanilla JS) → Google Apps Script (`gas_code.js`) → G
 ## ⚠️ กับดัก 6 ข้อ — เคยพลาดมาแล้วทุกข้อ
 
 1. **มี 2 frontend แยกกัน** — `index.html` (ใช้ `js/*.js`) และ `mobile.html` (โค้ดจบในไฟล์เดียว
-   รวม util ที่ก๊อปมา เช่น `mathEval` อยู่ทั้ง `js/utils.js:169` และ `mobile.html:544`)
+   รวม util ที่ก๊อปมา เช่น `mathEval` อยู่ทั้ง `js/utils.js:169` และ `mobile.html:550`)
    **แก้ UI/ฟีเจอร์ที่ผู้ใช้เห็น ต้องทำสองที่เสมอ** พนักงานหน้างานใช้ mobile เป็นหลัก
 
 2. **แก้ไฟล์ที่แอปโหลดแล้ว ต้องเลื่อนเลข `CACHE_NAME` ใน `sw.js:6`** (เช่น v44 → v45)

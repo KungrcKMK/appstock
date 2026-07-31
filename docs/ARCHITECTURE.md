@@ -81,7 +81,9 @@ Google Sheets 1 ไฟล์ = ฐานข้อมูล 12+ ชีต (โค
 - login ด้วยชื่อ (+ รหัสผ่านถ้าตั้งไว้) → `verifyUser` (GAS) คืน role + `adminToken` ถ้าเป็น admin/manager
 - token เก็บ CacheService TTL 6 ชม. (`TOKEN_TTL_SEC` gas_code.js:169) — หมดแล้ว UI เด้ง login ใหม่
   พร้อมเติมชื่อเดิม (`appstock_prefill_user`)
-- `SUPER_ADMIN = "kungrc1020"` (gas_code.js:101) ลดสิทธิ์/ลบไม่ได้
+- super admin: ชื่อบัญชีอ่านจากชีต Config แถว `superAdmin` ผ่าน `_superAdminName()` — ลดสิทธิ์/ลบไม่ได้
+  **ห้ามเขียนชื่อจริงในโค้ด/เอกสาร** (repo สาธารณะ) · ทุก output พรางชื่อเป็น "ผู้ดูแลระบบ"
+  ที่ `_maskNames` ใน `jsonResponse` + `crSendTelegram` (เปลี่ยนชื่อพราง: Config แถว `aliasSuperAdmin`)
 - API key: โครงพร้อมแต่ **fail-open โดยตั้งใจ** (`_checkApiKey` gas_code.js:567) — เจ้าของสั่งพักไว้
 
 ## PWA / อัปเดตแอป

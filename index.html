@@ -935,6 +935,36 @@
   <!-- ════════════════════════════════════════════
        ❄️ MODULE: COLDROOM
   ════════════════════════════════════════════ -->
+  <!-- ═══ หน้าแรก — เลือกคลังหลัง login ═══ -->
+  <div id="module-HOME" class="module-section hide" style="padding-top:var(--nav-h);">
+    <div class="home-wrap">
+      <img src="assets/logo.png" alt="" class="home-logo" onerror="this.remove()">
+      <h1 class="home-hello">สวัสดี <b id="homeUser"></b> 👋</h1>
+      <p class="home-sub">วันนี้จะทำงานกับคลังไหน — สลับระหว่างทำงานได้ตลอดจากแถบเมนูด้านบน</p>
+      <div class="home-cards">
+        <button class="home-card is-cr" onclick="switchModule('COLDROOM')">
+          <span class="home-ic">❄️</span>
+          <span class="home-name">คลังสินค้า</span>
+          <span class="home-desc">ห้องเย็น · สินค้าสำเร็จรูป · ใบสั่งผลิต</span>
+          <span id="homeBadge-COLDROOM" class="home-badge" style="display:none"></span>
+        </button>
+        <button class="home-card is-sqf" onclick="switchModule('SQF')">
+          <span class="home-ic">🏭</span>
+          <span class="home-name">วัตถุดิบ SQF</span>
+          <span class="home-desc">สุพรรณคิวฟู้ดส์ · เบิก / รับ / นับ</span>
+          <span id="homeBadge-SQF" class="home-badge" style="display:none"></span>
+        </button>
+        <button class="home-card is-mlm" onclick="switchModule('MLM')">
+          <span class="home-ic">🏭</span>
+          <span class="home-name">วัตถุดิบ MLM</span>
+          <span class="home-desc">แม่ละมาย · เบิก / รับ / นับ</span>
+          <span id="homeBadge-MLM" class="home-badge" style="display:none"></span>
+        </button>
+      </div>
+      <p class="home-hint">🔴 ตัวเลขแดง = รายการที่รอจัดการ (หมดอายุ / ใกล้หมดอายุ / ต่ำกว่าจุดสั่งซื้อ)</p>
+    </div>
+  </div>
+
   <div id="module-COLDROOM" class="module-section hide" style="padding-top:var(--nav-h);">
 
 

@@ -12,7 +12,7 @@
    ├─ mobile.html               ← หน้ามือถือ (โค้ดจบในไฟล์เดียว)
    │        ทั้งคู่เสิร์ฟจาก GitHub Pages · sw.js cache ไว้ใช้ offline
    ▼
-Google Apps Script (gas_code.js ~2,900 บรรทัด, deploy ด้วย clasp)
+Google Apps Script (gas_code.js 2,745 บรรทัด, deploy ด้วย clasp)
    │   doGet  = อ่านวัตถุดิบอย่างเดียว (gas_code.js:573)
    │   doPost = ทุกอย่างที่เหลือ route ตาม action/module (gas_code.js:592)
    ▼
@@ -108,7 +108,7 @@ Google Sheets 1 ไฟล์ = ฐานข้อมูล 12+ ชีต (โค
 1. **gas_code.js** — เขียน `rmDocReport` + `rmAckDocs` แล้วเพิ่ม
    `case "DOCREPORT"` / `case "ACKDOC"` ใน `handleRawMaterial` (gas_code.js:2095-2096)
 2. **js/docreport.js** (ไฟล์ใหม่) — ฟังก์ชัน prefix `dr*`: `openDocReport` → `rawFetch({action:"DOCREPORT"})` → `drRender`
-3. **index.html** — เพิ่ม `#drModal` + ปุ่มในเมนู `⋯ เพิ่มเติม` (index.html:1565) + `<script src="js/docreport.js">`
+3. **index.html** — เพิ่ม `#drModal` + ปุ่มในเมนู `⋯ เพิ่มเติม` (index.html:1566) + `<script src="js/docreport.js">`
 4. **sw.js** — เพิ่ม `./js/docreport.js` เข้า STATIC_ASSETS + เลื่อน CACHE_NAME
 5. deploy ทั้งสองฝั่ง (clasp + git push) แล้ว**ทดสอบกับข้อมูลจริงผ่าน preview** ก่อนบอกว่าเสร็จ
 

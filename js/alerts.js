@@ -12,14 +12,17 @@ let _alertQueue = [];
 
 // อัปเดต badge บน Nav
 function updateNavBadge(module, count) {
-  const badge = document.getElementById("badge-" + module);
-  if (!badge) return;
-  if (count > 0) {
-    badge.textContent = count > 99 ? "99+" : count;
-    badge.style.display = "inline-flex";
-  } else {
-    badge.style.display = "none";
-  }
+  // ตั้งทั้งป้ายบนแถบเมนู และป้ายบนการ์ดหน้าแรก จากจุดเดียว
+  ["badge-" + module, "homeBadge-" + module].forEach(id => {
+    const badge = document.getElementById(id);
+    if (!badge) return;
+    if (count > 0) {
+      badge.textContent = count > 99 ? "99+" : count;
+      badge.style.display = "inline-flex";
+    } else {
+      badge.style.display = "none";
+    }
+  });
 }
 
 // แสดง Alert popup

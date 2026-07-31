@@ -1656,6 +1656,38 @@
 
   <!-- ═══ 📋 รายงานใบเบิกรายเดือน ═══
        เอาไว้เทียบกับแฟ้มกระดาษเดือนละครั้ง จะได้รู้ว่าใบไหนขาดภายใน 30 วัน -->
+  <!-- ═══ จุดสั่งซื้อแนะนำ (คำนวณจากประวัติเบิกจริง) ═══ -->
+  <div id="ropModal" class="hidden fixed inset-0 z-[630] flex items-center justify-center p-4"
+       style="background:rgba(22,36,27,.55);backdrop-filter:blur(3px);">
+    <div class="sq-page" style="width:100%;max-width:1080px;border-radius:14px;overflow:hidden;
+                box-shadow:0 20px 50px rgba(0,0,0,.3);display:flex;flex-direction:column;max-height:94vh;">
+
+      <div style="background:var(--sq-surface);border-bottom:1px solid var(--sq-line);
+                  padding:13px 16px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+        <div style="flex:1;min-width:190px;">
+          <div class="sq-card-title">📐 จุดสั่งซื้อแนะนำ</div>
+          <div class="sq-card-note"><b id="ropTarget">—</b> · คำนวณจากประวัติการเบิกจริง — ตัดสินใจเองทีละตัว</div>
+        </div>
+        <label style="font-size:12px;font-weight:800;color:var(--sq-ink2);display:flex;align-items:center;gap:6px;">
+          สั่งของแล้วรอกี่วัน
+          <input type="number" id="ropLeadInput" min="1" max="60" value="7" onchange="ropRender()"
+                 class="sq-input" style="width:64px;text-align:center;">
+        </label>
+        <label style="font-size:12px;font-weight:800;color:var(--sq-ink2);display:flex;align-items:center;gap:6px;">
+          กันของขาด
+          <select id="ropServiceSel" onchange="ropRender()" class="sq-select">
+            <option value="1.28">เสี่ยงได้บ้าง (90%)</option>
+            <option value="1.65" selected>ปกติ (95%)</option>
+            <option value="2.05">ห้ามขาดเลย (98%)</option>
+          </select>
+        </label>
+        <button onclick="closeRopModal()" class="sq-btn">✕ ปิด</button>
+      </div>
+
+      <div id="ropBody" style="padding:14px 16px;overflow-y:auto;"></div>
+    </div>
+  </div>
+
   <div id="drModal" class="hidden fixed inset-0 z-[630] flex items-center justify-center p-4"
        style="background:rgba(22,36,27,.55);backdrop-filter:blur(3px);">
     <div class="sq-page" style="width:100%;max-width:1080px;border-radius:14px;overflow:hidden;

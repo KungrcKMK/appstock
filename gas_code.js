@@ -127,6 +127,25 @@ function jsonResponse(data) {
 // ══════════════════════════════════════════
 var SUPER_ADMIN = "kungrc1020";   // เทียบแบบตัวพิมพ์เล็ก
 
+// ⚠️ ชั่วคราว — ใส่ค่าลงชีต Config โดยไม่ให้ค่าผ่านโค้ด (ลบทิ้งหลังใช้)
+function _cfgSetTemp(p) {
+  var key = String(p.key || "");
+  if (key !== "superAdmin" && key !== "aliasSuperAdmin")
+    return { status: "error", message: "key นี้ไม่อนุญาต" };
+  var val = String(p.value || "").trim().slice(0, 60);
+  if (!val) return { status: "error", message: "ไม่มีค่า" };
+  var sheet = getSheet("Config");
+  var rows = sheet.getDataRange().getValues();
+  for (var i = 1; i < rows.length; i++) {
+    if (String(rows[i][0]).trim() === key) {
+      sheet.getRange(i + 1, 2).setValue(val);
+      return { status: "success", key: key, mode: "update" };
+    }
+  }
+  sheet.appendRow([key, val]);
+  return { status: "success", key: key, mode: "append" };
+}
+
 function _isSuperAdmin(username) {
   return String(username || "").trim().toLowerCase() === SUPER_ADMIN;
 }

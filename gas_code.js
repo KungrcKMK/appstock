@@ -1454,6 +1454,7 @@ function crSaveAlertSettings(payload) {
 
 function crSendTelegram(message) {
   try {
+    message = _maskNames(String(message));   // พรางชื่อเจ้าของระบบในแชทด้วย (คนในกลุ่มอาจไม่ใช่แอดมินทุกคน)
     const s = crGetAlertSettings().settings;
     // รองรับทั้ง string "true" และ boolean true จาก Google Sheets
     const enabled = String(s.enableTelegramStockUpdate).toLowerCase();

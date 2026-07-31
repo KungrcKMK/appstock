@@ -46,7 +46,7 @@ frontend (GitHub Pages, vanilla JS) → Google Apps Script (`gas_code.js`) → G
 - ฝั่ง GAS: `rm*` = วัตถุดิบ (รับ `(data, module)`), `cr*` = ห้องเย็น — เพิ่ม action ใหม่ที่ switch ใน `handleRawMaterial` (`gas_code.js:2086`) หรือ `handleColdroom` (`gas_code.js:648`)
 - การเขียนที่อ่านก่อนเขียน (read-then-write) ต้องห่อ `_withLock(fn)` เสมอ — ดูตัวอย่างใน switch เดียวกัน
 - สีใช้ token `--sq-*` ที่ประกาศใน `index.html` (มี `--sq-crit/high/warn` สำหรับสถานะ) · mobile ใช้ Tailwind CDN ที่ remap สีใน `tailwind.config`
-- id ของ DOM ผูกกับโค้ดเยอะมาก (~263 id) — **เปลี่ยนชื่อ id/ฟังก์ชันเดิม = พังเงียบ** เช็คให้ทั่วก่อน
+- id ของ DOM ผูกกับโค้ดเยอะมาก (285 id ใน index.html) — **เปลี่ยนชื่อ id/ฟังก์ชันเดิม = พังเงียบ** เช็คให้ทั่วก่อน
 - escape ทุกอย่างที่มาจากผู้ใช้ด้วย `escapeHtml`/`escapeAttr`/`escapeJs` (`js/utils.js`)
 
 ## ข้อตกลงกับเจ้าของ (ห้ามฝ่าฝืน)

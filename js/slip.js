@@ -181,19 +181,25 @@ async function slipDraw(s) {
   }
 
   // ── ช่องเซ็น 3 ช่อง — ยึดไว้ท้ายกระดาษ ไม่ให้ลอยอยู่กลางหน้า ──
+  // เรียงแบบฟอร์มไทยมาตรฐาน: ลงชื่อ .... → (ชื่อตัวพิมพ์) → ตำแหน่ง → วันที่
+  // ผู้เบิกก็ต้องเซ็นเหมือนกัน — ชื่อที่ระบบพิมพ์ให้เป็นแค่ตัวยืนยันว่าใคร ไม่ใช่ลายเซ็น
   const roles = [KIND.who, "ผู้ตรวจสอบ", "ผู้อนุมัติ"];
-  const sw = tW / 3, sy = SLIP_H - M - 210;
+  const sw = tW / 3, sy = SLIP_H - M - 216;
   roles.forEach((r, i) => {
-    const sx = M + sw * i;
+    const sx = M + sw * i, cx = sx + sw / 2;
+    // บรรทัดลงชื่อ: คำว่า "ลงชื่อ" + เส้นให้เซ็นทับ
+    x.fillStyle = INK; x.font = "24px " + F; x.textAlign = "left";
+    x.fillText("ลงชื่อ", sx + 24, sy);
     x.strokeStyle = INK; x.lineWidth = 2;
-    x.beginPath(); x.moveTo(sx + 24, sy); x.lineTo(sx + sw - 24, sy); x.stroke();
-    x.fillStyle = MUTED; x.font = "26px " + F; x.textAlign = "center";
-    x.fillText(r, sx + sw / 2, sy + 42);
+    x.beginPath(); x.moveTo(sx + 96, sy + 6); x.lineTo(sx + sw - 24, sy + 6); x.stroke();
+    x.textAlign = "center";
     x.fillStyle = INK; x.font = "24px " + F;
     x.fillText(i === 0 ? "( " + ((typeof personName === "function" ? personName(s.user) : s.user) || "-") + " )"
-                       : "( ....................... )", sx + sw / 2, sy + 80);
+                       : "( ....................... )", cx, sy + 46);
+    x.fillStyle = MUTED; x.font = "26px " + F;
+    x.fillText(r, cx, sy + 82);
     x.fillStyle = MUTED; x.font = "22px " + F;
-    x.fillText("วันที่ ......../......../........", sx + sw / 2, sy + 118);
+    x.fillText("วันที่ ......../......../........", cx, sy + 122);
   });
   x.textAlign = "left";
 

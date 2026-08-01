@@ -304,6 +304,9 @@ function crRefreshLookupIfIdle() {
 }
 
 function crManageSubTab(sub) {
+  // ข้อมูลอ้างอิง (BOM = สูตรการผลิต) — เฉพาะ admin/manager (เจ้าของสั่งปิด 2026-08-01)
+  // ดักที่ฟังก์ชันด้วย ไม่ใช่แค่ซ่อนปุ่ม — กันเรียกตรงจาก console
+  if (sub === "bom" && !window._appCanSeeBom) return;
   ["newproduct","editproduct","bom"].forEach(n => {
     const sec = document.getElementById("crMngSub-" + n);
     const btn = document.getElementById("crMngBtn-" + n);

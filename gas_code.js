@@ -2147,6 +2147,7 @@ function handleRawMaterial(action, data, module) {
     case "ACKDOC":    return _withLock(function(){ return rmAckDocs(data, module); });
     case "ROPSTATS":  return rmRopStats(data, module);
     case "SETMIN":    return _withLock(function(){ return rmSetMin(data, module); });
+    case "SETROPSTART": return _withLock(function(){ return rmSetRopStart(data, module); });
     default: return { status: "error", message: "Unknown action: " + action };
   }
 }

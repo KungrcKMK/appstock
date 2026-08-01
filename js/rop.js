@@ -110,13 +110,22 @@ function ropRender() {
   });
 
   const fmt = n => Number(n).toLocaleString("th-TH", { maximumFractionDigits: 2 });
+  const starts = _ropStats.starts || {};
+  // ช่องวันเริ่มนับรายตัว — ตัดข้อมูลทดสอบ/ช่วงเพี้ยนของตัวนั้นทิ้งจากการคำนวณ
+  const dateCell = sku => {
+    const v = starts[sku] || "";
+    return `<input type="date" value="${v}" onchange="ropSetStart('${escapeJs(sku)}', this.value, this)"
+      title="นับข้อมูลตั้งแต่วันนี้เป็นต้นไป — เว้นว่าง = นับทั้งช่วง"
+      style="font-family:inherit;font-size:11px;font-weight:700;padding:3px 6px;border:1px solid var(--sq-line);
+             border-radius:7px;color:var(--sq-ink2);background:var(--sq-surface);${v ? "" : "opacity:.5;"}">`;
+  };
 
   const body = rows.map(r => {
     const name = `<b>${escapeHtml(r.mat.Name)}</b><br><span style="color:var(--sq-muted);font-size:11px;">${escapeHtml(r.mat.SKU)}</span>`;
     if (!r.s) {
       return `<tr style="opacity:.55;"><td>${name}</td>
         <td colspan="3" style="color:var(--sq-muted);">ยังไม่เคยมีการเบิกใน ${_ropStats.windowDays} วัน</td>
-        <td class="n">${fmt(r.cur)}</td><td>—</td><td></td></tr>`;
+        <td class="n">${fmt(r.cur)}</td><td>—</td><td style="opacity:1;">${dateCell(r.mat.SKU)}</td><td></td></tr>`;
     }
     const stat = `${fmt(r.s.avgDaily)} ${escapeHtml(r.mat.Unit||"")}/วัน
         <br><span style="color:var(--sq-muted);font-size:11px;">±σ ${fmt(r.s.sigma)} · เบิก ${r.s.txCount} ครั้ง/${r.s.days} วัน</span>`;

@@ -2154,8 +2154,10 @@ function handleRawMaterial(action, data, module) {
  * ซึ่งอาจได้ค่าเก่าเพราะการเขียนยังไม่ถูก flush
  */
 function ensureColumns(sheet, requiredHeaders) {
-  const data = sheet.getDataRange().getValues();
-  const h = (data[0] || []).slice();
+  // อ่านเฉพาะแถวหัวตาราง — ของเดิม getDataRange ลากทั้งชีตมาแค่เอาแถวเดียว
+  // (ฟังก์ชันนี้ถูกเรียกแทบทุก request เคยเป็นตัวถ่วงหลักตัวหนึ่ง)
+  const lastCol = sheet.getLastColumn();
+  const h = lastCol > 0 ? sheet.getRange(1, 1, 1, lastCol).getValues()[0].slice() : [];
   requiredHeaders.forEach(col => {
     if (h.indexOf(col) < 0) {
       const newColIdx = h.length + 1;

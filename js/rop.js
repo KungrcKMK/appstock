@@ -152,6 +152,7 @@ function ropRender() {
       <td>${diffTxt}</td>
       <td class="n">${fmt(r.cur)}</td>
       <td style="color:var(--sq-muted);font-size:11px;">ใช้ ${fmt(r.s.avgDaily)}×${lt}วัน + กันขาด ${fmt(Math.ceil(ropZ()*r.s.sigma*Math.sqrt(lt)))}</td>
+      <td>${dateCell(r.mat.SKU)}</td>
       <td>${btn}</td></tr>`;
   }).join("");
 

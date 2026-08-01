@@ -89,22 +89,10 @@ function initSheet(sheet, name) {
 // กันพนักงานเห็นชื่อบัญชีในประวัติแล้วเอาไปลองสุ่มรหัสผ่าน
 // ปิดที่ทางออกจุดเดียว (jsonResponse + Telegram) ชีตยังเก็บชื่อจริงไว้ตรวจสอบได้
 // เปลี่ยนชื่อที่แสดง: เพิ่มแถว aliasSuperAdmin ในชีต Config
-var _aliasCache = null;
 function _superAdminAlias() {
-  if (_aliasCache !== null) return _aliasCache;
-  var alias = "ผู้ดูแลระบบ";
-  try {
-    var rows = getSheet("Config").getDataRange().getValues();
-    for (var i = 1; i < rows.length; i++) {
-      if (String(rows[i][0]).trim() === "aliasSuperAdmin" && String(rows[i][1]).trim()) {
-        alias = String(rows[i][1]).trim();
-        break;
-      }
-    }
-  } catch (e) { /* ใช้ค่าเริ่มต้น */ }
+  var alias = _cfgCached("aliasSuperAdmin") || "ผู้ดูแลระบบ";
   // กัน JSON พัง ถ้าใครใส่เครื่องหมายคำพูดมาในชื่อ
-  _aliasCache = alias.replace(/[\\"]/g, "").slice(0, 40) || "ผู้ดูแลระบบ";
-  return _aliasCache;
+  return alias.replace(/[\\"]/g, "").slice(0, 40) || "ผู้ดูแลระบบ";
 }
 
 function _maskNames(s) {

@@ -2715,7 +2715,10 @@ function rmRopStats(data, module) {
   // สรุปสถิติต่อ SKU — วันที่ไม่มีการเบิกนับเป็น 0 ด้วย ไม่งั้น σ ต่ำเกินจริง
   const items = {};
   Object.keys(daily).forEach(function (sku) {
-    const obsStart = firstSeen[sku] > winStart ? firstSeen[sku] : winStart;
+    // ตั้งวันเริ่มนับไว้ = เจ้าของยืนยันว่าตัวนี้ใช้งานจริงตั้งแต่วันนั้น
+    // นับวันที่ไม่เบิกเป็น 0 ตั้งแต่วันนั้นเลย ไม่ใช่ตั้งแต่แถวแรกที่เจอ
+    const baseStart = ropStart[sku] || firstSeen[sku];
+    const obsStart = baseStart > winStart ? baseStart : winStart;
     const days = Math.max(1, Math.ceil((now - obsStart) / 86400000));
     const buckets = daily[sku];
     var total = 0;

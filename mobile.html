@@ -186,17 +186,15 @@
   <!-- Bottom Nav -->
   <nav id="sMainBottomNav" class="flex-shrink-0 fixed bottom-0 left-0 right-0 bg-slate-900/95 backdrop-blur border-t border-slate-800
               flex pb-safe z-10">
-    <button onclick="showTab('list')" id="navList"
+    <!-- แท็บ QR Code ถูกถอดออก (เจ้าของสั่ง 2026-08-01) — มือถือไว้สแกนทำงาน
+         ป้าย QR พิมพ์จากหน้าคอม: ⋯ เพิ่มเติม → พิมพ์ QR ทั้งหมด -->
+    <button id="navList"
       class="flex-1 py-3 flex flex-col items-center gap-0.5 text-indigo-400">
       <span class="text-2xl">📋</span><span class="text-[10px] font-black">สต๊อก</span>
     </button>
     <button onclick="openScanner()"
       class="flex-1 py-3 flex flex-col items-center gap-0.5 text-slate-500">
       <span class="text-2xl">📷</span><span class="text-[10px] font-black">สแกน</span>
-    </button>
-    <button onclick="showTab('qr')" id="navQr"
-      class="flex-1 py-3 flex flex-col items-center gap-0.5 text-slate-500">
-      <span class="text-2xl">🏷️</span><span class="text-[10px] font-black">QR Code</span>
     </button>
   </nav>
 </div>
@@ -1387,44 +1385,6 @@ async function renderQrList() {
     </div>`).join("");
 }
 
-async function printQR() {
-  const items = qrCache[qrMod] || [];
-  if (!items.length) { toast("ไม่มีรายการ", "warn"); return; }
-  // วาด QR เป็นรูปให้เสร็จในหน้าหลักก่อน แล้วค่อยส่งเข้า popup
-  // ของเดิมให้ popup โหลด library จาก CDN เอง — เน็ตสะดุด = กระดาษเปล่า
-  setLoading(true, "กำลังสร้าง QR...");
-  const urls = await Promise.all(items.map(it => qrDataUrl(`RAWMAT|${qrMod}|${it.sku}`, 110)));
-  setLoading(false);
-  if (!urls.some(Boolean)) { toast("สร้าง QR ไม่สำเร็จ ลองรีเฟรชแอป", "err"); return; }
-  const esc = s => String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
-  const win = window.open("", "_blank");
-  if (!win) { toast("เบราว์เซอร์บล็อกหน้าต่างใหม่", "warn"); return; }
-  win.document.write(`<!DOCTYPE html><html><head>
-<meta charset="UTF-8"><title>QR — ${qrMod}</title>
-<style>
-  *{box-sizing:border-box;margin:0;padding:0}
-  body{background:#fff;font-family:sans-serif}
-  .grid{display:flex;flex-wrap:wrap;padding:8px;gap:6px}
-  .card{border:1px solid #ddd;border-radius:8px;padding:8px;text-align:center;
-        width:130px;break-inside:avoid}
-  .card img{display:block;margin:0 auto;width:110px;height:110px}
-  .mod{font-size:8px;background:#1e293b;color:#fff;padding:2px 6px;border-radius:4px;
-       display:inline-block;margin-bottom:4px;font-weight:bold;letter-spacing:1px}
-  .name{font-size:9px;font-weight:bold;margin-top:4px;line-height:1.3;word-break:break-word}
-  .sku{font-size:8px;color:#888;margin-top:2px}
-  @media print{body{-webkit-print-color-adjust:exact;print-color-adjust:exact}}
-</style>
-</head><body>
-<div class="grid">
-${items.map((item, i) => `
-  <div class="card"><span class="mod">${esc(qrMod)}</span>
-    ${urls[i] ? `<img src="${urls[i]}">` : `<div style="width:110px;height:110px;background:#eee"></div>`}
-    <div class="name">${esc(item.name)}</div><div class="sku">${esc(item.sku)}</div>
-  </div>`).join("")}
-</div>
-<script>setTimeout(()=>window.print(),600);<\/script></body></html>`);
-  win.document.close();
-}
 </script>
 </body>
 </html>

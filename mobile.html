@@ -1383,10 +1383,18 @@ async function renderQrList() {
     </div>`).join("");
 }
 
-function printQR() {
+async function printQR() {
   const items = qrCache[qrMod] || [];
   if (!items.length) { toast("ไม่มีรายการ", "warn"); return; }
+  // วาด QR เป็นรูปให้เสร็จในหน้าหลักก่อน แล้วค่อยส่งเข้า popup
+  // ของเดิมให้ popup โหลด library จาก CDN เอง — เน็ตสะดุด = กระดาษเปล่า
+  showLoading(true);
+  const urls = await Promise.all(items.map(it => qrDataUrl(`RAWMAT|${qrMod}|${it.sku}`, 110)));
+  showLoading(false);
+  if (!urls.some(Boolean)) { toast("สร้าง QR ไม่สำเร็จ ลองรีเฟรชแอป", "err"); return; }
+  const esc = s => String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
   const win = window.open("", "_blank");
+  if (!win) { toast("เบราว์เซอร์บล็อกหน้าต่างใหม่", "warn"); return; }
   win.document.write(`<!DOCTYPE html><html><head>
 <meta charset="UTF-8"><title>QR — ${qrMod}</title>
 <style>
@@ -1395,7 +1403,7 @@ function printQR() {
   .grid{display:flex;flex-wrap:wrap;padding:8px;gap:6px}
   .card{border:1px solid #ddd;border-radius:8px;padding:8px;text-align:center;
         width:130px;break-inside:avoid}
-  .card canvas{display:block;margin:0 auto}
+  .card img{display:block;margin:0 auto;width:110px;height:110px}
   .mod{font-size:8px;background:#1e293b;color:#fff;padding:2px 6px;border-radius:4px;
        display:inline-block;margin-bottom:4px;font-weight:bold;letter-spacing:1px}
   .name{font-size:9px;font-weight:bold;margin-top:4px;line-height:1.3;word-break:break-word}
@@ -1403,22 +1411,14 @@ function printQR() {
   @media print{body{-webkit-print-color-adjust:exact;print-color-adjust:exact}}
 </style>
 </head><body>
-<div class="grid" id="g"></div>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"><\/script>
-<script>
-const items=${JSON.stringify(items)};
-const m="${qrMod}";
-const g=document.getElementById("g");
-items.forEach((item,i)=>{
-  const d=document.createElement("div");d.className="card";
-  d.innerHTML='<span class="mod">'+m+'</span><div id="c'+i+'"></div>'
-    +'<div class="name">'+item.name+'</div><div class="sku">'+item.sku+'</div>';
-  g.appendChild(d);
-  new QRCode(document.getElementById("c"+i),
-    {text:"RAWMAT|"+m+"|"+item.sku,width:110,height:110,correctLevel:QRCode.CorrectLevel.M});
-});
-setTimeout(()=>window.print(),1200);
-<\/script></body></html>`);
+<div class="grid">
+${items.map((item, i) => `
+  <div class="card"><span class="mod">${esc(qrMod)}</span>
+    ${urls[i] ? `<img src="${urls[i]}">` : `<div style="width:110px;height:110px;background:#eee"></div>`}
+    <div class="name">${esc(item.name)}</div><div class="sku">${esc(item.sku)}</div>
+  </div>`).join("")}
+</div>
+<script>setTimeout(()=>window.print(),600);<\/script></body></html>`);
   win.document.close();
 }
 </script>

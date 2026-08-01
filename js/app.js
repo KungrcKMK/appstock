@@ -205,6 +205,10 @@ function checkAuth() {
       const label = isAdmin ? "👑 Admin" : "✅ อนุมัติผู้ใช้";
       rolesBtn.innerHTML = label + '<span id="adminNavBadge" class="nav-badge" style="display:none;background:var(--sq-high);"></span>';
     }
+    // แท็บข้อมูลอ้างอิง (BOM) ในห้องเย็น — เห็นเฉพาะ admin/manager (เจ้าของสั่งปิด 2026-08-01)
+    window._appCanSeeBom = isAdmin || isManager;
+    const bomTabBtn = document.getElementById("crMngBtn-bom");
+    if (bomTabBtn) bomTabBtn.style.display = window._appCanSeeBom ? "" : "none";
     // ตรวจสูตรการผลิต — ตอนนี้เปิดให้ admin เท่านั้น
     // (จะเปิดให้ manager ทีหลัง — เปลี่ยนเป็น isExecDash เมื่อพร้อม)
     const canSeeBomHealth = isAdmin;

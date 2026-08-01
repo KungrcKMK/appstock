@@ -195,6 +195,21 @@ async function ropAccept(sku, min, btn) {
   }
 }
 
+// ตั้ง/ล้างวันเริ่มนับของตัวเดียว แล้วดึงสถิติใหม่ให้เห็นผลทันที
+async function ropSetStart(sku, date, el) {
+  if (el) el.disabled = true;
+  try {
+    const r = await rawFetch({ action: "SETROPSTART", sku, date, user: currentUser });
+    if (r.status !== "success") throw new Error(r.message || "ไม่สำเร็จ");
+    showToast(date ? `นับข้อมูลตั้งแต่ ${date} ✅` : "ล้างวันเริ่มนับแล้ว — กลับไปนับทั้งช่วง", "success");
+    const s = await rawFetch({ action: "ROPSTATS", user: currentUser });
+    if (s.status === "success") { _ropStats = s; ropRender(); }
+  } catch (e) {
+    showToast("บันทึกไม่สำเร็จ: " + (e.message || ""), "error");
+    if (el) el.disabled = false;
+  }
+}
+
 // ถอยกลับค่าที่ตั้งไว้ก่อนกด "รับค่านี้" — เดินเส้นทาง SETMIN เดิม มีบันทึกประวัติเหมือนกัน
 async function ropRevert(sku, btn) {
   const old = _ropOldMin[sku];

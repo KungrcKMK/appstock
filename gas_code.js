@@ -2741,7 +2741,7 @@ function rmRopStats(data, module) {
     };
   });
 
-  return { status: "success", windowDays: ROP_WINDOW_DAYS, items: items };
+  return { status: "success", windowDays: ROP_WINDOW_DAYS, items: items, starts: startsOut };
 }
 
 // รับค่าจุดสั่งซื้อแนะนำ — แก้ Min อย่างเดียว

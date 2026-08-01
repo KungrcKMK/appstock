@@ -227,6 +227,11 @@ function checkAuth() {
 function switchModule(mod) {
   activeModule = mod;
 
+  // หน้าแรกไม่โชว์แถบเมนู (เจ้าของสั่ง 2026-07-31) — กลับมาเมื่อเข้าคลัง
+  // กดชื่อตัวเองบนแถบเมนูเพื่อกลับหน้าแรกได้
+  const nav = document.getElementById("mainNav");
+  if (nav) nav.style.display = (mod === "HOME") ? "none" : "block";
+
   // hide all
   document.querySelectorAll(".module-section").forEach(el => el.classList.add("hide"));
 

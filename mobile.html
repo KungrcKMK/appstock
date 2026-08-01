@@ -200,30 +200,9 @@
 </div>
 
 <!-- ══════════════════════════════════════════
-     SCREEN 4 : QR GENERATOR (slides over main)
+     SCREEN 4 : QR GENERATOR — ถอดออกแล้ว (เจ้าของสั่ง 2026-08-01)
+     มือถือไว้สแกนทำงานอย่างเดียว · ป้าย QR พิมพ์จากหน้าคอม
 ══════════════════════════════════════════ -->
-<div id="sQR" class="hidden fixed inset-0 bg-slate-900 flex-col z-20 dvh">
-
-  <div class="flex-shrink-0 flex items-center gap-3 px-4 border-b border-slate-800 pb-3"
-       style="padding-top:calc(env(safe-area-inset-top,12px) + 12px)">
-    <button onclick="closeQR()"
-      class="btn-tap flex-shrink-0 bg-slate-700 active:bg-slate-600 text-white font-black rounded-2xl flex items-center gap-1 px-4 py-3 text-base shadow">
-      ‹ กลับ
-    </button>
-    <div class="font-black text-lg flex-1">🏷️ QR สำหรับจุดวาง</div>
-    <!-- ไม่มีปุ่มพิมพ์บนมือถือ — เจ้าของสั่งเอาออก 2026-08-01 (พิมพ์ทั้งชุดทำจากหน้าคอม) -->
-  </div>
-
-  <!-- Module filter -->
-  <div class="flex-shrink-0 flex gap-2 p-3">
-    <button onclick="setQrModule('SQF')" id="qBtnSQF"
-      class="flex-1 py-2 rounded-xl font-black text-sm bg-orange-600 text-white">🏭 SQF</button>
-    <button onclick="setQrModule('MLM')" id="qBtnMLM"
-      class="flex-1 py-2 rounded-xl font-black text-sm bg-slate-700 text-slate-400">🏭 MLM</button>
-  </div>
-
-  <div id="qrList" class="flex-1 overflow-y-auto p-3 pb-8 space-y-3"></div>
-</div>
 
 <!-- ══════════════════════════════════════════
      SCANNER (fullscreen overlay)

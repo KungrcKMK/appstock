@@ -164,7 +164,7 @@ function ropRender() {
     </div>
     <div class="sq-tablewrap"><table class="sq-table">
       <thead><tr><th>วัตถุดิบ</th><th>ใช้จริงเฉลี่ย</th><th class="n">แนะนำ</th><th>เทียบของเดิม</th>
-      <th class="n">ตั้งไว้ตอนนี้</th><th>ที่มาตัวเลข</th><th></th></tr></thead>
+      <th class="n">ตั้งไว้ตอนนี้</th><th>ที่มาตัวเลข</th><th>นับตั้งแต่</th><th></th></tr></thead>
       <tbody>${body}</tbody>
     </table></div>
     <p class="sq-note" style="margin-top:10px;">

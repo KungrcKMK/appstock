@@ -609,6 +609,15 @@ function _checkApiKey(incoming) {
   return String(incoming || "") === expected;
 }
 
+// ── Cache คำตอบ GET วัตถุดิบทั้งก้อน ──
+// GAS อ่านชีตช้ามาก (เคยวัดได้ 6-14 วิ/ครั้ง) แต่ข้อมูลเปลี่ยนเฉพาะตอนมีคนกดบันทึก
+// จึงจำคำตอบไว้ แล้ว "ล้างทันที" ทุกครั้งที่มี action เขียนของ module นั้น
+// ผลข้างเคียงที่ยอมรับ: เจ้าของแก้ชีตตรงๆ (ไม่ผ่านแอป) จะเห็นในแอปช้าสุด 5 นาที
+function _rawCacheKey(module) { return "rawmat_" + module; }
+function _rawCacheBust(module) {
+  try { CacheService.getScriptCache().remove(_rawCacheKey(module)); } catch (e) {}
+}
+
 function doGet(e) {
   try {
     if (!_checkApiKey(e.parameter && e.parameter.k)) {
@@ -616,7 +625,16 @@ function doGet(e) {
     }
     const module = ((e.parameter && e.parameter.module) || "MLM").toUpperCase();
     if (module === "SQF" || module === "MLM") {
-      return jsonResponse(getRawMaterials(module));
+      const cache = CacheService.getScriptCache();
+      let json = null;
+      try { json = cache.get(_rawCacheKey(module)); } catch (err2) {}
+      if (json === null) {
+        json = JSON.stringify(getRawMaterials(module));
+        // เกิน 95KB (เพดาน CacheService 100KB) ก็แค่ไม่ cache — ยังตอบได้ปกติ
+        if (json.length < 95000) try { cache.put(_rawCacheKey(module), json, 300); } catch (err3) {}
+      }
+      return ContentService.createTextOutput(_maskNames(json))
+        .setMimeType(ContentService.MimeType.JSON);
     }
     return jsonResponse({ status: "error", message: "GET ไม่รองรับ module นี้" });
   } catch (err) {

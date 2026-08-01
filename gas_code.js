@@ -2692,6 +2692,7 @@ function rmRopStats(data, module) {
     var sku = cS >= 0 ? String(rows[r][cS] || "").trim() : "";
     if (!sku) sku = nameToSku[String(rows[r][cN] || "").trim()] || "";
     if (!sku) continue;
+    if (ropStart[sku] && ts < ropStart[sku]) continue;   // ก่อนวันเริ่มนับ = มองไม่เห็น
 
     if (!firstSeen[sku] || ts < firstSeen[sku]) firstSeen[sku] = ts;
     if (ts < winStart) continue;

@@ -2607,6 +2607,45 @@ function _nextDocNo(module, type) {
 
 var ROP_WINDOW_DAYS = 90;   // มองย้อนหลังกี่วัน
 
+// วันเริ่มนับรายตัว (คอลัมน์ RopStart ใน Materials) — เก็บเป็น text yyyy-MM-dd
+// ชีตอาจแปลงเป็น Date ให้เอง เลยรับทั้งสองแบบ และตีความเป็นเที่ยงคืนเขตเวลาไทยเสมอ
+// (ห้าม new Date("yyyy-MM-dd") ตรงๆ — มันตีความเป็น UTC เที่ยงคืน = ตี 7 ไทย วันเพี้ยน)
+function _ropParseStart(v) {
+  if (!v) return null;
+  if (v instanceof Date && !isNaN(v)) {
+    var d = new Date(v); d.setHours(0, 0, 0, 0); return d;
+  }
+  var m = String(v).trim().match(/^(\d{4})-(\d{2})-(\d{2})/);
+  if (!m) return null;
+  return new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]));
+}
+
+// ตั้ง/ล้างวันเริ่มนับของ SKU เดียว — ใช้ตัดข้อมูลทดสอบหรือช่วงข้อมูลเพี้ยนออกจากการคำนวณ
+function rmSetRopStart(data, module) {
+  const sku = String(data.sku || "");
+  const raw = String(data.date || "").trim();   // "" = ล้าง กลับไปนับทั้งช่วง
+  if (!sku) return { status: "error", message: "ไม่ระบุ SKU" };
+  if (raw && !/^\d{4}-\d{2}-\d{2}$/.test(raw))
+    return { status: "error", message: "รูปแบบวันที่ไม่ถูกต้อง" };
+
+  const sheet = getSheet(module + "_Materials");
+  const mh = ensureColumns(sheet, ["RopStart"]);
+  const c = mh.indexOf("RopStart");
+  const rows = sheet.getDataRange().getValues();
+  for (var i = 1; i < rows.length; i++) {
+    if (String(rows[i][0]) === sku) {
+      // นำหน้าด้วย ' บังคับให้เป็น text — กันชีตแปลงเป็น Date แล้วเขตเวลาเลื่อนวัน
+      sheet.getRange(i + 1, c + 1).setValue(raw ? "'" + raw : "");
+      const who = _reqDeviceName ? (data.user || "-") + " (📱 " + _reqDeviceName + ")" : (data.user || "-");
+      getSheet(module + "_History").appendRow(
+        [new Date().toISOString(), rows[i][mh.indexOf("Name")],
+         raw ? "ตั้งวันเริ่มนับจุดสั่งซื้อ " + raw : "ล้างวันเริ่มนับจุดสั่งซื้อ", "-", who]);
+      return { status: "success", sku: sku, date: raw };
+    }
+  }
+  return { status: "error", message: "ไม่พบ SKU" };
+}
+
 function rmRopStats(data, module) {
   const tz = Session.getScriptTimeZone();
   const now = new Date();

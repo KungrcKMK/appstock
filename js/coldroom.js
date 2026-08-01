@@ -849,7 +849,7 @@ async function crCheckBomMaterials() {
 
   if (noBom.length > 0) {
     html += `<div style="background:var(--sq-high-bg);padding:10px 16px;font-size:12px;font-weight:700;color:var(--sq-high);border-top:1px solid var(--sq-high-bg);">
-      📋 ไม่พบ BOM: ${noBom.map(b=>escapeHtml(b)).join(", ")} — กรุณากำหนดที่แท็บ 📖 ข้อมูลอ้างอิง
+      📋 ไม่พบ BOM: ${noBom.map(b=>escapeHtml(b)).join(", ")} — แจ้งหัวหน้า/แอดมินให้กำหนดที่แท็บ 📖 ข้อมูลอ้างอิง
     </div>`;
   }
   if (!Object.keys(matsByFactory).length && !noBom.length) {

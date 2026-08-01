@@ -131,8 +131,13 @@ function ropRender() {
       : diff > 0
         ? `<span style="color:var(--sq-high);font-weight:800;">▲ ควรเพิ่ม ${fmt(diff)}</span>`
         : `<span style="color:var(--sq-muted);">▼ ลดได้ ${fmt(-diff)}</span>`;
-    const btn = diff === 0 ? "" :
-      `<button class="rm-mini solid" onclick="ropAccept('${escapeJs(r.mat.SKU)}',${r.sug},this)">รับค่านี้</button>`;
+    // เผลอกดรับไป ถอยกลับค่าที่ตั้งไว้เดิมได้ตลอดที่ยังเปิดแอปอยู่
+    const oldMin = _ropOldMin[r.mat.SKU];
+    const undoBtn = (oldMin != null && oldMin !== r.cur)
+      ? `<button class="rm-mini" onclick="ropRevert('${escapeJs(r.mat.SKU)}',this)" title="กลับไปใช้ค่าก่อนกดรับ">↩ คืนค่าเดิม (${fmt(oldMin)})</button>`
+      : "";
+    const btn = (diff === 0 ? "" :
+      `<button class="rm-mini solid" onclick="ropAccept('${escapeJs(r.mat.SKU)}',${r.sug},this)">รับค่านี้</button>`) + undoBtn;
     return `<tr><td>${name}</td><td>${stat}</td>
       <td class="n" style="font-size:16px;font-weight:800;">${fmt(r.sug)}</td>
       <td>${diffTxt}</td>

@@ -603,14 +603,28 @@ function getActivityLog(payload) {
 // ============================================================
 
 // อ่าน API key ที่ตั้งไว้ใน Config sheet (ว่าง = ปิดการตรวจ = fail-open)
-function _getApiKey() {
+// ── อ่านค่าจากชีต Config พร้อม cache ข้ามการเรียก (CacheService อยู่ได้ข้าม request) ──
+// เหตุผล: อ่านชีตกินเวลา 0.3-1.5 วิ/ครั้ง และค่าพวกนี้แทบไม่เคยเปลี่ยน
+// ผลข้างเคียงที่ยอมรับ: แก้ค่าในชีตตรงๆ จะมีผลช้าสุด 10 นาที
+function _cfgCached(key) {
+  var ck = "cfg_" + key;
+  try {
+    var hit = CacheService.getScriptCache().get(ck);
+    if (hit !== null) return hit === " " ? "" : hit;   //   = จำไว้ว่า "ไม่มีค่า"
+  } catch (e) {}
+  var val = "";
   try {
     var data = getSheet("Config").getDataRange().getValues();
     for (var i = 1; i < data.length; i++) {
-      if (String(data[i][0]).trim() === "apiKey") return String(data[i][1] || "").trim();
+      if (String(data[i][0]).trim() === key) { val = String(data[i][1] || "").trim(); break; }
     }
   } catch (e) {}
-  return "";
+  try { CacheService.getScriptCache().put(ck, val === "" ? " " : val, 600); } catch (e) {}
+  return val;
+}
+
+function _getApiKey() {
+  return _cfgCached("apiKey");
 }
 
 // ตรวจ key — ผ่านเสมอถ้ายังไม่ตั้ง apiKey ใน Config (backward compatible)

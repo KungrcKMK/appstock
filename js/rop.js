@@ -86,6 +86,7 @@ function ropSuggest(s) {
 
 function ropRender() {
   if (!_ropStats) return;
+  _ropSavePrefs();
   const items = _ropStats.items || {};
   // rawLastData คือ array ของวัตถุดิบตรงๆ (ดู rawLoadData ใน js/raw.js)
   const mats = Array.isArray(rawLastData) ? rawLastData : [];

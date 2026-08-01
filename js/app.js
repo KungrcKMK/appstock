@@ -187,6 +187,14 @@ function checkAuth() {
     const isExecDash = roleLower === "admin" || roleLower === "viewer" || roleLower === "manager";
     const execBtn = document.getElementById("navBtn-EXEC");
     if (execBtn) execBtn.style.display = isExecDash ? "" : "none";
+    // ลิงก์ลัดบนหน้าแรก — เปิดตามสิทธิ์เดียวกับปุ่มบนแถบเมนู
+    const hlExec = document.getElementById("homeLink-EXEC");
+    if (hlExec) hlExec.style.display = isExecDash ? "" : "none";
+    const hlRoles = document.getElementById("homeLink-ROLES");
+    if (hlRoles) {
+      hlRoles.style.display = (isAdmin || roleLower === "manager") ? "" : "none";
+      hlRoles.textContent = isAdmin ? "👑 Admin" : "✅ อนุมัติผู้ใช้";
+    }
     // 👑 Admin เห็นทุกแท็บ · manager เห็นเฉพาะแท็บ "คำขอ" (อนุมัติ user/viewer ได้)
     const isManager = roleLower === "manager";
     window._appIsAdmin = isAdmin;

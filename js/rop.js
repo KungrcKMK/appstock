@@ -168,6 +168,9 @@ async function ropAccept(sku, min, btn) {
   try {
     const r = await rawFetch({ action: "SETMIN", sku, min, user: currentUser });
     if (r.status !== "success") throw new Error(r.message || "ไม่สำเร็จ");
+    // จำค่าก่อนเปลี่ยนไว้ให้กดคืนได้ — เก็บเฉพาะครั้งแรก (ค่าที่คนตั้งเอง)
+    // ไม่ใช่ค่าจากการกดรับรอบก่อน ไม่งั้นกดรับซ้ำหลายรอบแล้ว "คืน" จะถอยแค่ทีละขั้น
+    if (!(sku in _ropOldMin) && r.oldMin != null) _ropOldMin[sku] = Number(r.oldMin);
     showToast(`ปรับจุดสั่งซื้อเป็น ${min} แล้ว ✅`, "success");
     // อัปเดตค่าในตารางหลักที่ค้างในหน่วยความจำ แล้ววาดใหม่ทั้งคู่
     const mat = (Array.isArray(rawLastData) ? rawLastData : []).find(m => String(m.SKU) === String(sku));
@@ -178,5 +181,26 @@ async function ropAccept(sku, min, btn) {
   } catch (e) {
     showToast("ปรับไม่สำเร็จ: " + (e.message || ""), "error");
     if (btn) { btn.disabled = false; btn.textContent = "รับค่านี้"; }
+  }
+}
+
+// ถอยกลับค่าที่ตั้งไว้ก่อนกด "รับค่านี้" — เดินเส้นทาง SETMIN เดิม มีบันทึกประวัติเหมือนกัน
+async function ropRevert(sku, btn) {
+  const old = _ropOldMin[sku];
+  if (old == null) return;
+  if (btn) { btn.disabled = true; btn.textContent = "⏳"; }
+  try {
+    const r = await rawFetch({ action: "SETMIN", sku, min: old, user: currentUser });
+    if (r.status !== "success") throw new Error(r.message || "ไม่สำเร็จ");
+    delete _ropOldMin[sku];
+    showToast(`คืนจุดสั่งซื้อกลับเป็น ${old} แล้ว ↩`, "success");
+    const mat = (Array.isArray(rawLastData) ? rawLastData : []).find(m => String(m.SKU) === String(sku));
+    if (mat) mat.Min = old;
+    renderRawInventory(rawLastData);
+    renderRawStats(rawLastData);
+    ropRender();
+  } catch (e) {
+    showToast("คืนค่าไม่สำเร็จ: " + (e.message || ""), "error");
+    if (btn) { btn.disabled = false; btn.textContent = "↩ คืนค่าเดิม"; }
   }
 }

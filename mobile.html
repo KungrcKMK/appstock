@@ -683,7 +683,11 @@ function closeMyHistory() { $("myHistSheet").classList.add("hidden"); }
 // QR helper — qrcodejs วาดลง DOM ไม่มี toDataURL ให้ตรงๆ
 // จึงวาดลง div ซ่อนไว้แล้วดึง data URL ออกมา
 // ─────────────────────────────────────────────
-function qrDataUrl(text, size) {
+async function qrDataUrl(text, size) {
+  // รอ library โหลดก่อน สูงสุด 3 วิ — ของเดิมยอมแพ้ทันที ทำให้เปิดแท็บ QR
+  // เร็วกว่าที่สคริปต์โหลดเสร็จแล้วได้กล่องเปล่าทุกใบ
+  for (let w = 0; typeof QRCode === "undefined" && w < 30; w++)
+    await new Promise(r => setTimeout(r, 100));
   return new Promise(resolve => {
     if (typeof QRCode === "undefined") { resolve(""); return; }
     const tmp = document.createElement("div");

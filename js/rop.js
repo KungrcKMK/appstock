@@ -132,7 +132,7 @@ function ropRender() {
     if (r.sug === null) {
       return `<tr><td>${name}</td><td>${stat}</td>
         <td colspan="2"><span class="sq-chip" style="background:var(--sq-warn-bg);color:var(--sq-warn);">ข้อมูลยังน้อย — รอเบิกครบ ${ROP_MIN_TX} ครั้ง</span></td>
-        <td class="n">${fmt(r.cur)}</td><td>—</td><td></td></tr>`;
+        <td class="n">${fmt(r.cur)}</td><td>—</td><td>${dateCell(r.mat.SKU)}</td><td></td></tr>`;
     }
     const diff = r.sug - r.cur;
     const diffTxt = diff === 0

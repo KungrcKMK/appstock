@@ -460,8 +460,6 @@ let filt = [];             // filtered list
 let sel  = null;           // selected item for action sheet
 let aType = "OUT";         // current action type
 let scanner = null;        // Html5Qrcode instance
-let qrMod = "SQF";         // current QR generator module
-let qrCache = {};          // { SQF: [...], MLM: [...] }
 
 // ─────────────────────────────────────────────
 // UTILS
@@ -471,7 +469,7 @@ const show = id => { const e = $(id); if (e) e.classList.remove("hidden"); };
 const hide = id => { const e = $(id); if (e) e.classList.add("hidden"); };
 
 function showScreens(...ids) {
-  ["sModule","sMain","sQR","sScanner"].forEach(s => {
+  ["sModule","sMain","sScanner"].forEach(s => {
     const el = $(s);
     if (!el) return;
     if (ids.includes(s)) {
@@ -808,8 +806,6 @@ async function loadData() {
           cr:    false
         }))
         .sort((a, b) => a.name.localeCompare(b.name, "th"));
-      // cache for QR generator
-      qrCache[mod] = data.map(d => ({ sku: d.sku, name: d.name, qty: d.qty, unit: d.unit }));
     }
     filt = [...data];
     populateDropdown();
@@ -1301,68 +1297,6 @@ function onScan(decoded) {
 // ─────────────────────────────────────────────
 // TAB SWITCHING
 // ─────────────────────────────────────────────
-function showTab(tab) {
-  if (tab === "qr") {
-    show("sQR"); $("sQR").style.display = "flex";
-    setQrModule(qrMod);
-  }
-}
-function closeQR() {
-  // ตอนเปิด showTab ตั้ง style.display="flex" แบบ inline ไว้ (จำเป็น เพราะ class มีแค่ flex-col)
-  // แค่เติม class hidden จะแพ้ inline style — ต้องล้าง inline ด้วย ไม่งั้นปุ่มกลับกดแล้วเงียบ
-  $("sQR").style.display = "none";
-  hide("sQR");
-}
-
-// ─────────────────────────────────────────────
-// QR GENERATOR
-// ─────────────────────────────────────────────
-async function setQrModule(m) {
-  qrMod = m;
-  $("qBtnSQF").className = m === "SQF"
-    ? "flex-1 py-2 rounded-xl font-black text-sm bg-orange-600 text-white"
-    : "flex-1 py-2 rounded-xl font-black text-sm bg-slate-700 text-slate-400";
-  $("qBtnMLM").className = m === "MLM"
-    ? "flex-1 py-2 rounded-xl font-black text-sm bg-blue-600 text-white"
-    : "flex-1 py-2 rounded-xl font-black text-sm bg-slate-700 text-slate-400";
-
-  if (!qrCache[m]) {
-    setLoading(true, "กำลังโหลดรายการ...");
-    try {
-      const res = await fetch(`${GAS_URL}?module=${m}`);
-      const r   = await res.json();
-      setLoading(false);
-      qrCache[m] = (r.materials || []).filter(x => !x.Discontinued).map(x => ({
-        sku: String(x.SKU || ""), name: x.Name || "", qty: Number(x.Qty || 0), unit: x.Unit || ""
-      }));
-    } catch(e) { setLoading(false); toast("โหลดไม่สำเร็จ", "err"); return; }
-  }
-  renderQrList();
-}
-
-async function renderQrList() {
-  const items = qrCache[qrMod] || [];
-  const el = $("qrList");
-  if (!items.length) {
-    el.innerHTML = '<p class="text-slate-600 text-center py-10 font-bold">ไม่มีรายการ</p>'; return;
-  }
-
-  // สร้าง QR data URL ก่อน แล้วค่อย render (หลีกเลี่ยงปัญหา async canvas)
-  const qrContent = items.map(item => `RAWMAT|${qrMod}|${item.sku}`);
-  const dataUrls = await Promise.all(qrContent.map(text => qrDataUrl(text, 80)));
-
-  el.innerHTML = items.map((item, i) => `
-    <div class="bg-slate-800 rounded-2xl p-4 flex items-center gap-4">
-      ${dataUrls[i]
-        ? `<img src="${dataUrls[i]}" class="rounded-xl flex-shrink-0 bg-white p-1" width="80" height="80">`
-        : `<div class="w-20 h-20 rounded-xl bg-slate-700 flex items-center justify-center text-slate-500 text-xs flex-shrink-0">QR Error</div>`}
-      <div class="flex-1 min-w-0">
-        <div class="font-black text-white text-sm leading-snug">${item.name}</div>
-        <div class="text-slate-500 text-xs mt-0.5">${item.sku}</div>
-        <div class="text-slate-600 text-xs">คงเหลือ: ${item.qty} ${item.unit}</div>
-      </div>
-    </div>`).join("");
-}
 
 </script>
 </body>

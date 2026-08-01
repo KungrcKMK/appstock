@@ -116,11 +116,33 @@
     <span class="text-slate-500 text-lg flex-shrink-0">›</span>
   </div>
 
-  <!-- คู่มือ — วางท้ายสุด ไม่แย่งที่ปุ่มหลัก แต่หาเจอเวลาติด -->
-  <a href="manual.html" target="_blank" rel="noopener"
-    class="btn-tap mt-1 text-center text-slate-400 text-xs font-black py-2.5 active:text-white">
-    📖 คู่มือการใช้งาน
-  </a>
+  <!-- เม็ดลิงก์เสริมท้ายจอ — ชุดเดียวกับลิงก์ลัดหน้าแรกฝั่งคอม -->
+  <div class="mt-3 flex flex-wrap justify-center gap-2">
+    <button onclick="openMyHistory()"
+      class="btn-tap bg-slate-800 border border-slate-700 text-slate-300 px-4 py-2 rounded-full text-xs font-black">
+      📜 ของฉัน
+    </button>
+    <button onclick="openShareApp()"
+      class="btn-tap bg-slate-800 border border-slate-700 text-slate-300 px-4 py-2 rounded-full text-xs font-black">
+      🔗 แชร์แอป
+    </button>
+    <a href="manual.html" target="_blank" rel="noopener"
+      class="btn-tap bg-slate-800 border border-slate-700 text-slate-300 px-4 py-2 rounded-full text-xs font-black">
+      📖 คู่มือ
+    </a>
+    <button onclick="switchToDesktop()"
+      class="btn-tap bg-slate-800 border border-slate-700 text-slate-300 px-4 py-2 rounded-full text-xs font-black">
+      💻 คอมพิวเตอร์
+    </button>
+    <button onclick="location.reload()"
+      class="btn-tap bg-slate-800 border border-slate-700 text-slate-300 px-4 py-2 rounded-full text-xs font-black" title="รีเฟรชแอป">
+      ↻ รีเฟรช
+    </button>
+    <button onclick="doLogout()"
+      class="btn-tap bg-slate-800 border border-slate-700 text-red-400 px-4 py-2 rounded-full text-xs font-black">
+      ออกจากระบบ
+    </button>
+  </div>
 
 </div>
 

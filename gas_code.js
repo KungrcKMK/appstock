@@ -2142,6 +2142,16 @@ function crSendTelegramGeneric(message) {
 // ============================================================
 
 function handleRawMaterial(action, data, module) {
+  const res = _handleRawMaterialInner(action, data, module);
+  // action ที่เขียนข้อมูล → ล้าง cache คำตอบ GET ทันที ผู้ใช้เห็นยอดใหม่แน่นอน
+  // (BACKUP ไม่แก้ Materials แต่ล้างเผื่อไว้ ถูกกว่าเสี่ยงยอดค้าง)
+  if (["CREATE","UPDATE","VERIFY","EDIT","DELETE","BACKUP","IMPORT","SETMIN","SETROPSTART"].indexOf(action) >= 0) {
+    _rawCacheBust(module);
+  }
+  return res;
+}
+
+function _handleRawMaterialInner(action, data, module) {
   switch (action) {
     case "CREATE": return _withLock(function(){ return rmCreate(data, module); });
     case "UPDATE": return _withLock(function(){ return rmUpdate(data, module); });

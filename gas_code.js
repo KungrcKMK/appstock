@@ -2663,8 +2663,19 @@ function rmRopStats(data, module) {
   const mRows = ms.getDataRange().getValues();
   const mh = mRows[0];
   const nameToSku = {};
+  // วันเริ่มนับรายตัว — แถวประวัติก่อนวันนี้ของตัวนั้นถือว่าไม่มีอยู่
+  const cRS = mh.indexOf("RopStart");
+  const ropStart = {}, startsOut = {};
   for (var i = 1; i < mRows.length; i++) {
-    nameToSku[String(mRows[i][mh.indexOf("Name")]).trim()] = String(mRows[i][0]);
+    const skuKey = String(mRows[i][0]);
+    nameToSku[String(mRows[i][mh.indexOf("Name")]).trim()] = skuKey;
+    if (cRS >= 0) {
+      const d0 = _ropParseStart(mRows[i][cRS]);
+      if (d0) {
+        ropStart[skuKey]  = d0;
+        startsOut[skuKey] = Utilities.formatDate(d0, tz, "yyyy-MM-dd");
+      }
+    }
   }
 
   // เก็บยอดเบิกสุทธิรายวันต่อ SKU (เบิก = +, คืน = -)

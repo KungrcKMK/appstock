@@ -1331,7 +1331,12 @@ function showTab(tab) {
     setQrModule(qrMod);
   }
 }
-function closeQR() { hide("sQR"); }
+function closeQR() {
+  // ตอนเปิด showTab ตั้ง style.display="flex" แบบ inline ไว้ (จำเป็น เพราะ class มีแค่ flex-col)
+  // แค่เติม class hidden จะแพ้ inline style — ต้องล้าง inline ด้วย ไม่งั้นปุ่มกลับกดแล้วเงียบ
+  $("sQR").style.display = "none";
+  hide("sQR");
+}
 
 // ─────────────────────────────────────────────
 // QR GENERATOR

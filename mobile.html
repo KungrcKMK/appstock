@@ -1388,9 +1388,9 @@ async function printQR() {
   if (!items.length) { toast("ไม่มีรายการ", "warn"); return; }
   // วาด QR เป็นรูปให้เสร็จในหน้าหลักก่อน แล้วค่อยส่งเข้า popup
   // ของเดิมให้ popup โหลด library จาก CDN เอง — เน็ตสะดุด = กระดาษเปล่า
-  showLoading(true);
+  setLoading(true, "กำลังสร้าง QR...");
   const urls = await Promise.all(items.map(it => qrDataUrl(`RAWMAT|${qrMod}|${it.sku}`, 110)));
-  showLoading(false);
+  setLoading(false);
   if (!urls.some(Boolean)) { toast("สร้าง QR ไม่สำเร็จ ลองรีเฟรชแอป", "err"); return; }
   const esc = s => String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
   const win = window.open("", "_blank");

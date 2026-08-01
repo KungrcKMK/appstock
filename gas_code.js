@@ -119,21 +119,8 @@ function jsonResponse(data) {
 // ชื่อบัญชีเจ้าของระบบอ่านจากชีต Config (แถว superAdmin) — ไม่เก็บในโค้ด
 // เพราะ repo นี้เป็นสาธารณะ ใครก็เปิดอ่านได้ (ย้ายออกเมื่อ 2026-07-31)
 // ⚠️ ถ้าแถวนี้หายไป เกราะกันแก้ไข super admin จะปิดเงียบๆ — อย่าลบแถวนี้ในชีต
-var _superAdminCache = null;
 function _superAdminName() {
-  if (_superAdminCache !== null) return _superAdminCache;
-  var name = "";
-  try {
-    var rows = getSheet("Config").getDataRange().getValues();
-    for (var i = 1; i < rows.length; i++) {
-      if (String(rows[i][0]).trim() === "superAdmin") {
-        name = String(rows[i][1]).trim().toLowerCase();
-        break;
-      }
-    }
-  } catch (e) { /* ไม่มีชีต → ไม่มี super admin */ }
-  _superAdminCache = name;
-  return name;
+  return _cfgCached("superAdmin").toLowerCase();
 }
 
 function _isSuperAdmin(username) {

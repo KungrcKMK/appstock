@@ -16,12 +16,39 @@
 
 const ROP_MIN_TX   = 5;    // เบิกอย่างน้อยกี่ครั้งถึงจะกล้าแนะนำ
 const ROP_MIN_DAYS = 14;   // เห็นข้อมูลมาอย่างน้อยกี่วัน
+const ROP_DEF_LEAD = 7;    // ค่าเริ่มต้น: วันรอของ
+const ROP_DEF_Z    = "1.65"; // ค่าเริ่มต้น: ปกติ 95%
 
 let _ropStats = null;      // ผลจาก GAS ล่าสุด { items:{sku:{...}}, windowDays }
+let _ropOldMin = {};       // sku → ค่า Min ก่อนกด "รับค่านี้" (ไว้ให้กดคืนได้ตลอดที่ยังเปิดแอปอยู่)
+
+// ค่าที่ตั้งไว้จำข้ามการเปิดแอป — เจ้าของตั้งวันรอของจริงครั้งเดียว ไม่ต้องพิมพ์ใหม่ทุกรอบ
+function _ropLoadPrefs() {
+  const lead = Number(localStorage.getItem("appstock_rop_lead"));
+  if (isFinite(lead) && lead >= 1 && lead <= 60)
+    document.getElementById("ropLeadInput").value = lead;
+  const z = localStorage.getItem("appstock_rop_z");
+  if (["1.28","1.65","2.05"].includes(z))
+    document.getElementById("ropServiceSel").value = z;
+}
+function _ropSavePrefs() {
+  localStorage.setItem("appstock_rop_lead", ropLeadDays());
+  localStorage.setItem("appstock_rop_z", document.getElementById("ropServiceSel").value);
+}
+
+function ropResetSettings() {
+  document.getElementById("ropLeadInput").value = ROP_DEF_LEAD;
+  document.getElementById("ropServiceSel").value = ROP_DEF_Z;
+  localStorage.removeItem("appstock_rop_lead");
+  localStorage.removeItem("appstock_rop_z");
+  ropRender();
+  showToast("กลับไปค่าเริ่มต้นแล้ว (รอ 7 วัน · ปกติ 95%)", "success");
+}
 
 async function openRopModal() {
   const m = document.getElementById("ropModal");
   m.classList.remove("hidden");
+  _ropLoadPrefs();
   document.getElementById("ropTarget").textContent =
     rawCurrentModule === "SQF" ? "สุพรรณคิวฟู้ดส์" : "แม่ละมาย";
   document.getElementById("ropBody").innerHTML =

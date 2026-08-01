@@ -3,7 +3,7 @@
 // Cache static assets สำหรับใช้งาน offline บางส่วน
 // =====================================================
 
-const CACHE_NAME = "appstock-v58";
+const CACHE_NAME = "appstock-v59";
 
 // ไฟล์ที่ cache ไว้ใช้ offline
 // ⚠️ addAll เป็น all-or-nothing — ไฟล์เดียวโหลดไม่ได้ = ติดตั้งไม่สำเร็จทั้งชุด

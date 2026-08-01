@@ -464,8 +464,8 @@
      CDN SCRIPTS
 ══════════════════════════════════════════ -->
 <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
-<!-- qrcodejs — ตัวเดียวกับ index.html (URL เดิม qrcode@1.5.3 ตอบ 404 ทำให้ QR ใช้ไม่ได้) -->
-<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<!-- qrcodejs เก็บไว้ในแอปเอง — เคยพึ่ง CDN แล้ว QR เงียบหายทั้งแอปตอนเน็ตมือถือเข้า CDN ไม่ได้ -->
+<script src="js/vendor/qrcode.min.js"></script>
 <script>
 // ─────────────────────────────────────────────
 // CONFIG  — เปลี่ยน URL ให้ตรงกับ GAS deployment

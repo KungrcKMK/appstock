@@ -28,11 +28,19 @@ async function loadExecDashboard() {
     // ── Global KPI ──
     const globalKpi = execBuildKpi([...sqfMats, ...mlmMats]);
 
+    // เก็บไว้ให้กราฟใช้ตอนสลับแท็บ ไม่ต้องยิงใหม่
+    _execChartMats = { SQF: sqfMats, MLM: mlmMats };
+
     el.innerHTML =
       globalKpi +
+      execChartSection() +
       execStockSection("❄️", "คลังสินค้า", "rail-cold", topProds, expiring, expired) +
       execRawSection("🏭", "วัตถุดิบ SQF — สุพรรณคิวฟู้ดส์", "rail-sqf", sqfMats) +
       execRawSection("🏭", "วัตถุดิบ MLM — แม่ละมาย",       "rail-mlm", mlmMats);
+
+    // วาดหลังจาก canvas อยู่บนจอแล้ว (Chart.js วัดขนาดจากกล่องที่มองเห็น)
+    void el.offsetHeight;
+    execRenderCharts(_execChartTab);
   } catch(e) {
     document.getElementById("execDashTimestamp").textContent = "โหลดไม่สำเร็จ";
     el.innerHTML = `<div class="sq-card"><p class="sq-empty" style="color:var(--sq-crit);font-weight:700;">⚠️ โหลดข้อมูลไม่สำเร็จ: ${escapeHtml(e.message)}</p></div>`;

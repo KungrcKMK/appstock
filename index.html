@@ -1631,7 +1631,6 @@
 
         <div class="rm-head-actions" id="rawActionBtns">
           <button onclick="openRawHistory()" class="rm-btn">📜 ประวัติการใช้งาน</button>
-          <button onclick="openRawCharts()" class="rm-btn">📈 กราฟ</button>
           <button onclick="openRawScanner()" class="rm-btn">📷 สแกน QR</button>
           <button onclick="openRawCreate()" class="rm-btn rm-btn-primary viewer-hide">+ เพิ่มวัตถุดิบ</button>
           <details class="rm-more" id="rawMoreMenu">
@@ -1835,44 +1834,6 @@
 
       <div id="rawHistoryList"
            style="padding:12px 14px;overflow-y:auto;display:flex;flex-direction:column;gap:6px;"></div>
-    </div>
-  </div>
-
-  <!-- ═══ 📈 กราฟวิเคราะห์วัตถุดิบ ═══
-       ย้ายออกจากหน้าหลักมาอยู่ในหน้าต่างนี้ เพราะเป็นข้อมูลประกอบ
-       ไม่ใช่งานที่ต้องทำทุกวัน หน้าหลักจะได้เหลือแต่ตารางที่ใช้จริง
-       กราฟจะถูกวาดตอนเปิดหน้าต่างนี้เท่านั้น (Chart.js วาดในกล่องที่ซ่อนอยู่ไม่ได้) -->
-  <div id="rawChartModal" class="hidden fixed inset-0 z-[610] flex items-center justify-center p-4"
-       style="background:rgba(22,36,27,.55);backdrop-filter:blur(3px);">
-    <div class="sq-page" style="width:100%;max-width:1100px;border-radius:14px;overflow:hidden;
-                box-shadow:0 20px 50px rgba(0,0,0,.3);display:flex;flex-direction:column;max-height:92vh;">
-
-      <div style="background:var(--sq-surface);border-bottom:1px solid var(--sq-line);
-                  padding:13px 16px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
-        <div style="flex:1;min-width:0;">
-          <div class="sq-card-title">📈 กราฟวิเคราะห์</div>
-          <div class="sq-card-note" id="rawChartSub">—</div>
-        </div>
-        <button onclick="closeRawCharts()" class="sq-btn">ปิด</button>
-      </div>
-
-      <div style="padding:14px 16px;overflow-y:auto;">
-        <div class="rm-charts" style="margin-top:0;">
-          <div class="rm-card">
-            <div class="rm-card-head">
-              <span class="rm-card-title">📅 วันที่ใช้งานได้คงเหลือ</span>
-              <span class="rm-card-note">เฉพาะรายการที่กรอกอัตราใช้ต่อวันไว้</span>
-            </div>
-            <div style="padding:12px;"><div class="chart-wrap"><canvas id="rawBarChart"></canvas></div></div>
-          </div>
-          <div class="rm-card">
-            <div class="rm-card-head">
-              <span class="rm-card-title">🧭 สถานะรวม</span>
-            </div>
-            <div style="padding:12px;"><div class="chart-wrap-small"><canvas id="rawDonutChart"></canvas></div></div>
-          </div>
-        </div>
-      </div>
     </div>
   </div>
 

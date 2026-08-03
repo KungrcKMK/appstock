@@ -40,8 +40,6 @@ function rawSetAlertDays(v) {
 let rawNextSku        = "";
 let rawHtml5QrCode    = null;
 let rawVerifyTarget   = "";
-let rawBarChart       = null;
-let rawDonutChart     = null;
 let rawCurrentQrSku   = "";
 let rawCurrentQrName  = "";
 
@@ -140,123 +138,7 @@ function _rawApplyData(data, startup) {
   }
 }
 
-// ─────────────────────────────────────────────
-// 📈 หน้าต่างกราฟวิเคราะห์
-//    วาดกราฟตอนเปิดเท่านั้น เพราะ Chart.js คำนวณขนาดจากกล่องที่มองเห็นอยู่
-// ─────────────────────────────────────────────
-function openRawCharts() {
-  const m = document.getElementById("rawChartModal");
-  if (!m) return;
-  if (!rawLastData.length) { showToast("ยังไม่มีข้อมูลให้วาดกราฟ", "warn"); return; }
-
-  const sub = document.getElementById("rawChartSub");
-  if (sub) {
-    const withDaily = rawLastData.filter(i => Number(i.DailyUsage || 0) > 0).length;
-    sub.textContent = (rawCurrentModule === "SQF" ? "วัตถุดิบ SQF" : "วัตถุดิบ MLM")
-      + ` · ทั้งหมด ${rawLastData.length} รายการ · กรอกอัตราใช้ต่อวันไว้ ${withDaily} รายการ`;
-  }
-  m.classList.remove("hidden");
-  // บังคับให้เบราว์เซอร์คำนวณขนาดกล่องเดี๋ยวนี้ แล้วค่อยวาด
-  // (เคยใช้ requestAnimationFrame แล้วเจอปัญหา: ถ้าแท็บไม่ได้วาดภาพอยู่
-  //  เช่นสลับไปแท็บอื่น มันจะไม่ทำงาน กราฟขึ้นเป็นกล่องเปล่า)
-  void m.offsetHeight;
-  renderRawCharts(rawLastData);
-}
-
-function closeRawCharts() {
-  const m = document.getElementById("rawChartModal");
-  if (m) m.classList.add("hidden");
-}
-
-// ── Charts ──
-function renderRawCharts(items) {
-  // กราฟอยู่ในหน้าต่างที่อาจยังไม่ถูกเปิด — ไม่มี canvas ก็ไม่ต้องทำอะไร
-  const barEl   = document.getElementById("rawBarChart");
-  const donutEl = document.getElementById("rawDonutChart");
-  if (!barEl || !donutEl) return;
-  // กราฟวันคงเหลือ — เฉพาะรายการที่มี DailyUsage > 0
-  const withDaily = items.filter(i => Number(i.DailyUsage||0) > 0);
-  const sorted = [...withDaily]
-    .map(i => ({ ...i, daysLeft: Math.floor(Number(i.Qty||0) / Number(i.DailyUsage||1)) }))
-    .sort((a,b) => a.daysLeft - b.daysLeft)  // เรียงน้อย→มาก (เร่งด่วนก่อน)
-    .slice(0, 12);
-
-  const labels = sorted.map(i => { const n = String(i.Name||"-"); return n.length>16?n.slice(0,16)+"…":n; });
-  const values = sorted.map(i => i.daysLeft);
-  const colors = sorted.map(i =>
-    i.daysLeft <= 7  ? "rgba(220,38,38,0.75)"  :   // 🔴 วิกฤต
-    i.daysLeft <= 14 ? "rgba(234,88,12,0.75)"  :   // 🟠 เร่งด่วน
-    i.daysLeft <= 30 ? "rgba(245,158,11,0.75)" :   // 🟡 ควรสั่ง
-                       "rgba(5,150,105,0.75)"       // 🟢 ปลอดภัย
-  );
-  const borders = sorted.map(i =>
-    i.daysLeft <= 7  ? "rgb(220,38,38)"  :
-    i.daysLeft <= 14 ? "rgb(234,88,12)"  :
-    i.daysLeft <= 30 ? "rgb(245,158,11)" :
-                       "rgb(5,150,105)"
-  );
-
-  const ctx1 = barEl.getContext("2d");
-  if (rawBarChart) rawBarChart.destroy();
-  rawBarChart = new Chart(ctx1, {
-    type: "bar",
-    data: {
-      labels,
-      datasets: [{
-        label: "วันที่ใช้งานได้ (วัน)",
-        data: values,
-        backgroundColor: colors,
-        borderColor: borders,
-        borderWidth: 2,
-        borderRadius: 10
-      }]
-    },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      plugins: {
-        legend: { labels: { font: { family:"Sarabun", weight:"bold" } } },
-        tooltip: {
-          titleFont: { family:"Sarabun", weight:"bold" },
-          bodyFont:  { family:"Sarabun" },
-          callbacks: {
-            label: ctx => `${ctx.parsed.y} วัน`,
-            afterLabel: ctx => {
-              const d = ctx.parsed.y;
-              return d <= 7  ? "⚠️ วิกฤต — ต้องสั่งด่วน!" :
-                     d <= 14 ? "🟠 เร่งด่วน" :
-                     d <= 30 ? "🟡 ควรวางแผนสั่ง" : "✅ ปลอดภัย";
-            }
-          }
-        },
-        annotation: {}
-      },
-      scales: {
-        x: { ticks: { font: { family:"Sarabun", weight:"bold" } } },
-        y: {
-          beginAtZero: true,
-          title: { display: true, text: "วัน", font: { family:"Sarabun", weight:"bold" } },
-          ticks: {
-            font: { family:"Sarabun", weight:"bold" },
-            callback: v => v + " วัน"
-          }
-        }
-      }
-    }
-  });
-
-  const today = new Date(); today.setHours(0,0,0,0);
-  let safe=0, low=0, exp=0;
-  items.forEach(i => {
-    const isLow = Number(i.Qty) <= Number(i.Min);
-    const ed = rawParseDate(i.ExpiryDate);
-    const isExp = ed && ed < today;
-    if (isExp) exp++; else if (isLow) low++; else safe++;
-  });
-  const ctx2 = donutEl.getContext("2d");
-  if (rawDonutChart) rawDonutChart.destroy();
-  rawDonutChart = new Chart(ctx2, { type:"doughnut", data:{ labels:["ปลอดภัย","สต๊อกต่ำ","หมดอายุ"], datasets:[{ data:[safe,low,exp], borderWidth:2, hoverOffset:8 }] }, options:{ responsive:true, maintainAspectRatio:false, cutout:"62%", plugins:{ legend:{position:"bottom",labels:{font:{family:"Sarabun",weight:"bold"},padding:18}}, tooltip:{titleFont:{family:"Sarabun",weight:"bold"},bodyFont:{family:"Sarabun"}} } } });
-}
+// 📈 กราฟวิเคราะห์ย้ายไปหน้าภาพรวมทั้งระบบแล้ว (js/exec.js — เจ้าของสั่งย้าย 2026-08-02)
 
 // ── Date helpers ──
 function rawForceThaiDate(str) {

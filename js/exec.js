@@ -48,124 +48,143 @@ async function loadExecDashboard() {
   }
 }
 
-/** ─── 📈 กราฟวิเคราะห์วัตถุดิบ (ย้ายมาจากหน้าวัตถุดิบ — เจ้าของสั่งรวมไว้ที่เดียว 2026-08-02) ─── */
-let _execChartMats = { SQF: [], MLM: [] };
-let _execChartTab  = "SQF";
-let _execBarChart  = null;
-let _execDonutChart = null;
+/** ─── 📈 กราฟวิเคราะห์ — โชว์ทั้ง 3 คลังพร้อมกัน ไม่มีแท็บ ไม่มีโดนัท (เจ้าของสั่ง 2026-08-02) ─── */
+let _execChartData = { SQF: [], MLM: [], CR: { products: [], expiring: [], expired: [] } };
+let _execCharts = {};   // canvasId → Chart instance (ไว้ destroy ก่อนวาดซ้ำ)
 
 function execChartSection() {
+  const block = (id, icon, title, note) => `
+    <div>
+      <div style="font-weight:800;font-size:13.5px;color:var(--sq-ink);margin-bottom:2px;">${icon} ${title}</div>
+      <div class="sq-card-note" id="${id}Note" style="margin-bottom:6px;">${note}</div>
+      <div style="height:280px;position:relative;"><canvas id="${id}"></canvas></div>
+    </div>`;
   return `
   <div class="sq-card">
     <div class="sq-card-head">
-      <span class="sq-card-title">📈 กราฟวิเคราะห์วัตถุดิบ</span>
-      <span class="sq-card-note" id="execChartSub">—</span>
+      <span class="sq-card-title">📈 กราฟวิเคราะห์</span>
+      <span class="sq-card-note">ทุกคลังในจอเดียว</span>
     </div>
-    <div class="sq-card-body" style="display:flex;gap:8px;border-bottom:1px solid var(--sq-line-soft);">
-      <button id="execChartTab-SQF" class="sq-tab" onclick="execSwitchChartTab('SQF')">🏭 สุพรรณคิวฟู้ดส์</button>
-      <button id="execChartTab-MLM" class="sq-tab" onclick="execSwitchChartTab('MLM')">🏭 แม่ละมาย</button>
-    </div>
-    <div class="sq-card-body" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:18px;">
-      <div>
-        <div class="sq-card-note" style="margin-bottom:6px;">📅 วันที่ใช้งานได้คงเหลือ — เฉพาะรายการที่กรอกอัตราใช้ต่อวันไว้</div>
-        <div style="height:300px;position:relative;"><canvas id="execBarChart"></canvas></div>
-      </div>
-      <div>
-        <div class="sq-card-note" style="margin-bottom:6px;">🧭 สถานะรวม</div>
-        <div style="height:300px;position:relative;"><canvas id="execDonutChart"></canvas></div>
-      </div>
+    <div class="sq-card-body" style="display:flex;flex-direction:column;gap:22px;">
+      ${block("execBarSQF", "🏭", "วัตถุดิบสุพรรณคิวฟู้ดส์ — วันที่ใช้งานได้คงเหลือ", "เฉพาะรายการที่กรอกอัตราใช้ต่อวันไว้")}
+      ${block("execBarMLM", "🏭", "วัตถุดิบแม่ละมาย — วันที่ใช้งานได้คงเหลือ", "เฉพาะรายการที่กรอกอัตราใช้ต่อวันไว้")}
+      ${block("execBarCR",  "❄️", "คลังสินค้าห้องเย็น — คงเหลือต่อสินค้า", "สีของแท่งบอกความเร่งด่วนของวันหมดอายุ")}
     </div>
   </div>`;
 }
 
-function execSwitchChartTab(mod) {
-  _execChartTab = mod;
-  execRenderCharts(mod);
+const _execFont = { family: "Sarabun", weight: "bold" };
+
+function _execDestroy(id) {
+  if (_execCharts[id]) { _execCharts[id].destroy(); delete _execCharts[id]; }
 }
 
-function execRenderCharts(mod) {
-  const barEl   = document.getElementById("execBarChart");
-  const donutEl = document.getElementById("execDonutChart");
-  if (!barEl || !donutEl) return;
-  const items = _execChartMats[mod] || [];
-
-  ["SQF","MLM"].forEach(m => {
-    const t = document.getElementById("execChartTab-" + m);
-    if (t) t.classList.toggle("is-on", m === mod);
-  });
-  const sub = document.getElementById("execChartSub");
-  if (sub) {
-    const withDaily = items.filter(i => Number(i.DailyUsage || 0) > 0).length;
-    sub.textContent = (mod === "SQF" ? "สุพรรณคิวฟู้ดส์" : "แม่ละมาย")
-      + ` · ทั้งหมด ${items.length} รายการ · กรอกอัตราใช้ต่อวันไว้ ${withDaily} รายการ`;
-  }
-
-  // ── กราฟแท่ง: วันคงเหลือ (ตรรกะเดิมจาก raw.js ทุกบรรทัด) ──
+// กราฟวันคงเหลือของวัตถุดิบ — ตรรกะเดิมจาก raw.js ทุกบรรทัด
+function _execDaysBar(id, items) {
+  const el = document.getElementById(id);
+  if (!el) return;
   const sorted = items.filter(i => Number(i.DailyUsage||0) > 0)
     .map(i => ({ ...i, daysLeft: Math.floor(Number(i.Qty||0) / Number(i.DailyUsage||1)) }))
     .sort((a,b) => a.daysLeft - b.daysLeft)
     .slice(0, 12);
-  const labels = sorted.map(i => { const n = String(i.Name||"-"); return n.length>16?n.slice(0,16)+"…":n; });
-  const values = sorted.map(i => i.daysLeft);
-  const colors = sorted.map(i =>
-    i.daysLeft <= 7  ? "rgba(220,38,38,0.75)"  :
-    i.daysLeft <= 14 ? "rgba(234,88,12,0.75)"  :
-    i.daysLeft <= 30 ? "rgba(245,158,11,0.75)" :
-                       "rgba(5,150,105,0.75)");
-  const borders = sorted.map(i =>
-    i.daysLeft <= 7  ? "rgb(220,38,38)"  :
-    i.daysLeft <= 14 ? "rgb(234,88,12)"  :
-    i.daysLeft <= 30 ? "rgb(245,158,11)" :
-                       "rgb(5,150,105)");
-
-  if (_execBarChart) _execBarChart.destroy();
-  _execBarChart = new Chart(barEl.getContext("2d"), {
+  const note = document.getElementById(id + "Note");
+  if (note) note.textContent = sorted.length
+    ? `เรียงจากเร่งด่วนสุด ${sorted.length} อันดับแรก (จากทั้งหมด ${items.length} รายการ)`
+    : "ยังไม่มีรายการที่กรอกอัตราใช้ต่อวัน";
+  const color = d => d <= 7 ? "220,38,38" : d <= 14 ? "234,88,12" : d <= 30 ? "245,158,11" : "5,150,105";
+  _execDestroy(id);
+  _execCharts[id] = new Chart(el.getContext("2d"), {
     type: "bar",
-    data: { labels, datasets: [{ label: "วันที่ใช้งานได้ (วัน)", data: values,
-      backgroundColor: colors, borderColor: borders, borderWidth: 2, borderRadius: 10 }] },
+    data: {
+      labels: sorted.map(i => { const n = String(i.Name||"-"); return n.length>16?n.slice(0,16)+"…":n; }),
+      datasets: [{ label: "วันที่ใช้งานได้ (วัน)",
+        data: sorted.map(i => i.daysLeft),
+        backgroundColor: sorted.map(i => `rgba(${color(i.daysLeft)},0.75)`),
+        borderColor:     sorted.map(i => `rgb(${color(i.daysLeft)})`),
+        borderWidth: 2, borderRadius: 10 }]
+    },
     options: {
       responsive: true, maintainAspectRatio: false,
       plugins: {
-        legend: { labels: { font: { family:"Sarabun", weight:"bold" } } },
+        legend: { display: false },
         tooltip: {
-          titleFont: { family:"Sarabun", weight:"bold" }, bodyFont: { family:"Sarabun" },
+          titleFont: _execFont, bodyFont: { family: "Sarabun" },
           callbacks: {
             label: ctx => `${ctx.parsed.y} วัน`,
             afterLabel: ctx => {
               const d = ctx.parsed.y;
-              return d <= 7  ? "⚠️ วิกฤต — ต้องสั่งด่วน!" :
-                     d <= 14 ? "🟠 เร่งด่วน" :
+              return d <= 7 ? "⚠️ วิกฤต — ต้องสั่งด่วน!" : d <= 14 ? "🟠 เร่งด่วน" :
                      d <= 30 ? "🟡 ควรวางแผนสั่ง" : "✅ ปลอดภัย";
             }
           }
         }
       },
       scales: {
-        x: { ticks: { font: { family:"Sarabun", weight:"bold" } } },
+        x: { ticks: { font: _execFont } },
         y: { beginAtZero: true,
-             title: { display: true, text: "วัน", font: { family:"Sarabun", weight:"bold" } },
-             ticks: { font: { family:"Sarabun", weight:"bold" }, callback: v => v + " วัน" } }
+             title: { display: true, text: "วัน", font: _execFont },
+             ticks: { font: _execFont, callback: v => v + " วัน" } }
       }
     }
   });
+}
 
-  // ── โดนัท: สถานะรวม (ตรรกะเดิม) ──
-  const today = new Date(); today.setHours(0,0,0,0);
-  let safe=0, low=0, exp=0;
-  items.forEach(i => {
-    const isLow = Number(i.Qty) <= Number(i.Min);
-    const ed = rawParseDate(i.ExpiryDate);
-    const isExp = ed && ed < today;
-    if (isExp) exp++; else if (isLow) low++; else safe++;
+// กราฟห้องเย็น — คงเหลือรวมต่อสินค้า สีตามความเร่งด่วนของวันหมดอายุในล็อตของสินค้านั้น
+function _execCrBar(id, cr) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  const prods = (cr.products || []).slice(0, 12);
+  const note = document.getElementById(id + "Note");
+  if (note) note.textContent = prods.length
+    ? `${prods.length} สินค้า · 🔴 มีล็อตหมดอายุ · 🟠 มีล็อตใกล้หมดอายุ · 🔵 ปกติ`
+    : "ยังไม่มีสต๊อกในห้องเย็น";
+  const expNames  = new Set((cr.expired  || []).map(x => x.ProductName));
+  const nearNames = new Set((cr.expiring || []).map(x => x.ProductName));
+  const color = n => expNames.has(n) ? "220,38,38" : nearNames.has(n) ? "234,88,12" : "14,116,144";
+  _execDestroy(id);
+  _execCharts[id] = new Chart(el.getContext("2d"), {
+    type: "bar",
+    data: {
+      labels: prods.map(p => { const n = String(p.ProductName||"-"); return n.length>16?n.slice(0,16)+"…":n; }),
+      datasets: [{ label: "คงเหลือ",
+        data: prods.map(p => Number(p.TotalQty||0)),
+        backgroundColor: prods.map(p => `rgba(${color(p.ProductName)},0.75)`),
+        borderColor:     prods.map(p => `rgb(${color(p.ProductName)})`),
+        borderWidth: 2, borderRadius: 10 }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          titleFont: _execFont, bodyFont: { family: "Sarabun" },
+          callbacks: {
+            label: ctx => {
+              const p = prods[ctx.dataIndex];
+              return `${Number(p.TotalQty).toLocaleString()} ${p.Unit || ""} · ${p.LotCount} lot`;
+            },
+            afterLabel: ctx => {
+              const n = prods[ctx.dataIndex].ProductName;
+              return expNames.has(n) ? "⛔ มีล็อตหมดอายุ — เอาออกด่วน" :
+                     nearNames.has(n) ? "⏳ มีล็อตใกล้หมดอายุ" : "✅ ปกติ";
+            }
+          }
+        }
+      },
+      scales: {
+        x: { ticks: { font: _execFont } },
+        y: { beginAtZero: true,
+             title: { display: true, text: "จำนวน (หน่วยตามสินค้า)", font: _execFont },
+             ticks: { font: _execFont } }
+      }
+    }
   });
-  if (_execDonutChart) _execDonutChart.destroy();
-  _execDonutChart = new Chart(donutEl.getContext("2d"), {
-    type:"doughnut",
-    data:{ labels:["ปลอดภัย","สต๊อกต่ำ","หมดอายุ"], datasets:[{ data:[safe,low,exp], borderWidth:2, hoverOffset:8 }] },
-    options:{ responsive:true, maintainAspectRatio:false, cutout:"62%",
-      plugins:{ legend:{position:"bottom",labels:{font:{family:"Sarabun",weight:"bold"},padding:18}},
-                tooltip:{titleFont:{family:"Sarabun",weight:"bold"},bodyFont:{family:"Sarabun"}} } }
-  });
+}
+
+function execRenderCharts() {
+  _execDaysBar("execBarSQF", _execChartData.SQF || []);
+  _execDaysBar("execBarMLM", _execChartData.MLM || []);
+  _execCrBar("execBarCR", _execChartData.CR || {});
 }
 
 /** ─── แถบตัวเลขรวม (SQF+MLM) ─── */

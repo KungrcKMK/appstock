@@ -28,8 +28,9 @@ async function loadExecDashboard() {
     // ── Global KPI ──
     const globalKpi = execBuildKpi([...sqfMats, ...mlmMats]);
 
-    // เก็บไว้ให้กราฟใช้ตอนสลับแท็บ ไม่ต้องยิงใหม่
-    _execChartMats = { SQF: sqfMats, MLM: mlmMats };
+    // เก็บไว้ให้กราฟใช้ ไม่ต้องยิงใหม่
+    _execChartData = { SQF: sqfMats, MLM: mlmMats,
+                       CR: { products: topProds, expiring: expiring, expired: expired } };
 
     el.innerHTML =
       globalKpi +

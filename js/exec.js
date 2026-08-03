@@ -41,7 +41,7 @@ async function loadExecDashboard() {
 
     // วาดหลังจาก canvas อยู่บนจอแล้ว (Chart.js วัดขนาดจากกล่องที่มองเห็น)
     void el.offsetHeight;
-    execRenderCharts(_execChartTab);
+    execRenderCharts();
   } catch(e) {
     document.getElementById("execDashTimestamp").textContent = "โหลดไม่สำเร็จ";
     el.innerHTML = `<div class="sq-card"><p class="sq-empty" style="color:var(--sq-crit);font-weight:700;">⚠️ โหลดข้อมูลไม่สำเร็จ: ${escapeHtml(e.message)}</p></div>`;

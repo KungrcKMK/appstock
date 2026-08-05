@@ -139,6 +139,50 @@ function _rawApplyData(data, startup) {
   }
 }
 
+// ─────────────────────────────────────────────
+// 📉 เส้นเทรนด์การเบิกรายตัว (sparkline ในช่องชื่อของแต่ละแถว)
+//    โหลดแยกหลังตารางขึ้นแล้ว — ตารางเร็วเท่าเดิม เส้นค่อยตามมา
+//    ตัวที่ไม่เคยเบิกใน 30 วัน = ไม่วาดอะไรเลย ไม่รกตา
+// ─────────────────────────────────────────────
+const RAW_TREND_TTL = 5 * 60 * 1000;
+let _rawTrends = {};   // module → { at, days, series }
+
+async function rawLoadTrends() {
+  const mod = rawCurrentModule;
+  const c = _rawTrends[mod];
+  if (c && Date.now() - c.at < RAW_TREND_TTL) { rawApplyTrends(); return; }
+  try {
+    const r = await rawFetch({ action: "TRENDS", user: currentUser });
+    if (r.status !== "success" || mod !== rawCurrentModule) return;
+    _rawTrends[mod] = { at: Date.now(), days: r.days, series: r.series || {} };
+    rawApplyTrends();
+  } catch (e) { /* เส้นเทรนด์เป็นของเสริม โหลดไม่ได้ก็แค่ไม่โชว์ */ }
+}
+
+function rawApplyTrends() {
+  const t = _rawTrends[rawCurrentModule];
+  if (!t) return;
+  document.querySelectorAll("#rawInventoryList .rm-trend").forEach(el => {
+    const arr = t.series[el.dataset.sku];
+    if (!arr || !arr.some(v => v > 0)) { el.innerHTML = ""; return; }
+    const w = 110, h = 20, max = Math.max(...arr);
+    const step = w / (arr.length - 1);
+    const pts = arr.map((v, i) =>
+      `${(i * step).toFixed(1)},${(h - 2 - (v / max) * (h - 4)).toFixed(1)}`).join(" ");
+    const last = arr[arr.length - 1];
+    const avg = arr.reduce((a, b) => a + b, 0) / arr.length;
+    const avgTxt = avg.toLocaleString("th-TH", { maximumFractionDigits: avg < 10 ? 1 : 0 });
+    el.innerHTML = `
+      <svg width="${w}" height="${h}" viewBox="0 0 ${w} ${h}" aria-hidden="true">
+        <polyline points="${pts}" fill="none" stroke="var(--sq-accent)" stroke-width="1.5"
+                  stroke-linejoin="round" stroke-linecap="round" opacity=".85"/>
+        <circle cx="${w}" cy="${(h - 2 - (last / max) * (h - 4)).toFixed(1)}" r="2" fill="var(--sq-accent)"/>
+      </svg>
+      <span class="tr-avg">เบิกเฉลี่ย ${avgTxt}/วัน</span>`;
+    el.title = `ยอดเบิกสุทธิรายวันย้อนหลัง ${t.days} วัน (เบิก − คืน)`;
+  });
+}
+
 // 📈 กราฟวิเคราะห์ย้ายไปหน้าภาพรวมทั้งระบบแล้ว (js/exec.js — เจ้าของสั่งย้าย 2026-08-02)
 
 // ── Date helpers ──

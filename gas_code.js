@@ -2985,6 +2985,8 @@ function _opSeen(module, opId) {
     var hit = CacheService.getScriptCache().get("op_" + opId);
     if (hit) return JSON.parse(hit);
   } catch (e) {}
+  // module ว่าง = เช็คแค่แคช (ห้องเย็นไม่มีชีตประวัติแยก — และ getSheet จะสร้างชีตใหม่ให้โดยไม่ตั้งใจ)
+  if (!module) return null;
   // cache หมดอายุแล้ว (คิวค้างข้ามวัน) → ไล่ดูในประวัติท้ายๆ เป็นตาข่ายกันพลาดชั้นสอง
   try {
     var hs = getSheet(module + "_History");

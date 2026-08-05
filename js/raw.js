@@ -340,6 +340,7 @@ function rawLoadMoreItems() {
   }
   list.insertAdjacentHTML("beforeend", html);
   window._rawShown = end;
+  rawApplyTrends();   // แถวที่เพิ่งวาด (รวมตอนกรอง/เรียง/แสดงเพิ่ม) เติมเส้นเทรนด์จากที่โหลดไว้แล้ว
 
   if (end < items.length) {
     list.insertAdjacentHTML("beforeend", `

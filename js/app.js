@@ -65,7 +65,21 @@ function _updateOnlineStatus() {
   else banner.classList.remove("hide");
 }
 window.addEventListener("online",  () => { _updateOnlineStatus(); showToast("กลับมาออนไลน์แล้ว ✅", "success"); });
-window.addEventListener("offline", () => { _updateOnlineStatus(); showToast("เน็ตหลุด — แสดงข้อมูลเก่า ⏳", "warn", 4000); });
+window.addEventListener("offline", () => { _updateOnlineStatus(); showToast("เน็ตหลุด — บันทึกงานไว้ในเครื่องได้ ส่งให้เองเมื่อเน็ตกลับมา ⏳", "warn", 5000); });
+
+// ── ผูกระบบคิวออฟไลน์เข้ากับหน้าจอฝั่งคอม (js/offline.js เป็นตัวกลาง ใช้ร่วมกับ mobile) ──
+if (typeof offlineConfig === "function") {
+  offlineConfig({
+    gasUrl: GAS_URL,
+    deviceName: () => (typeof getDeviceInfo === "function" ? getDeviceInfo() : ""),
+    onToast: (m, k) => { if (typeof showToast === "function") showToast(m, k === "error" ? "error" : "success", 6000); },
+    onChange: () => { if (typeof rawUpdateOfflineBadge === "function") rawUpdateOfflineBadge(); },
+    onSynced: () => {
+      if (typeof rawLoadData === "function" && (activeModule === "SQF" || activeModule === "MLM")) rawLoadData();
+      if (typeof rawUpdateOfflineBadge === "function") rawUpdateOfflineBadge();
+    }
+  });
+}
 
 // ─────────────────────────────────────────────
 // SHARED STATE

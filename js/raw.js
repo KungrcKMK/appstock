@@ -1073,8 +1073,17 @@ async function rawSubmitVerify() {
   }
   setRawBusy("rawBtnVerify",true,"กำลังบันทึก...");
   showLoading("กำลังบันทึกยอดตรวจนับ...");
-  const r = await rawFetch({ action:"VERIFY", sku:rawVerifyTarget, qty:q, user:currentUser });
+  const vName = (rawLastData||[]).find(m => String(m.SKU) === String(rawVerifyTarget))?.Name || rawVerifyTarget;
+  const r = await offlineSend(
+    { module: rawCurrentModule, action:"VERIFY", sku:rawVerifyTarget, qty:q, user:currentUser },
+    `📊 นับ ${vName} → ${q}`);
   hideLoading(); setRawBusy("rawBtnVerify",false);
+  if (r.queued) {
+    closeRawVerify();
+    showToast("📴 เน็ตล่ม — บันทึกไว้ในเครื่องแล้ว จะส่งขึ้นระบบให้เองเมื่อเน็ตกลับมา", "warn", 6000);
+    rawUpdateOfflineBadge();
+    return;
+  }
   if (r.status==="success") { closeRawVerify(); showToast("บันทึกยอดจริงสำเร็จ ✅","success"); rawLoadData(); }
   else showToast(r.message||"ไม่สำเร็จ","error");
 }

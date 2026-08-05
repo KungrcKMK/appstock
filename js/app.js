@@ -214,7 +214,9 @@ function checkAuth() {
     const canSeeBomHealth = isAdmin;
     const bomHealthBtn = document.getElementById("navBtn-BOMHEALTH");
     if (bomHealthBtn) bomHealthBtn.style.display = canSeeBomHealth ? "" : "none";
-    const actBtn = document.getElementById("activityNavBtn");
+    // ความเคลื่อนไหวข้ามคลัง — ย้ายจากแถบเมนูไปหน้า Admin (เห็นเฉพาะ admin
+    // เพราะโชว์ชื่อเครื่องของทุกคน · manager เข้าหน้านี้ได้แต่เห็นเฉพาะแท็บคำขอ)
+    const actBtn = document.getElementById("adminActivityBtn");
     if (actBtn) actBtn.style.display = isAdmin ? "" : "none";
     const tgBtn = document.getElementById("telegramNavBtn");
     if (tgBtn) tgBtn.style.display = isAdmin ? "" : "none";

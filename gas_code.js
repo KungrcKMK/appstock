@@ -778,6 +778,10 @@ function crGetProductAndBalances(payload) {
 
 function crSaveOrUpdateCount(payload) {
   const { barcode, employeeName, mfg, exp, note } = payload;
+  // นับห้องเย็นเป็นการตั้งยอดสัมบูรณ์ ทำซ้ำได้ผลเท่าเดิม — กันไว้เพื่อไม่ให้แจ้ง Telegram ซ้ำ
+  const opId = String(payload.opId || "");
+  const seenCr = _opSeen("ColdRoom", opId);
+  if (seenCr) return seenCr;
   const newQty = _validateQty(payload.newQty, true); // ป้องกัน negative/overflow
   if (!barcode) return { ok: false, message: "ไม่ระบุบาร์โค้ด" };
   if (!mfg || !exp) return { ok: false, message: "กรุณาระบุวันผลิตและวันหมดอายุ" };

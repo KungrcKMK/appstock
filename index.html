@@ -1006,9 +1006,10 @@
       <div class="cr-tab-panel" id="cr-tab-stock">
         <div class="card">
           <h2>🔍 ค้นหา / สแกนสินค้า</h2>
-          <div style="display:flex;gap:10px;">
+          <div style="display:flex;gap:10px;flex-wrap:wrap;">
             <button class="cr-btn btn-primary" onclick="crStartScanner('stock')">📷 เปิดกล้อง</button>
             <button class="cr-btn btn-light"   onclick="crStopScanner()">❌ ปิด</button>
+            <button class="cr-btn btn-light viewer-hide" onclick="criOpen()" style="margin-left:auto;">📥 นำเข้าจากไฟล์</button>
           </div>
           <div class="scanner-box hide" id="crScannerBoxStock"><video id="crVideoStock" class="scanner-video" playsinline muted></video><div class="scanner-frame"></div></div>
           <div class="cr-status" id="crScannerStatus"></div>

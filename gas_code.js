@@ -2764,6 +2764,80 @@ function rmSetRopStart(data, module) {
   return { status: "error", message: "ไม่พบ SKU" };
 }
 
+// ── 📉 เทรนด์การเบิกรายตัว: ยอดเบิกสุทธิรายวัน (เบิก−คืน) ย้อนหลัง 30 วัน ──
+// หน้าจอยิงแยกหลังตารางโหลดเสร็จ — ไม่ถ่วงการโหลดหลัก
+// เคารพวันเริ่มนับรายตัว (RopStart) เหมือนจุดสั่งซื้อแนะนำ — ข้อมูลทดสอบที่ถูกตัดจะไม่โผล่ในเทรนด์
+var TREND_DAYS = 30;
+
+function rmTrends(data, module) {
+  const ck = "rawtrends_" + module;
+  try {
+    const hit = CacheService.getScriptCache().get(ck);
+    if (hit) return JSON.parse(hit);
+  } catch (e) {}
+
+  const tz = Session.getScriptTimeZone();
+  const now = new Date();
+  const winStart = new Date(now.getTime() - TREND_DAYS * 86400000);
+
+  // วันเริ่มนับรายตัว + ชื่อ→SKU สำหรับแถวเก่าที่ไม่มีคอลัมน์ SKU
+  const ms = getSheet(module + "_Materials");
+  const mRows = ms.getDataRange().getValues();
+  const mh = mRows[0];
+  const cRS = mh.indexOf("RopStart");
+  const nameToSku = {}, ropStart = {};
+  for (var i = 1; i < mRows.length; i++) {
+    const skuKey = String(mRows[i][0]);
+    nameToSku[String(mRows[i][mh.indexOf("Name")]).trim()] = skuKey;
+    if (cRS >= 0) {
+      const d0 = _ropParseStart(mRows[i][cRS]);
+      if (d0) ropStart[skuKey] = d0;
+    }
+  }
+
+  const hs = getSheet(module + "_History");
+  const daily = {};   // sku → { "yyyy-MM-dd": net }
+  if (hs.getLastRow() > 1) {
+    const rows = hs.getDataRange().getValues();
+    const h = rows[0];
+    const cT = h.indexOf("Timestamp"), cN = h.indexOf("Name"), cA = h.indexOf("Action"),
+          cQ = h.indexOf("Qty"), cS = h.indexOf("SKU");
+    for (var r = 1; r < rows.length; r++) {
+      const ts = rows[r][cT] ? new Date(rows[r][cT]) : null;
+      if (!ts || isNaN(ts) || ts < winStart) continue;
+      var sku = cS >= 0 ? String(rows[r][cS] || "").trim() : "";
+      if (!sku) sku = nameToSku[String(rows[r][cN] || "").trim()] || "";
+      if (!sku) continue;
+      if (ropStart[sku] && ts < ropStart[sku]) continue;
+      const act = String(rows[r][cA] || "");
+      const q = Number(rows[r][cQ]);
+      if (!isFinite(q) || q <= 0) continue;
+      var delta = 0;
+      if (act === "เบิกออก") delta = q;
+      else if (act === "คืนวัตถุดิบ") delta = -q;
+      else continue;
+      const day = Utilities.formatDate(ts, tz, "yyyy-MM-dd");
+      if (!daily[sku]) daily[sku] = {};
+      daily[sku][day] = (daily[sku][day] || 0) + delta;
+    }
+  }
+
+  // แปลงเป็น array 30 ช่อง เก่า→ใหม่ (วันไม่เบิก = 0, วันติดลบจากการคืน = 0)
+  const dayKeys = [];
+  for (var d = TREND_DAYS - 1; d >= 0; d--) {
+    dayKeys.push(Utilities.formatDate(new Date(now.getTime() - d * 86400000), tz, "yyyy-MM-dd"));
+  }
+  const series = {};
+  Object.keys(daily).forEach(function (sku) {
+    const arr = dayKeys.map(k => Math.max(0, daily[sku][k] || 0));
+    if (arr.some(v => v > 0)) series[sku] = arr;   // ตัวไม่เคยเบิกไม่ต้องส่ง ประหยัดสาย
+  });
+
+  const res = { status: "success", days: TREND_DAYS, series: series };
+  try { CacheService.getScriptCache().put(ck, JSON.stringify(res), 600); } catch (e) {}
+  return res;
+}
+
 function rmRopStats(data, module) {
   const tz = Session.getScriptTimeZone();
   const now = new Date();

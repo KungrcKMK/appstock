@@ -1880,6 +1880,55 @@
     </div>
   </div>
 
+  <!-- ═══ 📥 นำเข้าล็อตห้องเย็นจากไฟล์ (js/crimport.js) ═══ -->
+  <div id="criModal" class="hidden fixed inset-0 z-[620] flex items-center justify-center p-4"
+       style="background:rgba(22,36,27,.55);backdrop-filter:blur(3px);">
+    <div class="sq-page" style="width:100%;max-width:900px;border-radius:14px;overflow:hidden;
+                box-shadow:0 20px 50px rgba(0,0,0,.3);display:flex;flex-direction:column;max-height:92vh;">
+
+      <div style="background:var(--sq-surface);border-bottom:1px solid var(--sq-line);
+                  padding:13px 16px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+        <div style="flex:1;min-width:0;">
+          <div class="sq-card-title">📥 นำเข้าล็อตห้องเย็นจากไฟล์</div>
+          <div class="sq-card-note">1 แถวในไฟล์ = 1 ล็อต (สินค้า + วันผลิต + วันหมดอายุ + จำนวน) · เห็นผลตรวจก่อนบันทึกทุกครั้ง</div>
+        </div>
+        <button onclick="criClose()" class="sq-btn">ปิด</button>
+      </div>
+
+      <div style="padding:14px 16px;overflow-y:auto;">
+        <div class="sq-note">
+          <b>ขั้นตอน</b> &nbsp;1. ดาวน์โหลดไฟล์ตัวอย่าง (มีรายชื่อสินค้าให้แล้ว) &nbsp;→&nbsp;
+          2. เติมจำนวนกับวันที่ใน Excel &nbsp;→&nbsp; 3. <b>Save As → CSV UTF-8</b> &nbsp;→&nbsp; 4. เลือกไฟล์ข้างล่าง<br>
+          สินค้าต้องมีในระบบก่อน (สร้างที่แท็บ ⚙️ จัดการสินค้า) · วันที่ใส่ได้ทั้ง พ.ศ. และ ค.ศ.
+        </div>
+
+        <div style="display:flex;gap:7px;flex-wrap:wrap;align-items:center;margin-bottom:12px;">
+          <button onclick="criTemplate()" class="sq-btn sq-btn-primary">⬇️ ดาวน์โหลดไฟล์ตัวอย่าง</button>
+          <label style="font-size:12.5px;font-weight:700;color:var(--sq-ink2);margin-left:auto;">
+            <input type="radio" name="criMode" value="skip" checked onchange="criPreview()"> ล็อตที่มีอยู่แล้ว: ข้าม
+          </label>
+          <label style="font-size:12.5px;font-weight:700;color:var(--sq-ink2);">
+            <input type="radio" name="criMode" value="overwrite" onchange="criPreview()"> เขียนทับ
+          </label>
+        </div>
+
+        <div class="imp-drop" onclick="document.getElementById('criFile').click()">
+          <div class="imp-drop-icon">📄</div>
+          <div class="imp-drop-main">คลิกเพื่อเลือกไฟล์ .csv</div>
+          <div class="imp-drop-sub">นำเข้าได้ครั้งละไม่เกิน 500 ล็อต</div>
+          <input type="file" id="criFile" accept=".csv,text/csv" style="display:none" onchange="criFilePicked(this)">
+        </div>
+
+        <div id="criPreviewWrap" style="display:none;"></div>
+
+        <button id="criConfirmBtn" onclick="criConfirm()" disabled
+                class="sq-btn sq-btn-primary" style="width:100%;margin-top:12px;padding:12px;">
+          เลือกไฟล์ก่อน
+        </button>
+      </div>
+    </div>
+  </div>
+
   <!-- ═══ แชร์แอปให้พนักงาน (ลิงก์ + QR) ═══ -->
   <div id="shareAppModal" class="hidden fixed inset-0 bg-black/70 backdrop-blur-sm z-[600] flex items-center justify-center p-4">
     <div class="bg-white w-full max-w-md rounded-[2rem] shadow-2xl overflow-hidden">

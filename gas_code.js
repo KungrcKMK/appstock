@@ -3123,9 +3123,22 @@ function rmVerify(data, module) {
       const dailyUsage = Number(rows[i][h.indexOf("DailyUsage")] || 0);
       const newQty     = _validateQty(qty, true); // Poka-Yoke: กัน negative/overflow
       sheet.getRange(i + 1, h.indexOf("Qty")          + 1).setValue(newQty);
-      sheet.getRange(i + 1, h.indexOf("LastVerified") + 1).setValue(new Date().toISOString());
+      sheet.getRange(i + 1, h.indexOf("LastVerified") + 1).setValue(eventAt);
       const userWithDevice2 = _reqDeviceName ? (user||"-") + " (📱 " + _reqDeviceName + ")" : (user||"-");
-      getSheet(module + "_History").appendRow([new Date().toISOString(), name, "ตรวจนับ/ปรับยอด", newQty, userWithDevice2]);
+      // เขียนตามหัวตาราง ไม่ใช่ตำแหน่งตายตัว — OpId จะได้ลงถูกช่อง (ไว้กันบันทึกซ้ำตอนส่งคิว)
+      const vHist = getSheet(module + "_History");
+      const vHead = ensureColumns(vHist, ["DocNo", "SKU", "Unit", "Purpose", "OpId"]);
+      vHist.appendRow(vHead.map(function (c) {
+        if (c === "Timestamp") return eventAt;
+        if (c === "Name")      return name;
+        if (c === "Action")    return "ตรวจนับ/ปรับยอด";
+        if (c === "Qty")       return newQty;
+        if (c === "User")      return userWithDevice2;
+        if (c === "SKU")       return sku;
+        if (c === "Unit")      return unit_;
+        if (c === "OpId")      return opId;
+        return "";
+      }));
       var summary2 = _stockSummaryLines(newQty, unit_, minQty, dailyUsage);
       var msg2 = "⚖️ ตรวจนับ/ปรับยอด\n📦 " + name + " (" + sku + ")" +
                  "\n🔢 ยอดจริง: " + newQty + " " + unit_ +

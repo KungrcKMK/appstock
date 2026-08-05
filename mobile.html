@@ -1188,13 +1188,24 @@ async function confirmAction() {
   const BUSY  = { COUNT:"กำลังบันทึกการนับ...", OUT:"กำลังบันทึกการเบิก...", RETURN:"กำลังบันทึกการคืน...", IN:"กำลังบันทึกรับเข้า..." };
   setLoading(true, BUSY[aType] || "กำลังบันทึก...");
   try {
+    const LB = { COUNT:"📊 นับ", OUT:"📤 เบิก", RETURN:"↩️ คืน", IN:"📥 รับ" };
+    const label = `${LB[aType]||aType} ${sel.name} ${qty} ${sel.unit||""}`.trim();
+    // ผ่านคิวออฟไลน์ — ออนไลน์ยิงตรงเหมือนเดิม เน็ตล่มเก็บไว้ส่งเองทีหลัง
     const r = isCount
-      ? await gasPost({ module: mod, action: "VERIFY", sku: sel.sku, qty, user })
-      : await gasPost({ module: mod, action: "UPDATE", sku: sel.sku, type: aType, qty,
-                        purpose: ($("aPurposeIn").value || "").trim(), user });
+      ? await offlineSend({ module: mod, action: "VERIFY", sku: sel.sku, qty, user }, label)
+      : await offlineSend({ module: mod, action: "UPDATE", sku: sel.sku, type: aType, qty,
+                        purpose: ($("aPurposeIn").value || "").trim(), user }, label);
 
     setLoading(false); btn.disabled = false;
     btn.textContent = isCount ? "📊 บันทึกการนับ" : "✅ ยืนยัน";
+
+    // เน็ตล่ม → เก็บไว้ในเครื่องแล้ว ถือว่างานของพนักงานเสร็จ ปิดแผงได้เลย
+    if (r.queued) {
+      toast("📴 เน็ตล่ม — บันทึกไว้ในเครื่องแล้ว ส่งให้เองเมื่อเน็ตกลับมา", "warn");
+      closeAction();
+      mUpdateOfflineBar();
+      return;
+    }
 
     const ok = isCount ? r.status === "success" : r.status === "success";
     if (ok) {

@@ -808,6 +808,9 @@
         <button onclick="openMyHistory()" class="nav-btn" style="background:rgba(99,102,241,0.2);color:#a5b4fc;" title="ดูรายการที่ตัวเองทำ">📜 ของฉัน</button>
         <button onclick="openShareApp()" class="nav-btn" style="background:rgba(14,165,233,0.15);color:#7dd3fc;" title="แชร์แอปให้พนักงาน (ลิงก์ + QR)">🔗 แชร์แอป</button>
         <a href="manual.html" target="_blank" rel="noopener" class="nav-btn" style="background:rgba(255,255,255,0.08);color:#cbd5e1;text-decoration:none;" title="คู่มือการใช้งาน">📖 คู่มือ</a>
+        <!-- งานที่บันทึกไว้ตอนเน็ตล่ม ยังไม่ได้ส่งขึ้นระบบ — โผล่เฉพาะตอนมีของค้าง -->
+        <button id="offlineQueueBtn" onclick="rawShowOfflineDetail()" class="nav-btn"
+                style="display:none;background:rgba(234,88,12,.22);color:#fdba74;" title="กดเพื่อดูรายละเอียด / ลองส่งใหม่"></button>
         <button onclick="switchToMobile()" class="nav-btn" style="background:rgba(99,102,241,0.15);color:#a5b4fc;" title="เปลี่ยนเป็นโหมดมือถือ">📱</button>
         <button onclick="forceRefresh()" title="อัปเดตแอปล่าสุด (ล้าง cache)" class="nav-btn" style="background:rgba(99,102,241,0.15);color:#a5b4fc;">🔄 อัปเดต</button>
       </div>

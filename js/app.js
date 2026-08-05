@@ -321,7 +321,10 @@ window.addEventListener("focus", _refreshActiveModule);
 // ─────────────────────────────────────────────
 // INIT
 // ─────────────────────────────────────────────
-window.onload = function() { checkAuth(); _updateOnlineStatus(); };
+window.onload = function() {
+  checkAuth(); _updateOnlineStatus();
+  if (typeof rawUpdateOfflineBadge === "function") rawUpdateOfflineBadge();
+};
 
 // ═══════════════════════════════════════════════════════════
 // PWA — ตัวจัดการอัปเดตแอป

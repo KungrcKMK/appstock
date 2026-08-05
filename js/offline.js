@@ -146,7 +146,6 @@ async function offlineSync(manual) {
     _offCfg.onToast(`มี ${failed} รายการส่งไม่ผ่าน — กดดูรายละเอียดที่ปุ่มงานค้าง`, "error");
   }
   if (offlineCount()) _offSchedule();
-  else if (manual && !done && !failed) _offCfg.onToast("ไม่มีงานค้าง", "success");
 }
 
 // ── งานที่เซิร์ฟเวอร์ปฏิเสธ เก็บไว้ให้คนดู ไม่ทิ้งเงียบ ──

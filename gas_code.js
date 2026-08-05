@@ -3107,6 +3107,10 @@ function rmUpdate(data, module) {
 
 function rmVerify(data, module) {
   const { sku, qty, user } = data;
+  const opId = String(data.opId || "");
+  const seen = _opSeen(module, opId);
+  if (seen) return seen;
+  const eventAt = _eventTime(data.clientAt);
   const sheet = getSheet(module + "_Materials");
   const rows  = sheet.getDataRange().getValues();
   const h = rows[0];

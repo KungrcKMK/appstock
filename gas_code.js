@@ -2966,8 +2966,70 @@ function rmSetMin(data, module) {
   return { status: "error", message: "ไม่พบ SKU" };
 }
 
+// ══════════════════════════════════════════════════════════
+// 📴 รองรับการทำงานตอนเน็ตล่ม — กันบันทึกซ้ำ + เวลาที่เกิดจริง
+//
+//   opId = รหัสที่หน้าจอสร้างตอนพนักงานกดยืนยัน ติดไปกับรายการตลอดชีวิต
+//   จำเป็นเพราะ: เน็ตขาดตอนเซิร์ฟเวอร์เขียนเสร็จแล้วแต่คำตอบส่งกลับไม่ถึง
+//   หน้าจอจะคิดว่าล้มเหลวแล้วส่งซ้ำ — ถ้าไม่กันไว้ สต๊อกจะถูกหักสองรอบแบบเงียบๆ
+//   (เฉพาะ UPDATE ที่อันตราย เพราะเป็นการบวก/ลบ · VERIFY กับนับห้องเย็นเป็นการ
+//    ตั้งค่าสัมบูรณ์ ทำซ้ำได้ผลเท่าเดิมอยู่แล้ว แต่ก็กันไว้ไม่ให้ประวัติซ้ำ)
+// ══════════════════════════════════════════════════════════
+function _opSeen(module, opId) {
+  if (!opId) return null;
+  try {
+    var hit = CacheService.getScriptCache().get("op_" + opId);
+    if (hit) return JSON.parse(hit);
+  } catch (e) {}
+  // cache หมดอายุแล้ว (คิวค้างข้ามวัน) → ไล่ดูในประวัติท้ายๆ เป็นตาข่ายกันพลาดชั้นสอง
+  try {
+    var hs = getSheet(module + "_History");
+    var last = hs.getLastRow();
+    if (last < 2) return null;
+    var head = hs.getRange(1, 1, 1, hs.getLastColumn()).getValues()[0];
+    var c = head.indexOf("OpId");
+    if (c < 0) return null;
+    var n = Math.min(500, last - 1);
+    var col = hs.getRange(last - n + 1, c + 1, n, 1).getValues();
+    for (var i = 0; i < col.length; i++) {
+      if (String(col[i][0]) === String(opId)) return { status: "success", duplicate: true };
+    }
+  } catch (e) {}
+  return null;
+}
+
+function _opRemember(opId, result) {
+  if (!opId) return;
+  try {
+    var r = JSON.parse(JSON.stringify(result));
+    r.duplicate = true;
+    CacheService.getScriptCache().put("op_" + opId, JSON.stringify(r), 21600);  // 6 ชม. (เพดานของ GAS)
+  } catch (e) {}
+}
+
+/**
+ * เวลาที่เกิดรายการจริง — ตอนออฟไลน์ต้องใช้เวลาที่พนักงานกดยืนยันหน้างาน
+ * ไม่ใช่เวลาที่ส่งขึ้นระบบ ไม่งั้นใบเบิกและสถิติรายวันจะไปตกผิดวัน
+ * แต่ไม่เชื่อนาฬิกาเครื่องแบบไม่มีเงื่อนไข — เพี้ยนเกินขอบเขตให้ใช้เวลาเซิร์ฟเวอร์แทน
+ */
+function _eventTime(clientAt) {
+  var now = new Date();
+  if (!clientAt) return now.toISOString();
+  var d = new Date(clientAt);
+  if (isNaN(d.getTime())) return now.toISOString();
+  var diff = now.getTime() - d.getTime();
+  if (diff < -5 * 60000)      return now.toISOString();   // อยู่ในอนาคต = นาฬิกาเครื่องเพี้ยน
+  if (diff > 14 * 86400000)   return now.toISOString();   // เก่าเกิน 14 วัน = ไม่น่าเชื่อถือ
+  return d.toISOString();
+}
+
 function rmUpdate(data, module) {
   const { sku, user } = data;
+  // ── กันบันทึกซ้ำ (ต้องเช็คก่อนแตะข้อมูลใดๆ · อยู่ใน _withLock อยู่แล้ว) ──
+  const opId = String(data.opId || "");
+  const seen = _opSeen(module, opId);
+  if (seen) return seen;
+  const eventAt = _eventTime(data.clientAt);
   // ใช้กับงานอะไร — บังคับกรอกเฉพาะตอนเบิกออก เพราะเป็นข้อมูลที่ออดิเตอร์ถามหา
   const purpose = String(data.purpose == null ? "" : data.purpose).trim().slice(0, 120);
   // Poka-Yoke: รับเฉพาะประเภทที่รู้จัก (กันค่าตัวพิมพ์เล็ก/ค่าแปลกปลอมข้ามด่านเช็คสต๊อก)

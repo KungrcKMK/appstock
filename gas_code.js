@@ -816,6 +816,7 @@ function crSaveOrUpdateCount(payload) {
       stockSheet.getRange(i + 1, sh.indexOf("DeviceInfo")   + 1).setValue(_reqDeviceName || "");
       stockSheet.getRange(i + 1, sh.indexOf("UpdatedAt")    + 1).setValue(new Date().toISOString());
       crSendTelegram(`✅ อัปเดตสต๊อก ❄️\n📦 ${productName}\n📅 MFG: ${mfg} | EXP: ${exp}\n🔢 จำนวน: ${newQty}\n👤 ${employeeName}${deviceTag()}${note ? "\n💬 " + note : ""}`);
+      _opRemember(opId, { ok: true });
       return { ok: true };
     }
   }

@@ -501,6 +501,35 @@ function toast(msg, type = "ok") {
   _toastT = setTimeout(() => hide("toast"), 3000);
 }
 
+// ── คิวงานตอนเน็ตล่ม (ตรรกะอยู่ใน js/offline.js ใช้ร่วมกับฝั่งคอม) ──
+function mUpdateOfflineBar() {
+  const el = $("mOfflineBar");
+  if (!el) return;
+  const txt = typeof offlineSummary === "function" ? offlineSummary() : "";
+  if (txt) { el.textContent = txt + "  › แตะเพื่อดู/ลองส่งใหม่"; el.classList.remove("hidden"); }
+  else el.classList.add("hidden");
+}
+
+function mShowOfflineDetail() {
+  const msg = offlineDetailText();
+  if (offlineFailures().length) {
+    if (confirm(msg + "\n\n— กด OK เพื่อล้างรายการที่ส่งไม่ผ่านออก\n(ยอดในระบบไม่ถูกแตะ ต้องทำรายการใหม่เอง)")) {
+      offlineClearFailures(); mUpdateOfflineBar(); return;
+    }
+  } else { alert(msg); }
+  if (offlineCount()) { toast("กำลังลองส่งงานที่ค้าง..."); offlineSync(true); }
+}
+
+if (typeof offlineConfig === "function") {
+  offlineConfig({
+    gasUrl: GAS_URL,
+    deviceName: () => "AppStock Mobile/" + navigator.userAgent.slice(0, 30),
+    onToast: (m, k) => toast(m, k === "error" ? "err" : "ok"),
+    onChange: () => mUpdateOfflineBar(),
+    onSynced: () => { mUpdateOfflineBar(); if (mod) loadData(); }
+  });
+}
+
 function setLoading(on, msg = "กำลังโหลด...") {
   $("loading").querySelector("div").textContent = "⏳ " + msg;
   on ? show("loading") : hide("loading");

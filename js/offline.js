@@ -89,40 +89,50 @@ async function _offPost(job) {
   return await res.json();
 }
 
+// ── แก้ไขคิวแบบอ่านใหม่ทุกครั้งก่อนเขียน ──
+// ⚠️ ห้ามถือ list ไว้ในหน่วยความจำข้ามจังหวะ await แล้วเขียนทับ
+// เพราะระหว่างที่กำลังส่งงานอยู่ พนักงานอาจกดเบิกเพิ่ม (เข้าคิวใหม่)
+// ถ้าเขียนทับด้วยสำเนาเก่า งานที่เพิ่งกดจะหายเงียบ — ผิดวัตถุประสงค์ทั้งฟีเจอร์
+function _offRemoveById(opId) {
+  _offSave(offlineQueue().filter(j => j.opId !== opId));
+}
+function _offPatchJob(opId, patch) {
+  const list = offlineQueue();
+  const j = list.find(x => x.opId === opId);
+  if (j) Object.assign(j, patch);
+  _offSave(list);
+}
+
 // ── ส่งคิวที่ค้าง ──
 // ส่งทีละงานตามลำดับที่ทำจริง — สำคัญมาก เพราะยอดคงเหลือขึ้นกับลำดับ
 // (เบิก 5 แล้วคืน 2 กับ คืน 2 แล้วเบิก 5 ผลต่างกันเมื่อของมีจำกัด)
 async function offlineSync(manual) {
   if (_offSyncing) return;
-  let list = offlineQueue();
-  if (!list.length) return;
+  if (!offlineCount()) { if (manual) _offCfg.onToast("ไม่มีงานค้าง", "success"); return; }
   _offSyncing = true;
   let done = 0, failed = 0;
 
   try {
-    while (list.length) {
+    for (;;) {
+      const list = offlineQueue();     // อ่านใหม่ทุกรอบ
+      if (!list.length) break;
       const job = list[0];
       let r;
       try {
         r = await _offPost(job);
       } catch (e) {
         // เน็ตยังไม่กลับมา — หยุดทั้งชุด ไว้ลองใหม่รอบหน้า (ไม่ทิ้งงาน)
-        job.tries = (job.tries || 0) + 1;
-        job.error = "ส่งไม่ออก (เน็ต)";
-        _offSave(list);
+        _offPatchJob(job.opId, { tries: (job.tries || 0) + 1, error: "ส่งไม่ออก (เน็ต)" });
         break;
       }
       const ok = r && (r.status === "success" || r.ok === true || r.duplicate === true);
-      if (ok) {
-        list.shift(); done++;
-      } else {
+      if (!ok) {
         // เซิร์ฟเวอร์ตอบกลับมาแล้วว่าไม่ผ่าน (เช่น สต๊อกไม่พอ) — ส่งซ้ำไปก็ไม่ผ่าน
         // เอาออกจากคิวแล้วบอกผู้ใช้ให้ชัด อย่าเก็บไว้วนส่งจนตกค้างบังงานอื่น
-        job.error = (r && r.message) || "บันทึกไม่สำเร็จ";
-        _offRecordFailure(job);
-        list.shift(); failed++;
-      }
-      _offSave(list);
+        _offRecordFailure(Object.assign({}, job, { error: (r && r.message) || "บันทึกไม่สำเร็จ" }));
+        failed++;
+      } else done++;
+      _offRemoveById(job.opId);        // เอาออกทีละงานด้วย opId ไม่ใช่เขียนทับทั้งคิว
     }
   } finally {
     _offSyncing = false;

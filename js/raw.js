@@ -253,6 +253,7 @@ function rawRenderItemRow(item) {
         <span>หมดอายุ ${rawForceThaiDate(item.ExpiryDate)}</span>
         <span>นับล่าสุด ${rawForceThaiDate(item.LastVerified)}</span>
       </div>
+      <div class="rm-trend" data-sku="${escapeAttr(item.SKU)}"></div>
     </td>
     <td class="n">
       <div class="rm-qty">${qty.toLocaleString()}<span class="rm-unit">${escapeHtml(item.Unit||"-")}</span></div>

@@ -2258,6 +2258,7 @@ function _handleRawMaterialInner(action, data, module) {
     case "DELETE": return rmDelete(data, module);
     case "BACKUP": return rmBackup(data, module);
     case "IMPORT": return _withLock(function(){ return rmImport(data, module); });
+    case "TRENDS":    return rmTrends(data, module);
     case "DOCREPORT": return rmDocReport(data, module);
     case "ACKDOC":    return _withLock(function(){ return rmAckDocs(data, module); });
     case "ROPSTATS":  return rmRopStats(data, module);

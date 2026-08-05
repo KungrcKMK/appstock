@@ -773,6 +773,7 @@ async function selectModule(m) {
   $("mTitle").textContent = cfg.title;
   $("mSub").textContent   = user + " · " + cfg.sub;
   showScreens("sMain");
+  mUpdateOfflineBar();
   await loadData();
 }
 

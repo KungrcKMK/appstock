@@ -209,9 +209,9 @@ function checkAuth() {
     window._appCanSeeBom = isAdmin || isManager;
     const bomTabBtn = document.getElementById("crMngBtn-bom");
     if (bomTabBtn) bomTabBtn.style.display = window._appCanSeeBom ? "" : "none";
-    // ตรวจสูตรการผลิต — ตอนนี้เปิดให้ admin เท่านั้น
-    // (จะเปิดให้ manager ทีหลัง — เปลี่ยนเป็น isExecDash เมื่อพร้อม)
-    const canSeeBomHealth = isAdmin;
+    // ตรวจข้อมูล (BOMHEALTH) — admin + manager (เจ้าของสั่งเปิดให้ manager 2026-08-03)
+    // ตั้งใจไม่ใช้ isExecDash เพราะนั่นรวม viewer ด้วย — viewer ไม่เกี่ยวกับข้อมูลชุดนี้
+    const canSeeBomHealth = isAdmin || isManager;
     const bomHealthBtn = document.getElementById("navBtn-BOMHEALTH");
     if (bomHealthBtn) bomHealthBtn.style.display = canSeeBomHealth ? "" : "none";
     // ความเคลื่อนไหวข้ามคลัง — ย้ายจากแถบเมนูไปหน้า Admin (เห็นเฉพาะ admin

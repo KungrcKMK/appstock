@@ -706,6 +706,7 @@ function handleColdroom(action, payload) {
   switch (action) {
     case "getProductAndBalances": return crGetProductAndBalances(payload);
     case "saveOrUpdateCount":     return _withLock(function(){ return crSaveOrUpdateCount(payload); });
+    case "importLots":            return _withLock(function(){ return crImportLots(payload); });
     case "saveNewProduct":        return crSaveNewProduct(payload);
     case "getStartupOverview":    return crGetStartupOverview();
     case "clearLotStock":         return crClearLotStock(payload);

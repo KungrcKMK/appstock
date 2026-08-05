@@ -28,6 +28,7 @@ const STATIC_ASSETS = [
   "./js/share.js",
   "./js/myhistory.js",
   "./js/import.js",
+  "./js/crimport.js",
   "./js/slip.js",
   "./js/docreport.js",
   "./js/rop.js"

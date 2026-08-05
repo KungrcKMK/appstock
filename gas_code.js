@@ -827,6 +827,7 @@ function crSaveOrUpdateCount(payload) {
     mfgIso, expIso, Number(newQty), note || "", employeeName, _reqDeviceName || "", new Date().toISOString()
   ]);
   crSendTelegram(`✅ รับเข้าสต๊อก ❄️\n📦 ${productName}\n📅 MFG: ${mfg} | EXP: ${exp}\n🔢 จำนวน: ${newQty}\n👤 ${employeeName}${deviceTag()}${note ? "\n💬 " + note : ""}`);
+  _opRemember(opId, { ok: true });
   return { ok: true };
 }
 

@@ -106,6 +106,7 @@ function _rawApplyData(data, startup) {
   // ⚠️ ไม่วาดกราฟตรงนี้ — กราฟย้ายไปอยู่ในหน้าต่าง 📈 กราฟ ที่ต้องกดเปิด
   //    Chart.js วาดในกล่องที่ซ่อนอยู่ไม่ได้ (ความสูงเป็น 0) จึงวาดตอนเปิดหน้าต่างแทน
   rawCheckCritical(rawLastData, rawCurrentModule, startup);
+  rawLoadTrends();   // เส้นเทรนด์เบิกตามมาทีหลัง — ไม่ถ่วงการโหลดหลัก
 
   // ── Autocomplete: rawSearch (ตั้งค่าครั้งเดียว) ──
   if (!_rawSearchAcInit) {

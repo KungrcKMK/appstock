@@ -1021,8 +1021,19 @@ async function rawSubmitAction() {
   setRawBusy("rawBtnSubmit",true,"กำลังบันทึก...");
   const _busyText = { IN:"กำลังบันทึกรับเข้า...", RETURN:"กำลังบันทึกการคืน...", OUT:"กำลังบันทึกการเบิก..." };
   showLoading(_busyText[type] || "กำลังบันทึก...");
-  const r = await rawFetch({ action:"UPDATE", sku, type, qty, purpose, user:currentUser });
+  const name = (rawLastData||[]).find(m => String(m.SKU) === String(sku))?.Name || sku;
+  const LBL = { OUT:"📤 เบิก", IN:"📥 รับเข้า", RETURN:"↩️ คืน" };
+  // ผ่านคิวออฟไลน์เสมอ — ออนไลน์อยู่ก็ยิงตรงเหมือนเดิม เน็ตล่มถึงจะเก็บไว้ส่งทีหลัง
+  const r = await offlineSend(
+    { module: rawCurrentModule, action:"UPDATE", sku, type, qty, purpose, user:currentUser },
+    `${LBL[type]||type} ${name} ${qty}`);
   hideLoading(); setRawBusy("rawBtnSubmit",false);
+  if (r.queued) {
+    closeRawAction();
+    showToast("📴 เน็ตล่ม — บันทึกไว้ในเครื่องแล้ว จะส่งขึ้นระบบให้เองเมื่อเน็ตกลับมา", "warn", 6000);
+    rawUpdateOfflineBadge();
+    return;
+  }
   if (r.status==="success") {
     closeRawAction();
     showToast("บันทึกสำเร็จ ✔️","success");
@@ -1030,6 +1041,24 @@ async function rawSubmitAction() {
     if (r.slip && typeof openWithdrawSlip === "function") openWithdrawSlip(r.slip);
   }
   else showToast(r.message||"ไม่สำเร็จ","error");
+}
+
+// ── ปุ่มงานค้าง (โผล่เฉพาะตอนมีของค้าง) ──
+function rawUpdateOfflineBadge() {
+  const el = document.getElementById("offlineQueueBtn");
+  if (!el) return;
+  const txt = typeof offlineSummary === "function" ? offlineSummary() : "";
+  el.style.display = txt ? "" : "none";
+  el.textContent = txt;
+}
+
+function rawShowOfflineDetail() {
+  const q = typeof offlineCount === "function" ? offlineCount() : 0;
+  const msg = offlineDetailText();
+  if (offlineFailures().length && confirm(msg + "\n\n— กด OK เพื่อล้างรายการที่ส่งไม่ผ่านออกจากรายการนี้\n(ยอดในระบบไม่ถูกแตะ ต้องทำรายการใหม่เอง)")) {
+    offlineClearFailures(); rawUpdateOfflineBadge(); return;
+  }
+  if (q) { showToast("กำลังลองส่งงานที่ค้าง...", "success"); offlineSync(true); }
 }
 
 async function rawSubmitVerify() {

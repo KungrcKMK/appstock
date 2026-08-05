@@ -615,7 +615,10 @@ function _checkApiKey(incoming) {
 // ผลข้างเคียงที่ยอมรับ: เจ้าของแก้ชีตตรงๆ (ไม่ผ่านแอป) จะเห็นในแอปช้าสุด 5 นาที
 function _rawCacheKey(module) { return "rawmat_" + module; }
 function _rawCacheBust(module) {
-  try { CacheService.getScriptCache().remove(_rawCacheKey(module)); } catch (e) {}
+  try {
+    CacheService.getScriptCache().remove(_rawCacheKey(module));
+    CacheService.getScriptCache().remove("rawtrends_" + module);   // เทรนด์เบิกก็ต้องสดตามด้วย
+  } catch (e) {}
 }
 
 function doGet(e) {

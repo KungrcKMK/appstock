@@ -3145,7 +3145,9 @@ function rmVerify(data, module) {
                  summary2 +
                  "\n👤 " + (user||"-") + deviceTag();
       sendAlert(msg2, module);
-      return { status: "success" };
+      const vres = { status: "success" };
+      _opRemember(opId, vres);
+      return vres;
     }
   }
   return { status: "error", message: "ไม่พบ SKU" };

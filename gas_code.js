@@ -3064,10 +3064,10 @@ function rmUpdate(data, module) {
       // คอลัมน์ DocNo/SKU/Unit ต่อท้ายของเดิม ไม่แทรกกลาง
       // เพราะ getMyHistory / bomHealthReport / getActivityLog อ่านด้วยลำดับคอลัมน์เดิมอยู่
       const hist = getSheet(module + "_History");
-      const hHead = ensureColumns(hist, ["DocNo", "SKU", "Unit", "Purpose"]);
+      const hHead = ensureColumns(hist, ["DocNo", "SKU", "Unit", "Purpose", "OpId"]);
       const docNo = _nextDocNo(module, type);   // ออกเลขให้ทุกประเภท เบิก/รับ/คืน
       const histRow = hHead.map(function (c) {
-        if (c === "Timestamp") return new Date().toISOString();
+        if (c === "Timestamp") return eventAt;   // เวลาที่กดยืนยันหน้างาน (ออฟไลน์ = เวลาจริง ไม่ใช่เวลาส่ง)
         if (c === "Name")      return name;
         if (c === "Action")    return meta.label;
         if (c === "Qty")       return q;
@@ -3076,6 +3076,7 @@ function rmUpdate(data, module) {
         if (c === "SKU")       return sku;
         if (c === "Unit")      return unit_;
         if (c === "Purpose")   return purpose;
+        if (c === "OpId")      return opId;
         return "";
       });
       hist.appendRow(histRow);

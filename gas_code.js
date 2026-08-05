@@ -1366,6 +1366,103 @@ function crClearLotStock(payload) {
 }
 
 // ══════════════════════════════════════════
+// 📥 นำเข้าล็อตห้องเย็นจากไฟล์ (คู่แฝดของ rmImport ฝั่งวัตถุดิบ)
+//   ล็อตระบุตัวด้วย บาร์โค้ด+วันผลิต · จับคู่สินค้าจากบาร์โค้ดก่อน ไม่เจอค่อยลองชื่อ
+//   ไม่สร้างสินค้าใหม่ให้ — สินค้าห้องเย็นมีอายุเก็บ/หน่วยชุด ต้องตั้งในแท็บจัดการสินค้าเอง
+//   dryRun: ตรวจทุกอย่างเหมือนจริงแต่ไม่เขียน — หน้าจอใช้ทำตารางพรีวิว
+// ══════════════════════════════════════════
+var CR_IMPORT_MAX_ROWS = 500;
+
+function crImportLots(payload) {
+  const mode = payload.mode === "overwrite" ? "overwrite" : "skip";
+  const dry  = payload.dryRun === true;
+  const who  = String(payload.employeeName || "-");
+  const rows = Array.isArray(payload.rows) ? payload.rows : [];
+  if (!rows.length) return { ok: false, message: "ไม่มีข้อมูลในไฟล์" };
+  if (rows.length > CR_IMPORT_MAX_ROWS)
+    return { ok: false, message: "นำเข้าได้ครั้งละไม่เกิน " + CR_IMPORT_MAX_ROWS + " แถว" };
+
+  const prodSheet = getSheet("ColdRoom_Products");
+  const pd = prodSheet.getDataRange().getValues();
+  const ph = pd[0];
+  const byBarcode = {}, byName = {};
+  for (var i = 1; i < pd.length; i++) {
+    const bc = String(pd[i][ph.indexOf("Barcode")]).trim();
+    const nm = String(pd[i][ph.indexOf("ProductName")]).trim();
+    if (bc) byBarcode[bc] = { barcode: bc, name: nm };
+    if (nm) byName[nm]    = { barcode: bc, name: nm };
+  }
+
+  const stockSheet = getSheet("ColdRoom_Stock");
+  ensureColumns(stockSheet, ["Note", "EmployeeName", "DeviceInfo", "UpdatedAt"]);
+  const sd = stockSheet.getDataRange().getValues();
+  const sh = sd[0];
+  const lotRowAt = {};   // "barcode|mfg" → เลขแถวในชีต
+  for (var r = 1; r < sd.length; r++) {
+    lotRowAt[String(sd[r][sh.indexOf("Barcode")]) + "|" + formatCellDate(sd[r][sh.indexOf("MFG")])] = r + 1;
+  }
+
+  const results = [], newRows = [], seen = {};
+  let added = 0, updated = 0, skipped = 0, errors = 0;
+  const nowIso = new Date().toISOString();
+
+  rows.forEach(function (row, idx) {
+    const out = { i: idx };
+    const fail = msg => { out.status = "error"; out.message = msg; errors++; results.push(out); };
+
+    const bc = String(row.barcode || "").trim();
+    const nm = String(row.name || "").trim();
+    const prod = (bc && byBarcode[bc]) || (nm && byName[nm]) || null;
+    if (!prod) return fail(bc || nm ? "ไม่พบสินค้านี้ในระบบ — สร้างที่แท็บจัดการสินค้าก่อน" : "ไม่ระบุบาร์โค้ด/ชื่อสินค้า");
+    out.name = prod.name;
+
+    const qty = Number(row.qty);
+    if (!isFinite(qty) || qty <= 0) return fail("จำนวนต้องเป็นตัวเลขมากกว่า 0");
+    const mfg = String(row.mfg || "").trim();
+    const exp = String(row.exp || "").trim();
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(mfg)) return fail("วันผลิตไม่ถูกต้อง");
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(exp)) return fail("วันหมดอายุไม่ถูกต้อง");
+    if (exp <= mfg) return fail("วันหมดอายุต้องอยู่หลังวันผลิต");
+
+    const key = prod.barcode + "|" + mfg;
+    if (seen[key]) return fail("ซ้ำกับแถวก่อนหน้าในไฟล์ (สินค้า+วันผลิตเดียวกัน)");
+    seen[key] = true;
+
+    if (lotRowAt[key]) {
+      if (mode === "skip") { out.status = "skipped"; skipped++; }
+      else {
+        out.status = "updated"; updated++;
+        if (!dry) {
+          const rr = lotRowAt[key];
+          stockSheet.getRange(rr, sh.indexOf("Qty")          + 1).setValue(qty);
+          stockSheet.getRange(rr, sh.indexOf("EXP")          + 1).setValue(exp);
+          stockSheet.getRange(rr, sh.indexOf("Note")         + 1).setValue("นำเข้าจากไฟล์ (ทับ)");
+          stockSheet.getRange(rr, sh.indexOf("EmployeeName") + 1).setValue(who);
+          stockSheet.getRange(rr, sh.indexOf("DeviceInfo")   + 1).setValue(_reqDeviceName || "");
+          stockSheet.getRange(rr, sh.indexOf("UpdatedAt")    + 1).setValue(nowIso);
+        }
+      }
+    } else {
+      out.status = "added"; added++;
+      // เรียงคอลัมน์ตามชีตมาตรฐานเหมือน appendRow ใน crSaveOrUpdateCount
+      if (!dry) newRows.push([Utilities.getUuid(), prod.barcode, prod.name, mfg, exp, qty,
+                              "นำเข้าจากไฟล์", who, _reqDeviceName || "", nowIso]);
+    }
+    results.push(out);
+  });
+
+  if (!dry && newRows.length) {
+    stockSheet.getRange(stockSheet.getLastRow() + 1, 1, newRows.length, newRows[0].length)
+              .setValues(newRows);
+  }
+  if (!dry && (added || updated)) {
+    crSendTelegram("📥 นำเข้าห้องเย็นจากไฟล์ ❄️\n➕ ล็อตใหม่ " + added + " · ✏️ เขียนทับ " + updated +
+                   (skipped ? " · ข้าม " + skipped : "") + "\n👤 " + who + deviceTag());
+  }
+  return { ok: true, dryRun: dry, added: added, updated: updated, skipped: skipped, errors: errors, results: results };
+}
+
+// ══════════════════════════════════════════
 // 📋 ใบสั่งผลิต (Work Order)
 // ══════════════════════════════════════════
 

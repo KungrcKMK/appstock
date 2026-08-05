@@ -3088,16 +3088,18 @@ function rmUpdate(data, module) {
                 "\n👤 " + (user||"-") + deviceTag();
       sendAlert(msg, module);
       // ส่งข้อมูลกลับให้หน้าจอเอาไปออกใบเบิกได้เลย โดยไม่ต้องยิงถามใหม่
-      return {
+      const res = {
         status: "success",
         docNo: docNo,
         slip: {
           docNo: docNo, type: type, action: meta.label,
           sku: String(sku), name: String(name), qty: q,
           unit: String(unit_), balance: newQty, user: String(user || "-"),
-          purpose: purpose, module: module, at: new Date().toISOString()
+          purpose: purpose, module: module, at: eventAt
         }
       };
+      _opRemember(opId, res);
+      return res;
     }
   }
   return { status: "error", message: "ไม่พบ SKU" };

@@ -57,6 +57,8 @@ function initSheet(sheet, name) {
   const HEADERS = {
     "ColdRoom_Products": ["Barcode","ProductName","SKU","DefaultUnit","StandardShelfLifeDays","WarningPercentage","WarningDays","SetName","UnitsPerSet","CreatedAt"],
     "ColdRoom_Stock":    ["RowID","Barcode","ProductName","MFG","EXP","Qty","Note","EmployeeName","DeviceInfo","UpdatedAt"],
+    "ColdRoom_LotHistory": ["Timestamp","Barcode","ProductName","MFG","Action","QtyBefore","QtyAfter","Reason","EmployeeName","DeviceInfo","OpId"],
+    "System_Log":        ["Timestamp","Type","Detail","User","Result"],
     "AppUsers":          ["Username","Active","Role","Password","CreatedAt"],
     "PendingUsers":      ["Username","RequestedAt","Status","ReviewedAt","ReviewedBy"],
     "SQF_Materials":     ["SKU","Name","Qty","Unit","Min","DailyUsage","ExpiryDate","LastVerified","Discontinued","AlertDays"],
@@ -170,11 +172,20 @@ function _validateQty(v, allowDecimal) {
   if (n > 9999999) return 9999999;
   return allowDecimal ? Math.round(n * 1000) / 1000 : Math.floor(n);
 }
+// แบบเข้มงวด: ค่าผิด/ติดลบ/เกินเพดาน → NaN ให้ผู้เรียกปฏิเสธพร้อมบอกเหตุผล
+// (ของเดิมแก้เป็น 0 เงียบๆ — "นับได้ abc" กลายเป็นตั้งยอด 0 โดยไม่มีใครรู้)
+function _qtyStrict(v, allowDecimal) {
+  if (v === "" || v === null || v === undefined) return NaN;
+  var n = Number(String(v).replace(/,/g, ""));
+  if (isNaN(n) || !isFinite(n) || n < 0 || n > 9999999) return NaN;
+  return allowDecimal ? Math.round(n * 1000) / 1000 : Math.floor(n);
+}
 
 // Poka-Yoke: ครอบฟังก์ชัน read-then-write ด้วย DocumentLock กัน race condition
 function _withLock(fn) {
   var lock = LockService.getDocumentLock();
-  try { lock.waitLock(10000); } catch(e) { return { ok: false, status: "error", message: "ระบบกำลังประมวลผลคำขออื่น กรุณาลองใหม่" }; }
+  // retryable: true → คิวออฟไลน์เก็บงานไว้ลองใหม่ ไม่ย้ายไป "ส่งไม่ผ่าน" ให้พนักงานคีย์ซ้ำ
+  try { lock.waitLock(10000); } catch(e) { return { ok: false, status: "error", retryable: true, message: "ระบบกำลังประมวลผลคำขออื่น กรุณาลองใหม่" }; }
   try { return fn(); }
   finally { try { lock.releaseLock(); } catch(e) {} }
 }
@@ -192,9 +203,16 @@ function _withLock(fn) {
 //
 // 6 ชม. = เข้าสู่ระบบตอนเช้าครั้งเดียว ใช้ได้ทั้งวันทำงาน
 var TOKEN_TTL_SEC = 21600;
+// บัตรผ่านเก็บ 2 ชั้น: CacheService (เร็ว, 6 ชม.) + ScriptProperties (ถาวร SESSION_DAYS วัน)
+// เหตุผล: งานที่ค้างในคิวออฟไลน์ข้ามคืนต้องส่งได้ ถ้าบัตรหมดอายุตามแคช 6 ชม. งานทั้งคิวจะถูกปฏิเสธ
+// = งานหายเพราะระบบความปลอดภัยเอง ซึ่งผิดวัตถุประสงค์
+var SESSION_DAYS = 30;
 function _issueToken(username, role) {
   var token = Utilities.getUuid();
-  CacheService.getScriptCache().put("tk_" + token, JSON.stringify({ u: username.toLowerCase(), r: role }), TOKEN_TTL_SEC);
+  var rec = JSON.stringify({ u: username.toLowerCase(), n: username, r: role,
+                             exp: Date.now() + SESSION_DAYS * 86400000 });
+  try { CacheService.getScriptCache().put("tk_" + token, rec, TOKEN_TTL_SEC); } catch (e) {}
+  try { PropertiesService.getScriptProperties().setProperty("sess_" + token, rec); } catch (e) {}
   return token;
 }
 function _issueAdminToken(username) { return _issueToken(username, "admin"); }
@@ -211,15 +229,19 @@ function _getTokenData(token) {
       return data;
     } catch(e) { return null; }
   }
-  // compat: เก่าเก็บด้วย at_ prefix
-  var old = cache.get("at_" + token);
-  if (old) {
-    // upgrade เป็นรูปแบบใหม่ + ต่ออายุ
-    var upgraded = JSON.stringify({ u: old, r: "admin" });
-    cache.put("tk_" + token, upgraded, TOKEN_TTL_SEC);
-    cache.remove("at_" + token);
-    return { u: old, r: "admin" };
-  }
+  // แคชหมดอายุ → ดูใน Properties (ถาวร) แล้วเติมแคชกลับ
+  try {
+    var rec = PropertiesService.getScriptProperties().getProperty("sess_" + token);
+    if (rec) {
+      var d2 = JSON.parse(rec);
+      if (d2.exp && Date.now() > d2.exp) {
+        PropertiesService.getScriptProperties().deleteProperty("sess_" + token);
+        return null;
+      }
+      cache.put("tk_" + token, rec, TOKEN_TTL_SEC);
+      return d2;
+    }
+  } catch (e) {}
   return null;
 }
 function verifyAdminToken(token) { var d = _getTokenData(token); return !!(d && d.r === "admin"); }
@@ -227,9 +249,43 @@ function verifyApproverToken(token) { var d = _getTokenData(token); return !!(d 
 function _getTokenUsername(token) { var d = _getTokenData(token); return d ? d.u : null; }
 function revokeAdminToken(token) {
   if (token) {
-    CacheService.getScriptCache().remove("tk_" + token);
-    CacheService.getScriptCache().remove("at_" + token);
+    try { CacheService.getScriptCache().remove("tk_" + token); } catch (e) {}
+    try { PropertiesService.getScriptProperties().deleteProperty("sess_" + token); } catch (e) {}
   }
+}
+
+// ── ด่านตรวจตัวตนสำหรับคำสั่งที่เปลี่ยนข้อมูล (ข้อ 1 รายงานปรับปรุง) ──
+// คำสั่งอ่านอย่างเดียวไม่ต้องผ่านด่าน · คำสั่งที่มีด่าน admin ของตัวเองอยู่แล้วไม่อยู่ในตารางนี้
+// ชื่อผู้ทำรายการเอาจากบัตรผ่าน ไม่เชื่อชื่อที่หน้าจอส่งมา — ปิดช่องอ้างชื่อคนอื่น
+var ROLE_RANK = { viewer: 0, user: 1, manager: 2, admin: 3 };
+var WRITE_MIN_ROLE = {
+  UPDATE: "user", VERIFY: "user", CREATE: "user", EDIT: "user", DELETE: "user", IMPORT: "user",
+  BACKUP: "manager", SETMIN: "user", SETROPSTART: "user", ACKDOC: "user",
+  saveOrUpdateCount: "user", importLots: "user", saveNewProduct: "user", clearLotStock: "user",
+  saveWorkOrder: "user", deleteWorkOrder: "user", updateProduct: "user", archiveOldStock: "manager",
+  saveAlertSettings: "admin", saveBom: "manager", deleteBom: "manager",
+  submitDelivery: "user", submitStockIn: "user", reviewStockIn: "user",
+  SYSSTATUS: "manager"
+};
+var _reqUser = "";
+function _authGate(module, action, data, payload) {
+  var need = WRITE_MIN_ROLE[action];
+  if (!need) return null;
+  var token = data.sessionToken || (payload && payload.adminToken) || data.adminToken || "";
+  var sess = _getTokenData(token);
+  if (!sess) return { ok: false, status: "error", needLogin: true,
+                      message: "กรุณาเข้าสู่ระบบใหม่ (บัตรผ่านหมดอายุหรือยังไม่ได้เข้าระบบ)" };
+  if ((ROLE_RANK[sess.r] || 0) < (ROLE_RANK[need] || 1))
+    return { ok: false, status: "error", message: "สิทธิ์ของบัญชี (" + sess.r + ") ไม่พอสำหรับคำสั่งนี้" };
+  var who = sess.n || sess.u;
+  _reqUser = who;
+  data.user = who;
+  if (payload) {
+    payload.user = who;
+    payload.employeeName = who;
+    if (payload.createdBy !== undefined) payload.createdBy = who;
+  }
+  return null;
 }
 
 function verifyUser(payload) {
@@ -274,11 +330,11 @@ function verifyUser(payload) {
 
       _clearRateLimit(username); // reset นับหลังล็อกอินสำเร็จ
       const role = String(data[i][h.indexOf("Role")] || "user");
-      // ออก token ให้ admin/manager ทุกคนที่ผ่าน login (manager = อนุมัติได้)
-      const needsToken = (role === "admin" || role === "manager");
-      const adminToken = needsToken ? _issueToken(username, role) : null;
-
-      return { ok: true, role, adminToken };
+      // ออกบัตรผ่านให้ทุก role — คำสั่งที่เปลี่ยนข้อมูลต้องมีบัตร (ข้อ 1 รายงานปรับปรุง)
+      // ชื่อในบัตรใช้ตัวสะกดจริงในชีต ไม่ใช่ที่ผู้ใช้พิมพ์
+      const realName = String(data[i][userCol]).trim();
+      const token = _issueToken(realName, role);
+      return { ok: true, role, adminToken: token, sessionToken: token, username: realName };
     }
   }
   // ไม่พบใน AppUsers → เช็คว่าเคยส่งคำขอไว้ไหม เพื่อให้หน้าจอบอกสถานะได้ถูก
@@ -649,6 +705,80 @@ function doGet(e) {
 var _reqDeviceId   = "";
 var _reqDeviceName = "";
 
+// ── ข้อ 21: ประวัติล็อตห้องเย็น (ของเดิมเขียนทับแถวยอด อธิบายย้อนหลังไม่ได้ว่าเปลี่ยนเพราะอะไร) ──
+function _crLotLog(rows) {
+  if (!rows || !rows.length) return;
+  try {
+    var sh = getSheet("ColdRoom_LotHistory");
+    sh.getRange(sh.getLastRow() + 1, 1, rows.length, rows[0].length).setValues(rows);
+  } catch (e) { Logger.log("LotHistory: " + e); }
+}
+function _crLotRow(barcode, name, mfgIso, action, before, after, reason, who, opId) {
+  return [new Date().toISOString(), String(barcode), String(name || ""), mfgIso, action,
+          Number(before) || 0, Number(after) || 0, String(reason || ""), String(who || "-"),
+          _reqDeviceName || "", String(opId || "")];
+}
+function crGetLotHistory(payload) {
+  var sh = getSheet("ColdRoom_LotHistory");
+  var last = sh.getLastRow();
+  if (last < 2) return { ok: true, rows: [] };
+  var head = sh.getRange(1, 1, 1, sh.getLastColumn()).getValues()[0];
+  var n = Math.min(400, last - 1);
+  var data = sh.getRange(last - n + 1, 1, n, head.length).getValues();
+  var bc = String((payload && payload.barcode) || "");
+  var out = [];
+  for (var i = data.length - 1; i >= 0; i--) {
+    var o = {}; head.forEach(function (k, j) { var v = data[i][j]; o[k] = v instanceof Date ? v.toISOString() : v; });
+    if (bc && String(o.Barcode) !== bc) continue;
+    out.push(o);
+    if (out.length >= 200) break;
+  }
+  return { ok: true, rows: out };
+}
+
+// ── ข้อ 16/22: บันทึกงานระบบแยกจากประวัติสินค้า ──
+function _sysLog(type, detail, user, result) {
+  try { getSheet("System_Log").appendRow([new Date().toISOString(), type, String(detail || ""), String(user || "-"), String(result || "")]); }
+  catch (e) {}
+}
+function _sysLast(type) {
+  try {
+    var sh = getSheet("System_Log");
+    var last = sh.getLastRow();
+    if (last < 2) return null;
+    var n = Math.min(300, last - 1);
+    var data = sh.getRange(last - n + 1, 1, n, 5).getValues();
+    for (var i = data.length - 1; i >= 0; i--) if (String(data[i][1]) === type)
+      return { at: data[i][0] instanceof Date ? data[i][0].toISOString() : String(data[i][0]), detail: data[i][2], user: data[i][3], result: data[i][4] };
+  } catch (e) {}
+  return null;
+}
+
+// ── ข้อ 22: สถานะระบบสำหรับผู้ดูแล (ผ่านด่านตรวจตัวตน manager+) ──
+var GAS_APP_VERSION = "2026-09-16";
+function sysStatus() {
+  var t0 = Date.now();
+  var counts = {};
+  ["SQF_History", "MLM_History", "ColdRoom_Stock", "ColdRoom_LotHistory", "AppUsers"].forEach(function (n) {
+    try { counts[n] = Math.max(0, getSheet(n).getLastRow() - 1); } catch (e) { counts[n] = null; }
+  });
+  var tg = null;
+  try { var c = CacheService.getScriptCache().get("tg_last"); if (c) tg = JSON.parse(c); } catch (e) {}
+  return {
+    ok: true, status: "success",
+    serverTime: new Date().toISOString(),
+    gasVersion: GAS_APP_VERSION,
+    timeZone: Session.getScriptTimeZone(),
+    superAdminConfigured: !!_superAdminName(),
+    apiKeyEnabled: !!_getApiKey(),
+    lastBackup: _sysLast("backup"),
+    lastTelegram: tg,
+    lastTelegramError: _sysLast("telegram-error"),
+    rowCounts: counts,
+    readMs: Date.now() - t0
+  };
+}
+
 function doPost(e) {
   try {
     const data = JSON.parse(e.postData.contents);
@@ -665,6 +795,10 @@ function doPost(e) {
     _reqDeviceId   = String(data.deviceId   || "").slice(0, 50);
     _reqDeviceName = _sanitizeDeviceName(data.deviceName);
 
+    // ── ด่านตรวจตัวตน: คำสั่งเปลี่ยนข้อมูลต้องมีบัตรผ่านที่ยังใช้ได้ ──
+    var gate = _authGate(module, action, data, payload);
+    if (gate) return jsonResponse(gate);
+
     // SYSTEM actions (ไม่ขึ้นกับ module)
     if (action === "verifyUser")      return jsonResponse(verifyUser(payload));
     if (action === "registerUser")    return jsonResponse(registerUser(payload));
@@ -677,6 +811,7 @@ function doPost(e) {
     if (action === "setUserRole")     return jsonResponse(setUserRole(payload));
     if (action === "demoteOtherAdmins") return jsonResponse(demoteOtherAdmins(payload));
     if (action === "getMyHistory")    return jsonResponse(getMyHistory(payload));
+    if (action === "SYSSTATUS")       return jsonResponse(sysStatus());
     if (action === "createUser")      return jsonResponse(_withLock(function(){ return createUser(payload); }));
     if (action === "deleteUser")      return jsonResponse(_withLock(function(){ return deleteUser(payload); }));
     if (action === "submitDelivery")  return jsonResponse(_withLock(function(){ return submitDelivery(payload); }));
@@ -710,23 +845,24 @@ function handleColdroom(action, payload) {
     case "getProductAndBalances": return crGetProductAndBalances(payload);
     case "saveOrUpdateCount":     return _withLock(function(){ return crSaveOrUpdateCount(payload); });
     case "importLots":            return _withLock(function(){ return crImportLots(payload); });
-    case "saveNewProduct":        return crSaveNewProduct(payload);
+    case "saveNewProduct":        return _withLock(function(){ return crSaveNewProduct(payload); });
     case "getStartupOverview":    return crGetStartupOverview();
-    case "clearLotStock":         return crClearLotStock(payload);
+    case "clearLotStock":         return _withLock(function(){ return crClearLotStock(payload); });
+    case "getLotHistory":         return crGetLotHistory(payload);
     case "getAlertSettings":      return crGetAlertSettings();
-    case "saveAlertSettings":     return crSaveAlertSettings(payload);
-    case "saveWorkOrder":         return crSaveWorkOrder(payload);
-    case "deleteWorkOrder":       return crDeleteWorkOrder(payload);
+    case "saveAlertSettings":     return _withLock(function(){ return crSaveAlertSettings(payload); });
+    case "saveWorkOrder":         return _withLock(function(){ return crSaveWorkOrder(payload); });
+    case "deleteWorkOrder":       return _withLock(function(){ return crDeleteWorkOrder(payload); });
     case "getWorkOrders":         return crGetWorkOrders();
     case "getColdRoomProducts":   return crGetColdRoomProducts();
-    case "updateProduct":         return crUpdateProduct(payload);
+    case "updateProduct":         return _withLock(function(){ return crUpdateProduct(payload); });
     case "getBomList":            return bomGetList();
     case "getBomHealth":          return bomHealthReport();
     case "getBomForProduct":      return bomGetForProduct(payload.barcode);
-    case "saveBom":               return bomSave(payload);
-    case "deleteBom":             return bomDelete(payload.barcode);
+    case "saveBom":               return _withLock(function(){ return bomSave(payload); });
+    case "deleteBom":             return _withLock(function(){ return bomDelete(payload.barcode); });
     case "calcWorkOrderMaterials": return bomCalcWorkOrder(payload);
-    case "archiveOldStock":        return archiveOldStock(payload);
+    case "archiveOldStock":        return _withLock(function(){ return archiveOldStock(payload); });
     default: return { ok: false, message: "Unknown action: " + action };
   }
 }
@@ -782,8 +918,10 @@ function crSaveOrUpdateCount(payload) {
   const opId = String(payload.opId || "");
   const seenCr = _opSeen("", opId);
   if (seenCr) return seenCr;
-  const newQty = _validateQty(payload.newQty, true); // ป้องกัน negative/overflow
+  const newQty = _qtyStrict(payload.newQty, true);
+  if (isNaN(newQty)) return { ok: false, message: "จำนวนไม่ถูกต้อง (ต้องเป็นตัวเลข 0-9,999,999)" };
   if (!barcode) return { ok: false, message: "ไม่ระบุบาร์โค้ด" };
+  const crEventAt = _eventTime(payload.clientAt);
   if (!mfg || !exp) return { ok: false, message: "กรุณาระบุวันผลิตและวันหมดอายุ" };
   const mfgIso = ddmmyyToIso(mfg);
   const expIso = ddmmyyToIso(exp);
@@ -810,6 +948,14 @@ function crSaveOrUpdateCount(payload) {
   for (let i = 1; i < stockData.length; i++) {
     if (String(stockData[i][sh.indexOf("Barcode")])          === String(barcode) &&
         formatCellDate(stockData[i][sh.indexOf("MFG")])      === mfgIso) {
+      // ข้อ 5 (ห้องเย็น): นับตอนออฟไลน์แล้วส่งทีหลัง ถ้าล็อตถูกแก้หลังเวลานับ = รายการนี้เก่า ไม่ทับ
+      var prevQty = Number(stockData[i][sh.indexOf("Qty")] || 0);
+      var upd = stockData[i][sh.indexOf("UpdatedAt")];
+      var updMs = upd ? new Date(upd).getTime() : NaN;
+      if (payload.clientAt && !isNaN(updMs) && updMs > new Date(crEventAt).getTime() + 5000) {
+        return { ok: false, message: "ล็อตนี้ถูกแก้หลังเวลาที่นับไว้ (ยอดล่าสุด " + prevQty + ") — รายการนับนี้เก่ากว่า ไม่นำมาใช้" };
+      }
+      _crLotLog([_crLotRow(barcode, productName, mfgIso, "นับ/ปรับยอด", prevQty, newQty, note, employeeName, opId)]);
       stockSheet.getRange(i + 1, sh.indexOf("Qty")          + 1).setValue(Number(newQty));
       stockSheet.getRange(i + 1, sh.indexOf("Note")         + 1).setValue(note || "");
       stockSheet.getRange(i + 1, sh.indexOf("EmployeeName") + 1).setValue(employeeName);
@@ -822,6 +968,7 @@ function crSaveOrUpdateCount(payload) {
   }
 
   // ไม่พบ lot เดิม → สร้างใหม่
+  _crLotLog([_crLotRow(barcode, productName, mfgIso, "รับเข้า (ล็อตใหม่)", 0, newQty, note, employeeName, opId)]);
   stockSheet.appendRow([
     Utilities.getUuid(), barcode, productName,
     mfgIso, expIso, Number(newQty), note || "", employeeName, _reqDeviceName || "", new Date().toISOString()
@@ -1270,11 +1417,12 @@ function bomSave(payload) {
   for (var i = data.length - 1; i >= 1; i--) {
     if (String(data[i][1]) === String(barcode)) sheet.deleteRow(i + 1);
   }
-  // เพิ่ม BOM ใหม่
-  materials.forEach(function(m, idx) {
+  // เพิ่ม BOM ใหม่ — เขียนเป็นชุดเดียว (ข้อ 11) ไม่ appendRow ทีละแถว
+  var bomRows = materials.map(function(m, idx) {
     var bomId = "BOM-" + String(barcode).replace(/[^a-zA-Z0-9]/g,"").substring(0,8) + "-" + String(idx+1).padStart(3,"0");
-    sheet.appendRow([bomId, barcode, name, factory, m.sku, m.name, Number(m.qtyPerUnit)||0, m.unit]);
+    return [bomId, barcode, name, factory, m.sku, m.name, Number(m.qtyPerUnit)||0, m.unit];
   });
+  if (bomRows.length) sheet.getRange(sheet.getLastRow() + 1, 1, bomRows.length, bomRows[0].length).setValues(bomRows);
   return { ok: true, saved: materials.length };
 }
 
@@ -1363,6 +1511,7 @@ function crClearLotStock(payload) {
     if (String(data[i][h.indexOf("Barcode")])     === String(barcode) &&
         formatCellDate(data[i][h.indexOf("MFG")]) === mfgIso) {
       const name = String(data[i][h.indexOf("ProductName")]);
+      _crLotLog([_crLotRow(barcode, name, mfgIso, "นำออก", Number(data[i][h.indexOf("Qty")] || 0), 0, reason, employeeName, payload.opId)]);
       sheet.getRange(i + 1, h.indexOf("Qty")          + 1).setValue(0);
       sheet.getRange(i + 1, h.indexOf("Note")         + 1).setValue("นำออก: " + reason);
       sheet.getRange(i + 1, h.indexOf("EmployeeName") + 1).setValue(employeeName);
@@ -1412,7 +1561,7 @@ function crImportLots(payload) {
     lotRowAt[String(sd[r][sh.indexOf("Barcode")]) + "|" + formatCellDate(sd[r][sh.indexOf("MFG")])] = r + 1;
   }
 
-  const results = [], newRows = [], seen = {};
+  const results = [], newRows = [], seen = {}, lotLogRows = [];
   let added = 0, updated = 0, skipped = 0, errors = 0;
   const nowIso = new Date().toISOString();
 
@@ -1444,6 +1593,7 @@ function crImportLots(payload) {
         out.status = "updated"; updated++;
         if (!dry) {
           const rr = lotRowAt[key];
+          lotLogRows.push(_crLotRow(prod.barcode, prod.name, mfg, "นำเข้าจากไฟล์ (ทับ)", Number(sd[rr - 1][sh.indexOf("Qty")] || 0), qty, "", who, ""));
           stockSheet.getRange(rr, sh.indexOf("Qty")          + 1).setValue(qty);
           stockSheet.getRange(rr, sh.indexOf("EXP")          + 1).setValue(exp);
           stockSheet.getRange(rr, sh.indexOf("Note")         + 1).setValue("นำเข้าจากไฟล์ (ทับ)");
@@ -1455,8 +1605,11 @@ function crImportLots(payload) {
     } else {
       out.status = "added"; added++;
       // เรียงคอลัมน์ตามชีตมาตรฐานเหมือน appendRow ใน crSaveOrUpdateCount
-      if (!dry) newRows.push([Utilities.getUuid(), prod.barcode, prod.name, mfg, exp, qty,
-                              "นำเข้าจากไฟล์", who, _reqDeviceName || "", nowIso]);
+      if (!dry) {
+        newRows.push([Utilities.getUuid(), prod.barcode, prod.name, mfg, exp, qty,
+                      "นำเข้าจากไฟล์", who, _reqDeviceName || "", nowIso]);
+        lotLogRows.push(_crLotRow(prod.barcode, prod.name, mfg, "นำเข้าจากไฟล์ (ใหม่)", 0, qty, "", who, ""));
+      }
     }
     results.push(out);
   });
@@ -1465,6 +1618,7 @@ function crImportLots(payload) {
     stockSheet.getRange(stockSheet.getLastRow() + 1, 1, newRows.length, newRows[0].length)
               .setValues(newRows);
   }
+  if (!dry) _crLotLog(lotLogRows);
   if (!dry && (added || updated)) {
     crSendTelegram("📥 นำเข้าห้องเย็นจากไฟล์ ❄️\n➕ ล็อตใหม่ " + added + " · ✏️ เขียนทับ " + updated +
                    (skipped ? " · ข้าม " + skipped : "") + "\n👤 " + who + deviceTag());
@@ -1484,7 +1638,8 @@ function crSaveWorkOrder(payload) {
   for (var k = 0; k < items.length; k++) {
     var it = items[k];
     if (!it.barcode || !it.name) return { ok: false, message: "รายการสินค้าไม่ครบ (ข้อ " + (k+1) + ")" };
-    if (_validateQty(it.qty, true) <= 0) return { ok: false, message: "จำนวนต้องมากกว่า 0 (ข้อ " + (k+1) + ")" };
+    var qv = _qtyStrict(it.qty, true);
+    if (isNaN(qv) || qv <= 0) return { ok: false, message: "จำนวนต้องเป็นตัวเลขมากกว่า 0 (ข้อ " + (k+1) + ")" };
   }
   const sheet    = getSheet("ColdRoom_WorkOrders");
   ensureColumns(sheet, ["Status"]);
@@ -1590,6 +1745,15 @@ function crSaveAlertSettings(payload) {
 
 
 function crSendTelegram(message) {
+  var r = _crSendTelegramRaw(message);
+  try {
+    CacheService.getScriptCache().put("tg_last", JSON.stringify({ at: new Date().toISOString(), sent: !!(r && r.sent), reason: (r && r.reason) || "" }), 21600);
+    if (r && !r.sent && r.reason && r.reason !== "disabled" && r.reason !== "no token" && r.reason !== "no chatId")
+      _sysLog("telegram-error", r.reason, _reqUser || "-", "failed");
+  } catch (e) {}
+  return r;
+}
+function _crSendTelegramRaw(message) {
   try {
     message = _maskNames(String(message));   // พรางชื่อเจ้าของระบบในแชทด้วย (คนในกลุ่มอาจไม่ใช่แอดมินทุกคน)
     const s = crGetAlertSettings().settings;
@@ -2268,6 +2432,7 @@ function _handleRawMaterialInner(action, data, module) {
     case "BACKUP": return rmBackup(data, module);
     case "IMPORT": return _withLock(function(){ return rmImport(data, module); });
     case "TRENDS":    return rmTrends(data, module);
+    case "LEDGERAUDIT": return rmLedgerAudit(data, module);
     case "DOCREPORT": return rmDocReport(data, module);
     case "ACKDOC":    return _withLock(function(){ return rmAckDocs(data, module); });
     case "ROPSTATS":  return rmRopStats(data, module);
@@ -2310,7 +2475,7 @@ function getRawMaterials(module) {
   const histSheet = getSheet(module + "_History");
 
   // เพิ่มคอลัมน์ใหม่ถ้า sheet เก่ายังไม่มี
-  ensureColumns(matSheet, ["DailyUsage","AlertDays"]);
+  ensureColumns(matSheet, ["DailyUsage","AlertDays","LeadDays","Moq","PackSize"]);
 
   const matData = matSheet.getDataRange().getValues();
   const h = matData[0];
@@ -2997,7 +3162,7 @@ function _opSeen(module, opId) {
     var head = hs.getRange(1, 1, 1, hs.getLastColumn()).getValues()[0];
     var c = head.indexOf("OpId");
     if (c < 0) return null;
-    var n = Math.min(500, last - 1);
+    var n = Math.min(3000, last - 1);   // 3000 แถว = หลายเดือนของเรา อ่านคอลัมน์เดียว ถูก
     var col = hs.getRange(last - n + 1, c + 1, n, 1).getValues();
     for (var i = 0; i < col.length; i++) {
       if (String(col[i][0]) === String(opId)) return { status: "success", duplicate: true };
@@ -3045,9 +3210,14 @@ function rmUpdate(data, module) {
   const meta = RM_TYPES[type];
   if (!meta) return { status: "error", message: "ประเภทรายการไม่ถูกต้อง" };
 
-  // Poka-Yoke: จำนวนต้องมากกว่า 0 (กันรายการขยะที่ทำให้สถิติเพี้ยน)
-  const q = _validateQty(data.qty, true);
+  // Poka-Yoke: จำนวนต้องเป็นตัวเลขจริงและมากกว่า 0 — ค่าผิดปฏิเสธ ไม่แก้เป็น 0 เงียบๆ
+  const q = _qtyStrict(data.qty, true);
+  if (isNaN(q)) return { status: "error", message: "จำนวนไม่ถูกต้อง (ต้องเป็นตัวเลข 0-9,999,999)" };
   if (q <= 0) return { status: "error", message: "จำนวนต้องมากกว่า 0" };
+  // เบิกออกต้องบอกว่าเอาไปใช้กับงานอะไร — บังคับที่เซิร์ฟเวอร์ด้วย ไม่ใช่แค่หน้าจอ (ออดิเตอร์ถามหา)
+  if (type === "OUT" && !purpose) return { status: "error", message: "กรุณาระบุว่าเบิกไปใช้กับงานอะไร" };
+  // อ้างอิงใบสั่งผลิต (ถ้ามี) — ไว้เทียบใช้จริงกับสูตรทีหลัง ไม่บังคับ ไม่บล็อกงาน
+  const workOrderId = String(data.workOrderId || "").trim().slice(0, 40);
 
   const sheet = getSheet(module + "_Materials");
   const rows  = sheet.getDataRange().getValues();
@@ -3065,14 +3235,14 @@ function rmUpdate(data, module) {
       }
       const newQty     = type === "OUT" ? cur - q : cur + q;
       const dailyUsage = Number(rows[i][h.indexOf("DailyUsage")] || 0);
-      sheet.getRange(i + 1, h.indexOf("Qty") + 1).setValue(newQty);
       const userWithDevice1 = _reqDeviceName ? (user||"-") + " (📱 " + _reqDeviceName + ")" : (user||"-");
 
-      // ── บันทึกประวัติ ──
-      // คอลัมน์ DocNo/SKU/Unit ต่อท้ายของเดิม ไม่แทรกกลาง
-      // เพราะ getMyHistory / bomHealthReport / getActivityLog อ่านด้วยลำดับคอลัมน์เดิมอยู่
+      // ── บันทึกประวัติ "ก่อน" เปลี่ยนยอด (ข้อ 4 รายงานปรับปรุง) ──
+      // ล้มเหลวครึ่งทาง: ประวัติมี (OpId+BalanceAfter) แต่ยอดยังไม่เปลี่ยน → ส่งซ้ำถูกจับว่าเคยทำ ไม่หักซ้ำ
+      // และ LEDGERAUDIT จับความไม่ตรงกันได้ (ของเดิมเปลี่ยนยอดก่อน ถ้าประวัติล้มเหลว ส่งซ้ำ = หักสองรอบเงียบๆ)
+      // คอลัมน์ใหม่ต่อท้ายเสมอ ไม่แทรกกลาง เพราะหลายฟังก์ชันอ่านด้วยลำดับเดิม
       const hist = getSheet(module + "_History");
-      const hHead = ensureColumns(hist, ["DocNo", "SKU", "Unit", "Purpose", "OpId"]);
+      const hHead = ensureColumns(hist, ["DocNo", "SKU", "Unit", "Purpose", "OpId", "BalanceAfter", "WorkOrder"]);
       const docNo = _nextDocNo(module, type);   // ออกเลขให้ทุกประเภท เบิก/รับ/คืน
       const histRow = hHead.map(function (c) {
         if (c === "Timestamp") return eventAt;   // เวลาที่กดยืนยันหน้างาน (ออฟไลน์ = เวลาจริง ไม่ใช่เวลาส่ง)
@@ -3085,9 +3255,12 @@ function rmUpdate(data, module) {
         if (c === "Unit")      return unit_;
         if (c === "Purpose")   return purpose;
         if (c === "OpId")      return opId;
+        if (c === "BalanceAfter") return newQty;
+        if (c === "WorkOrder") return workOrderId;
         return "";
       });
       hist.appendRow(histRow);
+      sheet.getRange(i + 1, h.indexOf("Qty") + 1).setValue(newQty);
       var summary = _stockSummaryLines(newQty, unit_, minQty, dailyUsage);
       var msg = meta.emoji + "\n📦 " + name + " (" + sku + ")" +
                 "\n🔢 " + meta.sign + q + " " + unit_ +
@@ -3103,7 +3276,7 @@ function rmUpdate(data, module) {
           docNo: docNo, type: type, action: meta.label,
           sku: String(sku), name: String(name), qty: q,
           unit: String(unit_), balance: newQty, user: String(user || "-"),
-          purpose: purpose, module: module, at: eventAt
+          purpose: purpose, workOrderId: workOrderId, module: module, at: eventAt
         }
       };
       _opRemember(opId, res);
@@ -3129,13 +3302,45 @@ function rmVerify(data, module) {
       const unit_      = rows[i][h.indexOf("Unit")] || "";
       const minQty     = Number(rows[i][h.indexOf("Min")] || 0);
       const dailyUsage = Number(rows[i][h.indexOf("DailyUsage")] || 0);
-      const newQty     = _validateQty(qty, true); // Poka-Yoke: กัน negative/overflow
-      sheet.getRange(i + 1, h.indexOf("Qty")          + 1).setValue(newQty);
-      sheet.getRange(i + 1, h.indexOf("LastVerified") + 1).setValue(eventAt);
-      const userWithDevice2 = _reqDeviceName ? (user||"-") + " (📱 " + _reqDeviceName + ")" : (user||"-");
-      // เขียนตามหัวตาราง ไม่ใช่ตำแหน่งตายตัว — OpId จะได้ลงถูกช่อง (ไว้กันบันทึกซ้ำตอนส่งคิว)
+      const counted    = _qtyStrict(qty, true);
+      if (isNaN(counted)) return { status: "error", message: "ยอดที่นับไม่ถูกต้อง (ต้องเป็นตัวเลข 0-9,999,999)" };
+      const cur        = Number(rows[i][h.indexOf("Qty")] || 0);
+
+      // ── ข้อ 5: นับตอนออฟไลน์แล้วส่งทีหลัง ห้ามทับความเคลื่อนไหวที่เกิดหลังเวลานับ ──
+      // นับได้ 100 ตอน 10 โมง · คนอื่นเบิก 10 ตอน 11 โมง · ส่งได้เที่ยง → ต้องได้ 90 ไม่ใช่ 100
+      // วิธี: ยอดที่นับ + ผลรวมเบิก/รับ/คืนที่เกิด "หลัง" เวลานับ · ถ้ามีการนับใหม่กว่า = ของเรานี้เก่า ปฏิเสธ
       const vHist = getSheet(module + "_History");
-      const vHead = ensureColumns(vHist, ["DocNo", "SKU", "Unit", "Purpose", "OpId"]);
+      const vHead = ensureColumns(vHist, ["DocNo", "SKU", "Unit", "Purpose", "OpId", "BalanceAfter", "WorkOrder"]);
+      var adj = 0, movesAfter = 0, newerCount = false, replayNote = "";
+      var ctMs = new Date(eventAt).getTime();
+      if (data.clientAt && Date.now() - ctMs > 5000) {
+        var signByLabel = {};
+        Object.keys(RM_TYPES).forEach(function (t) { signByLabel[RM_TYPES[t].label] = (t === "OUT" ? -1 : 1); });
+        var vLast = vHist.getLastRow();
+        if (vLast > 1) {
+          var vn = Math.min(3000, vLast - 1);
+          var block = vHist.getRange(vLast - vn + 1, 1, vn, vHead.length).getValues();
+          var cT = vHead.indexOf("Timestamp"), cN = vHead.indexOf("Name"), cA = vHead.indexOf("Action"),
+              cQ = vHead.indexOf("Qty"), cS = vHead.indexOf("SKU");
+          for (var r = 0; r < block.length; r++) {
+            var rSku = cS >= 0 ? String(block[r][cS] || "") : "";
+            var same = rSku ? (rSku === String(sku)) : (String(block[r][cN] || "") === String(name));
+            if (!same) continue;
+            var ts = block[r][cT] ? new Date(block[r][cT]).getTime() : NaN;
+            if (isNaN(ts) || ts <= ctMs) continue;
+            var act = String(block[r][cA] || "");
+            if (act === "ตรวจนับ/ปรับยอด") { newerCount = true; break; }
+            if (signByLabel[act]) { adj += signByLabel[act] * Number(block[r][cQ] || 0); movesAfter++; }
+          }
+        }
+        if (newerCount) return { status: "error",
+          message: "มีการนับสต๊อกใหม่กว่าเวลาที่นับไว้ (ยอดล่าสุด " + cur + " " + unit_ + ") — รายการนับนี้เก่ากว่า จึงไม่นำมาใช้" };
+        if (movesAfter) replayNote = "นับได้ " + counted + " · ปรับตามความเคลื่อนไหวหลังเวลานับ " + (adj > 0 ? "+" : "") + adj + " (" + movesAfter + " รายการ)";
+      }
+      const newQty = Math.max(0, Math.round((counted + adj) * 1000) / 1000);
+
+      const userWithDevice2 = _reqDeviceName ? (user||"-") + " (📱 " + _reqDeviceName + ")" : (user||"-");
+      // ประวัติก่อนยอด (เหตุผลเดียวกับ rmUpdate)
       vHist.appendRow(vHead.map(function (c) {
         if (c === "Timestamp") return eventAt;
         if (c === "Name")      return name;
@@ -3144,16 +3349,20 @@ function rmVerify(data, module) {
         if (c === "User")      return userWithDevice2;
         if (c === "SKU")       return sku;
         if (c === "Unit")      return unit_;
+        if (c === "Purpose")   return replayNote;
         if (c === "OpId")      return opId;
+        if (c === "BalanceAfter") return newQty;
         return "";
       }));
+      sheet.getRange(i + 1, h.indexOf("Qty")          + 1).setValue(newQty);
+      sheet.getRange(i + 1, h.indexOf("LastVerified") + 1).setValue(eventAt);
       var summary2 = _stockSummaryLines(newQty, unit_, minQty, dailyUsage);
       var msg2 = "⚖️ ตรวจนับ/ปรับยอด\n📦 " + name + " (" + sku + ")" +
                  "\n🔢 ยอดจริง: " + newQty + " " + unit_ +
                  summary2 +
                  "\n👤 " + (user||"-") + deviceTag();
-      sendAlert(msg2, module);
-      const vres = { status: "success" };
+      sendAlert(msg2 + (replayNote ? "\n⏱️ " + replayNote : ""), module);
+      const vres = { status: "success", counted: counted, applied: newQty, adjusted: adj, movementsAfter: movesAfter };
       _opRemember(opId, vres);
       return vres;
     }
@@ -3163,6 +3372,7 @@ function rmVerify(data, module) {
 
 function rmEdit(data, module) {
   const { sku, name, unit, min, dailyUsage, expiryDate, alertDays, user } = data;
+  const leadDays = data.leadDays, moq = data.moq, packSize = data.packSize;   // ข้อ 20 — ไม่ส่งมา = ไม่แตะ
   const sheet = getSheet(module + "_Materials");
   const rows  = sheet.getDataRange().getValues();
   const h = rows[0];
@@ -3178,6 +3388,13 @@ function rmEdit(data, module) {
       sheet.getRange(i + 1, h.indexOf("ExpiryDate") + 1).setValue(expiryDate || "");
       if (h.indexOf("AlertDays") >= 0 && alertDays !== undefined)
         sheet.getRange(i + 1, h.indexOf("AlertDays") + 1).setValue(Number(alertDays) || 7);
+      // ข้อ 20: วันรอของ / สั่งขั้นต่ำ / ขนาดบรรจุ รายตัว
+      if (leadDays !== undefined || moq !== undefined || packSize !== undefined) {
+        const h2 = ensureColumns(sheet, ["LeadDays","Moq","PackSize"]);
+        if (leadDays !== undefined) sheet.getRange(i + 1, h2.indexOf("LeadDays") + 1).setValue(Math.max(0, Number(leadDays) || 0));
+        if (moq      !== undefined) sheet.getRange(i + 1, h2.indexOf("Moq")      + 1).setValue(Math.max(0, Number(moq) || 0));
+        if (packSize !== undefined) sheet.getRange(i + 1, h2.indexOf("PackSize") + 1).setValue(Math.max(0, Number(packSize) || 0));
+      }
       const userWithDevice3 = _reqDeviceName ? `${user||"-"} (📱 ${_reqDeviceName})` : (user||"");
       getSheet(module + "_History").appendRow([new Date().toISOString(), name || oldName, "แก้ไขข้อมูล", "-", userWithDevice3]);
       sendAlert(`✏️ แก้ไขข้อมูล\n📦 ${name||oldName} (${sku})\n👤 ${user||"-"}${deviceTag()}`, module);
@@ -3209,24 +3426,73 @@ function rmDelete(data, module) {
 function rmBackup(data, module) {
   const { user } = data;
   const backupName = `Backup_${module}_${new Date().toISOString().slice(0, 10)}`;
-  SpreadsheetApp.getActiveSpreadsheet().copy(backupName);
-  getSheet(module + "_History").appendRow([new Date().toISOString(), "SYSTEM", "สำรองข้อมูล", backupName, user || ""]);
-  return { status: "success", message: "สำรองเรียบร้อย: " + backupName };
+  try {
+    const copy = SpreadsheetApp.getActiveSpreadsheet().copy(backupName);
+    const url = copy.getUrl();
+    // ข้อ 16: งานระบบไปอยู่ System_Log (มี id/ลิงก์ ผู้ทำ ผล) — ไม่ปนกับประวัติสินค้า
+    _sysLog("backup", backupName + " | " + url, user, "success");
+    return { status: "success", message: "สำรองเรียบร้อย: " + backupName, fileId: copy.getId(), url: url };
+  } catch (e) {
+    _sysLog("backup", backupName, user, "error: " + e);
+    return { status: "error", message: "สำรองไม่สำเร็จ: " + e };
+  }
+}
+
+// ── ข้อ 4: ยอดในชีตตรงกับ BalanceAfter ล่าสุดในประวัติมั๊ย (จับงานที่เขียนสำเร็จครึ่งเดียว) ──
+function rmLedgerAudit(data, module) {
+  const ms = getSheet(module + "_Materials");
+  const mRows = ms.getDataRange().getValues();
+  const mh = mRows[0];
+  const hs = getSheet(module + "_History");
+  const last = hs.getLastRow();
+  const mismatches = [];
+  if (last < 2) return { status: "success", checked: 0, mismatches: mismatches };
+  const hh = hs.getRange(1, 1, 1, hs.getLastColumn()).getValues()[0];
+  const cS = hh.indexOf("SKU"), cN = hh.indexOf("Name"), cB = hh.indexOf("BalanceAfter"), cT = hh.indexOf("Timestamp");
+  if (cB < 0) return { status: "success", checked: 0, mismatches: mismatches, note: "ยังไม่มีคอลัมน์ BalanceAfter" };
+  const n = Math.min(5000, last - 1);
+  const block = hs.getRange(last - n + 1, 1, n, hh.length).getValues();
+  const latest = {};
+  for (var r = block.length - 1; r >= 0; r--) {
+    const b = block[r][cB];
+    if (b === "" || b === null || b === undefined) continue;
+    const key = cS >= 0 && block[r][cS] ? String(block[r][cS]) : ("name:" + String(block[r][cN] || ""));
+    if (latest[key]) continue;
+    latest[key] = { bal: Number(b), at: block[r][cT] instanceof Date ? block[r][cT].toISOString() : String(block[r][cT] || "") };
+  }
+  var checked = 0;
+  for (var i = 1; i < mRows.length; i++) {
+    const sku = String(mRows[i][0]); const name = String(mRows[i][mh.indexOf("Name")] || "");
+    const L = latest[sku] || latest["name:" + name];
+    if (!L) continue;
+    checked++;
+    const qty = Number(mRows[i][mh.indexOf("Qty")] || 0);
+    if (Math.abs(qty - L.bal) > 0.0005) mismatches.push({ sku: sku, name: name, qty: qty, ledger: L.bal, at: L.at });
+  }
+  return { status: "success", checked: checked, mismatches: mismatches };
 }
 
 // ============================================================
 // UTILITY
 // ============================================================
 
+// วันที่ต้องมีจริงในปฏิทิน — ของเดิมรับ 31 ก.พ. ได้ (ข้อ 10 รายงานปรับปรุง)
+function _isRealDate(y, m, d) {
+  var dt = new Date(y, m - 1, d);
+  return dt.getFullYear() === y && dt.getMonth() === m - 1 && dt.getDate() === d;
+}
 function ddmmyyToIso(str) {
   if (!str || typeof str !== "string") return String(str || "");
-  if (str.includes("-")) return str;
+  if (str.includes("-")) {
+    var m1 = str.match(/^(\d{4})-(\d{2})-(\d{2})/);
+    if (!m1) return "";
+    return _isRealDate(+m1[1], +m1[2], +m1[3]) ? m1[0] : "";
+  }
   if (!/^\d{6}$/.test(str)) return "";    // Poka-Yoke: รับเฉพาะ 6 หลักตัวเลข
   const dd = parseInt(str.substring(0, 2), 10);
   const mm = parseInt(str.substring(2, 4), 10);
   const yy = parseInt(str.substring(4, 6), 10);
-  // Poka-Yoke: ตรวจ range ของ dd/mm
-  if (dd < 1 || dd > 31 || mm < 1 || mm > 12) return "";
+  if (!_isRealDate(2000 + yy, mm, dd)) return "";
   return `${2000 + yy}-${String(mm).padStart(2,"0")}-${String(dd).padStart(2,"0")}`;
 }
 

@@ -3,7 +3,7 @@
 // Cache static assets สำหรับใช้งาน offline บางส่วน
 // =====================================================
 
-const CACHE_NAME = "appstock-v67";
+const CACHE_NAME = "appstock-v68";
 
 // ไฟล์ที่ cache ไว้ใช้ offline
 // ⚠️ addAll เป็น all-or-nothing — ไฟล์เดียวโหลดไม่ได้ = ติดตั้งไม่สำเร็จทั้งชุด
@@ -13,6 +13,10 @@ const STATIC_ASSETS = [
   "./mobile.html",
   "./manual.html",
   "./js/vendor/qrcode.min.js",
+  "./js/vendor/html5-qrcode.min.js",
+  "./js/vendor/chart.umd.min.js",
+  "./css/tw-desktop.css",
+  "./css/tw-mobile.css",
   "./manifest.json",
   "./icons/icon-192.png",
   "./icons/icon-512.png",
@@ -35,13 +39,12 @@ const STATIC_ASSETS = [
   "./js/rop.js"
 ];
 
-// CDN ที่ cache ด้วย (fonts, charts, qrcode)
-const CDN_CACHE = "appstock-cdn-v1";
+// CDN ที่ยังใช้: เหลือแค่ฟอนต์ (ข้อ 12 — library ทั้งหมดย้ายมาเก็บในแอปแล้ว)
+// ฟอนต์ตอบแบบ opaque (res.ok=false) จึงไม่ถูกเก็บ ออฟไลน์จะใช้ฟอนต์สำรองของเครื่อง — ยอมรับได้
+const CDN_CACHE = "appstock-cdn-v2";
 const CDN_URLS = [
   "https://fonts.googleapis.com",
-  "https://fonts.gstatic.com",
-  "https://cdn.jsdelivr.net",
-  "https://cdnjs.cloudflare.com"
+  "https://fonts.gstatic.com"
 ];
 
 // ──────────────────────────────────────────────────

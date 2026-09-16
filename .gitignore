@@ -6,8 +6,8 @@ node_modules/
 Thumbs.db
 desktop.ini
 
-# ไฟล์ GAS (deploy ผ่าน Apps Script โดยตรง ไม่ใช่ GitHub)
-gas_code.js
+# gas_code.js ตั้งใจ track ไว้ใน repo (source of truth + ประวัติการแก้) — deploy ผ่าน clasp ไม่ใช่ Pages
+# (เคยมีบรรทัด ignore แต่ไฟล์ถูก track อยู่แล้ว ทำให้เข้าใจผิด — เอาออกตามข้อ 13 รายงานปรับปรุง)
 
 # ไฟล์ dev tools
 .claude/

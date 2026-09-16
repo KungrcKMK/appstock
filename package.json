@@ -4,5 +4,9 @@
   },
   "devDependencies": {
     "tailwindcss": "^3.4.19"
+  },
+  "scripts": {
+    "build:css": "tailwindcss -c tailwind.desktop.config.js -i css/tw-input.css -o css/tw-desktop.css --minify && tailwindcss -c tailwind.mobile.config.js -i css/tw-input.css -o css/tw-mobile.css --minify",
+    "test": "node scripts/check.js"
   }
 }

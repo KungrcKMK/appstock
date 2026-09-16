@@ -978,6 +978,7 @@ function pickItem(sku) {
   }
 
   show("actionOverlay");
+  mFillWorkOrders();   // ข้อ 19: เติมใบสั่งผลิตให้เลือกตอนเบิก (ไม่บังคับ)
   requestAnimationFrame(() => {
     requestAnimationFrame(() => $("actionSheet").classList.add("open"));
   });

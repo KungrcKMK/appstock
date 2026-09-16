@@ -25,6 +25,15 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      # ข้อ 14 รายงานปรับปรุง: ตรวจก่อนเผยแพร่ — ไวยากรณ์ทุกไฟล์ / ไฟล์ใน sw STATIC_ASSETS มีครบ /
+      # ตรรกะคิวออฟไลน์ / GAS_URL ตรงกันทั้งสองหน้าจอ (ไม่ต้อง npm install — สคริปต์ไม่พึ่ง dependency)
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: Pre-deploy checks
+        run: node scripts/check.js
+
       - name: Setup Pages
         uses: actions/configure-pages@v4
 

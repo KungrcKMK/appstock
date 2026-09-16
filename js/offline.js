@@ -166,8 +166,15 @@ function _offReleaseLock() {
 }
 
 // ── ส่งคิวที่ค้าง — ทีละงานตามลำดับที่ทำจริง ──
-async function offlineSync(manual) {
-  if (_offSyncing) return;
+// เรียกซ้อนกันได้: ถ้ากำลังส่งอยู่ คืน promise ของรอบที่กำลังวิ่ง (ผู้เรียก await รอรอบนั้นจบได้จริง
+// แทนที่จะได้ค่าว่างกลับไปทันทีแล้วเข้าใจผิดว่าส่งเสร็จ)
+let _offSyncPromise = null;
+function offlineSync(manual) {
+  if (_offSyncPromise) return _offSyncPromise;
+  _offSyncPromise = _offSyncRun(manual).finally(() => { _offSyncPromise = null; });
+  return _offSyncPromise;
+}
+async function _offSyncRun(manual) {
   if (!offlineCount()) { if (manual) _offCfg.onToast("ไม่มีงานค้าง", "success"); return; }
   if (!_offTakeLock()) { if (manual) _offCfg.onToast("อีกหน้าต่างหนึ่งกำลังส่งอยู่", "success"); return; }
   _offSyncing = true;

@@ -92,9 +92,13 @@ console.log("4) ตรรกะคิวออฟไลน์ (js/offline.js)");
   await O.offlineSend({ action: "UPDATE", sku: "C" }, "เบิก C");
   global.fetch = async () => ({ json: async () => ({ status: "error", message: "สต๊อกไม่เพียงพอ" }) });
   await O.offlineSync();
-  T("ถูกปฏิเสธ → เก็บครบพร้อม payload ไม่วนส่ง", O.offlineCount() === 0 && O.offlineFailures().length === 1 && O.offlineFailures()[0].body.sku === "C");
-  T("ส่งซ้ำงานที่เคยไม่ผ่านได้ (opId เดิม)", O.offlineResend(O.offlineFailures()[0].opId) === true && O.offlineCount() === 1 && O.offlineFailures().length === 0);
-  global.fetch = async () => ({ json: async () => ({ status: "success" }) }); await O.offlineSync();
+  T("ถูกปฏิเสธ → เก็บครบพร้อม payload ไม่วนส่ง", O.offlineCount() === 0 && O.offlineFailures().length === 1 && (O.offlineFailures()[0] || {}).body?.sku === "C");
+  // ส่งซ้ำ: ตั้ง stub ให้สำเร็จ "ก่อน" กดส่งซ้ำ (offlineResend ยิงส่งทันทีในพื้นหลัง)
+  global.fetch = async () => ({ json: async () => ({ status: "success" }) });
+  const failedC = O.offlineFailures()[0];
+  const resent = failedC ? O.offlineResend(failedC.opId) : false;
+  await O.offlineSync();
+  T("ส่งซ้ำงานที่เคยไม่ผ่านได้ (opId เดิม) แล้วส่งสำเร็จ", resent === true && O.offlineCount() === 0 && O.offlineFailures().length === 0);
 
   global.fetch = async () => ({ json: async () => ({ status: "error", retryable: true, message: "ระบบไม่ว่าง" }) });
   const rr = await O.offlineSend({ action: "UPDATE", sku: "D" }, "เบิก D");

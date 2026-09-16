@@ -9,38 +9,10 @@
   <meta name="theme-color" content="#0d1410">
   <title>📦 AppStock Mobile</title>
   <link rel="manifest" href="manifest.json">
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script>
-    // ══════════════════════════════════════════════════════════
-    // สีของแอปมือถือ — ตั้งที่เดียวตรงนี้ ทุกปุ่มทุกหน้าเปลี่ยนตาม
-    //
-    //  slate  = โทนพื้น (เดิมเทาอมฟ้า → เปลี่ยนเป็นเทาอมเขียว ให้เข้าชุดกับโลโก้)
-    //  indigo = สีเน้นของแอป (เดิมคราม → เปลี่ยนเป็นเขียวแม่ละมาย #0e7a3f)
-    //
-    //  ⚠️ ตั้งใจคงพื้นดำไว้ ไม่เปลี่ยนเป็นพื้นขาวเหมือนคอมพิวเตอร์
-    //     เพราะพนักงานใช้ในห้องเย็นและกลางแจ้ง จอมืดอ่านง่ายกว่าและกินแบตน้อยกว่า
-    //
-    //  ⚠️ สีปุ่ม เบิก(ส้ม) คืน(ฟ้า) รับ(เขียว) นับ(ฟ้าคราม) คงไว้ตามเดิม
-    //     เป็นสีที่พนักงานจำได้แล้วว่าปุ่มไหนคืออะไร เปลี่ยนแล้วเสี่ยงกดผิด
-    // ══════════════════════════════════════════════════════════
-    tailwind.config = {
-      theme: {
-        extend: {
-          colors: {
-            slate: {
-              50:"#f4f7f4", 100:"#e8f0ea", 200:"#d5e0d9", 300:"#b6c8bc", 400:"#8fa39a",
-              500:"#6c8074", 600:"#3a4a40", 700:"#26342b", 800:"#18231c", 900:"#0d1410", 950:"#080d0a"
-            },
-            indigo: {
-              100:"#d8ede0", 300:"#7fcf9d", 400:"#4fb87b", 500:"#17a052",
-              600:"#0e7a3f", 700:"#0b5c30", 800:"#084424", 900:"#062f19"
-            }
-          }
-        }
-      }
-    };
-  </script>
-  <style>
+  <!-- ข้อ 12: CSS สร้างไว้ในแอป (npm run build:css) ไม่พึ่ง CDN — ปิดแอปแล้วเปิดใหม่ตอนไม่มีเน็ตยังมีสไตล์ครบ
+       สีที่เคย remap ใน tailwind.config ย้ายไป tailwind.mobile.config.js -->
+  <link rel="stylesheet" href="css/tw-mobile.css">
+    <style>
     *{-webkit-tap-highlight-color:transparent;touch-action:manipulation;box-sizing:border-box}
     body{font-family:'Segoe UI',system-ui,sans-serif;overscroll-behavior:none;background:#0d1410}
     .dvh{height:100dvh}
@@ -306,6 +278,13 @@
                class="w-full bg-slate-900 text-white py-3 px-3 rounded-xl outline-none border border-slate-700 focus:border-indigo-500 text-base">
         <datalist id="aPurposeList"></datalist>
       </div>
+      <!-- ข้อ 19: อ้างอิงใบสั่งผลิต (ไม่บังคับ) -->
+      <div id="aWoWrap" class="mt-2">
+        <label for="aWorkOrder" class="text-slate-400 text-xs font-black block mb-1">ใบสั่งผลิตที่เกี่ยวข้อง (ถ้ามี)</label>
+        <select id="aWorkOrder" class="w-full bg-slate-900 text-white py-3 px-3 rounded-xl outline-none border border-slate-700 text-sm">
+          <option value="">— ไม่อ้างอิง —</option>
+        </select>
+      </div>
     </div>
 
     <!-- Confirm (sticky bottom so keyboard can't hide it) -->
@@ -442,7 +421,7 @@
 <!-- ══════════════════════════════════════════
      CDN SCRIPTS
 ══════════════════════════════════════════ -->
-<script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+<script src="js/vendor/html5-qrcode.min.js"></script>
 <!-- qrcodejs เก็บไว้ในแอปเอง — เคยพึ่ง CDN แล้ว QR เงียบหายทั้งแอปตอนเน็ตมือถือเข้า CDN ไม่ได้ -->
 <script src="js/vendor/qrcode.min.js"></script>
 <!-- คิวงานตอนเน็ตล่ม — ไฟล์เดียวกับฝั่งคอม ไม่ก๊อปโค้ดซ้ำ (ผูก callback ด้านล่าง) -->
@@ -524,6 +503,8 @@ if (typeof offlineConfig === "function") {
   offlineConfig({
     gasUrl: GAS_URL,
     deviceName: () => "AppStock Mobile/" + navigator.userAgent.slice(0, 30),
+    token: () => localStorage.getItem("appstock_session") || "",
+    onNeedLogin: () => mNeedLogin(),
     onToast: (m, k) => toast(m, k === "error" ? "err" : "ok"),
     onChange: () => mUpdateOfflineBar(),
     onSynced: () => { mUpdateOfflineBar(); if (mod) loadData(); }
@@ -539,9 +520,23 @@ async function gasPost(body) {
   const r = await fetch(GAS_URL, {
     method: "POST",
     headers: { "Content-Type": "text/plain;charset=utf-8" },
-    body: JSON.stringify({ ...body, deviceName: "AppStock Mobile/" + (navigator.userAgent.slice(0,30)) })
+    // ข้อ 1: แนบบัตรผ่าน (ออกให้ตอน login ที่ index.html เก็บใน localStorage)
+    body: JSON.stringify({ ...body, sessionToken: localStorage.getItem("appstock_session") || undefined,
+                           deviceName: "AppStock Mobile/" + (navigator.userAgent.slice(0,30)) })
   });
-  return r.json();
+  const j = await r.json();
+  if (j && j.needLogin) mNeedLogin();
+  return j;
+}
+// บัตรผ่านหมดอายุ → กลับไปเข้าระบบใหม่ที่หน้าคอม (งานค้างยังอยู่ ส่งต่อได้หลัง login)
+let _mReloginShown = false;
+function mNeedLogin() {
+  if (_mReloginShown) return;
+  _mReloginShown = true;
+  toast("บัตรผ่านหมดอายุ กรุณาเข้าสู่ระบบใหม่ — งานที่ค้างยังเก็บไว้ครบ", "err");
+  try { sessionStorage.setItem("appstock_prefill_user", user || ""); } catch (e) {}
+  ["unified_stock_user","unified_stock_role","appstock_session"].forEach(k => localStorage.removeItem(k));
+  setTimeout(() => { window.location.href = "index.html"; }, 1800);
 }
 
 function daysColor(d) {
@@ -746,7 +741,9 @@ async function shareCopyLink() {
 }
 
 function doLogout() {
-  ["unified_stock_user","unified_stock_role","appstock_mode_pref"].forEach(k => localStorage.removeItem(k));
+  if (typeof offlineCount === "function" && offlineCount() > 0 &&
+      !confirm("มีงานที่บันทึกไว้ตอนเน็ตล่ม " + offlineCount() + " รายการ ยังไม่ได้ส่ง\nออกจากระบบตอนนี้ งานยังเก็บไว้ ส่งได้เมื่อเข้าระบบใหม่\nต้องการออกเลยหรือไม่?")) return;
+  ["unified_stock_user","unified_stock_role","appstock_mode_pref","appstock_session"].forEach(k => localStorage.removeItem(k));
   user = null; role = null; mod = null; data = [];
   window.location.href = "index.html";
 }
@@ -801,7 +798,26 @@ function goModuleSelect() {
 // ─────────────────────────────────────────────
 // LOAD DATA
 // ─────────────────────────────────────────────
+let _mWoCache = { at: 0, list: [] };
+async function mFillWorkOrders() {
+  const sel = $("aWorkOrder");
+  if (!sel) return;
+  sel.innerHTML = '<option value="">— ไม่อ้างอิง —</option>';
+  try {
+    if (Date.now() - _mWoCache.at > 5 * 60000) {
+      const r = await gasPost({ module: "COLDROOM", action: "getWorkOrders" });
+      _mWoCache = { at: Date.now(), list: (r && r.orders) || [] };
+    }
+    _mWoCache.list.filter(o => !["เสร็จสิ้น","ยกเลิก"].includes(String(o.Status||""))).slice(0, 40).forEach(o => {
+      const opt = document.createElement("option");
+      opt.value = String(o.OrderID || ""); opt.textContent = `${o.OrderID} · ${String(o.Date||"").slice(0,10)}`;
+      sel.appendChild(opt);
+    });
+  } catch (e) {}
+}
+
 async function loadData() {
+  const m0 = mod;   // ข้อ 8: ผู้ใช้กดกลับแล้วเข้าคลังอื่นระหว่างรอ คำตอบเก่าต้องไม่ไปโผล่
   setLoading(true, "กำลังโหลดข้อมูล...");
   try {
     if (mod === "COLDROOM") {
@@ -842,9 +858,11 @@ async function loadData() {
         }))
         .sort((a, b) => a.name.localeCompare(b.name, "th"));
     }
+    if (m0 !== mod) return;
     filt = [...data];
     populateDropdown();
     renderList();
+    const _age = $("mSub"); if (_age) _age.textContent = user + " · " + MOD_CFG[mod].sub + " · อัปเดต " + new Date().toLocaleTimeString("th-TH", { hour: "2-digit", minute: "2-digit" });
     toast("โหลดข้อมูลสำเร็จ · " + data.length + " รายการ");
   } catch(e) { setLoading(false); toast("โหลดไม่สำเร็จ: " + e.message, "err"); }
 }
@@ -1227,11 +1245,18 @@ async function confirmAction() {
     const r = isCount
       ? await offlineSend({ module: mod, action: "VERIFY", sku: sel.sku, qty, user }, label)
       : await offlineSend({ module: mod, action: "UPDATE", sku: sel.sku, type: aType, qty,
-                        purpose: ($("aPurposeIn").value || "").trim(), user }, label);
+                        purpose: ($("aPurposeIn").value || "").trim(),
+                        workOrderId: ($("aWorkOrder")?.value || "").trim(), user }, label);
 
     setLoading(false); btn.disabled = false;
     btn.textContent = isCount ? "📊 บันทึกการนับ" : "✅ ยืนยัน";
 
+    // ข้อ 2: เน็ตล่มและเก็บลงเครื่องไม่ได้ — ต้องบอกตรงๆ ไม่ปิดแผง ให้พนักงานจดไว้
+    if (r.storeFailed) {
+      alert("❌ เน็ตล่ม และเก็บรายการไว้ในเครื่องไม่ได้\n(พื้นที่เต็มหรือเบราว์เซอร์ไม่อนุญาต)\n\nกรุณาจดไว้: " + label + "\nแล้วบันทึกใหม่เมื่อเน็ตกลับมา");
+      return;
+    }
+    if (r.needLogin) { mNeedLogin(); return; }
     // เน็ตล่ม → เก็บไว้ในเครื่องแล้ว ถือว่างานของพนักงานเสร็จ ปิดแผงได้เลย
     if (r.queued) {
       toast("📴 เน็ตล่ม — บันทึกไว้ในเครื่องแล้ว ส่งให้เองเมื่อเน็ตกลับมา", "warn");

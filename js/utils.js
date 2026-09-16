@@ -2,6 +2,9 @@ function escapeHtml(v) {
   return String(v ?? "").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#39;");
 }
 function escapeAttr(v) { return escapeHtml(v); }
+// ข้อ 9 รายงานปรับปรุง: ข้อความผู้ใช้ที่ต้องอยู่ "ใน JS string ใน HTML attribute" (เช่น onclick="f('...')")
+// ต้อง escape สองชั้น: JS ก่อน แล้ว HTML attribute — escapeJs อย่างเดียว ชื่ออย่าง ถ้วย 8" จะทำ attribute ขาด
+function escapeJsAttr(v) { return escapeAttr(escapeJs(v)); }
 
 // ─────────────────────────────────────────────
 // POKA-YOKE: Double-submit guard

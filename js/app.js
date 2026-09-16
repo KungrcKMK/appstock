@@ -16,8 +16,19 @@ const API_KEY = "";
   const _origFetch = window.fetch.bind(window);
   window.fetch = function(input, init) {
     try {
+      const url0 = typeof input === "string" ? input : (input && input.url) || "";
+      // ข้อ 1: แนบบัตรผ่าน (session) ให้ทุก POST ที่ยิงไป GAS — ที่เดียว ทุก module ได้หมด
+      if (url0.indexOf(GAS_URL) === 0 && init && init.body && typeof init.body === "string") {
+        try {
+          const tk = localStorage.getItem("appstock_session") || "";
+          if (tk) {
+            const b0 = JSON.parse(init.body);
+            if (!b0.sessionToken) { b0.sessionToken = tk; init = Object.assign({}, init, { body: JSON.stringify(b0) }); }
+          }
+        } catch (e) {}
+      }
       if (API_KEY) {
-        const url = typeof input === "string" ? input : (input && input.url) || "";
+        const url = url0;
         if (url.indexOf(GAS_URL) === 0) {
           // GET ?module=... → แนบ &k=
           if (!init || !init.method || String(init.method).toUpperCase() === "GET") {
@@ -72,6 +83,8 @@ if (typeof offlineConfig === "function") {
   offlineConfig({
     gasUrl: GAS_URL,
     deviceName: () => (typeof getDeviceInfo === "function" ? getDeviceInfo() : ""),
+    token: () => localStorage.getItem("appstock_session") || "",
+    onNeedLogin: () => handleTokenExpired({ needLogin: true }),
     onToast: (m, k) => { if (typeof showToast === "function") showToast(m, k === "error" ? "error" : "success", 6000); },
     onChange: () => { if (typeof rawUpdateOfflineBadge === "function") rawUpdateOfflineBadge(); },
     onSynced: () => {
@@ -115,13 +128,19 @@ function showToast(msg, type = "info", timeout = 2800) {
 
 // ── Token Expired Handler ──
 function handleTokenExpired(res) {
-  if (res && !res.ok && typeof res.message === "string" &&
-      res.message.includes("ไม่มีสิทธิ์")) {
-    showToast("Session หมดอายุ กรุณาเข้าสู่ระบบใหม่", "error", 4000);
-    setTimeout(() => location.reload(), 1500);
+  if (res && (res.needLogin || (!res.ok && typeof res.message === "string" && res.message.includes("ไม่มีสิทธิ์")))) {
+    showToast("บัตรผ่านหมดอายุ กรุณาเข้าสู่ระบบใหม่ — งานที่ค้างยังเก็บไว้ครบ", "error", 5000);
+    _forceRelogin();
     return true;
   }
   return false;
+}
+// พาไปหน้าเข้าระบบโดยเติมชื่อไว้ให้ · ไม่ล้างคิวออฟไลน์ (เข้าใหม่แล้วส่งต่อได้)
+function _forceRelogin() {
+  try { sessionStorage.setItem("appstock_prefill_user", localStorage.getItem("unified_stock_user") || ""); } catch (e) {}
+  try { localStorage.removeItem("appstock_session"); sessionStorage.removeItem("appstock_admin_token"); } catch (e) {}
+  ["unified_stock_user", "unified_stock_role"].forEach(k => localStorage.removeItem(k));
+  setTimeout(() => location.reload(), 1500);
 }
 
 // ── Force Refresh — ล้าง SW cache + reload ──
@@ -186,7 +205,7 @@ function checkAuth() {
     if (sessionMode === "mobile") { window.location.href = "mobile.html"; return; }
     currentUser = saved;
     // คืน adminToken จาก sessionStorage (ถ้ามี — ยังไม่หมดอายุใน GAS cache 30 นาที)
-    if (!_adminToken) _adminToken = sessionStorage.getItem("appstock_admin_token") || null;
+    if (!_adminToken) _adminToken = localStorage.getItem("appstock_session") || sessionStorage.getItem("appstock_admin_token") || null;
     document.getElementById("loginOverlay").style.display = "none";
     document.getElementById("mainNav").style.display      = "block";
     document.getElementById("navUser").innerText          = currentUser;

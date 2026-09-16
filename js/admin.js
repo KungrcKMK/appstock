@@ -149,7 +149,7 @@ function adminSwitchTab(tab) {
   if (rolesTabBtn) rolesTabBtn.style.display = isAdmin ? "" : "none";
   if (!isAdmin) tab = "pending";
 
-  ["pending","roles"].forEach(t => {
+  ["pending","roles","status"].forEach(t => {
     const btn  = document.getElementById("adminTab-" + t);
     const pane = document.getElementById("adminTabContent-" + t);
     const isActive = t === tab;
@@ -158,6 +158,55 @@ function adminSwitchTab(tab) {
   });
   if (tab === "pending") loadPendingUsers();
   if (tab === "roles")   loadRolesPage();
+  if (tab === "status")  adminLoadStatus();
+}
+
+// ── ข้อ 22: สถานะระบบ — แยกให้ออกว่าปัญหาอยู่ที่เน็ต ข้อมูล หรือโปรแกรม ──
+async function adminLoadStatus() {
+  const el = document.getElementById("adminStatusBody");
+  if (!el) return;
+  el.innerHTML = '<p class="sq-empty">⏳ กำลังตรวจ...</p>';
+  const t = d => d ? (() => { try { return new Date(d).toLocaleString("th-TH", { dateStyle: "short", timeStyle: "short" }); } catch (e) { return String(d); } })() : "—";
+  // ฝั่งหน้าจอ
+  let swVer = "—";
+  try { const txt = await (await fetch("sw.js", { cache: "no-store" })).text(); swVer = (txt.match(/CACHE_NAME = "([^"]+)"/) || [])[1] || "—"; } catch (e) {}
+  const swCtl = !!(navigator.serviceWorker && navigator.serviceWorker.controller);
+  const q = typeof offlineCount === "function" ? offlineCount() : 0;
+  const f = typeof offlineFailures === "function" ? offlineFailures().length : 0;
+  // ฝั่งเซิร์ฟเวอร์
+  const t0 = Date.now();
+  let srv = null, srvMs = 0, srvErr = "";
+  try {
+    srv = await (await fetch(GAS_URL, { method: "POST", headers: { "Content-Type": "text/plain;charset=utf-8" },
+      body: JSON.stringify({ module: "SYSTEM", action: "SYSSTATUS" }) })).json();
+    srvMs = Date.now() - t0;
+    if (!srv || !srv.ok) { srvErr = (srv && srv.message) || "ไม่ได้รับคำตอบ"; srv = null; }
+  } catch (e) { srvErr = e.message; }
+  const row = (k, v, cls) => `<tr><td style="width:42%;color:var(--sq-muted);font-weight:700;">${k}</td><td class="${cls || ""}">${v}</td></tr>`;
+  const chip = (ok, yes, no) => `<span class="sq-chip ${ok ? "ok" : "crit"}">${ok ? yes : no}</span>`;
+  const tg = srv && srv.lastTelegram;
+  el.innerHTML = `
+    <div class="sq-card"><div class="sq-card-head"><span class="sq-card-title">🖥️ หน้าจอ (เครื่องนี้)</span></div>
+      <div class="sq-tablewrap"><table class="sq-table"><tbody>
+        ${row("รุ่นแอป (Service Worker)", `<code>${escapeHtml(swVer)}</code> ${chip(swCtl, "ทำงานอยู่", "ยังไม่คุม")}`)}
+        ${row("เน็ตตอนนี้", chip(navigator.onLine, "ออนไลน์", "ออฟไลน์"))}
+        ${row("โหลดข้อมูลครั้งล่าสุด", window._gasLastAt ? `${t(window._gasLastAt)} · ใช้เวลา ${window._gasLastMs} ms` : "ยังไม่ได้โหลดในรอบนี้")}
+        ${row("งานค้างในเครื่องนี้", (q || f) ? `<span class="sq-chip warn">⏳ รอส่ง ${q} · ⚠️ ไม่ผ่าน ${f}</span>` : chip(true, "ไม่มี", ""))}
+      </tbody></table></div></div>
+    <div class="sq-card" style="margin-top:12px;"><div class="sq-card-head"><span class="sq-card-title">☁️ เซิร์ฟเวอร์ (Google Apps Script)</span>
+      ${srv ? `<span class="sq-chip ok">ตอบใน ${srvMs} ms</span>` : `<span class="sq-chip crit">ติดต่อไม่ได้</span>`}</div>
+      <div class="sq-tablewrap"><table class="sq-table"><tbody>
+        ${srv ? `
+        ${row("รุ่นโค้ดเซิร์ฟเวอร์", `<code>${escapeHtml(srv.gasVersion)}</code> · เขตเวลา ${escapeHtml(srv.timeZone)}`)}
+        ${row("เวลาเซิร์ฟเวอร์", t(srv.serverTime))}
+        ${row("บัญชีเจ้าของระบบใน Config", chip(srv.superAdminConfigured, "ตั้งไว้แล้ว", "⚠️ ไม่มี — เกราะ super admin ปิดอยู่"))}
+        ${row("สำรองข้อมูลล่าสุด", srv.lastBackup ? `${t(srv.lastBackup.at)} · ${escapeHtml(String(srv.lastBackup.result))}<div class="sq-meter-note">${escapeHtml(String(srv.lastBackup.detail || "").split(" | ")[0])}</div>` : '<span class="sq-chip warn">ยังไม่มีบันทึก</span>')}
+        ${row("Telegram ครั้งล่าสุด", tg ? `${t(tg.at)} · ${tg.sent ? chip(true, "ส่งสำเร็จ", "") : `<span class="sq-chip warn">ไม่ได้ส่ง: ${escapeHtml(tg.reason || "")}</span>`}` : "ยังไม่มีการส่งในรอบนี้")}
+        ${row("Telegram ผิดพลาดล่าสุด", srv.lastTelegramError ? `${t(srv.lastTelegramError.at)} · ${escapeHtml(String(srv.lastTelegramError.detail))}` : chip(true, "ไม่มี", ""))}
+        ${row("จำนวนแถวข้อมูล", Object.keys(srv.rowCounts || {}).map(k => `${escapeHtml(k)}: <b>${srv.rowCounts[k] == null ? "—" : srv.rowCounts[k].toLocaleString()}</b>`).join(" · "))}
+        ` : row("ข้อผิดพลาด", `<span style="color:var(--sq-crit);font-weight:800;">${escapeHtml(srvErr)}</span>`)}
+      </tbody></table></div></div>
+    <p class="sq-note" style="margin-top:10px;">อ่านผล: เซิร์ฟเวอร์ตอบช้า/ไม่ตอบ = ปัญหาที่ Google หรือเน็ต · รุ่นแอปไม่ตรงกับที่ deploy ล่าสุด = เครื่องนี้ยังไม่ได้อัปเดต (กด 🔄 อัปเดต) · งานค้างในเครื่องอื่นจะไม่เห็นจากที่นี่</p>`;
 }
 
 async function loadUsers() {

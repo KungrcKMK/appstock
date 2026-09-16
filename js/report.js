@@ -26,6 +26,33 @@ async function loadBomHealth() {
   _bomHealth = res;
   cacheSet("bom_health", res);
   renderBomHealth(res);
+  _bhLedgerAudit();   // ข้อ 4: ยอดในชีตตรงกับประวัติล่าสุดมั๊ย
+}
+
+// ── ข้อ 4: ตรวจว่ายอดคงเหลือแต่ละตัวตรงกับ BalanceAfter ล่าสุดในประวัติ (จับงานที่เขียนสำเร็จครึ่งเดียว) ──
+async function _bhLedgerAudit() {
+  const el = document.getElementById("bomHealthContent");
+  if (!el) return;
+  const box = document.createElement("div");
+  box.className = "sq-card";
+  box.innerHTML = '<div class="sq-card-head"><span class="sq-card-title">🧾 ยอดตรงกับประวัติมั๊ย (SQF + MLM)</span><span class="sq-chip">⏳ กำลังตรวจ</span></div>';
+  el.appendChild(box);
+  const post = mod => fetch(GAS_URL, { method: "POST", headers: { "Content-Type": "text/plain;charset=utf-8" },
+      body: JSON.stringify({ module: mod, action: "LEDGERAUDIT" }) }).then(r => r.json()).catch(() => null);
+  const [a, b] = await Promise.all([post("SQF"), post("MLM")]);
+  const all = [];
+  [["SQF", a], ["MLM", b]].forEach(([m, r]) => { if (r && r.status === "success") (r.mismatches || []).forEach(x => all.push(Object.assign({ module: m }, x))); });
+  const checked = ((a && a.checked) || 0) + ((b && b.checked) || 0);
+  const rows = all.map(x => `<tr><td>${escapeHtml(x.module)}</td><td><b>${escapeHtml(x.name)}</b><div class="sq-meter-note">${escapeHtml(x.sku)}</div></td>
+      <td class="n">${Number(x.qty).toLocaleString()}</td><td class="n">${Number(x.ledger).toLocaleString()}</td><td>${escapeHtml(String(x.at || "").slice(0, 16).replace("T", " "))}</td></tr>`).join("");
+  box.innerHTML = `
+    <div class="sq-card-head"><span class="sq-card-title">🧾 ยอดตรงกับประวัติมั๊ย (SQF + MLM)</span>
+      <span class="sq-chip ${all.length ? "crit" : "ok"}">${all.length ? "⚠️ " + all.length + " รายการ" : "✓ ตรงทั้งหมด"}</span></div>
+    <div class="sq-card-body">
+      <p class="sq-card-note">ตรวจ ${checked} รายการที่มีประวัติ — ยอดในชีตต้องเท่ากับยอดหลังรายการล่าสุดในประวัติ ถ้าไม่ตรงแปลว่ามีรายการที่บันทึกได้ครึ่งเดียว หรือมีคนแก้ยอดในชีตตรงๆ</p>
+      ${all.length ? `<div class="sq-tablewrap"><table class="sq-table"><thead><tr><th>คลัง</th><th>วัตถุดิบ</th><th class="n">ยอดในชีต</th><th class="n">ยอดตามประวัติ</th><th>ประวัติล่าสุด</th></tr></thead><tbody>${rows}</tbody></table></div>
+        <p class="sq-note" style="margin-top:8px;">วิธีแก้: ไปนับสต๊อกตัวนั้นใหม่ในหน้าวัตถุดิบ ระบบจะตั้งยอดและบันทึกประวัติให้ตรงกัน</p>` : ""}
+    </div>`;
 }
 
 // ── ตารางย่อย: แสดงรายการที่ต้องแก้ หรือ ✅ ถ้าผ่าน ──

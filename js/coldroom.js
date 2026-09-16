@@ -261,6 +261,30 @@ async function crCallServer(action, payload = {}) {
   }
 }
 
+// ── ข้อ 21: ประวัติล็อต (ก่อน/หลัง ใคร เมื่อไหร่ เหตุผล) ──
+async function crOpenLotHistory(barcode) {
+  const m = document.getElementById("crLotHistModal");
+  if (!m) return;
+  m.classList.remove("hidden");
+  const body = document.getElementById("crLotHistBody");
+  body.innerHTML = '<p class="sq-empty">⏳ กำลังโหลด...</p>';
+  const r = await crCallServer("getLotHistory", { barcode: barcode || "" });
+  if (!r || !r.ok) { body.innerHTML = `<p class="sq-empty" style="color:var(--sq-crit);">${escapeHtml((r && r.message) || "โหลดไม่สำเร็จ")}</p>`; return; }
+  const t = d => { try { return new Date(d).toLocaleString("th-TH", { dateStyle: "short", timeStyle: "short" }); } catch (e) { return ""; } };
+  const rows = (r.rows || []).map(x => `<tr>
+      <td style="white-space:nowrap;">${t(x.Timestamp)}</td>
+      <td><b>${escapeHtml(x.ProductName)}</b><div class="sq-meter-note">MFG ${escapeHtml(String(x.MFG || "").slice(0, 10))}</div></td>
+      <td>${escapeHtml(x.Action)}</td>
+      <td class="n">${Number(x.QtyBefore).toLocaleString()} → <b>${Number(x.QtyAfter).toLocaleString()}</b></td>
+      <td>${escapeHtml(x.Reason || "")}</td>
+      <td>${escapeHtml(typeof personName === "function" ? personName(x.EmployeeName) : x.EmployeeName)}</td>
+    </tr>`).join("");
+  body.innerHTML = rows
+    ? `<div class="sq-tablewrap"><table class="sq-table"><thead><tr><th>เวลา</th><th>สินค้า / ล็อต</th><th>รายการ</th><th class="n">ก่อน → หลัง</th><th>เหตุผล</th><th>โดย</th></tr></thead><tbody>${rows}</tbody></table></div>`
+    : '<p class="sq-empty">ยังไม่มีประวัติล็อต (เริ่มบันทึกตั้งแต่รอบปรับปรุง 2026-09-16)</p>';
+}
+function crCloseLotHistory() { document.getElementById("crLotHistModal")?.classList.add("hidden"); }
+
 function crSwitchTab(tab) {
   // newproduct / editproduct / bom → เปลี่ยนไป manage แล้วเปิด sub-tab
   const manageMap = { newproduct: true, editproduct: true, bom: true };
@@ -457,7 +481,7 @@ function crWoOnSelectProduct(idx) {
       <div style="display:flex;flex-direction:column;gap:6px;">
         <div style="background:var(--sq-warn-bg);border:1px solid var(--sq-warn);border-radius:8px;padding:5px 9px;font-size:11px;color:var(--sq-high);display:flex;align-items:center;gap:6px;">
           <span>⚠️ ยังไม่ตั้งค่า ชุด/UPS</span>
-          <button onclick="crSwitchTab('editproduct');crOpenEditProduct('${escapeJs(barcode)}')"
+          <button onclick="crSwitchTab('editproduct');crOpenEditProduct('${escapeJsAttr(barcode)}')"
             style="background:var(--sq-high);color:#fff;border:none;border-radius:5px;padding:2px 7px;font-size:10px;font-weight:800;cursor:pointer;">แก้ไข</button>
         </div>
         <div style="display:flex;gap:4px;align-items:center;">
@@ -1070,9 +1094,9 @@ async function crSiLoadReviewList(filterStatus) {
       ${isPending ? `
       <div style="display:flex;gap:10px;flex-wrap:wrap;">
         <button class="cr-btn btn-primary" style="flex:1;min-width:140px;padding:12px;font-size:14px;font-weight:900;background:var(--sq-accent);"
-          onclick="crSiApprove('${escapeJs(si.StockInID)}')">✅ ยืนยันเข้าคลัง</button>
+          onclick="crSiApprove('${escapeJsAttr(si.StockInID)}')">✅ ยืนยันเข้าคลัง</button>
         <button class="cr-btn btn-light" style="flex:1;min-width:100px;padding:12px;font-size:13px;color:var(--sq-crit);border:2px solid var(--sq-crit);"
-          onclick="crSiCancel('${escapeJs(si.StockInID)}')">❌ ยกเลิก</button>
+          onclick="crSiCancel('${escapeJsAttr(si.StockInID)}')">❌ ยกเลิก</button>
       </div>` : ""}
     </div>`;
   }).join("");
@@ -1153,7 +1177,7 @@ function crRenderLotBreakdown(rows) {
     <div style="display:flex;justify-content:space-between;align-items:center;margin-top:4px;">
       <span>🔸 MFG ${isoToDdmmyy(r.MFG)} (EXP ${isoToDdmmyy(r.EXP)})</span>
       <div><span style="margin-right:8px;"><b>${r.Qty}</b> ${unit}</span>
-        <button class="cr-btn btn-primary" style="padding:4px 8px;font-size:10px;border-radius:4px;" onclick="crSelectLot('${escapeJs(String(r.MFG||""))}','${escapeJs(String(r.EXP||""))}',${Number(r.Qty)||0})">เลือก</button>
+        <button class="cr-btn btn-primary" style="padding:4px 8px;font-size:10px;border-radius:4px;" onclick="crSelectLot('${escapeJsAttr(String(r.MFG||""))}','${escapeJsAttr(String(r.EXP||""))}',${Number(r.Qty)||0})">เลือก</button>
       </div>
     </div>`).join("");
   $$cr("crLotBreakdown").innerHTML = html;

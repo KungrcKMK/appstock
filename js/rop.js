@@ -77,11 +77,20 @@ function ropLeadDays() {
 }
 
 // สูตรหลัก — คืน null ถ้าข้อมูลไม่พอ
-function ropSuggest(s) {
+// ข้อ 20: วันรอของรายตัว (LeadDays) ชนะค่ารวมบนหน้าจอ · ปัดขึ้นตามขนาดบรรจุ (PackSize) · ไม่ต่ำกว่าสั่งขั้นต่ำ (Moq)
+function ropLeadFor(mat) {
+  const own = Number(mat && mat.LeadDays || 0);
+  return own > 0 ? Math.min(365, own) : ropLeadDays();
+}
+function ropSuggest(s, mat) {
   if (!s || s.txCount < ROP_MIN_TX || s.days < ROP_MIN_DAYS) return null;
-  const lt = ropLeadDays();
+  const lt = ropLeadFor(mat);
   const raw = s.avgDaily * lt + ropZ() * s.sigma * Math.sqrt(lt);
-  return Math.max(1, Math.ceil(raw));
+  let v = Math.max(1, Math.ceil(raw));
+  const pack = Number(mat && mat.PackSize || 0), moq = Number(mat && mat.Moq || 0);
+  if (pack > 0) v = Math.ceil(v / pack) * pack;
+  if (moq > 0 && v < moq) v = moq;
+  return v;
 }
 
 function ropRender() {
@@ -97,7 +106,7 @@ function ropRender() {
     const s = items[mat.SKU];
     const cur = Number(mat.Min) || 0;
     if (!s) { noData++; return { mat, s: null, cur, sug: null }; }
-    const sug = ropSuggest(s);
+    const sug = ropSuggest(s, mat);
     if (sug === null) thin++; else ready++;
     return { mat, s, cur, sug };
   });
@@ -143,15 +152,15 @@ function ropRender() {
     // เผลอกดรับไป ถอยกลับค่าที่ตั้งไว้เดิมได้ตลอดที่ยังเปิดแอปอยู่
     const oldMin = _ropOldMin[r.mat.SKU];
     const undoBtn = (oldMin != null && oldMin !== r.cur)
-      ? `<button class="rm-mini" onclick="ropRevert('${escapeJs(r.mat.SKU)}',this)" title="กลับไปใช้ค่าก่อนกดรับ">↩ คืนค่าเดิม (${fmt(oldMin)})</button>`
+      ? `<button class="rm-mini" onclick="ropRevert('${escapeJsAttr(r.mat.SKU)}',this)" title="กลับไปใช้ค่าก่อนกดรับ">↩ คืนค่าเดิม (${fmt(oldMin)})</button>`
       : "";
     const btn = (diff === 0 ? "" :
-      `<button class="rm-mini solid" onclick="ropAccept('${escapeJs(r.mat.SKU)}',${r.sug},this)">รับค่านี้</button>`) + undoBtn;
+      `<button class="rm-mini solid" onclick="ropAccept('${escapeJsAttr(r.mat.SKU)}',${r.sug},this)">รับค่านี้</button>`) + undoBtn;
     return `<tr><td>${name}</td><td>${stat}</td>
       <td class="n" style="font-size:16px;font-weight:800;">${fmt(r.sug)}</td>
       <td>${diffTxt}</td>
       <td class="n">${fmt(r.cur)}</td>
-      <td style="color:var(--sq-muted);font-size:11px;">ใช้ ${fmt(r.s.avgDaily)}×${lt}วัน + กันขาด ${fmt(Math.ceil(ropZ()*r.s.sigma*Math.sqrt(lt)))}</td>
+      <td style="color:var(--sq-muted);font-size:11px;">ใช้ ${fmt(r.s.avgDaily)}×${ropLeadFor(r.mat)}วัน${Number(r.mat.LeadDays||0)>0?" (รายตัว)":""} + กันขาด ${fmt(Math.ceil(ropZ()*r.s.sigma*Math.sqrt(ropLeadFor(r.mat))))}${Number(r.mat.PackSize||0)>0?` · ปัดตามแพ็ค ${fmt(r.mat.PackSize)}`:""}${Number(r.mat.Moq||0)>0?` · ขั้นต่ำ ${fmt(r.mat.Moq)}`:""}</td>
       <td>${dateCell(r.mat.SKU)}</td>
       <td>${btn}</td></tr>`;
   }).join("");

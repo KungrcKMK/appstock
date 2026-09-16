@@ -93,7 +93,7 @@ async function login() {
       return;
     }
     _hideAccessBox();
-    _loginSuccess(user, res.role, res.adminToken);
+    _loginSuccess(res.username || user, res.role, res.sessionToken || res.adminToken);
   } catch(e) {
     alert("เกิดข้อผิดพลาด: " + e.message);
   } finally {
@@ -192,7 +192,7 @@ async function loginWithPassword() {
       _setLoginBtn("เข้าสู่ระบบ 🔑", false);
       return;
     }
-    _loginSuccess(user, res.role, res.adminToken);
+    _loginSuccess(res.username || user, res.role, res.sessionToken || res.adminToken);
   } catch(e) {
     alert("เกิดข้อผิดพลาด: " + e.message);
     _setLoginBtn("เข้าสู่ระบบ 🔑", false);
@@ -202,8 +202,9 @@ async function loginWithPassword() {
 function _loginSuccess(user, role, adminToken) {
   _loginNeedsPassword = false;
   _adminToken = adminToken || null;
-  if (_adminToken) sessionStorage.setItem("appstock_admin_token", _adminToken);
-  else sessionStorage.removeItem("appstock_admin_token");
+  // ข้อ 1: บัตรผ่านของทุก role เก็บใน localStorage (มือถือ/แท็บใหม่ใช้ได้ · อยู่ได้ 30 วัน)
+  if (_adminToken) { sessionStorage.setItem("appstock_admin_token", _adminToken); localStorage.setItem("appstock_session", _adminToken); }
+  else { sessionStorage.removeItem("appstock_admin_token"); localStorage.removeItem("appstock_session"); }
   document.getElementById("passwordSection").style.display = "none";
   document.getElementById("usernameInput").readOnly = false;
   _setLoginBtn("เข้าสู่ระบบ 🚀", false);
@@ -246,6 +247,10 @@ function switchToMobile() {
 }
 
 function logout() {
+  // ข้อ 17: มีงานค้างที่ยังไม่ได้ส่ง → เตือนก่อน (ออกไปแล้วงานยังอยู่ แต่จะส่งได้ต่อเมื่อเข้าระบบใหม่)
+  if (typeof offlineCount === "function" && offlineCount() > 0 &&
+      !confirm("มีงานที่บันทึกไว้ตอนเน็ตล่ม " + offlineCount() + " รายการ ยังไม่ได้ส่งขึ้นระบบ\n\nออกจากระบบตอนนี้ งานจะยังเก็บไว้ในเครื่องและส่งเมื่อเข้าระบบใหม่\nต้องการออกเลยหรือไม่?")) return;
+  localStorage.removeItem("appstock_session");
   // Revoke admin token ฝั่ง server
   if (_adminToken) {
     fetch(GAS_URL, { method: "POST", headers: { "Content-Type": "text/plain;charset=utf-8" },

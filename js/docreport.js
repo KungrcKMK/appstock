@@ -111,8 +111,8 @@ function drRender() {
       <td>${acked
             ? `<span class="sq-chip ok">✓ รับทราบ</span>
                <div class="sq-meta"><span>${escapeHtml(personName(r.ackBy))}</span><span>${escapeHtml(_drTime(r.ackAt))}</span></div>`
-            : `<button onclick="drAck('${escapeJs(r.docNo)}', event)" class="sq-btn sq-btn-sm">รับทราบ</button>`}</td>
-      <td class="c"><button onclick="drSlip('${escapeJs(r.docNo)}')" class="sq-btn sq-btn-sm">🧾</button></td>
+            : `<button onclick="drAck('${escapeJsAttr(r.docNo)}', event)" class="sq-btn sq-btn-sm">รับทราบ</button>`}</td>
+      <td class="c"><button onclick="drSlip('${escapeJsAttr(r.docNo)}')" class="sq-btn sq-btn-sm">🧾</button></td>
     </tr>`;
   }).join("");
 

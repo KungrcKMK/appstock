@@ -73,19 +73,25 @@ async function rawFetch(payload) {
 
 let _rawSearchAcInit = false;
 async function rawLoadData(startup = false) {
+  // ข้อ 8: จับคลังไว้ตั้งแต่เริ่ม — ผู้ใช้สลับคลังระหว่างรอ คำตอบเก่าต้องไม่ไปโผล่/ไปเก็บ cache ผิดคลัง
+  const mod = rawCurrentModule;
+  const t0 = Date.now();
   try {
     showLoading("กำลังโหลดข้อมูล...");
-    const data = await (await fetch(`${GAS_URL}?module=${rawCurrentModule}`)).json();
+    const data = await (await fetch(`${GAS_URL}?module=${mod}`)).json();
     hideLoading();
+    window._gasLastMs = Date.now() - t0; window._gasLastAt = Date.now();
+    if (mod !== rawCurrentModule) return;   // สลับไปคลังอื่นแล้ว ทิ้งคำตอบนี้
     if (data.status && data.status !== "success") { showToast(data.message || "โหลดข้อมูลไม่สำเร็จ","error"); return; }
-    cacheSet("raw_" + rawCurrentModule, data);   // เก็บ last-good ไว้ใช้ตอน offline
-    _rawApplyData(data, startup);
+    cacheSet("raw_" + mod, data);   // เก็บ last-good ไว้ใช้ตอน offline
+    _rawApplyData(data, startup, "server");
   } catch(err) {
     hideLoading();
+    if (mod !== rawCurrentModule) return;
     // fetch fail → ลองใช้ข้อมูลเก่าจาก cache
-    const cached = cacheGet("raw_" + rawCurrentModule);
-    if (cached) {
-      _rawApplyData(cached, startup);
+    const cachedRaw = (() => { try { return JSON.parse(localStorage.getItem("cache_raw_" + mod) || "null"); } catch (e) { return null; } })();
+    if (cachedRaw && cachedRaw.d) {
+      _rawApplyData(cachedRaw.d, startup, "cache", cachedRaw.t);
       showToast("⏳ แสดงข้อมูลเก่า (เชื่อมต่อไม่ได้)", "warn", 4000);
     } else {
       showToast("เชื่อมต่อฐานข้อมูลล้มเหลว ❌","error");
@@ -93,9 +99,22 @@ async function rawLoadData(startup = false) {
   }
 }
 
+// ข้อ 18: บอกอายุข้อมูลค้างไว้บนหน้า ไม่พึ่ง toast ที่หายใน 4 วิ
+function rawSetDataAge(source, at) {
+  const el = document.getElementById("rawDataAge");
+  if (!el) return;
+  const t = new Date(at || Date.now()).toLocaleTimeString("th-TH", { hour: "2-digit", minute: "2-digit" });
+  const pend = (typeof offlineCount === "function") ? offlineCount() : 0;
+  const pendTxt = pend ? ` · <span style="color:var(--sq-high);font-weight:800;">⏳ รอส่ง ${pend} รายการ (ยอดบนจอยังไม่รวม)</span>` : "";
+  el.innerHTML = source === "cache"
+    ? `<span style="color:var(--sq-high);font-weight:800;">⚠️ ข้อมูลเก่าจาก ${t} (ออฟไลน์)</span>${pendTxt}`
+    : `อัปเดตล่าสุด ${t}${pendTxt}`;
+}
+
 // นำข้อมูล (จาก server หรือ cache) มา render — ใช้ร่วมทั้ง 2 path
-function _rawApplyData(data, startup) {
+function _rawApplyData(data, startup, source, at) {
   rawLastData = Array.isArray(data.materials) ? data.materials : [];
+  rawSetDataAge(source || "server", at);
   const inp = document.getElementById("rawAlertDaysInput");
   if (inp) inp.value = rawAlertDays;
   rawNextSku  = data.nextSku || MODULE_META[rawCurrentModule].skuPrefix + "0001";
@@ -307,10 +326,10 @@ function rawRenderItemRow(item) {
     <td class="n"><span class="rm-min">${Number(item.Min||0).toLocaleString()}</span></td>
     <td class="n">
       ${window._appIsViewer ? "" : `<div class="rm-rowacts">
-        <button onclick="openRawAction('${escapeJs(item.SKU)}','${escapeJs(item.Name)}','${escapeJs(item.Unit)}',${Number(item.Qty)||0})" class="rm-mini solid">รับ / เบิก</button>
-        <button onclick="openRawVerify('${escapeJs(item.SKU)}','${escapeJs(item.Name)}')" class="rm-mini">นับ</button>
-        <button onclick="openRawEdit('${escapeJs(item.SKU)}')" class="rm-mini">แก้ไข</button>
-        <button onclick="rawDelete('${escapeJs(item.SKU)}','${escapeJs(item.Name)}')" class="rm-mini danger">ลบ</button>
+        <button onclick="openRawAction('${escapeJsAttr(item.SKU)}','${escapeJsAttr(item.Name)}','${escapeJsAttr(item.Unit)}',${Number(item.Qty)||0})" class="rm-mini solid">รับ / เบิก</button>
+        <button onclick="openRawVerify('${escapeJsAttr(item.SKU)}','${escapeJsAttr(item.Name)}')" class="rm-mini">นับ</button>
+        <button onclick="openRawEdit('${escapeJsAttr(item.SKU)}')" class="rm-mini">แก้ไข</button>
+        <button onclick="rawDelete('${escapeJsAttr(item.SKU)}','${escapeJsAttr(item.Name)}')" class="rm-mini danger">ลบ</button>
       </div>`}
     </td>
   </tr>`;
@@ -802,6 +821,11 @@ function openRawEdit(sku) {
   document.getElementById("rawEditDailyUsage").value = Number(item.DailyUsage||0);
   document.getElementById("rawEditExpiry").value     = rawFormatDateInput(item.ExpiryDate);
   document.getElementById("rawEditAlertDays").value  = item.AlertDays ? Number(item.AlertDays) : rawAlertDays;
+  // ข้อ 20: ค่าจัดซื้อรายตัว
+  const _e = id => document.getElementById(id);
+  if (_e("rawEditLeadDays")) _e("rawEditLeadDays").value = Number(item.LeadDays || 0) || "";
+  if (_e("rawEditMoq"))      _e("rawEditMoq").value      = Number(item.Moq || 0) || "";
+  if (_e("rawEditPackSize")) _e("rawEditPackSize").value = Number(item.PackSize || 0) || "";
   document.getElementById("rawEditModal").classList.remove("hidden");
 }
 function closeRawEdit() { document.getElementById("rawEditModal").classList.add("hidden"); }
@@ -827,12 +851,37 @@ function openRawAction(sku, name, unit, currentQty) {
   const _pp = document.getElementById("rawModalPurpose");
   if (_pp) _pp.value = "";
   rawFillPurposeList();
+  rawFillWorkOrders();
   document.getElementById("rawModalStock").style.color =
     qty <= 0 ? "var(--sq-crit)" : qty < 10 ? "var(--sq-high)" : "var(--sq-accent)";
   document.getElementById("rawActionModal").classList.remove("hidden");
   setRawType("OUT");
 }
 function closeRawAction() { document.getElementById("rawActionModal").classList.add("hidden"); }
+
+// ข้อ 19: ใบสั่งผลิตที่ยังเปิดอยู่ ให้เลือกอ้างอิงตอนเบิก (ไม่บังคับ — ไม่มีก็เบิกได้)
+let _rawWoCache = { at: 0, list: [] };
+async function rawFillWorkOrders() {
+  const sel = document.getElementById("rawModalWorkOrder");
+  if (!sel) return;
+  sel.innerHTML = '<option value="">— ไม่อ้างอิงใบสั่งผลิต —</option>';
+  try {
+    if (Date.now() - _rawWoCache.at > 5 * 60000) {
+      const r = await (await fetch(GAS_URL, { method: "POST", headers: { "Content-Type": "text/plain;charset=utf-8" },
+        body: JSON.stringify({ module: "COLDROOM", action: "getWorkOrders" }) })).json();
+      _rawWoCache = { at: Date.now(), list: (r && r.orders) || [] };
+    }
+    _rawWoCache.list
+      .filter(o => String(o.Status || "") !== "เสร็จสิ้น" && String(o.Status || "") !== "ยกเลิก")
+      .slice(0, 40)
+      .forEach(o => {
+        const opt = document.createElement("option");
+        opt.value = String(o.OrderID || "");
+        opt.textContent = `${o.OrderID} · ${String(o.Date || "").slice(0, 10)}${o.Note ? " · " + String(o.Note).slice(0, 30) : ""}`;
+        sel.appendChild(opt);
+      });
+  } catch (e) { /* ออฟไลน์ก็ไม่เป็นไร เบิกได้โดยไม่อ้างอิง */ }
+}
 
 function setRawType(t) {
   document.getElementById("rawModalType").value = t;
@@ -994,7 +1043,11 @@ async function rawSubmitEdit() {
   setRawBusy("rawBtnEdit",true,"กำลังบันทึก...");
   showLoading("กำลังบันทึกการแก้ไข...");
   const alertDaysEdit = Math.max(1, parseInt(document.getElementById("rawEditAlertDays").value||rawAlertDays));
-  const r = await rawFetch({ action:"EDIT", sku, name, unit, min, dailyUsage, expiryDate:expiry, alertDays:alertDaysEdit, user:currentUser });
+  const leadDays = Number(document.getElementById("rawEditLeadDays")?.value || 0);
+  const moq      = Number(document.getElementById("rawEditMoq")?.value || 0);
+  const packSize = Number(document.getElementById("rawEditPackSize")?.value || 0);
+  const r = await rawFetch({ action:"EDIT", sku, name, unit, min, dailyUsage, expiryDate:expiry, alertDays:alertDaysEdit,
+                             leadDays, moq, packSize, user:currentUser });
   hideLoading(); setRawBusy("rawBtnEdit",false);
   if (r.status==="success") { closeRawEdit(); showToast("แก้ไขเรียบร้อย ✏️","success"); rawLoadData(); }
   else showToast(r.message||"ไม่สำเร็จ","error");
@@ -1024,10 +1077,16 @@ async function rawSubmitAction() {
   const name = (rawLastData||[]).find(m => String(m.SKU) === String(sku))?.Name || sku;
   const LBL = { OUT:"📤 เบิก", IN:"📥 รับเข้า", RETURN:"↩️ คืน" };
   // ผ่านคิวออฟไลน์เสมอ — ออนไลน์อยู่ก็ยิงตรงเหมือนเดิม เน็ตล่มถึงจะเก็บไว้ส่งทีหลัง
+  const workOrderId = (document.getElementById("rawModalWorkOrder")?.value || "").trim();   // ข้อ 19
   const r = await offlineSend(
-    { module: rawCurrentModule, action:"UPDATE", sku, type, qty, purpose, user:currentUser },
+    { module: rawCurrentModule, action:"UPDATE", sku, type, qty, purpose, workOrderId, user:currentUser },
     `${LBL[type]||type} ${name} ${qty}`);
   hideLoading(); setRawBusy("rawBtnSubmit",false);
+  if (r.storeFailed) {   // ข้อ 2: เน็ตล่มและเก็บลงเครื่องไม่ได้ — ต้องบอกตรงๆ ไม่ปิดหน้าต่าง
+    alert("❌ เน็ตล่ม และเก็บรายการไว้ในเครื่องไม่ได้\n(พื้นที่เต็มหรือเบราว์เซอร์ไม่อนุญาต)\n\nกรุณาจดไว้: " + `${LBL[type]||type} ${name} ${qty}` + "\nแล้วบันทึกใหม่เมื่อเน็ตกลับมา");
+    return;
+  }
+  if (r.needLogin) { handleTokenExpired(r); return; }
   if (r.queued) {
     closeRawAction();
     showToast("📴 เน็ตล่ม — บันทึกไว้ในเครื่องแล้ว จะส่งขึ้นระบบให้เองเมื่อเน็ตกลับมา", "warn", 6000);
@@ -1053,12 +1112,34 @@ function rawUpdateOfflineBadge() {
 }
 
 function rawShowOfflineDetail() {
-  const q = typeof offlineCount === "function" ? offlineCount() : 0;
-  const msg = offlineDetailText();
-  if (offlineFailures().length && confirm(msg + "\n\n— กด OK เพื่อล้างรายการที่ส่งไม่ผ่านออกจากรายการนี้\n(ยอดในระบบไม่ถูกแตะ ต้องทำรายการใหม่เอง)")) {
-    offlineClearFailures(); rawUpdateOfflineBadge(); return;
-  }
-  if (q) { showToast("กำลังลองส่งงานที่ค้าง...", "success"); offlineSync(true); }
+  const m = document.getElementById("offlineModal");
+  if (!m) { alert(offlineDetailText()); return; }
+  rawRenderOfflinePanel();
+  m.classList.remove("hidden");
+}
+function closeOfflinePanel() { document.getElementById("offlineModal")?.classList.add("hidden"); }
+function rawRenderOfflinePanel() {
+  const body = document.getElementById("offlineBody");
+  if (!body) return;
+  const t = d => { try { return new Date(d).toLocaleString("th-TH", { dateStyle: "short", timeStyle: "short" }); } catch (e) { return ""; } };
+  const q = offlineQueue(), f = offlineFailures();
+  const qRows = q.map(j => `<tr><td>${escapeHtml(j.label)}</td><td>${t(j.at)}</td>
+      <td>${j.error ? `<span class="sq-chip warn">${escapeHtml(j.error)}</span>` : '<span class="sq-chip">รอส่ง</span>'}</td></tr>`).join("");
+  const fRows = f.map(j => `<tr>
+      <td>${escapeHtml(j.label)}<div class="sq-meter-note">${escapeHtml(j.body?.module || "")} · ${escapeHtml(j.body?.sku || "")}</div></td>
+      <td>${t(j.at)}</td>
+      <td><span class="sq-chip crit">${escapeHtml(j.error || "")}</span></td>
+      <td style="white-space:nowrap;">
+        <button class="rm-mini solid" onclick="if(offlineResend('${escapeJsAttr(j.opId)}')){showToast('ส่งซ้ำแล้ว','success');}rawRenderOfflinePanel();rawUpdateOfflineBadge();">🔁 ส่งซ้ำ</button>
+        <button class="rm-mini danger" onclick="offlineDropFailure('${escapeJsAttr(j.opId)}');rawRenderOfflinePanel();rawUpdateOfflineBadge();">ลบ</button>
+      </td></tr>`).join("");
+  body.innerHTML = `
+    <div class="sq-card-note" style="margin-bottom:8px;">⏳ รอส่งเมื่อเน็ตกลับมา — ${q.length} รายการ
+      ${q.length ? `<button class="rm-mini" style="margin-left:8px;" onclick="offlineSync(true)">ลองส่งตอนนี้</button>` : ""}</div>
+    ${q.length ? `<div class="sq-tablewrap"><table class="sq-table"><thead><tr><th>รายการ</th><th>เวลาที่ทำ</th><th>สถานะ</th></tr></thead><tbody>${qRows}</tbody></table></div>` : '<p class="sq-empty">ไม่มี</p>'}
+    <div class="sq-card-note" style="margin:14px 0 8px;">⚠️ ส่งไม่ผ่าน — เซิร์ฟเวอร์ปฏิเสธ (ยอดในระบบไม่ถูกแตะ) — ${f.length} รายการ</div>
+    ${f.length ? `<div class="sq-tablewrap"><table class="sq-table"><thead><tr><th>รายการ</th><th>เวลาที่ทำ</th><th>เหตุผล</th><th></th></tr></thead><tbody>${fRows}</tbody></table></div>
+      <p class="sq-note" style="margin-top:8px;">แก้ต้นเหตุก่อน (เช่น รับของเข้าแล้ว) ค่อยกด "ส่งซ้ำ" · ถ้าทำรายการใหม่ไปแล้วให้กด "ลบ" กันซ้ำ</p>` : '<p class="sq-empty">ไม่มี</p>'}`;
 }
 
 async function rawSubmitVerify() {
@@ -1078,13 +1159,23 @@ async function rawSubmitVerify() {
     { module: rawCurrentModule, action:"VERIFY", sku:rawVerifyTarget, qty:q, user:currentUser },
     `📊 นับ ${vName} → ${q}`);
   hideLoading(); setRawBusy("rawBtnVerify",false);
+  if (r.storeFailed) {
+    alert("❌ เน็ตล่ม และเก็บรายการไว้ในเครื่องไม่ได้\n\nกรุณาจดไว้: นับ " + vName + " → " + q + "\nแล้วบันทึกใหม่เมื่อเน็ตกลับมา");
+    return;
+  }
+  if (r.needLogin) { handleTokenExpired(r); return; }
   if (r.queued) {
     closeRawVerify();
     showToast("📴 เน็ตล่ม — บันทึกไว้ในเครื่องแล้ว จะส่งขึ้นระบบให้เองเมื่อเน็ตกลับมา", "warn", 6000);
     rawUpdateOfflineBadge();
     return;
   }
-  if (r.status==="success") { closeRawVerify(); showToast("บันทึกยอดจริงสำเร็จ ✅","success"); rawLoadData(); }
+  if (r.status==="success") {
+    closeRawVerify();
+    // ข้อ 5: ถ้าเซิร์ฟเวอร์ปรับตามความเคลื่อนไหวหลังเวลานับ บอกให้รู้
+    showToast(r.movementsAfter ? `บันทึกยอดแล้ว ✅ นับได้ ${r.counted} → ใช้ ${r.applied} (ปรับตาม ${r.movementsAfter} รายการที่เกิดหลังนับ)` : "บันทึกยอดจริงสำเร็จ ✅", "success", 6000);
+    rawLoadData();
+  }
   else showToast(r.message||"ไม่สำเร็จ","error");
 }
 

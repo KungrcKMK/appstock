@@ -238,8 +238,8 @@ function isoToDdmmyy(iso) {
   return s;
 }
 
-async function crCallServer(action, payload = {}) {
-  showLoading("กำลังทำงาน...");
+async function crCallServer(action, payload = {}, opts = {}) {
+  if (!opts.silent) showLoading("กำลังทำงาน...");   // silent = โหลดเบื้องหลัง ไม่บังจอ (รีเฟรช/ดึงหลังบันทึก)
   try {
     const res = await fetch(GAS_URL, {
       method: "POST",
@@ -252,14 +252,17 @@ async function crCallServer(action, payload = {}) {
     });
     const json = await res.json();
     if (handleTokenExpired(json)) return json;
+    // ข้อ 1: บันทึกสำเร็จ → ให้เซิร์ฟเวอร์ส่ง Telegram ที่ต่อคิวไว้ (ยิงแล้วไม่รอ)
+    if (json && (json.ok || json.status === "success") && CR_TG_ACTIONS[action] && typeof tgFlushSoon === "function") tgFlushSoon();
     return json;
   } catch (e) {
-    showToast("พบข้อผิดพลาด: " + e.message, "err");
+    if (!opts.silent) showToast("พบข้อผิดพลาด: " + e.message, "err");
     throw e;
   } finally {
-    hideLoading();
+    if (!opts.silent) hideLoading();
   }
 }
+const CR_TG_ACTIONS = { saveOrUpdateCount: 1, clearLotStock: 1, importLots: 1, saveNewProduct: 1, saveWorkOrder: 1, updateProduct: 1 };
 
 // ── ข้อ 21: ประวัติล็อต (ก่อน/หลัง ใคร เมื่อไหร่ เหตุผล) ──
 async function crOpenLotHistory(barcode) {
@@ -314,7 +317,7 @@ const CR_STALE_MS = 8000;   // เพิ่งโหลดไปไม่ถึ�
 async function crRefreshIfStale(force) {
   if (!force && Date.now() - _crLastLoad < CR_STALE_MS) return;
   _crLastLoad = Date.now();
-  try { await crLoadOverview(); } catch (e) { /* ออฟไลน์ก็ใช้ของเดิมไป */ }
+  try { await crLoadOverview({ silent: true }); } catch (e) { /* ออฟไลน์ก็ใช้ของเดิมไป */ }
 }
 
 /** แท็บนับสต๊อก — ดึงยอดล็อตใหม่ ถ้ายังไม่ได้พิมพ์จำนวนค้างไว้ */
@@ -570,10 +573,14 @@ async function crPrintActualReport(o) {
   const items = crWoParseItems(o.Items);
   if (!items.length) { showToast("ไม่พบรายการสินค้าในใบสั่งผลิตนี้","warn"); return; }
   showLoading("กำลังโหลดยอดจริง...");
-  // ดึงยอดจริงแต่ละ SKU
+  // ข้อ 3: ขอทุกสินค้าในคำขอเดียว — เซิร์ฟเวอร์อ่านชีตครั้งเดียว (ของเดิมยิงทีละสินค้า อ่านชีตซ้ำทุกรอบ)
+  const keyOf = it => String(it.barcode || it.name || "").trim().toLowerCase();
+  let bulk = null;
+  try { bulk = await crCallServer("getProductsAndBalancesBulk", { barcodes: items.map(keyOf) }, { silent: true }); } catch (e) { bulk = null; }
   const rows = [];
   for (const item of items) {
-    const res = await crCallServer("getProductAndBalances", { barcode: item.barcode || item.name });
+    let res = (bulk && bulk.ok && bulk.results) ? bulk.results[keyOf(item)] : null;
+    if (!res) res = await crCallServer("getProductAndBalances", { barcode: item.barcode || item.name }, { silent: true });   // สำรอง
     const mfgIso  = ddmmyyToIsoWo(item.mfg) || item.mfg || "";
     let actual = 0;
     if (res.found && res.balances) {
@@ -1219,18 +1226,26 @@ async function crLookupBarcode() {
 }
 
 // ── Overview ──
-async function crLoadOverview() {
+async function crLoadOverview(opts = {}) {
+  // ข้อ 4: มีภาพรวมเดิมในเครื่อง → วาดก่อนทันที แล้วดึงของใหม่เงียบๆ มาแทน (ไม่บังจอ)
+  const cached = cacheGet("cr_overview");
+  let silent = !!opts.silent;
+  if (!window._crOverviewShown && cached && cached.ok) { window._crOverviewShown = true; _crRenderOverview(cached, true); silent = true; }
   let res, fromCache = false;
   try {
-    res = await crCallServer("getStartupOverview");
+    res = await crCallServer("getStartupOverview", {}, { silent });
   } catch (e) {
-    res = cacheGet("cr_overview");      // offline → ใช้ข้อมูลเก่า
+    res = cached;      // offline → ใช้ข้อมูลเก่า
     fromCache = true;
     if (!res) return;
     showToast("⏳ แสดงข้อมูลเก่า (เชื่อมต่อไม่ได้)", "warn", 4000);
   }
   if (!res || !res.ok) return;
   if (!fromCache) cacheSet("cr_overview", res);   // เก็บเฉพาะข้อมูลสด
+  window._crOverviewShown = true;
+  _crRenderOverview(res, fromCache);
+}
+function _crRenderOverview(res, stale) {
   window.crAllLotsData = res.allLots;
   $$cr("crSumProducts").textContent = res.summary.totalProducts;
   $$cr("crSumLots").textContent     = res.summary.totalLots;
@@ -1259,8 +1274,11 @@ async function crLoadOverview() {
     crLoadMoreLots();
   }
 
-  // 🚨 แจ้งเตือน Cold Room
-  crCheckCritical(res);
+  // 🚨 แจ้งเตือน Cold Room — เด้งเฉพาะเมื่อชุดรายการหมดอายุ/ใกล้หมดเปลี่ยนจากครั้งก่อน
+  //    (ของเดิมเด้งทุกครั้งที่รีเฟรช/กลับมาที่แท็บ บังทั้งจอจนงานสะดุด) · ข้อมูลเก่าจากเครื่องไม่เด้ง
+  if (stale) return;
+  const sig = JSON.stringify((res.expiredLots || []).map(l => l.ProductName + "|" + l.MFG).concat((res.expiringLots || []).map(l => l.ProductName + "|" + l.MFG)));
+  if (sig !== window._crAlertSig) { window._crAlertSig = sig; crCheckCritical(res); }
 }
 
 // ─── Lazy Render — โหลดทีละ 50 แถว ──────────
@@ -1507,8 +1525,8 @@ async function crSaveCount() {
   if (res.ok) {
     if (navigator.vibrate) navigator.vibrate([100,50,100]);
     showToast(qty === 0 ? "ปรับยอดเป็น 0 เรียบร้อย" : "บันทึกเข้าสต๊อกเรียบร้อย!");
-    const bc = $$cr("crBarcode").value.trim();
-    crClearAll(); $$cr("crBarcode").value = bc; crLookupBarcode(); crLoadOverview();
+    const bc = $cr("crBarcode").value.trim();
+    crClearAll(); $cr("crBarcode").value = bc; crLookupBarcode(); crLoadOverview({ silent: true });
   }
 }
 
@@ -1676,7 +1694,7 @@ async function crLoadProductDropdown() {
   // ใช้ cache ของ editProduct ถ้ามีแล้ว, ไม่งั้นโหลดใหม่
   let products = crEditProductCache.length ? crEditProductCache : null;
   if (!products) {
-    const res = await crCallServer("getColdRoomProducts", {});
+    const res = await crCallServer("getColdRoomProducts", {}, { silent: true });
     if (res.ok && res.products) { products = res.products; crEditProductCache = products; }
   }
   if (!products) return;
@@ -1752,11 +1770,11 @@ function initColdroom() {
   crInitDone = true;
   // โหลด product list ครั้งเดียว เก็บไว้ใน crEditProductCache ใช้ได้ทุก dropdown
   if (!crEditProductCache.length) {
-    crCallServer("getColdRoomProducts").then(res => {
+    crCallServer("getColdRoomProducts", {}, { silent: true }).then(res => {   // โหลดเบื้องหลัง ไม่บังจอ
       if (res.ok && res.products?.length) crEditProductCache = res.products;
     });
   }
-  crCallServer("getAlertSettings").then(res => {
+  crCallServer("getAlertSettings", {}, { silent: true }).then(res => {
     if (res.ok) {
       const s = res.settings;
       $$cr("crTgBotName").value = s.telegramBotName;

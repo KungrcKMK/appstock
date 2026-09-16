@@ -59,6 +59,7 @@ function initSheet(sheet, name) {
     "ColdRoom_Stock":    ["RowID","Barcode","ProductName","MFG","EXP","Qty","Note","EmployeeName","DeviceInfo","UpdatedAt"],
     "ColdRoom_LotHistory": ["Timestamp","Barcode","ProductName","MFG","Action","QtyBefore","QtyAfter","Reason","EmployeeName","DeviceInfo","OpId"],
     "System_Log":        ["Timestamp","Type","Detail","User","Result"],
+    "Telegram_Queue":    ["Timestamp","Message","Status","Tries","SentAt","Error"],
     "AppUsers":          ["Username","Active","Role","Password","CreatedAt"],
     "PendingUsers":      ["Username","RequestedAt","Status","ReviewedAt","ReviewedBy"],
     "SQF_Materials":     ["SKU","Name","Qty","Unit","Min","DailyUsage","ExpiryDate","LastVerified","Discontinued","AlertDays"],
@@ -104,9 +105,18 @@ function _maskNames(s) {
 }
 
 var _reqT0 = 0;   // เวลาเริ่มประมวลผลคำขอนี้ — แนบ serverMs ให้หน้าสถานะระบบแยกได้ว่า "GAS ช้า" หรือ "ทางเดินของ Google ช้า"
+// "วัดก่อน" (PERFORMANCE_REVIEW): เวลาที่รอล็อก / ต่อคิว Telegram แยกจากเวลารวม — แนบเป็น timing ในคำตอบ
+var _reqTiming = null;
+function _timingAdd(k, ms) { if (!_reqTiming) _reqTiming = {}; _reqTiming[k] = (_reqTiming[k] || 0) + ms; }
+var _colsMemo = {};        // ข้อ 8: หัวตารางที่ ensureColumns อ่านแล้วในคำขอเดียวกัน ไม่อ่านซ้ำ (ล้างทุกคำขอ)
+var _tgSettingsMemo = null; // ตั้งค่า Telegram อ่านครั้งเดียวต่อคำขอ (ตอน flush ส่งหลายข้อความ)
+function _reqBegin() { _reqT0 = Date.now(); _reqTiming = null; _colsMemo = {}; _tgSettingsMemo = null; }
 function jsonResponse(data) {
   if (data && typeof data === "object" && !Array.isArray(data) && _reqT0) {
-    try { data.serverMs = Date.now() - _reqT0; } catch (e) {}
+    try {
+      data.serverMs = Date.now() - _reqT0;
+      if (_reqTiming) data.timing = Object.assign({ totalMs: data.serverMs }, _reqTiming);
+    } catch (e) {}
   }
   return ContentService
     .createTextOutput(_maskNames(JSON.stringify(data)))
@@ -189,7 +199,9 @@ function _qtyStrict(v, allowDecimal) {
 function _withLock(fn) {
   var lock = LockService.getDocumentLock();
   // retryable: true → คิวออฟไลน์เก็บงานไว้ลองใหม่ ไม่ย้ายไป "ส่งไม่ผ่าน" ให้พนักงานคีย์ซ้ำ
-  try { lock.waitLock(10000); } catch(e) { return { ok: false, status: "error", retryable: true, message: "ระบบกำลังประมวลผลคำขออื่น กรุณาลองใหม่" }; }
+  var tLock = Date.now();
+  try { lock.waitLock(10000); } catch(e) { _timingAdd("lockWaitMs", Date.now() - tLock); return { ok: false, status: "error", retryable: true, message: "ระบบกำลังประมวลผลคำขออื่น กรุณาลองใหม่" }; }
+  _timingAdd("lockWaitMs", Date.now() - tLock);
   try { return fn(); }
   finally { try { lock.releaseLock(); } catch(e) {} }
 }
@@ -678,11 +690,12 @@ function _rawCacheBust(module) {
   try {
     CacheService.getScriptCache().remove(_rawCacheKey(module));
     CacheService.getScriptCache().remove("rawtrends_" + module);   // เทรนด์เบิกก็ต้องสดตามด้วย
+    CacheService.getScriptCache().remove("rawrop_" + module);      // สถิติจุดสั่งซื้อด้วย (ข้อ 7)
   } catch (e) {}
 }
 
 function doGet(e) {
-  _reqT0 = Date.now();
+  _reqBegin();
   try {
     if (!_checkApiKey(e.parameter && e.parameter.k)) {
       return jsonResponse({ status: "error", message: "unauthorized" });
@@ -694,8 +707,13 @@ function doGet(e) {
       try { json = cache.get(_rawCacheKey(module)); } catch (err2) {}
       if (json === null) {
         json = JSON.stringify(getRawMaterials(module));
-        // เกิน 95KB (เพดาน CacheService 100KB) ก็แค่ไม่ cache — ยังตอบได้ปกติ
-        if (json.length < 95000) try { cache.put(_rawCacheKey(module), json, 300); } catch (err3) {}
+        // ข้อ 6: เพดาน CacheService 100KB นับเป็นไบต์ — ตัวอักษรไทย 3 ไบต์ ต้องวัดเป็นไบต์ไม่ใช่ความยาวข้อความ
+        var bytes = 0;
+        try { bytes = Utilities.newBlob(json).getBytes().length; } catch (errB) { bytes = json.length * 3; }
+        var cacheable = bytes < 95000;
+        if (cacheable) try { cache.put(_rawCacheKey(module), json, 300); } catch (err3) {}
+        try { cache.put("rawmeta_" + module, JSON.stringify({ bytes: bytes, cached: cacheable, at: new Date().toISOString() }), 21600); } catch (err4) {}
+        if (!cacheable) _sysLogOnce("cache-skip", module + " ข้อมูลวัตถุดิบ " + bytes + " ไบต์ เกินเพดาน cache — ถึงเวลาแยกประวัติ/รายการเลิกใช้ออกจากคำตอบหลัก (ข้อ 6 PERFORMANCE_REVIEW)", 3600);
       }
       return ContentService.createTextOutput(_maskNames(json))
         .setMimeType(ContentService.MimeType.JSON);
@@ -742,6 +760,14 @@ function crGetLotHistory(payload) {
 }
 
 // ── ข้อ 16/22: บันทึกงานระบบแยกจากประวัติสินค้า ──
+// บันทึกเรื่องเดิมซ้ำไม่เกินหนึ่งครั้งต่อช่วงเวลา (กัน System_Log บวมจากคำเตือนที่เกิดทุกคำขอ)
+function _sysLogOnce(type, detail, ttlSec) {
+  try {
+    var c = CacheService.getScriptCache(); if (c.get("once_" + type)) return;
+    c.put("once_" + type, "1", ttlSec || 3600);
+  } catch (e) {}
+  _sysLog(type, detail, "-", "warn");
+}
 function _sysLog(type, detail, user, result) {
   try { getSheet("System_Log").appendRow([new Date().toISOString(), type, String(detail || ""), String(user || "-"), String(result || "")]); }
   catch (e) {}
@@ -760,7 +786,7 @@ function _sysLast(type) {
 }
 
 // ── ข้อ 22: สถานะระบบสำหรับผู้ดูแล (ผ่านด่านตรวจตัวตน manager+) ──
-var GAS_APP_VERSION = "2026-09-16";
+var GAS_APP_VERSION = "2026-09-16.2";
 function sysStatus() {
   var t0 = Date.now();
   var counts = {};
@@ -769,7 +795,15 @@ function sysStatus() {
   });
   var tg = null;
   try { var c = CacheService.getScriptCache().get("tg_last"); if (c) tg = JSON.parse(c); } catch (e) {}
+  var rawCache = {};
+  ["SQF", "MLM"].forEach(function (m) {
+    try { var cc = CacheService.getScriptCache(); var meta = cc.get("rawmeta_" + m); rawCache[m] = { hot: !!cc.get(_rawCacheKey(m)), meta: meta ? JSON.parse(meta) : null }; } catch (e) { rawCache[m] = null; }
+  });
+  var crCached = false; try { crCached = !!CacheService.getScriptCache().get(_crOverviewKey(false)); } catch (e) {}
   return {
+    rawCache: rawCache,
+    crOverviewCached: crCached,
+    tgPending: _tgPendingCount(),
     ok: true, status: "success",
     serverTime: new Date().toISOString(),
     gasVersion: GAS_APP_VERSION,
@@ -785,7 +819,7 @@ function sysStatus() {
 }
 
 function doPost(e) {
-  _reqT0 = Date.now();
+  _reqBegin();
   try {
     const data = JSON.parse(e.postData.contents);
     const module = (data.module || "MLM").toUpperCase();
@@ -818,13 +852,14 @@ function doPost(e) {
     if (action === "demoteOtherAdmins") return jsonResponse(demoteOtherAdmins(payload));
     if (action === "getMyHistory")    return jsonResponse(getMyHistory(payload));
     if (action === "SYSSTATUS")       return jsonResponse(sysStatus());
+    if (action === "TGFLUSH")         return jsonResponse(tgFlushQueue());   // หน้าจอยิงหลังบันทึก ไม่รอคำตอบ
     if (action === "createUser")      return jsonResponse(_withLock(function(){ return createUser(payload); }));
     if (action === "deleteUser")      return jsonResponse(_withLock(function(){ return deleteUser(payload); }));
     if (action === "submitDelivery")  return jsonResponse(_withLock(function(){ return submitDelivery(payload); }));
     if (action === "getDeliveries")   return jsonResponse(getDeliveries(payload));
-    if (action === "submitStockIn")   return jsonResponse(submitStockIn(payload));
+    if (action === "submitStockIn")   { var rSi = submitStockIn(payload); _crCacheBust(); return jsonResponse(rSi); }
     if (action === "getStockInList")  return jsonResponse(getStockInList(payload));
-    if (action === "reviewStockIn")   return jsonResponse(_withLock(function(){ return reviewStockIn(payload); }));
+    if (action === "reviewStockIn")   { var rRv = _withLock(function(){ return reviewStockIn(payload); }); _crCacheBust(); return jsonResponse(rRv); }
 
     if (module === "COLDROOM") {
       return jsonResponse(handleColdroom(action, payload));
@@ -846,13 +881,72 @@ function deviceTag() {
 // ❄️ COLD ROOM MODULE
 // ============================================================
 
+// ข้อ 5: cache ภาพรวมห้องเย็น 2 นาที (key มีวันที่ไทย — ค่า "เหลือกี่วัน" เปลี่ยนตอนข้ามวันแม้ไม่มีใครบันทึก)
+// lite = ส่งเฉพาะที่มือถือใช้ (allLots + summary) ไม่ต้องแบก totalByProduct/expiring/expired
+function _crOverviewKey(lite) { return "cr_ov_" + (lite ? "lite_" : "") + Utilities.formatDate(new Date(), Session.getScriptTimeZone(), "yyyyMMdd"); }
+function _crCacheBust() {
+  try { var c = CacheService.getScriptCache(); c.remove(_crOverviewKey(false)); c.remove(_crOverviewKey(true)); c.remove("cr_products"); } catch (e) {}
+}
+function _cachedJson(key, ttlSec, fn) {
+  try { var hit = CacheService.getScriptCache().get(key); if (hit) return JSON.parse(hit); } catch (e) {}
+  var r = fn();
+  try { var s = JSON.stringify(r); if (s.length < 95000) CacheService.getScriptCache().put(key, s, ttlSec); } catch (e) {}
+  return r;
+}
+function crGetStartupOverviewCached(payload) {
+  var lite = !!(payload && payload.lite);
+  return _cachedJson(_crOverviewKey(lite), 120, function () {
+    var full = crGetStartupOverview();
+    return lite ? { ok: true, allLots: full.allLots, summary: full.summary } : full;
+  });
+}
+// ทุก action ที่เปลี่ยนสต๊อก/สินค้า/เกณฑ์เตือน → ล้าง cache หลังทำงานเสร็จ (ที่เดียว ไม่ต้องไล่ใส่ทีละฟังก์ชัน)
+var CR_WRITE_ACTIONS = { saveOrUpdateCount: 1, importLots: 1, saveNewProduct: 1, clearLotStock: 1, saveAlertSettings: 1, updateProduct: 1, archiveOldStock: 1 };
 function handleColdroom(action, payload) {
+  var r = _handleColdroomInner(action, payload);
+  if (CR_WRITE_ACTIONS[action]) _crCacheBust();
+  return r;
+}
+// ข้อ 3: รายงานหลายสินค้า — อ่านชีตสินค้า+สต๊อกครั้งเดียว คืนทุกตัวที่ขอ (แทนยิงทีละสินค้า อ่านชีตซ้ำทุกรอบ)
+function _crBalancesFrom(stockData, sh, barcode) {
+  var out = [];
+  var bI = sh.indexOf("Barcode"), qI = sh.indexOf("Qty");
+  for (var i = 1; i < stockData.length; i++) {
+    var row = stockData[i];
+    if (String(row[bI]) === String(barcode) && Number(row[qI]) > 0) {
+      var b = {}; sh.forEach(function (key, idx) { b[key] = row[idx]; });
+      b.MFG = formatCellDate(row[sh.indexOf("MFG")]);
+      b.EXP = formatCellDate(row[sh.indexOf("EXP")]);
+      out.push(b);
+    }
+  }
+  out.sort(function (a, b) { return new Date(a.MFG) - new Date(b.MFG); });
+  return out;
+}
+function crGetProductsAndBalancesBulk(payload) {
+  var keys = ((payload && payload.barcodes) || []).map(function (b) { return String(b || "").trim().toLowerCase(); }).filter(Boolean).slice(0, 200);
+  var prodData = getSheet("ColdRoom_Products").getDataRange().getValues(); var ph = prodData[0];
+  var stockData = getSheet("ColdRoom_Stock").getDataRange().getValues();   var sh = stockData[0];
+  var bI = ph.indexOf("Barcode"), nI = ph.indexOf("ProductName");
+  var results = {};
+  keys.forEach(function (k) {
+    var product = null;
+    for (var i = 1; i < prodData.length; i++) {
+      var bc = String(prodData[i][bI] || "").toLowerCase(), name = String(prodData[i][nI] || "").toLowerCase();
+      if (bc === k || name.indexOf(k) >= 0) { product = {}; ph.forEach(function (key, idx) { product[key] = prodData[i][idx]; }); break; }
+    }
+    results[k] = product ? { found: true, product: product, balances: _crBalancesFrom(stockData, sh, product.Barcode) } : { found: false };
+  });
+  return { ok: true, results: results };
+}
+function _handleColdroomInner(action, payload) {
   switch (action) {
     case "getProductAndBalances": return crGetProductAndBalances(payload);
+    case "getProductsAndBalancesBulk": return crGetProductsAndBalancesBulk(payload);
     case "saveOrUpdateCount":     return _withLock(function(){ return crSaveOrUpdateCount(payload); });
     case "importLots":            return _withLock(function(){ return crImportLots(payload); });
     case "saveNewProduct":        return _withLock(function(){ return crSaveNewProduct(payload); });
-    case "getStartupOverview":    return crGetStartupOverview();
+    case "getStartupOverview":    return crGetStartupOverviewCached(payload);
     case "clearLotStock":         return _withLock(function(){ return crClearLotStock(payload); });
     case "getLotHistory":         return crGetLotHistory(payload);
     case "getAlertSettings":      return crGetAlertSettings();
@@ -860,7 +954,7 @@ function handleColdroom(action, payload) {
     case "saveWorkOrder":         return _withLock(function(){ return crSaveWorkOrder(payload); });
     case "deleteWorkOrder":       return _withLock(function(){ return crDeleteWorkOrder(payload); });
     case "getWorkOrders":         return crGetWorkOrders();
-    case "getColdRoomProducts":   return crGetColdRoomProducts();
+    case "getColdRoomProducts":   return _cachedJson("cr_products", 600, crGetColdRoomProducts);   // ข้อ 5: รายชื่อสินค้าเปลี่ยนไม่บ่อย
     case "updateProduct":         return _withLock(function(){ return crUpdateProduct(payload); });
     case "getBomList":            return bomGetList();
     case "getBomHealth":          return bomHealthReport();
@@ -918,6 +1012,14 @@ function crGetProductAndBalances(payload) {
   return { found: true, product, balances };
 }
 
+// ข้อ 8: เขียน Qty..UpdatedAt ของแถวเดียวด้วย setValues ครั้งเดียวเมื่อคอลัมน์ติดกัน (ปกติติดกันตามโครงชีต) แทน setValue 5 รอบ
+function _crWriteLotCells(sheet, h, rowNum, vals) {
+  var keys = ["Qty", "Note", "EmployeeName", "DeviceInfo", "UpdatedAt"];
+  var idx = keys.map(function (k) { return h.indexOf(k); });
+  var contiguous = idx.every(function (v, j) { return v >= 0 && (j === 0 || v === idx[j - 1] + 1); });
+  if (contiguous) { sheet.getRange(rowNum, idx[0] + 1, 1, keys.length).setValues([keys.map(function (k) { return vals[k]; })]); return; }
+  keys.forEach(function (k, j) { if (idx[j] >= 0) sheet.getRange(rowNum, idx[j] + 1).setValue(vals[k]); });
+}
 function crSaveOrUpdateCount(payload) {
   const { barcode, employeeName, mfg, exp, note } = payload;
   // นับห้องเย็นเป็นการตั้งยอดสัมบูรณ์ ทำซ้ำได้ผลเท่าเดิม — กันไว้เพื่อไม่ให้แจ้ง Telegram ซ้ำ
@@ -962,26 +1064,29 @@ function crSaveOrUpdateCount(payload) {
         return { ok: false, message: "ล็อตนี้ถูกแก้หลังเวลาที่นับไว้ (ยอดล่าสุด " + prevQty + ") — รายการนับนี้เก่ากว่า ไม่นำมาใช้" };
       }
       _crLotLog([_crLotRow(barcode, productName, mfgIso, "นับ/ปรับยอด", prevQty, newQty, note, employeeName, opId)]);
-      stockSheet.getRange(i + 1, sh.indexOf("Qty")          + 1).setValue(Number(newQty));
-      stockSheet.getRange(i + 1, sh.indexOf("Note")         + 1).setValue(note || "");
-      stockSheet.getRange(i + 1, sh.indexOf("EmployeeName") + 1).setValue(employeeName);
-      stockSheet.getRange(i + 1, sh.indexOf("DeviceInfo")   + 1).setValue(_reqDeviceName || "");
-      stockSheet.getRange(i + 1, sh.indexOf("UpdatedAt")    + 1).setValue(new Date().toISOString());
+      var nowIso = new Date().toISOString();
+      _crWriteLotCells(stockSheet, sh, i + 1, { Qty: Number(newQty), Note: note || "", EmployeeName: employeeName, DeviceInfo: _reqDeviceName || "", UpdatedAt: nowIso });
       crSendTelegram(`✅ อัปเดตสต๊อก ❄️\n📦 ${productName}\n📅 MFG: ${mfg} | EXP: ${exp}\n🔢 จำนวน: ${newQty}\n👤 ${employeeName}${deviceTag()}${note ? "\n💬 " + note : ""}`);
-      _opRemember(opId, { ok: true });
-      return { ok: true };
+      // ข้อ 2: คืนล็อตล่าสุดของสินค้านี้ไปเลย หน้าจอไม่ต้องยิงค้นหาใหม่ (แก้ในหน่วยความจำจากที่อ่านมาแล้ว)
+      stockData[i][sh.indexOf("Qty")] = Number(newQty);
+      var resU = { ok: true, productName: productName, balances: _crBalancesFrom(stockData, sh, barcode) };
+      _opRemember(opId, resU);
+      return resU;
     }
   }
 
   // ไม่พบ lot เดิม → สร้างใหม่
   _crLotLog([_crLotRow(barcode, productName, mfgIso, "รับเข้า (ล็อตใหม่)", 0, newQty, note, employeeName, opId)]);
-  stockSheet.appendRow([
+  var newRow = [
     Utilities.getUuid(), barcode, productName,
     mfgIso, expIso, Number(newQty), note || "", employeeName, _reqDeviceName || "", new Date().toISOString()
-  ]);
+  ];
+  stockSheet.appendRow(newRow);
   crSendTelegram(`✅ รับเข้าสต๊อก ❄️\n📦 ${productName}\n📅 MFG: ${mfg} | EXP: ${exp}\n🔢 จำนวน: ${newQty}\n👤 ${employeeName}${deviceTag()}${note ? "\n💬 " + note : ""}`);
-  _opRemember(opId, { ok: true });
-  return { ok: true };
+  stockData.push(newRow);   // ข้อ 2: คืนล็อตล่าสุดรวมแถวใหม่
+  var resN = { ok: true, productName: productName, balances: _crBalancesFrom(stockData, sh, barcode) };
+  _opRemember(opId, resN);
+  return resN;
 }
 
 // คอลัมน์ที่ต้องมีใน ColdRoom_Products (รองรับ sheet เก่าที่ยังไม่มี)
@@ -1518,11 +1623,7 @@ function crClearLotStock(payload) {
         formatCellDate(data[i][h.indexOf("MFG")]) === mfgIso) {
       const name = String(data[i][h.indexOf("ProductName")]);
       _crLotLog([_crLotRow(barcode, name, mfgIso, "นำออก", Number(data[i][h.indexOf("Qty")] || 0), 0, reason, employeeName, payload.opId)]);
-      sheet.getRange(i + 1, h.indexOf("Qty")          + 1).setValue(0);
-      sheet.getRange(i + 1, h.indexOf("Note")         + 1).setValue("นำออก: " + reason);
-      sheet.getRange(i + 1, h.indexOf("EmployeeName") + 1).setValue(employeeName);
-      sheet.getRange(i + 1, h.indexOf("DeviceInfo")   + 1).setValue(_reqDeviceName || "");
-      sheet.getRange(i + 1, h.indexOf("UpdatedAt")    + 1).setValue(new Date().toISOString());
+      _crWriteLotCells(sheet, h, i + 1, { Qty: 0, Note: "นำออก: " + reason, EmployeeName: employeeName, DeviceInfo: _reqDeviceName || "", UpdatedAt: new Date().toISOString() });
       var tg = crSendTelegram("🗑️ นำสินค้าออกสต๊อก ❄️\n📦 " + name + "\n📅 MFG: " + mfg + "\n💬 " + (reason||"-") + "\n👤 " + (employeeName||"-") + deviceTag());
       return { ok: true, tgSent: tg ? tg.sent : false, tgError: (tg && !tg.sent) ? tg.reason : null };
     }
@@ -1750,19 +1851,71 @@ function crSaveAlertSettings(payload) {
 }
 
 
-function crSendTelegram(message) {
-  var r = _crSendTelegramRaw(message);
+// ── ข้อ 1 PERFORMANCE_REVIEW: Telegram ไม่อยู่ในเวลารอของผู้ใช้ ──
+// ตอนบันทึก: แค่ต่อแถวลงชีต Telegram_Queue (~0.2 วิ) แทนการยิง HTTP ไปทุก chat (1–3 วิ/chat) ระหว่างถือล็อก
+// ตัวส่งจริง tgFlushQueue() วิ่งเป็นคำขอแยก: หน้าจอยิง TGFLUSH แบบไม่รอคำตอบหลังบันทึกสำเร็จ,
+// ตอนคิวออฟไลน์ส่งเสร็จ, ท้าย checkExpiryAlerts (trigger รายวัน) — จะเพิ่ม time trigger รายนาทีเรียก tgFlushQueue ก็ได้ (ไม่บังคับ)
+// ข้อความจึงตามมาช้ากว่าเดิมไม่กี่วินาที แต่คนกดบันทึกไม่ต้องรอ และคนอื่นไม่ต้องรอล็อกต่อ
+function crSendTelegram(message) { return _tgEnqueue(message); }
+function _tgEnqueue(message) {
+  var t0 = Date.now();
   try {
-    CacheService.getScriptCache().put("tg_last", JSON.stringify({ at: new Date().toISOString(), sent: !!(r && r.sent), reason: (r && r.reason) || "" }), 21600);
-    if (r && !r.sent && r.reason && r.reason !== "disabled" && r.reason !== "no token" && r.reason !== "no chatId")
-      _sysLog("telegram-error", r.reason, _reqUser || "-", "failed");
-  } catch (e) {}
-  return r;
+    getSheet("Telegram_Queue").appendRow([new Date().toISOString(), _maskNames(String(message)), "pending", 0, "", ""]);
+    _timingAdd("tgMs", Date.now() - t0);
+    return { sent: true, queued: true };
+  } catch (e) {
+    // ต่อคิวไม่ได้ → ส่งตรงเหมือนเดิม ดีกว่าเงียบหาย
+    var r = _crSendTelegramRaw(message);
+    _timingAdd("tgMs", Date.now() - t0);
+    return r;
+  }
+}
+function tgFlushQueue() {
+  var lock = LockService.getScriptLock();          // คนละตัวกับล็อกเขียนข้อมูล — flush ไม่บล็อกการบันทึก
+  if (!lock.tryLock(0)) return { ok: true, skipped: true };
+  var sent = 0, failed = 0;
+  try {
+    var sh = getSheet("Telegram_Queue");
+    for (var round = 0; round < 3; round++) {
+      var last = sh.getLastRow();
+      if (last < 2) break;
+      var n = Math.min(300, last - 1);
+      var top = last - n + 1;
+      var rows = sh.getRange(top, 1, n, 6).getValues();
+      var todo = [];
+      for (var i = 0; i < rows.length; i++) if (String(rows[i][2]) === "pending") todo.push(i);
+      if (!todo.length) break;
+      todo.slice(0, 40).forEach(function (i) {
+        var r = _crSendTelegramRaw(rows[i][1]);
+        var tries = Number(rows[i][3] || 0) + 1;
+        var ok = !!(r && r.sent);
+        var cfgProblem = r && (r.reason === "disabled" || r.reason === "no token" || r.reason === "no chatId");
+        var status = ok ? "sent" : ((tries >= 5 || cfgProblem) ? "failed" : "pending");
+        sh.getRange(top + i, 3, 1, 4).setValues([[status, tries, ok ? new Date().toISOString() : "", ok ? "" : String((r && r.reason) || "")]]);
+        if (ok) sent++; else failed++;
+        try { CacheService.getScriptCache().put("tg_last", JSON.stringify({ at: new Date().toISOString(), sent: ok, reason: (r && r.reason) || "" }), 21600); } catch (e) {}
+        if (!ok && r && r.reason && !cfgProblem) _sysLog("telegram-error", r.reason, "-", "failed");
+      });
+      if (todo.length <= 40) break;
+    }
+    // ชีตยาวเกิน → ตัดแถวเก่าสุดทิ้ง เหลือ 1000 แถวท้าย (ข้อความที่ส่งแล้วไม่มีใครต้องอ่านจากที่นี่)
+    var total = sh.getLastRow() - 1;
+    if (total > 1500) sh.deleteRows(2, total - 1000);
+  } catch (e) { return { ok: false, message: e.toString(), sent: sent, failed: failed }; }
+  finally { try { lock.releaseLock(); } catch (e) {} }
+  return { ok: true, sent: sent, failed: failed };
+}
+function _tgPendingCount() {
+  try {
+    var sh = getSheet("Telegram_Queue"); var last = sh.getLastRow(); if (last < 2) return 0;
+    var n = Math.min(300, last - 1);
+    return sh.getRange(last - n + 1, 3, n, 1).getValues().filter(function (r) { return String(r[0]) === "pending"; }).length;
+  } catch (e) { return null; }
 }
 function _crSendTelegramRaw(message) {
   try {
     message = _maskNames(String(message));   // พรางชื่อเจ้าของระบบในแชทด้วย (คนในกลุ่มอาจไม่ใช่แอดมินทุกคน)
-    const s = crGetAlertSettings().settings;
+    const s = _tgSettingsMemo || (_tgSettingsMemo = crGetAlertSettings().settings);
     // รองรับทั้ง string "true" และ boolean true จาก Google Sheets
     const enabled = String(s.enableTelegramStockUpdate).toLowerCase();
     if (enabled === "false" || enabled === "") return { sent: false, reason: "disabled" };
@@ -1954,6 +2107,7 @@ function checkExpiryAlerts() {
       if (k.startsWith("expd_") && !k.startsWith("expd_" + todayKey)) sp.deleteProperty(k);
     });
   } catch(e) { Logger.log("checkExpiryAlerts fatal: " + e.toString()); }
+  try { tgFlushQueue(); } catch (e2) {}   // ตาข่ายกันพลาด: ข้อความที่ค้างในคิว (ถ้าไม่มีใครบันทึกต่อ) ออกอย่างช้าตอน trigger รายวัน
 }
 
 // ============================================================
@@ -2463,6 +2617,9 @@ function _handleRawMaterialInner(action, data, module) {
 function ensureColumns(sheet, requiredHeaders) {
   // อ่านเฉพาะแถวหัวตาราง — ของเดิม getDataRange ลากทั้งชีตมาแค่เอาแถวเดียว
   // (ฟังก์ชันนี้ถูกเรียกแทบทุก request เคยเป็นตัวถ่วงหลักตัวหนึ่ง)
+  // ข้อ 8: ในคำขอเดียวกันอ่านหัวตารางของชีตเดิมครั้งเดียวพอ (memo ล้างทุกคำขอ — ไม่ข้ามคำขอ กันหัวตารางค้างเมื่อมีคนแทรกคอลัมน์ในชีต)
+  var memoKey = sheet.getName();
+  if (_colsMemo[memoKey] && requiredHeaders.every(function (c) { return _colsMemo[memoKey].indexOf(c) >= 0; })) return _colsMemo[memoKey].slice();
   const lastCol = sheet.getLastColumn();
   const h = lastCol > 0 ? sheet.getRange(1, 1, 1, lastCol).getValues()[0].slice() : [];
   requiredHeaders.forEach(col => {
@@ -2473,6 +2630,7 @@ function ensureColumns(sheet, requiredHeaders) {
       h.push(col);                 // ← ที่ขาดไป ทำให้คอลัมน์ถัดไปทับตำแหน่งเดิม
     }
   });
+  _colsMemo[memoKey] = h.slice();
   return h;
 }
 
@@ -2950,6 +3108,25 @@ function rmSetRopStart(data, module) {
 // เคารพวันเริ่มนับรายตัว (RopStart) เหมือนจุดสั่งซื้อแนะนำ — ข้อมูลทดสอบที่ถูกตัดจะไม่โผล่ในเทรนด์
 var TREND_DAYS = 30;
 
+// ข้อ 7: อ่านประวัติเฉพาะคอลัมน์ที่ใช้ (Timestamp/Name/Action/Qty/SKU) และเฉพาะแถวในช่วงเวลา
+// เผื่อ 500 แถวก่อนช่วง — รายการออฟไลน์ที่ส่งย้อนหลังทำให้ "เวลาที่เกิดงาน" ไม่เรียงตามแถว จึงห้ามหยุดที่แถวแรกที่เก่ากว่า
+// sinceMs = 0 → อ่านทุกแถว (แต่ยังอ่านแค่คอลัมน์ที่ใช้)
+function _histRead(hs, sinceMs, extraRows) {
+  var last = hs.getLastRow();
+  if (last < 2) return { head: [], rows: [] };
+  var head = hs.getRange(1, 1, 1, hs.getLastColumn()).getValues()[0];
+  var need = ["Timestamp", "Name", "Action", "Qty", "SKU"].map(function (c) { return head.indexOf(c); });
+  var maxCol = Math.max.apply(null, need) + 1;
+  var n = last - 1, startRow = 2;
+  var tsI = head.indexOf("Timestamp");
+  if (sinceMs && n > 600 && tsI >= 0) {
+    var tsCol = hs.getRange(2, tsI + 1, n, 1).getValues();
+    var k = n - 1;
+    while (k >= 0) { var t = tsCol[k][0] ? new Date(tsCol[k][0]).getTime() : NaN; if (!isNaN(t) && t < sinceMs) break; k--; }
+    startRow = Math.max(2, 2 + k - (extraRows || 500));
+  }
+  return { head: head, rows: hs.getRange(startRow, 1, last - startRow + 1, maxCol).getValues() };
+}
 function rmTrends(data, module) {
   const ck = "rawtrends_" + module;
   try {
@@ -2979,11 +3156,12 @@ function rmTrends(data, module) {
   const hs = getSheet(module + "_History");
   const daily = {};   // sku → { "yyyy-MM-dd": net }
   if (hs.getLastRow() > 1) {
-    const rows = hs.getDataRange().getValues();
-    const h = rows[0];
+    const hr = _histRead(hs, winStart.getTime(), 500);
+    const rows = hr.rows;
+    const h = hr.head;
     const cT = h.indexOf("Timestamp"), cN = h.indexOf("Name"), cA = h.indexOf("Action"),
           cQ = h.indexOf("Qty"), cS = h.indexOf("SKU");
-    for (var r = 1; r < rows.length; r++) {
+    for (var r = 0; r < rows.length; r++) {
       const ts = rows[r][cT] ? new Date(rows[r][cT]) : null;
       if (!ts || isNaN(ts) || ts < winStart) continue;
       var sku = cS >= 0 ? String(rows[r][cS] || "").trim() : "";
@@ -3020,14 +3198,24 @@ function rmTrends(data, module) {
 }
 
 function rmRopStats(data, module) {
+  // ข้อ 7: ผลคำนวณเปลี่ยนเมื่อมีรายการใหม่เท่านั้น → cache 10 นาที ล้างพร้อม _rawCacheBust ทุกครั้งที่เขียน
+  const ckRop = "rawrop_" + module;
+  try { const hitRop = CacheService.getScriptCache().get(ckRop); if (hitRop) return JSON.parse(hitRop); } catch (e) {}
+  const resRop = _rmRopStatsCompute(data, module);
+  try { const sRop = JSON.stringify(resRop); if (sRop.length < 95000) CacheService.getScriptCache().put(ckRop, sRop, 600); } catch (e) {}
+  return resRop;
+}
+function _rmRopStatsCompute(data, module) {
   const tz = Session.getScriptTimeZone();
   const now = new Date();
   const winStart = new Date(now.getTime() - ROP_WINDOW_DAYS * 86400000);
 
   const hs = getSheet(module + "_History");
   if (hs.getLastRow() < 2) return { status: "success", windowDays: ROP_WINDOW_DAYS, items: {} };
-  const rows = hs.getDataRange().getValues();
-  const h = rows[0];
+  // ต้องรู้ "วันแรกที่เห็น SKU" ทั้งประวัติ (ไว้กำหนดช่วงสังเกต) จึงอ่านทุกแถว แต่เฉพาะคอลัมน์ที่ใช้
+  const hrRop = _histRead(hs, 0, 0);
+  const rows = hrRop.rows;
+  const h = hrRop.head;
   const cT = h.indexOf("Timestamp"), cN = h.indexOf("Name"), cA = h.indexOf("Action"),
         cQ = h.indexOf("Qty"), cS = h.indexOf("SKU");
 
@@ -3059,7 +3247,7 @@ function rmRopStats(data, module) {
   const txCount = {};    // sku → จำนวนครั้งที่เบิกในช่วง
   const lastOut = {};    // sku → วันที่เบิกล่าสุด
 
-  for (var r = 1; r < rows.length; r++) {
+  for (var r = 0; r < rows.length; r++) {
     const ts = rows[r][cT] ? new Date(rows[r][cT]) : null;
     if (!ts || isNaN(ts)) continue;
     var sku = cS >= 0 ? String(rows[r][cS] || "").trim() : "";

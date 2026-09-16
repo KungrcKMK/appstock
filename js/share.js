@@ -30,11 +30,12 @@ function closeShareApp() {
   document.getElementById("shareAppModal").classList.add("hidden");
 }
 
-function shareRenderQr() {
+async function shareRenderQr() {
   const box = document.getElementById("shareQrBox");
   if (!box) return;
   box.innerHTML = "";
   try {
+    await loadVendor("qrcode");   // ข้อ 11
     new QRCode(box, { text: _shareUrl, width: 230, height: 230, correctLevel: QRCode.CorrectLevel.M });
   } catch (e) {
     box.innerHTML = '<p style="color:var(--sq-crit);font-weight:700;">สร้าง QR ไม่สำเร็จ</p>';

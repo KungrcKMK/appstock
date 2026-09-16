@@ -235,6 +235,7 @@ async function _offSyncRun(manual) {
   if (done) {
     _offCfg.onToast(`ส่งงานที่ค้างไว้สำเร็จ ${done} รายการ ✅`, "success");
     try { _offCfg.onSynced(); } catch (e) {}
+    if (typeof tgFlushSoon === "function") tgFlushSoon();   // ข้อความแจ้งเตือนของงานที่เพิ่งส่งอยู่ในคิวฝั่งเซิร์ฟเวอร์
   }
   if (failed) _offCfg.onToast(`มี ${failed} รายการส่งไม่ผ่าน — กดดูรายละเอียดที่ปุ่มงานค้าง`, "error");
   if (needLogin) { try { _offCfg.onNeedLogin(); } catch (e) {} }

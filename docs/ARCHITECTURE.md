@@ -87,6 +87,7 @@ Google Sheets 1 ไฟล์ = ฐานข้อมูล 12+ ชีต (โค
 | ColdRoom_Products / _Stock / _StockIn / _WorkOrders / _DeliveryNotes | ดู gas_code.js:67-72 | ห้องเย็นนับเป็น lot มี MFG/EXP แยก |
 | BOM | สูตรผลิต | ใช้โดย bomHealthReport |
 | ColdRoom_LotHistory | Timestamp, Barcode, ProductName, MFG, Action, QtyBefore, QtyAfter, Reason, EmployeeName, DeviceInfo, OpId | ประวัติล็อตห้องเย็นทุกการนับ/ล้าง/นำเข้า — ปุ่ม "📜 ประวัติล็อต" ในแท็บคงเหลือ (`getLotHistory`) |
+| Telegram_Queue | Timestamp, Message, Status, Tries, SentAt, Error | คิวข้อความ Telegram (pending/sent/failed) — ตอนบันทึกแค่ต่อแถว ตัวส่งจริง `tgFlushQueue` (action `TGFLUSH`) |
 | System_Log | Timestamp, Type, Detail, User, Result | backup / telegram-error / ฯลฯ — หน้า Admin แท็บ "สถานะระบบ" (`SYSSTATUS`, manager ขึ้นไป) อ่านจากนี่ |
 
 ## ระบบยืนยันตัวตน
@@ -122,6 +123,25 @@ Google Sheets 1 ไฟล์ = ฐานข้อมูล 12+ ชีต (โค
 - `needLogin` → หยุดส่งอัตโนมัติจนกว่าบัตรผ่านจะเปลี่ยน (`_offLoginBlockedToken` — กันวนลูป reload) · หลายแท็บใช้ล็อก `appstock_queue_lock`
 - ตรวจนับ (VERIFY) ที่ส่งช้า: `rmVerify` ดูรายการที่เกิดหลัง `clientAt` แล้วปรับยอดที่นับให้ (replay) — ถ้ามีการนับใหม่กว่า จะปฏิเสธ
 - ทดสอบตรรกะนี้ได้โดยไม่แตะระบบจริง: `npm test` (จำลอง localStorage/fetch 7 เคส)
+
+## ความเร็ว — สิ่งที่ทำไว้แล้ว (รอบ PERFORMANCE_REVIEW 2026-09-16)
+
+| เรื่อง | ที่อยู่ | กติกา |
+|---|---|---|
+| Telegram ไม่อยู่ในเวลารอ | `_tgEnqueue` / `tgFlushQueue` (gas_code.js) · `tgFlushSoon()` (js/utils.js + mobile.html) | บันทึก = ต่อแถว Telegram_Queue (~0.1–0.2 วิ) · หน้าจอยิง `TGFLUSH` แบบไม่รอหลังบันทึกสำเร็จ / หลังคิวออฟไลน์ส่งเสร็จ / ท้าย `checkExpiryAlerts` · จะเพิ่ม time trigger รายนาทีเรียก `tgFlushQueue` ก็ได้ (ไม่บังคับ) |
+| หลังบันทึกอัปเดตเฉพาะแถว | `rawApplyLocalWrite` (js/raw.js) · `confirmAction` (mobile.html) | ใช้ยอดจากคำตอบเซิร์ฟเวอร์เท่านั้น (`slip.balance` / `applied`) แล้วดึงคลังใหม่เบื้องหลัง · `_rawWriteSeq` กันคำตอบอ่านที่เริ่มก่อนบันทึกมาทับ |
+| โชว์ข้อมูลเดิมก่อน (stale-while-revalidate) | `_rawLoadDataRun` · `crLoadOverview` · mobile `loadData` | เปิดคลังที่เคยเปิด = วาดจาก localStorage ทันที ป้าย "กำลังตรวจข้อมูลล่าสุด" ไม่บังจอ · ของเก่าไม่เด้งแจ้งเตือน/ไม่คำนวณเทรนด์ |
+| cache ห้องเย็น | `crGetStartupOverviewCached` · `_crCacheBust` · `CR_WRITE_ACTIONS` | 2 นาที key มีวันที่ไทย · `lite:true` = เฉพาะ allLots (มือถือ) · ล้างอัตโนมัติหลัง action เขียนทุกตัวใน `_handleColdroomInner` (เพิ่ม action เขียนใหม่ต้องใส่ `CR_WRITE_ACTIONS`) |
+| รายงานหลายสินค้า | `getProductsAndBalancesBulk` · `crPrintActualReport` | อ่านชีตครั้งเดียว คืนทุกบาร์โค้ด (สำรอง: ยิงทีละตัวถ้าเซิร์ฟเวอร์ตอบไม่ได้) |
+| cache วัตถุดิบวัดเป็นไบต์ | `doGet` · `rawmeta_*` · `_sysLogOnce` | เกิน 95,000 ไบต์ = ไม่ cache + จด System_Log ชั่วโมงละครั้ง · หน้าสถานะระบบโชว์ขนาด/สถานะ |
+| อ่านประวัติเฉพาะที่ใช้ | `_histRead` · `rmTrends` · `_rmRopStatsCompute` (+cache `rawrop_` 10 นาที) | อ่านคอลัมน์ Timestamp/Name/Action/Qty/SKU เท่านั้น · เทรนด์อ่านเฉพาะช่วง +500 แถวเผื่อรายการย้อนหลัง · ROP อ่านทุกแถว (ต้องรู้วันแรกที่เห็น SKU) |
+| ลดรอบอ่าน/เขียนชีต | `_crWriteLotCells` · `ensureColumns` memo ต่อคำขอ | เขียน Qty..UpdatedAt แถวเดียวด้วย setValues ครั้งเดียว · หัวตารางอ่านครั้งเดียวต่อคำขอ (ไม่ข้ามคำขอ — กันหัวตารางค้างเมื่อมีคนแทรกคอลัมน์) |
+| รวมคำขอซ้อน / วาดทีละส่วน | `_rawInflight` (js/raw.js) · `loadExecDashboard` (js/exec.js) | อ่านคลังเดียวกันที่ซ้อนกันรอตัวเดียว · ภาพรวมทั้งระบบวาดแต่ละคลังทันทีที่มา KPI รอครบสองโรงงาน (ไม่รวมบางส่วนแล้วโชว์เป็นยอดรวม) |
+| มือถือทีละ 50 + หน่วงค้นหา | `renderList` · `filterList` (mobile.html) | แสดง 50 แรก ปุ่ม "แสดงเพิ่ม" · พิมพ์ค้นหาหน่วง 180 ms |
+| ไลบรารีหนักโหลดตอนใช้ | `loadVendor()` (js/utils.js) | Chart.js / html5-qrcode / qrcode ไม่อยู่ใน `<head>` ของ index.html แล้ว — เรียก `await loadVendor("chart"\|"qrscan"\|"qrcode")` ก่อนใช้ · ยัง precache ใน sw.js · mobile ใช้ `defer` |
+| วัดเวลาแยกส่วน | `_reqTiming` / `timing` ในคำตอบ · แท็บสถานะระบบ | `serverMs` ทุกคำตอบ + `timing.lockWaitMs/tgMs` ในคำตอบการเขียน · หน้าสถานะโชว์ "ตอบใน / เซิร์ฟเวอร์ใช้" และการบันทึกล่าสุดแยกส่วน |
+
+ตัวเลขที่วัดตอนทำ (16 ก.ย. 2569, curl จากคอมเจ้าของ): ตรวจนับ 1 รายการ เซิร์ฟเวอร์ใช้ 2.1 วิ (รอล็อก 0.09 · ต่อคิว Telegram 0.14) จากเดิม ~10 วิ ที่รวมส่ง Telegram · ภาพรวมห้องเย็นแบบย่อ 1.39 วิ → 0.11 วิ เมื่อติด cache
 
 ## Deploy
 

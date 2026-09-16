@@ -7,54 +7,61 @@ function openExecDashboard() { switchModule("EXEC"); }
 
 async function loadExecDashboard() {
   const el = document.getElementById("execDashContent");
-  el.innerHTML = '<p class="sq-empty">⏳ กำลังโหลดข้อมูล...</p>';
   document.getElementById("execDashTimestamp").textContent = "กำลังดึงข้อมูล...";
-  try {
-    const [crRes, sqfRes, mlmRes] = await Promise.all([
-      fetch(GAS_URL, { method:"POST", headers:{"Content-Type":"text/plain;charset=utf-8"},
-        body: JSON.stringify({ module:"COLDROOM", action:"getStartupOverview" }) }).then(r=>r.json()),
-      fetch(GAS_URL + "?module=SQF").then(r=>r.json()),
-      fetch(GAS_URL + "?module=MLM").then(r=>r.json())
-    ]);
-    const now = new Date().toLocaleString("th-TH", { dateStyle:"medium", timeStyle:"short" });
-    document.getElementById("execDashTimestamp").textContent = "อัปเดตล่าสุด " + now;
-
-    const topProds = crRes.ok ? (crRes.totalByProduct||[]).sort((a,b)=>b.TotalQty-a.TotalQty) : [];
-    const expiring = crRes.ok ? (crRes.expiringLots||[]) : [];
-    const expired  = crRes.ok ? (crRes.expiredLots||[])  : [];
-    const sqfMats  = sqfRes.status === "success" ? sqfRes.materials : [];
-    const mlmMats  = mlmRes.status === "success" ? mlmRes.materials : [];
-
-    // ── Global KPI ──
-    const globalKpi = execBuildKpi([...sqfMats, ...mlmMats]);
-
-    // เก็บไว้ให้กราฟใช้ ไม่ต้องยิงใหม่
-    _execChartData = { SQF: sqfMats, MLM: mlmMats,
-                       CR: { products: topProds, expiring: expiring, expired: expired } };
-
-    el.innerHTML =
-      globalKpi +
-      execChartSection() +
-      execStockSection("❄️", "คลังสินค้า", "rail-cold", topProds, expiring, expired) +
-      execRawSection("🏭", "วัตถุดิบ SQF — สุพรรณคิวฟู้ดส์", "rail-sqf", sqfMats) +
-      execRawSection("🏭", "วัตถุดิบ MLM — แม่ละมาย",       "rail-mlm", mlmMats);
-
-    // วาดหลังจาก canvas อยู่บนจอแล้ว (Chart.js วัดขนาดจากกล่องที่มองเห็น)
-    void el.offsetHeight;
-    execRenderCharts();
-    loadExecDashboard._retried = false;
-  } catch(e) {
+  // ข้อ 9: สามคลังโหลดพร้อมกัน แต่ละส่วนวาดทันทีที่มาถึง ไม่รอครบ · ตัวเลขรวม (KPI) รอจนครบสองโรงงานเท่านั้น
+  el.innerHTML =
+    '<div id="execKpiSlot"><p class="sq-empty">⏳ รอข้อมูลครบสองโรงงานสำหรับตัวเลขรวม...</p></div>' +
+    '<div id="execChartSlot"></div>' +
+    '<div id="execSlotCR"><p class="sq-empty">⏳ กำลังโหลดคลังสินค้า...</p></div>' +
+    '<div id="execSlotSQF"><p class="sq-empty">⏳ กำลังโหลดวัตถุดิบ SQF...</p></div>' +
+    '<div id="execSlotMLM"><p class="sq-empty">⏳ กำลังโหลดวัตถุดิบ MLM...</p></div>';
+  _execChartData = { SQF: [], MLM: [], CR: {} };
+  const slot = id => document.getElementById(id);
+  const failBox = msg => `<div class="sq-card"><p class="sq-empty" style="color:var(--sq-crit);font-weight:700;">⚠️ ${escapeHtml(msg)}</p></div>`;
+  const tasks = [
+    fetch(GAS_URL, { method:"POST", headers:{"Content-Type":"text/plain;charset=utf-8"},
+      body: JSON.stringify({ module:"COLDROOM", action:"getStartupOverview" }) }).then(r=>r.json()).then(crRes => {
+        const topProds = crRes.ok ? (crRes.totalByProduct||[]).sort((a,b)=>b.TotalQty-a.TotalQty) : [];
+        const expiring = crRes.ok ? (crRes.expiringLots||[]) : [];
+        const expired  = crRes.ok ? (crRes.expiredLots||[])  : [];
+        _execChartData.CR = { products: topProds, expiring: expiring, expired: expired };
+        if (slot("execSlotCR")) slot("execSlotCR").innerHTML = execStockSection("❄️", "คลังสินค้า", "rail-cold", topProds, expiring, expired);
+      }).catch(e => { if (slot("execSlotCR")) slot("execSlotCR").innerHTML = failBox("คลังสินค้าโหลดไม่สำเร็จ: " + e.message); throw e; }),
+    fetch(GAS_URL + "?module=SQF").then(r=>r.json()).then(res => {
+        const m = res.status === "success" ? res.materials : [];
+        _execChartData.SQF = m;
+        if (slot("execSlotSQF")) slot("execSlotSQF").innerHTML = execRawSection("🏭", "วัตถุดิบ SQF — สุพรรณคิวฟู้ดส์", "rail-sqf", m);
+      }).catch(e => { if (slot("execSlotSQF")) slot("execSlotSQF").innerHTML = failBox("วัตถุดิบ SQF โหลดไม่สำเร็จ: " + e.message); throw e; }),
+    fetch(GAS_URL + "?module=MLM").then(r=>r.json()).then(res => {
+        const m = res.status === "success" ? res.materials : [];
+        _execChartData.MLM = m;
+        if (slot("execSlotMLM")) slot("execSlotMLM").innerHTML = execRawSection("🏭", "วัตถุดิบ MLM — แม่ละมาย", "rail-mlm", m);
+      }).catch(e => { if (slot("execSlotMLM")) slot("execSlotMLM").innerHTML = failBox("วัตถุดิบ MLM โหลดไม่สำเร็จ: " + e.message); throw e; })
+  ];
+  const results = await Promise.allSettled(tasks);
+  const failed = results.filter(r => r.status === "rejected");
+  if (failed.length) {
     // Google สะดุดชั่วคราว (ตอบเป็นหน้า HTML) → ลองใหม่เองหนึ่งครั้ง ก่อนโชว์ข้อผิดพลาดพร้อมปุ่มลองใหม่
     if (!loadExecDashboard._retried && navigator.onLine) {
       loadExecDashboard._retried = true;
-      el.innerHTML = '<p class="sq-empty">⏳ เซิร์ฟเวอร์ตอบไม่ปกติ กำลังลองใหม่...</p>';
+      document.getElementById("execDashTimestamp").textContent = "⏳ เซิร์ฟเวอร์ตอบไม่ปกติ กำลังลองใหม่...";
       setTimeout(loadExecDashboard, 4000);
       return;
     }
-    document.getElementById("execDashTimestamp").textContent = "โหลดไม่สำเร็จ";
-    el.innerHTML = `<div class="sq-card"><p class="sq-empty" style="color:var(--sq-crit);font-weight:700;">⚠️ โหลดข้อมูลไม่สำเร็จ: ${escapeHtml(e.message)}</p>
-      <p style="text-align:center;margin-top:10px;"><button onclick="loadExecDashboard()" style="padding:9px 18px;border-radius:10px;border:1px solid var(--sq-line,#cfd8d2);background:#fff;font-weight:700;cursor:pointer;">🔄 ลองใหม่</button></p></div>`;
+    document.getElementById("execDashTimestamp").textContent = "โหลดไม่ครบ";
+    if (slot("execKpiSlot")) slot("execKpiSlot").innerHTML =
+      `<div class="sq-card"><p class="sq-empty" style="color:var(--sq-crit);font-weight:700;">⚠️ ข้อมูลไม่ครบ (${failed.length} คลังโหลดไม่สำเร็จ) — ตัวเลขรวมยังไม่แสดง เพราะรวมแค่บางคลังจะหลอกตา</p>
+        <p style="text-align:center;margin-top:10px;"><button onclick="loadExecDashboard()" style="padding:9px 18px;border-radius:10px;border:1px solid var(--sq-line,#cfd8d2);background:#fff;font-weight:700;cursor:pointer;">🔄 ลองใหม่</button></p></div>`;
+    return;
   }
+  const now = new Date().toLocaleString("th-TH", { dateStyle:"medium", timeStyle:"short" });
+  document.getElementById("execDashTimestamp").textContent = "อัปเดตล่าสุด " + now;
+  if (slot("execKpiSlot"))   slot("execKpiSlot").innerHTML   = execBuildKpi([...(_execChartData.SQF||[]), ...(_execChartData.MLM||[])]);
+  if (slot("execChartSlot")) slot("execChartSlot").innerHTML = execChartSection();
+  // วาดหลังจาก canvas อยู่บนจอแล้ว (Chart.js วัดขนาดจากกล่องที่มองเห็น)
+  void el.offsetHeight;
+  execRenderCharts();
+  loadExecDashboard._retried = false;
 }
 
 /** ─── 📈 กราฟวิเคราะห์ — โชว์ทั้ง 3 คลังพร้อมกัน ไม่มีแท็บ ไม่มีโดนัท (เจ้าของสั่ง 2026-08-02) ─── */
@@ -190,7 +197,9 @@ function _execCrBar(id, cr) {
   });
 }
 
-function execRenderCharts() {
+async function execRenderCharts() {
+  try { await loadVendor("chart"); } catch (e) { return; }   // ข้อ 11: Chart.js โหลดเฉพาะตอนเปิดหน้านี้
+  if (!document.getElementById("execBarSQF")) return;         // ผู้ใช้ออกจากหน้าไปแล้วระหว่างรอ
   _execDaysBar("execBarSQF", _execChartData.SQF || []);
   _execDaysBar("execBarMLM", _execChartData.MLM || []);
   _execCrBar("execBarCR", _execChartData.CR || {});

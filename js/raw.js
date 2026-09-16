@@ -72,28 +72,55 @@ async function rawFetch(payload) {
 }
 
 let _rawSearchAcInit = false;
-async function rawLoadData(startup = false, retry = 0) {
-  // ข้อ 8: จับคลังไว้ตั้งแต่เริ่ม — ผู้ใช้สลับคลังระหว่างรอ คำตอบเก่าต้องไม่ไปโผล่/ไปเก็บ cache ผิดคลัง
+let _rawInflight   = {};   // ข้อ 9: คำขออ่านคลังเดียวกันที่ซ้อนกัน (สลับหน้า/กลับแท็บ/หลังบันทึก) ให้รอตัวเดียว
+let _rawWriteSeq   = 0;    // ข้อ 2: เพิ่มทุกครั้งที่บันทึกสำเร็จ — คำตอบอ่านที่เริ่มก่อนบันทึกห้ามทับยอดใหม่บนจอ
+let _rawShownModule = "";  // คลังที่มีข้อมูลอยู่บนจอแล้ว
+async function rawLoadData(startup = false, retry = 0, opts = {}) {
   const mod = rawCurrentModule;
+  if (_rawInflight[mod]) return _rawInflight[mod];
+  const p = _rawLoadDataRun(startup, retry, opts, mod).finally(() => { if (_rawInflight[mod] === p) delete _rawInflight[mod]; });
+  _rawInflight[mod] = p;
+  return p;
+}
+async function _rawLoadDataRun(startup, retry, opts, mod) {
+  // ข้อ 8: จับคลังไว้ตั้งแต่เริ่ม — ผู้ใช้สลับคลังระหว่างรอ คำตอบเก่าต้องไม่ไปโผล่/ไปเก็บ cache ผิดคลัง
   const t0 = Date.now();
+  const seq0 = _rawWriteSeq;
+  // ข้อ 4: ไม่บังทั้งจอถ้ามีอะไรให้ดูอยู่แล้ว —
+  //   · คลังนี้อยู่บนจอแล้ว (รีเฟรช) → คงรายการเดิม ขึ้นป้าย "กำลังตรวจข้อมูลล่าสุด"
+  //   · เพิ่งเปิดคลังนี้แต่มีข้อมูลเดิมในเครื่อง → วาดของเดิมก่อนทันที แล้วค่อยแทนที่ (ไม่เด้งแจ้งเตือน/เทรนด์จากของเก่า)
+  let quiet = !!opts.silent;
+  if (!quiet && _rawShownModule === mod && rawLastData.length) { quiet = true; rawSetDataAge("refreshing", window._gasLastAt); }
+  else if (!quiet && _rawShownModule !== mod) {
+    const c = (() => { try { return JSON.parse(localStorage.getItem("cache_raw_" + mod) || "null"); } catch (e) { return null; } })();
+    if (c && c.d && Array.isArray(c.d.materials) && c.d.materials.length) {
+      _rawApplyData(c.d, false, "refreshing", c.t, { skipAlerts: true, skipTrends: true });
+      quiet = true;
+    }
+  }
   try {
-    showLoading("กำลังโหลดข้อมูล...");
+    if (!quiet) showLoading("กำลังโหลดข้อมูล...");
     const data = await (await fetch(`${GAS_URL}?module=${mod}`)).json();
-    hideLoading();
+    if (!quiet) hideLoading();
     window._gasLastMs = Date.now() - t0; window._gasLastAt = Date.now();
     if (mod !== rawCurrentModule) return;   // สลับไปคลังอื่นแล้ว ทิ้งคำตอบนี้
     if (data.status && data.status !== "success") { showToast(data.message || "โหลดข้อมูลไม่สำเร็จ","error"); return; }
-    cacheSet("raw_" + mod, data);   // เก็บ last-good ไว้ใช้ตอน offline
+    if (_rawWriteSeq !== seq0) {   // มีการบันทึกระหว่างรอ → คำตอบนี้เก่ากว่ายอดบนจอ ทิ้ง แล้วดึงใหม่เงียบๆ
+      setTimeout(() => rawLoadData(false, 0, { silent: true }), 300);
+      return;
+    }
+    cacheSet("raw_" + mod, data);   // เก็บ last-good ไว้ใช้ตอน offline / โชว์ก่อนครั้งหน้า
+    _rawShownModule = mod;
     _rawApplyData(data, startup, "server");
   } catch(err) {
-    hideLoading();
+    if (!quiet) hideLoading();
     if (mod !== rawCurrentModule) return;
     // Google สะดุดชั่วคราว (ตอบเป็นหน้า HTML / ยิงไม่ออก) → ลองใหม่อีกครั้งเดียวก่อนถอยไปใช้ข้อมูลเก่า
     if (retry < 1 && navigator.onLine) {
       showToast("⏳ เซิร์ฟเวอร์ตอบไม่ปกติ กำลังลองใหม่...", "warn", 4000);
       await new Promise(r => setTimeout(r, 4000));
       if (mod !== rawCurrentModule) return;
-      return rawLoadData(startup, retry + 1);
+      return _rawLoadDataRun(startup, retry + 1, { silent: quiet }, mod);
     }
     // fetch fail → ลองใช้ข้อมูลเก่าจาก cache
     const cachedRaw = (() => { try { return JSON.parse(localStorage.getItem("cache_raw_" + mod) || "null"); } catch (e) { return null; } })();
@@ -115,12 +142,15 @@ function rawSetDataAge(source, at) {
   const pendTxt = pend ? ` · <span style="color:var(--sq-high);font-weight:800;">⏳ รอส่ง ${pend} รายการ (ยอดบนจอยังไม่รวม)</span>` : "";
   el.innerHTML = source === "cache"
     ? `<span style="color:var(--sq-high);font-weight:800;">⚠️ ข้อมูลเก่าจาก ${t} (ออฟไลน์)</span>${pendTxt}`
+    : source === "refreshing"
+    ? `ข้อมูลเมื่อ ${t} · <span style="color:var(--sq-ink2);">⏳ กำลังตรวจข้อมูลล่าสุด…</span>${pendTxt}`
     : `อัปเดตล่าสุด ${t}${pendTxt}`;
 }
 
 // นำข้อมูล (จาก server หรือ cache) มา render — ใช้ร่วมทั้ง 2 path
-function _rawApplyData(data, startup, source, at) {
+function _rawApplyData(data, startup, source, at, opts = {}) {
   rawLastData = Array.isArray(data.materials) ? data.materials : [];
+  window._rawDiscontinued = data.discontinued || [];
   rawSetDataAge(source || "server", at);
   const inp = document.getElementById("rawAlertDaysInput");
   if (inp) inp.value = rawAlertDays;
@@ -131,8 +161,8 @@ function _rawApplyData(data, startup, source, at) {
   renderRawStats(rawLastData, data.discontinued || []);
   // ⚠️ ไม่วาดกราฟตรงนี้ — กราฟย้ายไปอยู่ในหน้าต่าง 📈 กราฟ ที่ต้องกดเปิด
   //    Chart.js วาดในกล่องที่ซ่อนอยู่ไม่ได้ (ความสูงเป็น 0) จึงวาดตอนเปิดหน้าต่างแทน
-  rawCheckCritical(rawLastData, rawCurrentModule, startup);
-  rawLoadTrends();   // เส้นเทรนด์เบิกตามมาทีหลัง — ไม่ถ่วงการโหลดหลัก
+  if (!opts.skipAlerts) rawCheckCritical(rawLastData, rawCurrentModule, startup);
+  if (!opts.skipTrends) rawLoadTrends();   // เส้นเทรนด์เบิกตามมาทีหลัง — ไม่ถ่วงการโหลดหลัก
 
   // ── Autocomplete: rawSearch (ตั้งค่าครั้งเดียว) ──
   if (!_rawSearchAcInit) {
@@ -911,12 +941,13 @@ function openRawQr() {
   if (!rawLastData.length) { showToast("ยังไม่มีข้อมูล","warn"); return; }
   openRawQrByItem(rawLastData[0].SKU, rawLastData[0].Name);
 }
-function openRawQrByItem(sku, name) {
+async function openRawQrByItem(sku, name) {
   rawCurrentQrSku = sku; rawCurrentQrName = name||sku;
   document.getElementById("rawQrTitle").innerText = `${rawCurrentQrName} (${sku})`;
   document.getElementById("rawQrcode").innerHTML  = "";
   document.getElementById("rawQrModal").classList.remove("hidden");
   const qrText = `RAWMAT|${rawCurrentModule}|${sku}`;
+  try { await loadVendor("qrcode"); } catch (e) { showToast("โหลดตัวสร้าง QR ไม่ได้", "error"); return; }   // ข้อ 11
   new QRCode(document.getElementById("rawQrcode"), { text: qrText, width:220, height:220, correctLevel: QRCode.CorrectLevel.M });
 }
 function closeRawQr() { document.getElementById("rawQrModal").classList.add("hidden"); }
@@ -932,7 +963,8 @@ function downloadRawQr() {
 function closeRawAlert() { document.getElementById("rawAlertModal").classList.add("hidden"); }
 
 // ── พิมพ์ QR Code ทั้งหมดของวัตถุดิบ (ใช้ QRCode.js → data URL) ──
-function rawPrintQrAll() {
+async function rawPrintQrAll() {
+  try { await loadVendor("qrcode"); } catch (e) { showToast("โหลดตัวสร้าง QR ไม่ได้", "error"); return; }   // ข้อ 11
   const checkedSkus = Array.from(document.querySelectorAll(".raw-checkbox:checked")).map(cb => cb.getAttribute("data-sku"));
   const source = checkedSkus.length > 0
     ? rawLastData.filter(i => checkedSkus.includes(String(i.SKU)))
@@ -1060,6 +1092,26 @@ async function rawSubmitEdit() {
   else showToast(r.message||"ไม่สำเร็จ","error");
 }
 
+// ── ข้อ 2 PERFORMANCE_REVIEW: หลังบันทึกสำเร็จ ปรับเฉพาะแถวที่เปลี่ยนบนจอทันทีจากคำตอบของเซิร์ฟเวอร์ ──
+// (ยอดยืนยันแล้วเท่านั้น — งานที่เข้าคิวออฟไลน์ไม่มาทางนี้) แล้วดึงคลังใหม่เบื้องหลังโดยไม่บังจอ ไม่กะพริบ
+function rawApplyLocalWrite(sku, newQty, hist) {
+  _rawWriteSeq++;
+  const it = (rawLastData || []).find(m => String(m.SKU) === String(sku));
+  if (it && newQty !== undefined && newQty !== null && !isNaN(Number(newQty))) {
+    it.Qty = Number(newQty);
+    if (hist && hist.verified) it.LastVerified = hist.at;
+  }
+  if (hist) {
+    window._rawRecentHistory = [[hist.at, hist.name, hist.action, hist.qty, hist.user, hist.docNo || "", String(sku), hist.unit || "", hist.purpose || ""],
+                                ...(window._rawRecentHistory || [])].slice(0, 30);
+    renderRawHistory(window._rawRecentHistory);
+  }
+  renderRawInventory(rawLastData);
+  renderRawStats(rawLastData, window._rawDiscontinued || []);
+  rawSetDataAge("server", Date.now());
+  if (typeof tgFlushSoon === "function") tgFlushSoon();   // ข้อ 1: ให้เซิร์ฟเวอร์ส่ง Telegram ที่ต่อคิวไว้ (ไม่รอ)
+  setTimeout(() => rawLoadData(false, 0, { silent: true }), 800);
+}
 async function rawSubmitAction() {
   const sku  = document.getElementById("rawModalSkuVal").value;
   const type = document.getElementById("rawModalType").value;
@@ -1103,7 +1155,10 @@ async function rawSubmitAction() {
   if (r.status==="success") {
     closeRawAction();
     showToast("บันทึกสำเร็จ ✔️","success");
-    rawLoadData();
+    if (r.timing) window._gasLastWriteTiming = r.timing;
+    const s = r.slip || {};
+    rawApplyLocalWrite(sku, s.balance, { at: s.at || new Date().toISOString(), name: s.name || name, action: s.action || (LBL[type] || type),
+      qty: s.qty != null ? s.qty : qty, user: s.user || currentUser, docNo: s.docNo || r.docNo || "", unit: s.unit || "", purpose: s.purpose || purpose });
     if (r.slip && typeof openWithdrawSlip === "function") openWithdrawSlip(r.slip);
   }
   else showToast(r.message||"ไม่สำเร็จ","error");
@@ -1181,7 +1236,9 @@ async function rawSubmitVerify() {
     closeRawVerify();
     // ข้อ 5: ถ้าเซิร์ฟเวอร์ปรับตามความเคลื่อนไหวหลังเวลานับ บอกให้รู้
     showToast(r.movementsAfter ? `บันทึกยอดแล้ว ✅ นับได้ ${r.counted} → ใช้ ${r.applied} (ปรับตาม ${r.movementsAfter} รายการที่เกิดหลังนับ)` : "บันทึกยอดจริงสำเร็จ ✅", "success", 6000);
-    rawLoadData();
+    if (r.timing) window._gasLastWriteTiming = r.timing;
+    rawApplyLocalWrite(rawVerifyTarget, r.applied, { at: new Date().toISOString(), name: vName, action: "ตรวจนับ/ปรับยอด", qty: r.applied,
+      user: currentUser, unit: curItem ? curItem.Unit : "", verified: true });
   }
   else showToast(r.message||"ไม่สำเร็จ","error");
 }
@@ -1199,6 +1256,7 @@ async function rawDelete(sku, name) {
 async function openRawScanner() {
   document.getElementById("rawScannerModal").classList.remove("hidden");
   try {
+    await loadVendor("qrscan");   // ข้อ 11: 375KB โหลดเฉพาะตอนกดสแกน
     rawHtml5QrCode = new Html5Qrcode("rawReader");
     await rawHtml5QrCode.start({ facingMode:"environment" }, { fps:10, qrbox:250 }, txt => {
       const val = String(txt||"").trim();

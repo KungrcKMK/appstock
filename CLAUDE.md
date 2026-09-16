@@ -7,7 +7,7 @@
 
 frontend (GitHub Pages, vanilla JS) → Google Apps Script (`gas_code.js`) → Google Sheets (เป็น DB)
 
-## ⚠️ กับดัก 7 ข้อ — เคยพลาดมาแล้วทุกข้อ
+## ⚠️ กับดัก 8 ข้อ — เคยพลาดมาแล้วทุกข้อ
 
 1. **มี 2 frontend แยกกัน** — `index.html` (ใช้ `js/*.js`) และ `mobile.html` (โค้ดจบในไฟล์เดียว
    รวม util ที่ก๊อปมา เช่น `mathEval` อยู่ทั้ง `js/utils.js:169` และ `mobile.html:550`)
@@ -39,6 +39,12 @@ frontend (GitHub Pages, vanilla JS) → Google Apps Script (`gas_code.js`) → G
    action ใหม่ที่เขียนข้อมูล **ต้องใส่ในตารางนี้** ไม่งั้นไม่ถูกตรวจ (ใครก็ยิงได้) · ฝั่ง client แนบ token ให้เองแล้ว
    (`js/app.js` ดัก fetch, `gasPost` ใน mobile, `offlineSend`) · การเขียนจากหน้างานให้ผ่าน `offlineSend`
    ไม่ยิง fetch ตรง — เพื่อให้ "เน็ตล่มก็ทำงานได้" และมี `opId` กันหักซ้ำ
+
+8. **Telegram ไม่ส่งในคำขอที่ผู้ใช้รอ** — `crSendTelegram`/`sendAlert` แค่ต่อคิวลงชีต `Telegram_Queue` แล้วตอบทันที
+   ตัวส่งจริงคือ `tgFlushQueue` (action `TGFLUSH`) ที่หน้าจอยิงแบบไม่รอหลังบันทึกสำเร็จ (`tgFlushSoon()`)
+   → เพิ่มจุดบันทึกใหม่ต้องเรียก `tgFlushSoon()` หลังสำเร็จด้วย ไม่งั้นข้อความค้างจนมีคนบันทึกครั้งถัดไป
+   · ไลบรารีหนัก (Chart.js / สแกน QR / QRCode) ไม่โหลดตอนเปิดแอปแล้ว — ใช้ `await loadVendor("chart"|"qrscan"|"qrcode")` ก่อนเรียก
+   · action ห้องเย็นที่เขียนข้อมูลต้องอยู่ใน `CR_WRITE_ACTIONS` ไม่งั้น cache ภาพรวม 2 นาทีไม่ถูกล้าง
 
 ## คำสั่งที่ใช้จริง (ตรวจแล้ว)
 

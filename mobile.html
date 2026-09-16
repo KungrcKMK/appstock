@@ -421,9 +421,9 @@
 <!-- ══════════════════════════════════════════
      CDN SCRIPTS
 ══════════════════════════════════════════ -->
-<script src="js/vendor/html5-qrcode.min.js"></script>
+<script defer src="js/vendor/html5-qrcode.min.js"></script>
 <!-- qrcodejs เก็บไว้ในแอปเอง — เคยพึ่ง CDN แล้ว QR เงียบหายทั้งแอปตอนเน็ตมือถือเข้า CDN ไม่ได้ -->
-<script src="js/vendor/qrcode.min.js"></script>
+<script defer src="js/vendor/qrcode.min.js"></script>
 <!-- คิวงานตอนเน็ตล่ม — ไฟล์เดียวกับฝั่งคอม ไม่ก๊อปโค้ดซ้ำ (ผูก callback ด้านล่าง) -->
 <script src="js/offline.js"></script>
 <script>
@@ -528,6 +528,19 @@ async function gasJson(res) {
     throw err;
   }
 }
+// ข้อ 1: บอกเซิร์ฟเวอร์ให้ส่ง Telegram ที่ต่อคิวไว้ — ยิงแล้วไม่รอ (สำเนาจาก js/utils.js)
+let _tgFlushTimer = null;
+function tgFlushSoon() {
+  if (_tgFlushTimer) return;
+  _tgFlushTimer = setTimeout(() => {
+    _tgFlushTimer = null;
+    try { fetch(GAS_URL, { method: "POST", headers: { "Content-Type": "text/plain;charset=utf-8" }, body: JSON.stringify({ module: "SYSTEM", action: "TGFLUSH" }), keepalive: true }).catch(() => {}); } catch (e) {}
+  }, 1500);
+}
+// ข้อ 4: รายการล่าสุดของแต่ละคลังเก็บในเครื่อง ไว้โชว์ก่อนระหว่างรอของใหม่
+function mCacheSet(k, d) { try { localStorage.setItem("m_cache_" + k, JSON.stringify({ t: Date.now(), d })); } catch (e) {} }
+function mCacheGet(k) { try { const o = JSON.parse(localStorage.getItem("m_cache_" + k) || "null"); return o && Array.isArray(o.d) ? o : null; } catch (e) { return null; } }
+let _mShownMod = "";   // คลังที่มีรายการอยู่บนจอแล้ว
 async function gasPost(body) {
   const r = await fetch(GAS_URL, {
     method: "POST",
@@ -828,13 +841,25 @@ async function mFillWorkOrders() {
   } catch (e) {}
 }
 
-async function loadData() {
+async function loadData(opts) {
+  opts = opts || {};
   const m0 = mod;   // ข้อ 8: ผู้ใช้กดกลับแล้วเข้าคลังอื่นระหว่างรอ คำตอบเก่าต้องไม่ไปโผล่
-  setLoading(true, "กำลังโหลดข้อมูล...");
+  // ข้อ 4: เพิ่งเปิดคลังนี้แต่มีรายการเดิมในเครื่อง → โชว์ก่อนทันที (ป้าย "กำลังตรวจ") แล้วค่อยแทนที่ · รีเฟรชแบบเงียบไม่บังจอ
+  let quiet = !!opts.silent;
+  if (!quiet && _mShownMod !== mod) {
+    const c = mCacheGet("list_" + mod);
+    if (c && c.d.length) {
+      data = c.d; filt = [...data]; populateDropdown(); renderList();
+      const s0 = $("mSub"); if (s0) s0.textContent = user + " · " + MOD_CFG[mod].sub + " · ข้อมูลเมื่อ " + new Date(c.t).toLocaleTimeString("th-TH", { hour: "2-digit", minute: "2-digit" }) + " · ⏳ กำลังตรวจ...";
+      quiet = true;
+    }
+  }
+  if (!quiet) setLoading(true, "กำลังโหลดข้อมูล...");
   try {
+    let fresh;
     if (mod === "COLDROOM") {
-      const r = await gasPost({ module: "COLDROOM", action: "getStartupOverview" });
-      setLoading(false);
+      // ข้อ 5: ขอเฉพาะที่มือถือใช้ (allLots) ไม่ต้องแบก totalByProduct/expiring/expired
+      const r = await gasPost({ module: "COLDROOM", action: "getStartupOverview", payload: { lite: true } });
       // Aggregate lots by barcode, keep individual lots for counting
       const byBc = {};
       (r.allLots || []).forEach(lot => {
@@ -852,12 +877,11 @@ async function loadData() {
           expDays: lot.ExpireDays, expStatus: lot.ExpireStatus || "ปกติ"
         });
       });
-      data = Object.values(byBc).filter(i => i.qty > 0).sort((a,b) => a.name.localeCompare(b.name,"th"));
+      fresh = Object.values(byBc).filter(i => i.qty > 0).sort((a,b) => a.name.localeCompare(b.name,"th"));
     } else {
       const res = await fetch(`${GAS_URL}?module=${mod}`);
       const r   = await gasJson(res);
-      setLoading(false);
-      data = (r.materials || [])
+      fresh = (r.materials || [])
         .filter(m => !m.Discontinued)
         .map(m => ({
           sku:   String(m.SKU   || ""),
@@ -870,15 +894,19 @@ async function loadData() {
         }))
         .sort((a, b) => a.name.localeCompare(b.name, "th"));
     }
+    if (!quiet) setLoading(false);
     if (m0 !== mod) return;
+    data = fresh;
+    mCacheSet("list_" + mod, data);
+    _mShownMod = mod;
     filt = [...data];
     populateDropdown();
     renderList();
     const _age = $("mSub"); if (_age) _age.textContent = user + " · " + MOD_CFG[mod].sub + " · อัปเดต " + new Date().toLocaleTimeString("th-TH", { hour: "2-digit", minute: "2-digit" });
-    toast("โหลดข้อมูลสำเร็จ · " + data.length + " รายการ");
+    if (!quiet) toast("โหลดข้อมูลสำเร็จ · " + data.length + " รายการ");
     loadData._retried = false;
   } catch(e) {
-    setLoading(false);
+    if (!quiet) setLoading(false);
     // Google สะดุดชั่วคราว → ลองใหม่เองหนึ่งครั้งก่อนโชว์ข้อผิดพลาด
     if (!loadData._retried && navigator.onLine) {
       loadData._retried = true;
@@ -893,7 +921,13 @@ async function loadData() {
 // ─────────────────────────────────────────────
 // LIST RENDER
 // ─────────────────────────────────────────────
+// ข้อ 10: พิมพ์ค้นหาแล้วรอ 180 มิลลิวินาทีค่อยกรอง — ไม่วาดรายการใหม่ทุกตัวอักษร (ค้นหาจากข้อมูลทั้งหมด แล้วค่อยแบ่งหน้าผล)
+let _mFilterTimer = null;
 function filterList() {
+  clearTimeout(_mFilterTimer);
+  _mFilterTimer = setTimeout(_filterListNow, 180);
+}
+function _filterListNow() {
   const q = $("mSearch").value.trim().toLowerCase();
   filt = q ? data.filter(d => d.name.toLowerCase().includes(q) || d.sku.toLowerCase().includes(q)) : [...data];
   renderList();
@@ -918,13 +952,18 @@ function onDropdownChange() {
   pickItem(sku);
 }
 
-function renderList() {
+// ข้อ 10: แสดงทีละ 50 รายการ กดแสดงเพิ่มเมื่อต้องการ — เครื่องหน้างานเลื่อนลื่นแม้มีหลายร้อยรายการ
+const M_PAGE = 50;
+let _mShown = M_PAGE;
+function renderList(more) {
   const el = $("mList");
   if (!filt.length) {
     el.innerHTML = '<p class="text-slate-600 text-center py-16 font-bold">ไม่พบรายการ</p>';
     return;
   }
-  el.innerHTML = filt.map(item => {
+  _mShown = more ? _mShown + M_PAGE : M_PAGE;
+  const part = filt.slice(0, _mShown);
+  el.innerHTML = part.map(item => {
     const isLow  = item.min > 0 && item.qty <= item.min;
     const days   = item.daily > 0 ? Math.floor(item.qty / item.daily) : null;
     const dayStr = days !== null
@@ -943,7 +982,9 @@ function renderList() {
         </div>
       </div>
     </button>`;
-  }).join("");
+  }).join("") + (filt.length > _mShown
+    ? `<button onclick="renderList(true)" class="w-full bg-slate-800 text-indigo-300 font-black rounded-xl py-3 mt-1">แสดงเพิ่ม (เหลืออีก ${filt.length - _mShown} รายการ)</button>`
+    : "");
 }
 
 // ─────────────────────────────────────────────
@@ -1181,7 +1222,8 @@ async function confirmCrCount() {
     if (r.ok) {
       toast(`✅ ${successMsg}`);
       closeAction();
-      await loadData();
+      tgFlushSoon();
+      loadData({ silent: true });   // ข้อ 2: ไม่บังจอ ดึงใหม่เบื้องหลัง
     } else { toast(r.message || "บันทึกไม่สำเร็จ", "err"); }
   } catch(e) {
     setLoading(false); btn.disabled = false;
@@ -1295,7 +1337,12 @@ async function confirmAction() {
       const label = LABEL[aType] || `${qty}`;
       toast(`${label} ${sel.unit} · ${sel.name}`);
       closeAction();
-      await loadData();
+      // ข้อ 2: ยอดใหม่ที่เซิร์ฟเวอร์ยืนยันแล้ว → ปรับรายการบนจอทันที ไม่ต้องรอโหลดทั้งคลัง (ดึงใหม่เบื้องหลังตามหลัง)
+      const newQty = isCount ? Number(r.applied) : (r.slip && r.slip.balance != null ? Number(r.slip.balance) : NaN);
+      const it = data.find(d => d.sku === sel.sku);
+      if (it && !isNaN(newQty)) { it.qty = newQty; filt = filt.map(d => d.sku === sel.sku ? it : d); populateDropdown(); renderList(); }
+      tgFlushSoon();
+      loadData({ silent: true });
     } else { toast(r.message || "บันทึกไม่สำเร็จ", "err"); }
   } catch(e) {
     setLoading(false); btn.disabled = false;

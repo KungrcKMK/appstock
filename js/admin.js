@@ -192,6 +192,9 @@ async function adminLoadStatus() {
         ${row("เน็ตตอนนี้", chip(navigator.onLine, "ออนไลน์", "ออฟไลน์"))}
         ${row("โหลดข้อมูลครั้งล่าสุด", window._gasLastAt ? `${t(window._gasLastAt)} · ใช้เวลา ${window._gasLastMs} ms` : "ยังไม่ได้โหลดในรอบนี้")}
         ${row("งานค้างในเครื่องนี้", (q || f) ? `<span class="sq-chip warn">⏳ รอส่ง ${q} · ⚠️ ไม่ผ่าน ${f}</span>` : chip(true, "ไม่มี", ""))}
+        ${row("บันทึกครั้งล่าสุด (เวลาแยกส่วน)", window._gasLastWriteTiming
+          ? `เซิร์ฟเวอร์รวม ${window._gasLastWriteTiming.totalMs || 0} ms · รอล็อก ${window._gasLastWriteTiming.lockWaitMs || 0} ms · ต่อคิว Telegram ${window._gasLastWriteTiming.tgMs || 0} ms`
+          : "ยังไม่มีการบันทึกในรอบนี้")}
       </tbody></table></div></div>
     <div class="sq-card" style="margin-top:12px;"><div class="sq-card-head"><span class="sq-card-title">☁️ เซิร์ฟเวอร์ (Google Apps Script)</span>
       ${srv ? `<span class="sq-chip ok">ตอบใน ${srvMs} ms${srv.serverMs ? ` · เซิร์ฟเวอร์ใช้ ${srv.serverMs} ms` : ""}</span>` : `<span class="sq-chip crit">ติดต่อไม่ได้</span>`}</div>
@@ -204,6 +207,9 @@ async function adminLoadStatus() {
         ${row("Telegram ครั้งล่าสุด", tg ? `${t(tg.at)} · ${tg.sent ? chip(true, "ส่งสำเร็จ", "") : `<span class="sq-chip warn">ไม่ได้ส่ง: ${escapeHtml(tg.reason || "")}</span>`}` : "ยังไม่มีการส่งในรอบนี้")}
         ${row("Telegram ผิดพลาดล่าสุด", srv.lastTelegramError ? `${t(srv.lastTelegramError.at)} · ${escapeHtml(String(srv.lastTelegramError.detail))}` : chip(true, "ไม่มี", ""))}
         ${row("จำนวนแถวข้อมูล", Object.keys(srv.rowCounts || {}).map(k => `${escapeHtml(k)}: <b>${srv.rowCounts[k] == null ? "—" : srv.rowCounts[k].toLocaleString()}</b>`).join(" · "))}
+        ${row("cache วัตถุดิบ (เซิร์ฟเวอร์)", ["SQF", "MLM"].map(m => { const c = (srv.rawCache || {})[m]; if (!c) return `${m}: —`; const kb = c.meta ? (c.meta.bytes / 1024).toFixed(1) + " KB" : "?"; return `${m}: ${c.hot ? "พร้อม" : "ว่าง"} (${kb}${c.meta && !c.meta.cached ? " เกินเพดาน!" : ""})`; }).join(" · "))}
+        ${row("cache ห้องเย็น (เซิร์ฟเวอร์)", srv.crOverviewCached ? chip(true, "พร้อม", "") : "ว่าง — สร้างตอนเปิดห้องเย็นครั้งถัดไป")}
+        ${row("Telegram รอส่ง", srv.tgPending == null ? "—" : (srv.tgPending ? `<span class="sq-chip warn">${srv.tgPending} ข้อความ</span>` : chip(true, "ไม่มี", "")))}
         ` : row("ข้อผิดพลาด", `<span style="color:var(--sq-crit);font-weight:800;">${escapeHtml(srvErr)}</span>`)}
       </tbody></table></div></div>
     <p class="sq-note" style="margin-top:10px;">อ่านผล: "ตอบใน" มากแต่ "เซิร์ฟเวอร์ใช้" น้อย = ช้าที่ทางเดินของ Google (รอคิว/redirect) ไม่ใช่โปรแกรม · เซิร์ฟเวอร์ตอบช้า/ไม่ตอบ = ปัญหาที่ Google หรือเน็ต · รุ่นแอปไม่ตรงกับที่ deploy ล่าสุด = เครื่องนี้ยังไม่ได้อัปเดต (กด 🔄 อัปเดต) · งานค้างในเครื่องอื่นจะไม่เห็นจากที่นี่</p>`;

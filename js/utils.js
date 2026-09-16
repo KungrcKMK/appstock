@@ -10,6 +10,36 @@ function escapeJsAttr(v) { return escapeAttr(escapeJs(v)); }
 // บางจังหวะ Google ตอบเป็นหน้า HTML ("ไม่พบเพจ" 404 ที่ชั้น redirect / หน้าจำกัดการเรียก) แทน JSON
 // ไม่ใช่ข้อมูลพัง มักหายเองในไม่กี่วินาที — แปลงเป็นข้อความที่คนอ่านรู้เรื่องแทน "Unexpected token '<'"
 // (js/app.js ดัก fetch ให้ res.json() ของทุกคำขอไป GAS มาใช้ตัวนี้ — ทุกหน้าได้ประโยชน์โดยไม่ต้องแก้ทีละที่)
+// ── ข้อ 11: โหลดไลบรารีหนักเมื่อจะใช้ (Chart.js 206KB, สแกน QR 375KB, QRCode) ไม่ถ่วงตอนเปิดแอป ──
+// ไฟล์ยังอยู่ใน STATIC_ASSETS ของ sw.js → ออฟไลน์ก็โหลดได้จาก cache · เรียกซ้ำได้ คืน promise เดิม
+const _vendorSrc = { chart: "js/vendor/chart.umd.min.js", qrscan: "js/vendor/html5-qrcode.min.js", qrcode: "js/vendor/qrcode.min.js" };
+const _vendorLoaded = {};
+function loadVendor(name) {
+  if (_vendorLoaded[name]) return _vendorLoaded[name];
+  _vendorLoaded[name] = new Promise((resolve, reject) => {
+    const s = document.createElement("script");
+    s.src = _vendorSrc[name]; s.async = true;
+    s.onload = () => resolve();
+    s.onerror = () => { delete _vendorLoaded[name]; reject(new Error("โหลดไลบรารี " + name + " ไม่ได้")); };
+    document.head.appendChild(s);
+  });
+  return _vendorLoaded[name];
+}
+
+// ── ข้อ 1: บอกเซิร์ฟเวอร์ให้ส่งข้อความ Telegram ที่ต่อคิวไว้ — ยิงแล้วไม่รอ ไม่กระทบเวลารอของผู้ใช้ ──
+// (เซิร์ฟเวอร์ต่อคิวตอนบันทึกแล้วตอบทันที ตัวส่งจริงวิ่งในคำขอนี้ซึ่งไม่มีใครรอ) · รวมหลายการบันทึกใน 1.5 วิเป็นครั้งเดียว
+let _tgFlushTimer = null;
+function tgFlushSoon() {
+  if (_tgFlushTimer) return;
+  _tgFlushTimer = setTimeout(() => {
+    _tgFlushTimer = null;
+    try {
+      fetch(GAS_URL, { method: "POST", headers: { "Content-Type": "text/plain;charset=utf-8" },
+        body: JSON.stringify({ module: "SYSTEM", action: "TGFLUSH" }), keepalive: true }).catch(() => {});
+    } catch (e) {}
+  }, 1500);
+}
+
 async function gasJson(res) {
   const txt = await res.text();
   try { return JSON.parse(txt); }

@@ -24,11 +24,8 @@
   <!-- ข้อ 12 รายงานปรับปรุง: ทุก library เก็บในแอป ไม่พึ่ง CDN — ปิดแอปแล้วเปิดใหม่ตอนไม่มีเน็ตก็ยังใช้ได้ครบ
        CSS สร้างจาก Tailwind ด้วย `npm run build:css` (อ่าน class จาก index.html + js/) — แก้ class ใหม่ต้อง build ใหม่ -->
   <link rel="stylesheet" href="css/tw-desktop.css">
-  <script src="js/vendor/chart.umd.min.js"></script>
+  <!-- ข้อ 11 PERFORMANCE_REVIEW: Chart.js / html5-qrcode / qrcode โหลดตอนจะใช้ผ่าน loadVendor() ใน js/utils.js (ยัง precache ใน sw.js) -->
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Sarabun:wght@400;600;800&display=swap" rel="stylesheet">
-  <script src="js/vendor/html5-qrcode.min.js"></script>
-  <!-- qrcodejs เก็บไว้ในแอปเอง — เคยพึ่ง CDN แล้ว QR เงียบหายทั้งแอปตอนเน็ตมือถือเข้า CDN ไม่ได้ -->
-  <script src="js/vendor/qrcode.min.js"></script>
   <style>
     body { font-family: 'Sarabun', 'Inter', sans-serif; }
     .hide { display: none !important; }

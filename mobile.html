@@ -914,6 +914,7 @@ async function loadData(opts) {
       setTimeout(loadData, 4000);
       return;
     }
+    if (quiet) { const sF = $("mSub"); if (sF) sF.textContent = sF.textContent.replace("⏳ กำลังตรวจ...", "⚠️ ตรวจล่าสุดไม่ได้ (ของเดิม)"); }
     toast("โหลดไม่สำเร็จ: " + e.message, "err");
   }
 }

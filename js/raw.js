@@ -122,6 +122,12 @@ async function _rawLoadDataRun(startup, retry, opts, mod) {
       if (mod !== rawCurrentModule) return;
       return _rawLoadDataRun(startup, retry + 1, { silent: quiet }, mod);
     }
+    if (quiet && rawLastData.length) {
+      // มีข้อมูลบนจออยู่แล้ว (ของเดิม/จากเครื่อง) → คงไว้ แค่บอกว่าตรวจไม่ได้ — ไม่วาดซ้ำ ไม่เด้งแจ้งเตือนซ้ำ
+      rawSetDataAge("stale", window._rawDataAt);
+      showToast(err.gasHtml ? "⚠️ ตรวจข้อมูลล่าสุดไม่ได้ (Google ตอบไม่ปกติ) — แสดงข้อมูลเดิมไว้ก่อน" : "⚠️ ตรวจข้อมูลล่าสุดไม่ได้ (เชื่อมต่อไม่ได้) — แสดงข้อมูลเดิมไว้ก่อน", "warn", 5000);
+      return;
+    }
     // fetch fail → ลองใช้ข้อมูลเก่าจาก cache
     const cachedRaw = (() => { try { return JSON.parse(localStorage.getItem("cache_raw_" + mod) || "null"); } catch (e) { return null; } })();
     if (cachedRaw && cachedRaw.d) {
@@ -144,6 +150,8 @@ function rawSetDataAge(source, at) {
     ? `<span style="color:var(--sq-high);font-weight:800;">⚠️ ข้อมูลเก่าจาก ${t} (ออฟไลน์)</span>${pendTxt}`
     : source === "refreshing"
     ? `ข้อมูลเมื่อ ${t} · <span style="color:var(--sq-ink2);">⏳ กำลังตรวจข้อมูลล่าสุด…</span>${pendTxt}`
+    : source === "stale"
+    ? `ข้อมูลเมื่อ ${t} · <span style="color:var(--sq-high);font-weight:800;">⚠️ ตรวจข้อมูลล่าสุดไม่ได้ — แสดงของเดิมไว้ก่อน</span>${pendTxt}`
     : `อัปเดตล่าสุด ${t}${pendTxt}`;
 }
 
@@ -151,6 +159,7 @@ function rawSetDataAge(source, at) {
 function _rawApplyData(data, startup, source, at, opts = {}) {
   rawLastData = Array.isArray(data.materials) ? data.materials : [];
   window._rawDiscontinued = data.discontinued || [];
+  window._rawDataAt = at || Date.now();   // เวลาของข้อมูลที่อยู่บนจอ (ไว้ขึ้นป้ายเมื่อตรวจข้อมูลใหม่ไม่ได้)
   rawSetDataAge(source || "server", at);
   const inp = document.getElementById("rawAlertDaysInput");
   if (inp) inp.value = rawAlertDays;

@@ -46,7 +46,14 @@ const API_KEY = "";
         }
       }
     } catch (e) { /* interceptor พังก็ยัง fetch ปกติ */ }
-    return _origFetch(input, init);
+    const p = _origFetch(input, init);
+    // คำตอบจาก GAS: ให้ res.json() ผ่าน gasJson — Google ตอบเป็น HTML จะได้ข้อความที่อ่านรู้เรื่องทุกหน้า
+    try {
+      const urlR = typeof input === "string" ? input : (input && input.url) || "";
+      if (urlR.indexOf(GAS_URL) === 0 && typeof gasJson === "function")
+        return p.then(res => { try { res.json = () => gasJson(res); } catch (e) {} return res; });
+    } catch (e) {}
+    return p;
   };
 })();
 

@@ -103,7 +103,11 @@ function _maskNames(s) {
   return s.replace(new RegExp(sa, "gi"), _superAdminAlias());
 }
 
+var _reqT0 = 0;   // เวลาเริ่มประมวลผลคำขอนี้ — แนบ serverMs ให้หน้าสถานะระบบแยกได้ว่า "GAS ช้า" หรือ "ทางเดินของ Google ช้า"
 function jsonResponse(data) {
+  if (data && typeof data === "object" && !Array.isArray(data) && _reqT0) {
+    try { data.serverMs = Date.now() - _reqT0; } catch (e) {}
+  }
   return ContentService
     .createTextOutput(_maskNames(JSON.stringify(data)))
     .setMimeType(ContentService.MimeType.JSON);
@@ -678,6 +682,7 @@ function _rawCacheBust(module) {
 }
 
 function doGet(e) {
+  _reqT0 = Date.now();
   try {
     if (!_checkApiKey(e.parameter && e.parameter.k)) {
       return jsonResponse({ status: "error", message: "unauthorized" });
@@ -780,6 +785,7 @@ function sysStatus() {
 }
 
 function doPost(e) {
+  _reqT0 = Date.now();
   try {
     const data = JSON.parse(e.postData.contents);
     const module = (data.module || "MLM").toUpperCase();

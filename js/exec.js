@@ -42,9 +42,18 @@ async function loadExecDashboard() {
     // วาดหลังจาก canvas อยู่บนจอแล้ว (Chart.js วัดขนาดจากกล่องที่มองเห็น)
     void el.offsetHeight;
     execRenderCharts();
+    loadExecDashboard._retried = false;
   } catch(e) {
+    // Google สะดุดชั่วคราว (ตอบเป็นหน้า HTML) → ลองใหม่เองหนึ่งครั้ง ก่อนโชว์ข้อผิดพลาดพร้อมปุ่มลองใหม่
+    if (!loadExecDashboard._retried && navigator.onLine) {
+      loadExecDashboard._retried = true;
+      el.innerHTML = '<p class="sq-empty">⏳ เซิร์ฟเวอร์ตอบไม่ปกติ กำลังลองใหม่...</p>';
+      setTimeout(loadExecDashboard, 4000);
+      return;
+    }
     document.getElementById("execDashTimestamp").textContent = "โหลดไม่สำเร็จ";
-    el.innerHTML = `<div class="sq-card"><p class="sq-empty" style="color:var(--sq-crit);font-weight:700;">⚠️ โหลดข้อมูลไม่สำเร็จ: ${escapeHtml(e.message)}</p></div>`;
+    el.innerHTML = `<div class="sq-card"><p class="sq-empty" style="color:var(--sq-crit);font-weight:700;">⚠️ โหลดข้อมูลไม่สำเร็จ: ${escapeHtml(e.message)}</p>
+      <p style="text-align:center;margin-top:10px;"><button onclick="loadExecDashboard()" style="padding:9px 18px;border-radius:10px;border:1px solid var(--sq-line,#cfd8d2);background:#fff;font-weight:700;cursor:pointer;">🔄 ลองใหม่</button></p></div>`;
   }
 }
 

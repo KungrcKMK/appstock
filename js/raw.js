@@ -72,7 +72,7 @@ async function rawFetch(payload) {
 }
 
 let _rawSearchAcInit = false;
-async function rawLoadData(startup = false) {
+async function rawLoadData(startup = false, retry = 0) {
   // ข้อ 8: จับคลังไว้ตั้งแต่เริ่ม — ผู้ใช้สลับคลังระหว่างรอ คำตอบเก่าต้องไม่ไปโผล่/ไปเก็บ cache ผิดคลัง
   const mod = rawCurrentModule;
   const t0 = Date.now();
@@ -88,13 +88,20 @@ async function rawLoadData(startup = false) {
   } catch(err) {
     hideLoading();
     if (mod !== rawCurrentModule) return;
+    // Google สะดุดชั่วคราว (ตอบเป็นหน้า HTML / ยิงไม่ออก) → ลองใหม่อีกครั้งเดียวก่อนถอยไปใช้ข้อมูลเก่า
+    if (retry < 1 && navigator.onLine) {
+      showToast("⏳ เซิร์ฟเวอร์ตอบไม่ปกติ กำลังลองใหม่...", "warn", 4000);
+      await new Promise(r => setTimeout(r, 4000));
+      if (mod !== rawCurrentModule) return;
+      return rawLoadData(startup, retry + 1);
+    }
     // fetch fail → ลองใช้ข้อมูลเก่าจาก cache
     const cachedRaw = (() => { try { return JSON.parse(localStorage.getItem("cache_raw_" + mod) || "null"); } catch (e) { return null; } })();
     if (cachedRaw && cachedRaw.d) {
       _rawApplyData(cachedRaw.d, startup, "cache", cachedRaw.t);
-      showToast("⏳ แสดงข้อมูลเก่า (เชื่อมต่อไม่ได้)", "warn", 4000);
+      showToast(err.gasHtml ? "⏳ แสดงข้อมูลเก่า — Google ตอบไม่ปกติ ลองรีเฟรชอีกสักครู่" : "⏳ แสดงข้อมูลเก่า (เชื่อมต่อไม่ได้)", "warn", 5000);
     } else {
-      showToast("เชื่อมต่อฐานข้อมูลล้มเหลว ❌","error");
+      showToast(err.gasHtml ? err.message : "เชื่อมต่อฐานข้อมูลล้มเหลว ❌", "error", 6000);
     }
   }
 }

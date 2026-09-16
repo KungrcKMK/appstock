@@ -516,6 +516,18 @@ function setLoading(on, msg = "กำลังโหลด...") {
   on ? show("loading") : hide("loading");
 }
 
+// อ่านคำตอบจาก GAS ให้ปลอดภัย — Google ตอบเป็นหน้า HTML ("ไม่พบเพจ") บางจังหวะ ไม่ใช่ข้อมูลพัง (สำเนาจาก js/utils.js)
+async function gasJson(res) {
+  const txt = await res.text();
+  try { return JSON.parse(txt); }
+  catch (e) {
+    const err = new Error(/^\s*</.test(txt)
+      ? "Google ตอบเป็นหน้าเว็บแทนข้อมูล (เซิร์ฟเวอร์สะดุดชั่วคราว) — ลองใหม่อีกครั้งได้เลย"
+      : "คำตอบจากเซิร์ฟเวอร์อ่านไม่ได้");
+    err.gasHtml = true;
+    throw err;
+  }
+}
 async function gasPost(body) {
   const r = await fetch(GAS_URL, {
     method: "POST",
@@ -524,7 +536,7 @@ async function gasPost(body) {
     body: JSON.stringify({ ...body, sessionToken: localStorage.getItem("appstock_session") || undefined,
                            deviceName: "AppStock Mobile/" + (navigator.userAgent.slice(0,30)) })
   });
-  const j = await r.json();
+  const j = await gasJson(r);
   if (j && j.needLogin) mNeedLogin();
   return j;
 }
@@ -843,7 +855,7 @@ async function loadData() {
       data = Object.values(byBc).filter(i => i.qty > 0).sort((a,b) => a.name.localeCompare(b.name,"th"));
     } else {
       const res = await fetch(`${GAS_URL}?module=${mod}`);
-      const r   = await res.json();
+      const r   = await gasJson(res);
       setLoading(false);
       data = (r.materials || [])
         .filter(m => !m.Discontinued)
@@ -864,7 +876,18 @@ async function loadData() {
     renderList();
     const _age = $("mSub"); if (_age) _age.textContent = user + " · " + MOD_CFG[mod].sub + " · อัปเดต " + new Date().toLocaleTimeString("th-TH", { hour: "2-digit", minute: "2-digit" });
     toast("โหลดข้อมูลสำเร็จ · " + data.length + " รายการ");
-  } catch(e) { setLoading(false); toast("โหลดไม่สำเร็จ: " + e.message, "err"); }
+    loadData._retried = false;
+  } catch(e) {
+    setLoading(false);
+    // Google สะดุดชั่วคราว → ลองใหม่เองหนึ่งครั้งก่อนโชว์ข้อผิดพลาด
+    if (!loadData._retried && navigator.onLine) {
+      loadData._retried = true;
+      toast("⏳ เซิร์ฟเวอร์ตอบไม่ปกติ กำลังลองใหม่...", "err");
+      setTimeout(loadData, 4000);
+      return;
+    }
+    toast("โหลดไม่สำเร็จ: " + e.message, "err");
+  }
 }
 
 // ─────────────────────────────────────────────

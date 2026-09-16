@@ -6,6 +6,22 @@ function escapeAttr(v) { return escapeHtml(v); }
 // ต้อง escape สองชั้น: JS ก่อน แล้ว HTML attribute — escapeJs อย่างเดียว ชื่ออย่าง ถ้วย 8" จะทำ attribute ขาด
 function escapeJsAttr(v) { return escapeAttr(escapeJs(v)); }
 
+// ── อ่านคำตอบจาก GAS ให้ปลอดภัย ──
+// บางจังหวะ Google ตอบเป็นหน้า HTML ("ไม่พบเพจ" 404 ที่ชั้น redirect / หน้าจำกัดการเรียก) แทน JSON
+// ไม่ใช่ข้อมูลพัง มักหายเองในไม่กี่วินาที — แปลงเป็นข้อความที่คนอ่านรู้เรื่องแทน "Unexpected token '<'"
+// (js/app.js ดัก fetch ให้ res.json() ของทุกคำขอไป GAS มาใช้ตัวนี้ — ทุกหน้าได้ประโยชน์โดยไม่ต้องแก้ทีละที่)
+async function gasJson(res) {
+  const txt = await res.text();
+  try { return JSON.parse(txt); }
+  catch (e) {
+    const err = new Error(/^\s*</.test(txt)
+      ? "Google ตอบเป็นหน้าเว็บแทนข้อมูล (เซิร์ฟเวอร์สะดุดชั่วคราว) — ลองใหม่อีกครั้งได้เลย"
+      : "คำตอบจากเซิร์ฟเวอร์อ่านไม่ได้");
+    err.gasHtml = true;
+    throw err;
+  }
+}
+
 // ─────────────────────────────────────────────
 // POKA-YOKE: Double-submit guard
 // ใช้ครอบฟังก์ชัน async ที่ผูกกับปุ่ม เพื่อกันกดซ้ำ

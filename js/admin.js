@@ -194,7 +194,7 @@ async function adminLoadStatus() {
         ${row("งานค้างในเครื่องนี้", (q || f) ? `<span class="sq-chip warn">⏳ รอส่ง ${q} · ⚠️ ไม่ผ่าน ${f}</span>` : chip(true, "ไม่มี", ""))}
       </tbody></table></div></div>
     <div class="sq-card" style="margin-top:12px;"><div class="sq-card-head"><span class="sq-card-title">☁️ เซิร์ฟเวอร์ (Google Apps Script)</span>
-      ${srv ? `<span class="sq-chip ok">ตอบใน ${srvMs} ms</span>` : `<span class="sq-chip crit">ติดต่อไม่ได้</span>`}</div>
+      ${srv ? `<span class="sq-chip ok">ตอบใน ${srvMs} ms${srv.serverMs ? ` · เซิร์ฟเวอร์ใช้ ${srv.serverMs} ms` : ""}</span>` : `<span class="sq-chip crit">ติดต่อไม่ได้</span>`}</div>
       <div class="sq-tablewrap"><table class="sq-table"><tbody>
         ${srv ? `
         ${row("รุ่นโค้ดเซิร์ฟเวอร์", `<code>${escapeHtml(srv.gasVersion)}</code> · เขตเวลา ${escapeHtml(srv.timeZone)}`)}
@@ -206,7 +206,7 @@ async function adminLoadStatus() {
         ${row("จำนวนแถวข้อมูล", Object.keys(srv.rowCounts || {}).map(k => `${escapeHtml(k)}: <b>${srv.rowCounts[k] == null ? "—" : srv.rowCounts[k].toLocaleString()}</b>`).join(" · "))}
         ` : row("ข้อผิดพลาด", `<span style="color:var(--sq-crit);font-weight:800;">${escapeHtml(srvErr)}</span>`)}
       </tbody></table></div></div>
-    <p class="sq-note" style="margin-top:10px;">อ่านผล: เซิร์ฟเวอร์ตอบช้า/ไม่ตอบ = ปัญหาที่ Google หรือเน็ต · รุ่นแอปไม่ตรงกับที่ deploy ล่าสุด = เครื่องนี้ยังไม่ได้อัปเดต (กด 🔄 อัปเดต) · งานค้างในเครื่องอื่นจะไม่เห็นจากที่นี่</p>`;
+    <p class="sq-note" style="margin-top:10px;">อ่านผล: "ตอบใน" มากแต่ "เซิร์ฟเวอร์ใช้" น้อย = ช้าที่ทางเดินของ Google (รอคิว/redirect) ไม่ใช่โปรแกรม · เซิร์ฟเวอร์ตอบช้า/ไม่ตอบ = ปัญหาที่ Google หรือเน็ต · รุ่นแอปไม่ตรงกับที่ deploy ล่าสุด = เครื่องนี้ยังไม่ได้อัปเดต (กด 🔄 อัปเดต) · งานค้างในเครื่องอื่นจะไม่เห็นจากที่นี่</p>`;
 }
 
 async function loadUsers() {

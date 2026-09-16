@@ -143,11 +143,11 @@ async function adminReject(username, evt) {
 }
 
 function adminSwitchTab(tab) {
-  // manager เข้าได้เฉพาะแท็บ "คำขอ" — แท็บจัดการ Role สงวนไว้ให้ admin
+  // manager เข้าได้แท็บ "คำขอ" กับ "สถานะระบบ" (SYSSTATUS ฝั่ง GAS เปิดให้ manager ขึ้นไป) — แท็บจัดการ Role สงวนไว้ให้ admin
   const isAdmin = window._appIsAdmin !== false;
   const rolesTabBtn = document.getElementById("adminTab-roles");
   if (rolesTabBtn) rolesTabBtn.style.display = isAdmin ? "" : "none";
-  if (!isAdmin) tab = "pending";
+  if (!isAdmin && tab !== "status") tab = "pending";
 
   ["pending","roles","status"].forEach(t => {
     const btn  = document.getElementById("adminTab-" + t);

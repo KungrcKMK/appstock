@@ -136,7 +136,12 @@ function handleTokenExpired(res) {
   return false;
 }
 // พาไปหน้าเข้าระบบโดยเติมชื่อไว้ให้ · ไม่ล้างคิวออฟไลน์ (เข้าใหม่แล้วส่งต่อได้)
+let _reloginPending = false;
 function _forceRelogin() {
+  if (_reloginPending) return;
+  // อยู่หน้าเข้าระบบอยู่แล้ว (ไม่มีผู้ใช้ค้างในเครื่อง) → ไม่ reload ซ้ำ กันวนลูปตอนคิวออฟไลน์ยิงส่งเองก่อน login
+  if (!localStorage.getItem("unified_stock_user")) return;
+  _reloginPending = true;
   try { sessionStorage.setItem("appstock_prefill_user", localStorage.getItem("unified_stock_user") || ""); } catch (e) {}
   try { localStorage.removeItem("appstock_session"); sessionStorage.removeItem("appstock_admin_token"); } catch (e) {}
   ["unified_stock_user", "unified_stock_role"].forEach(k => localStorage.removeItem(k));

@@ -211,6 +211,8 @@ function _loginSuccess(user, role, adminToken) {
   localStorage.setItem("unified_stock_user", user);
   localStorage.setItem("unified_stock_role", role || "user");
   loadDevice();
+  // เข้าระบบใหม่แล้ว บัตรผ่านเปลี่ยน → งานที่ค้างเพราะ "รอเข้าสู่ระบบใหม่" ส่งต่อได้ทันที
+  if (typeof offlineCount === "function" && offlineCount()) setTimeout(() => offlineSync(), 800);
   // แสดงหน้าเลือกอุปกรณ์ทุกครั้งที่ Login (ไม่ข้ามแม้จะมี pref บันทึกไว้)
   showModePicker(user);
 }

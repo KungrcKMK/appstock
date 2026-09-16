@@ -168,14 +168,25 @@ function _offReleaseLock() {
 // ── ส่งคิวที่ค้าง — ทีละงานตามลำดับที่ทำจริง ──
 // เรียกซ้อนกันได้: ถ้ากำลังส่งอยู่ คืน promise ของรอบที่กำลังวิ่ง (ผู้เรียก await รอรอบนั้นจบได้จริง
 // แทนที่จะได้ค่าว่างกลับไปทันทีแล้วเข้าใจผิดว่าส่งเสร็จ)
-let _offSyncPromise = null;
+// ถ้ามีรอบกำลังวิ่งอยู่ (เช่น รอบอัตโนมัติที่เน็ตยังไม่กลับ) จะไม่ตอบว่างกลับไปทันที
+// แต่ต่อคิว "รอบถัดไป" ไว้หนึ่งรอบ ให้วิ่งหลังรอบปัจจุบันจบ — ผู้ใช้กด "ส่งเลย" หรือมีงานใหม่เข้ามา
+// ระหว่างส่ง จึงได้ลองส่งจริงเสมอ (รวมหลายคำขอเป็นรอบเดียว ไม่ยิงซ้ำเป็นสิบรอบตอนเน็ตล่ม)
+// บัตรผ่านใช้ไม่ได้ (needLogin): จำบัตรที่ใช้ไม่ได้ไว้ แล้ว "ไม่ยิงส่งอัตโนมัติซ้ำ" จนกว่าบัตรจะเปลี่ยน
+// (ผู้ใช้เข้าระบบใหม่) — กันวนลูป: โหลดหน้า → ส่งคิว → บัตรใช้ไม่ได้ → บังคับเข้าระบบใหม่ (reload) → โหลดหน้า → ...
+let _offLoginBlockedToken = null;
+function _offTokenNow() { return (typeof _offCfg.token === "function" ? _offCfg.token() : "") || ""; }
+let _offSyncPromise = null, _offSyncNext = null;
 function offlineSync(manual) {
-  if (_offSyncPromise) return _offSyncPromise;
+  if (_offSyncPromise) {
+    if (!_offSyncNext) _offSyncNext = _offSyncPromise.then(() => { _offSyncNext = null; return offlineSync(manual); });
+    return _offSyncNext;
+  }
   _offSyncPromise = _offSyncRun(manual).finally(() => { _offSyncPromise = null; });
   return _offSyncPromise;
 }
 async function _offSyncRun(manual) {
   if (!offlineCount()) { if (manual) _offCfg.onToast("ไม่มีงานค้าง", "success"); return; }
+  if (!manual && _offLoginBlockedToken !== null && _offTokenNow() === _offLoginBlockedToken) return; // รอเข้าสู่ระบบใหม่ก่อน
   if (!_offTakeLock()) { if (manual) _offCfg.onToast("อีกหน้าต่างหนึ่งกำลังส่งอยู่", "success"); return; }
   _offSyncing = true;
   let done = 0, failed = 0, needLogin = false;
@@ -199,6 +210,7 @@ async function _offSyncRun(manual) {
       if (r && r.needLogin) {
         // บัตรผ่านใช้ไม่ได้ — งานยังอยู่ในคิว เข้าระบบใหม่แล้วจะส่งต่อเอง (บัตรแนบตอนส่ง)
         needLogin = true;
+        _offLoginBlockedToken = _offTokenNow();
         _offPatchJob(job.opId, { error: "รอเข้าสู่ระบบใหม่" });
         break;
       }
@@ -206,6 +218,7 @@ async function _offSyncRun(manual) {
         _offPatchJob(job.opId, { tries: (job.tries || 0) + 1, error: r.message || "ระบบไม่ว่าง ลองใหม่" });
         break;
       }
+      _offLoginBlockedToken = null; // เซิร์ฟเวอร์รับบัตรแล้ว
       const ok = r && (r.status === "success" || r.ok === true || r.duplicate === true);
       if (!ok) {
         // เซิร์ฟเวอร์ตอบชัดว่าไม่ผ่าน (เช่น สต๊อกไม่พอ) — ส่งซ้ำก็ไม่ผ่าน เอาออกจากคิว เก็บไว้ให้คนดูครบทุกอย่าง

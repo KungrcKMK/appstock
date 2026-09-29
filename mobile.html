@@ -1043,7 +1043,7 @@ function populateDropdown() {
     const opt = document.createElement("option");
     opt.value = item.sku;
     const lowTag = (item.min > 0 && item.qty <= item.min) ? " ⚠️" : "";
-    opt.textContent = item.name + "  ·  " + item.qty + " " + item.unit + lowTag;
+    opt.textContent = item.name + "  ·  " + fmtNum(item.qty) + " " + item.unit + lowTag;
     sel.appendChild(opt);
   });
 }

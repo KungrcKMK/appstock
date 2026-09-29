@@ -1,0 +1,24 @@
+# AppStock — หลังบ้านบน Cloudflare Workers
+# deploy:  cd cloudflare/appstock-api && wrangler deploy
+# ความลับ (ไม่อยู่ในไฟล์นี้):  wrangler secret put MIRROR_KEY   ← กุญแจให้สคริปต์ฝั่ง Google ดึงสำเนาไปชีต
+name = "appstock-api"
+main = "src/index.js"
+compatibility_date = "2026-09-01"
+workers_dev = true
+
+[vars]
+APP_VERSION = "cf-2026-09-29"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "appstock"
+database_id = "00000000-0000-0000-0000-000000000000"
+
+# ที่เก็บไฟล์สำรองข้อมูล (JSON รายวัน + ตอนกดสำรองเอง)
+[[r2_buckets]]
+binding = "BACKUPS"
+bucket_name = "appstock-backups"
+
+# งานตามเวลา: ตัวเดียวทุก 5 นาที แล้วแจกงานตามเวลาไทยในโค้ด (src/system.js → ticks)
+[triggers]
+crons = ["*/5 * * * *"]

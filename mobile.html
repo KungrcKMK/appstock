@@ -620,6 +620,8 @@ const fmtNum = n => Number(n || 0).toLocaleString("en-US", { maximumFractionDigi
 // อ่านตัวเลขจากช่องกรอก (รับลูกน้ำที่คนพิมพ์มาด้วย) — ไม่ใช่ตัวเลข = NaN
 const numVal = v => { const s = String(v == null ? "" : v).replace(/,/g, "").trim(); return s === "" ? NaN : Number(s); };
 const escH = s => String(s == null ? "" : s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+// ค่าที่ไปอยู่ใน onclick="fn('...')" — escape แบบ JS ก่อน แล้วค่อย escape แบบ HTML ซ้อน
+const escJA = s => escH(String(s == null ? "" : s).replace(/\\/g, "\\\\").replace(/'/g, "\\'").replace(/"/g, '\\"').replace(/[\r\n]+/g, " "));
 
 // ของที่เครื่องนี้ทำรายการบ่อย + งานที่เคยเบิก — จำไว้ในเครื่อง ให้แตะเลือกแทนพิมพ์
 function mStoreGet(k, def) { try { const v = JSON.parse(localStorage.getItem(k) || "null"); return v == null ? def : v; } catch (e) { return def; } }
@@ -854,6 +856,11 @@ const MOD_CFG = {
 async function selectModule(m) {
   if (!m || !MOD_CFG[m]) return;
   mod = m;
+  mListFilter = "all";
+  if ($("mSearch")) $("mSearch").value = "";
+  // 📈 ต้องสั่ง ใช้กับคลังวัตถุดิบเท่านั้น (ห้องเย็นนับเป็นล็อต ไม่มีอัตราเบิก)
+  if ($("navPlan")) $("navPlan").style.display = (m === "COLDROOM") ? "none" : "";
+  planSetBadge(null);
   localStorage.setItem("appstock_last_mod", m);
   const cfg = MOD_CFG[m];
   $("mTitle").textContent = cfg.title;
@@ -913,7 +920,7 @@ async function loadData(opts) {
   if (!quiet && _mShownMod !== mod) {
     const c = mCacheGet("list_" + mod);
     if (c && c.d.length) {
-      data = c.d; filt = [...data]; populateDropdown(); renderList();
+      data = c.d; populateDropdown(); _filterListNow();
       const s0 = $("mSub"); if (s0) s0.textContent = user + " · " + MOD_CFG[mod].sub + " · ข้อมูลเมื่อ " + new Date(c.t).toLocaleTimeString("th-TH", { hour: "2-digit", minute: "2-digit" }) + " · ⏳ กำลังตรวจ...";
       quiet = true;
     }
@@ -1074,7 +1081,7 @@ function renderList(more) {
     const dayStr = days !== null
       ? `<span class="font-black text-xs" style="color:${daysColor(days)}">พอ ${fmtNum(days)} วัน</span>` : "";
     return `
-    <button onclick='pickItem("${escH(item.sku)}")'
+    <button onclick="pickItem('${escJA(item.sku)}')"
       class="item-card w-full bg-slate-800 rounded-xl p-3 text-left border-2 ${isLow ? "border-red-500/60" : "border-transparent"}">
       <div class="flex items-center justify-between gap-3">
         <div class="flex-1 min-w-0">

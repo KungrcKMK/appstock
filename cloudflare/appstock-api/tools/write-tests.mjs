@@ -117,13 +117,15 @@ console.log("5) เพิ่ม / แก้ไข / จุดสั่งซื�
   const d1 = await raw("DELETE", { sku });
   const g1 = await get("SQF");
   T("ยกเลิกใช้ → ย้ายไปรายการเลิกใช้", d1.status === "success" && g1.discontinued.some((x) => x.SKU === sku) && !g1.materials.some((x) => x.SKU === sku));
+  // ชื่อไม่ซ้ำทุกรอบ — รันชุดทดสอบซ้ำกับฐานข้อมูลเดิมได้ (ชื่อตายตัวจะถูก "ข้าม" ตั้งแต่รอบที่สอง)
+  const impName = "นำเข้าใหม่ " + Date.now();
   const i1 = await raw("IMPORT", { mode: "skip", rows: [
-    { name: "นำเข้าใหม่ A", unit: "ถุง", qty: "1,200", min: 5 }, { name: "นำเข้าใหม่ A", unit: "ถุง" }, { name: "", unit: "x" },
+    { name: impName, unit: "ถุง", qty: "1,200", min: 5 }, { name: impName, unit: "ถุง" }, { name: "", unit: "x" },
     { name: g0.materials[0].Name, qty: 1 }, { name: "ไม่มีหน่วย" }, { name: "ติดลบ", unit: "ถุง", qty: -1 } ] });
   T("นำเข้า: เพิ่ม 1 · ข้าม 1 · ผิดพลาด 4", i1.status === "success" && i1.summary.created === 1 && i1.summary.skipped === 1 && i1.summary.error === 4, i1.summary);
-  const newSku = i1.results.find((r) => r.status === "created").sku;
+  const newSku = (i1.results.find((r) => r.status === "created") || {}).sku;
   T("ของที่นำเข้ามีในคลัง ยอด 1200", (await qtyOf("SQF", newSku)) === 1200);
-  const i2 = await raw("IMPORT", { mode: "overwrite", rows: [{ name: "นำเข้าใหม่ A", qty: 50 }] });
+  const i2 = await raw("IMPORT", { mode: "overwrite", rows: [{ name: impName, qty: 50 }] });
   T("นำเข้าแบบทับ: อัปเดตเฉพาะช่องที่กรอก", i2.summary.updated === 1 && (await qtyOf("SQF", newSku)) === 50 && (await matOf("SQF", newSku)).Min === 5, i2.summary);
 }
 

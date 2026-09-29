@@ -420,6 +420,28 @@
 </div>
 
 <!-- ══════════════════════════════════════════
+     📈 ต้องสั่ง — วัตถุดิบตัวไหนจะหมดก่อนของมาถึง
+     ตัวเลขคิดที่หลังบ้าน (action USAGEPLAN) ชุดเดียวกับหน้าคอมและข้อความ Telegram ตอนเช้า
+══════════════════════════════════════════ -->
+<div id="planSheet" class="hidden fixed inset-0 z-[700] bg-slate-950 flex flex-col">
+  <div class="flex items-center justify-between gap-3 px-4 py-3 border-b border-slate-800"
+       style="padding-top:calc(env(safe-area-inset-top,0px) + 12px)">
+    <div class="min-w-0">
+      <div class="text-lg font-black text-indigo-300">📈 ต้องสั่ง</div>
+      <div id="planSub" class="text-xs text-slate-500 font-bold truncate"></div>
+    </div>
+    <button onclick="closePlan()" class="btn-tap flex-shrink-0 bg-slate-800 text-slate-300 px-5 py-3 rounded-2xl text-sm font-black">✕ ปิด</button>
+  </div>
+  <div id="planTiles" class="flex gap-2 px-3 py-2.5 overflow-x-auto flex-shrink-0"></div>
+  <div id="planList" class="flex-1 overflow-y-auto px-3 pb-4 space-y-2"></div>
+  <div class="flex-shrink-0 px-3 pt-2 border-t border-slate-800" style="padding-bottom:max(12px,env(safe-area-inset-bottom))">
+    <button id="planCopyBtn" onclick="planCopy()" class="btn-tap w-full bg-indigo-600 text-white py-3.5 rounded-2xl font-black text-base">
+      📋 คัดลอกรายการสั่ง
+    </button>
+  </div>
+</div>
+
+<!-- ══════════════════════════════════════════
      แชร์แอปให้เพื่อนพนักงาน (ลิงก์ + QR)
 ══════════════════════════════════════════ -->
 <div id="shareSheet" class="hidden fixed inset-0 z-[700] bg-black/80 flex items-end justify-center p-3">

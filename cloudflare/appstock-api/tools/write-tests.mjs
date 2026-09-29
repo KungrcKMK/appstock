@@ -273,6 +273,11 @@ console.log("9) งานระบบ");
   T("ส่งออกโดยไม่มีสิทธิ์ → ปฏิเสธ", (await post({ module: "SYSTEM", action: "EXPORT", sessionToken: tok })).status === "error");
   const al = await sys("getActivityLog", {});
   T("ความเคลื่อนไหวข้ามคลัง เรียงล่าสุดก่อน", al.ok && al.list.length > 0 && al.list.length <= 200);
+  // สำเนาลงชีต: เครื่องทดสอบไม่มีกุญแจ → ต้อง "ไม่สั่ง" (ข้อมูลทดสอบห้ามไปถึง Google)
+  T("สถานะระบบบอกว่าเครื่องนี้ไม่ได้ตั้งปลายทางสำเนา", st.mirrorConfigured === false && "lastMirror" in st, [st.mirrorConfigured, st.lastMirror]);
+  T("ผู้ใช้ทั่วไปสั่งอัปเดตสำเนาไม่ได้", (await post({ module: "SYSTEM", action: "MIRRORPUSH", sessionToken: tok })).status === "error");
+  const mp = await post({ module: "SYSTEM", action: "MIRRORPUSH", sessionToken: atok });
+  T("ไม่มีกุญแจ → ไม่ยิงออกไปไหน ตอบว่ายังไม่ได้ตั้งค่า", mp.ok === false && mp.skipped === true && /ยังไม่ได้ตั้งค่า/.test(mp.message || ""), mp);
   const mh = await post({ module: "SYSTEM", action: "getMyHistory", payload: { username: ADMIN }, sessionToken: tok });
   T("ประวัติของฉัน: ใช้ชื่อจากบัตร ดูของคนอื่นไม่ได้", mh.ok && mh.username === USER, mh.username);
   const lo = await post({ module: "SYSTEM", action: "logoutAdmin", payload: { adminToken: vtok } });

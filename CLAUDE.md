@@ -6,7 +6,7 @@
 ## สถาปัตยกรรมย่อ 1 บรรทัด
 
 frontend (GitHub Pages, vanilla JS) → Cloudflare Worker (`cloudflare/appstock-api/`) → D1 (SQLite)
-· Google Sheets เดิมเป็น **สำเนาอ่านอย่างเดียว** ที่ `gas_code.js` ดึงมาลงเป็นรอบ (ย้ายเมื่อ 2026-09-29)
+· Google Sheets เดิมเป็น **สำเนาอ่านอย่างเดียว** — Worker สั่งให้ `gas_code.js` ดึงมาลงทุก 15 นาที ไม่ต้องตั้ง trigger (ย้ายเมื่อ 2026-09-29)
 
 ## ⚠️ กับดัก 9 ข้อ — เคยพลาดมาแล้วทุกข้อ
 

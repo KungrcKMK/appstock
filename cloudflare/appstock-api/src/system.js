@@ -1,6 +1,6 @@
 // งานระบบ: สถานะ · ความเคลื่อนไหวข้ามคลัง · ประวัติของฉัน · แจ้งเตือนหมดอายุ · สำรองข้อมูล · ส่งออกไปชีต · งานตามเวลา
 // (วิเคราะห์การเบิก/วางแผนสั่งซื้ออยู่ที่ plan.js)
-import { all, first, run, kvGet, kvPut, claim, nowIso, fmtTH, dayTH, formatCellDate, thaiMidnightMs, superAdminName, tgSettings, tgSendRaw,
+import { all, first, run, kvGet, kvPut, kvDel, claim, sysLogOnce, nowIso, fmtTH, dayTH, formatCellDate, thaiMidnightMs, superAdminName, tgSettings, tgSendRaw,
          tgFlushQueue, tgPendingCount, sysLog, sysLast, TZ_MS, DAY_MS } from "./lib.js";
 import { getTokenData, verifyAdminToken } from "./auth.js";
 import { archiveOldStock } from "./cold.js";
@@ -32,6 +32,8 @@ export async function sysStatus(c) {
     lastTelegram: tg,
     lastTelegramError: await sysLast(c, "telegram-error"),
     lastCron: await kvGet(c, "cron_last"),
+    lastMirror: await mirrorLast(c),
+    mirrorConfigured: !!(c.env.MIRROR_URL && c.env.MIRROR_KEY),
     rowCounts: counts,
     readMs: Date.now() - t0,
   };
@@ -197,6 +199,53 @@ export async function backupAll(c, label, user) {
 }
 export const rmBackup = (c, data, module) => backupAll(c, module, data.user);
 
+// ───────────── สำเนาลง Google Sheets — Worker เป็นคนสั่ง ─────────────
+// เดิมต้องให้เจ้าของตั้ง time trigger `mirrorFromCloud` ใน Apps Script เอง → เปลี่ยนเป็นงานตามเวลาของ Worker ยิงไปสั่ง
+// สคริปต์ฝั่ง Google (action MIRRORNOW) แล้วสคริปต์นั้นดึงข้อมูลกลับมาจาก Worker (action EXPORT) ไปเขียนลงชีต
+//   · ข้อมูลไม่เปลี่ยน = ไม่สั่ง (ประหยัดโควตาฝั่ง Google) แต่อย่างช้าทุก 1 ชั่วโมงสั่งหนึ่งครั้ง กันพลาดการเปลี่ยนที่ลายเซ็นมองไม่เห็น
+//   · เครื่องทดสอบไม่มี MIRROR_KEY จึงไม่สั่ง — และต่อให้สั่ง สคริปต์ก็ดึงจากเซิร์ฟเวอร์จริงเสมอ ข้อมูลทดสอบไม่มีทางลงชีต
+const MIRROR_MAX_AGE_MS = 60 * 60000;
+async function mirrorSig(c) {
+  const r = await first(c, "SELECT " +
+    "(SELECT COALESCE(MAX(id), 0) FROM history) AS h, (SELECT COALESCE(MAX(id), 0) FROM cr_lot_history) AS l, " +
+    "(SELECT COUNT(*) || ':' || COALESCE(SUM(qty), 0) || ':' || COALESCE(SUM(min), 0) || ':' || COALESCE(SUM(discontinued), 0) FROM materials) AS m, " +
+    "(SELECT COUNT(*) || ':' || COALESCE(SUM(qty), 0) || ':' || COALESCE(SUM(archived), 0) FROM cr_stock) AS s, " +
+    "(SELECT COUNT(*) FROM cr_products) AS p, (SELECT COUNT(*) FROM bom) AS b, (SELECT COUNT(*) FROM users) AS u, (SELECT COUNT(*) FROM pending_users) AS pu, " +
+    "(SELECT COALESCE(MAX(id), 0) FROM work_orders) AS w, (SELECT COALESCE(MAX(id), 0) FROM delivery_notes) AS d, (SELECT COALESCE(MAX(id), 0) FROM stock_in) AS si");
+  return r ? Object.keys(r).map((k) => r[k]).join("|") : "";
+}
+async function mirrorLast(c) {
+  try { const v = await kvGet(c, "mirror_last"); return v ? JSON.parse(v) : null; } catch (e) { return null; }
+}
+export async function mirrorPush(c, opts) {
+  const o = opts || {};
+  const url = String(c.env.MIRROR_URL || "").trim(), key = String(c.env.MIRROR_KEY || "").trim();
+  if (!url || !key) return { ok: false, status: "error", skipped: true, message: "ยังไม่ได้ตั้งค่าปลายทางสำเนา" };
+  let sig = "";
+  try { sig = await mirrorSig(c); } catch (e) {}
+  const last = await mirrorLast(c);
+  if (!o.force && last && last.ok && sig && last.sig === sig && Date.now() - Number(last.atMs || 0) < MIRROR_MAX_AGE_MS)
+    return { ok: true, status: "success", skipped: true, reason: "unchanged", last };
+  if (!(await claim(c, "mirror_running", 300))) return { ok: true, status: "success", skipped: true, reason: "running", last };
+  const t0 = Date.now();
+  let res;
+  try {
+    const resp = await fetch(url, { method: "POST", redirect: "follow", headers: { "content-type": "text/plain;charset=utf-8" }, body: JSON.stringify({ action: "MIRRORNOW", key }) });
+    const txt = await resp.text();
+    try { res = JSON.parse(txt); } catch (e) { res = { ok: false, message: "Google ตอบไม่ใช่ข้อมูล (HTTP " + resp.status + ")" }; }
+  } catch (e) { res = { ok: false, message: String((e && e.message) || e) }; }
+  finally { try { await kvDel(c, "mirror_running"); } catch (e2) {} }
+  // สคริปต์ฝั่ง Google กำลังทำรอบก่อนหน้าอยู่ = ไม่ใช่ความผิดพลาด แค่ยังไม่ได้เขียนรอบนี้
+  const busy = !!(res && res.ok && res.skipped);
+  const rec = { atMs: Date.now(), at: nowIso(), ok: !!(res && res.ok) && !busy, busy, ms: Date.now() - t0, sig: busy ? "" : sig, via: o.via || "",
+                message: String((res && res.message) || ""), rows: (res && res.rows) || null };
+  if (!busy) await kvPut(c, "mirror_last", JSON.stringify(rec), 90 * 86400);
+  if (!rec.ok && !busy) await sysLogOnce(c, "mirror-error", rec.message, 3600);
+  return { ok: rec.ok || busy, status: rec.ok || busy ? "success" : "error", message: busy ? "กำลังอัปเดตอยู่แล้ว" : rec.message, last: rec };
+}
+/** action MIRRORPUSH — กดอัปเดตสำเนาเดี๋ยวนั้นจากหน้าสถานะระบบ (manager ขึ้นไป) */
+export const mirrorPushNow = (c, p, d) => mirrorPush(c, { force: true, via: (d && d.user) || c.user || "manual" });
+
 // ───────────── งานตามเวลา (Cron ทุก 5 นาที → แจกงานตามช่วงเวลาไทย) ─────────────
 export async function ticks(c, via) {
   const th = new Date(Date.now() + TZ_MS);
@@ -212,6 +261,10 @@ export async function ticks(c, via) {
   // อาทิตย์ 02:00–02:59: เก็บถาวรล็อตที่หมดแล้ว
   if (dow === 0 && hh === 2 && await claim(c, "tick_archive_" + day, 2 * 86400)) {
     try { await archiveOldStock(c, {}); } catch (e) { await sysLog(c, "cron-error", "archiveOldStock: " + e, "-", "error"); }
+  }
+  // ทุก 15 นาที: สั่งสำเนาลง Google Sheets (ข้ามเองถ้าข้อมูลไม่เปลี่ยน) — ไว้ท้ายๆ เพราะรอ Google นานสุด
+  if (await claim(c, "tick_mirror_" + Math.floor(Date.now() / (15 * 60000)), 1800)) {
+    try { await mirrorPush(c, { via: "cron" }); } catch (e) { await sysLogOnce(c, "mirror-error", String(e), 3600); }
   }
   // ชั่วโมงละครั้ง: ล้างของหมดอายุ
   if (await claim(c, "tick_purge_" + day + "_" + hh, 7200)) {

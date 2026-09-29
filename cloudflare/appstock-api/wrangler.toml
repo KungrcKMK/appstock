@@ -8,6 +8,8 @@ workers_dev = true
 
 [vars]
 APP_VERSION = "cf-2026-09-29"
+# ปลายทางสำเนาลง Google Sheets (สคริปต์ฝั่ง Google — action MIRRORNOW) · ว่าง = ไม่สั่งสำเนา
+MIRROR_URL = "https://script.google.com/macros/s/AKfycbx72vWVvUgaOgZEnzAc8ltaV-a7Rfx_CL9DK1c-B5nAIOxtrlnbi8_b6bmfnDeAZ_xeaw/exec"
 
 [[d1_databases]]
 binding = "DB"

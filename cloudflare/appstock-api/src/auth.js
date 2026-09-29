@@ -47,7 +47,7 @@ export const WRITE_MIN_ROLE = {
   saveAlertSettings: "admin", saveBom: "manager", deleteBom: "manager",
   submitDelivery: "user", submitStockIn: "user", reviewStockIn: "user",
   SYSSTATUS: "manager", EXPORT: "admin",
-  PLANSET: "manager", PLANDIGEST: "manager",
+  PLANSET: "manager", PLANDIGEST: "manager", MIRRORPUSH: "manager",
 };
 export async function authGate(c, action, data, payload) {
   const need = WRITE_MIN_ROLE[action];

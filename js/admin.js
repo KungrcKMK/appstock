@@ -161,6 +161,19 @@ function adminSwitchTab(tab) {
   if (tab === "status")  adminLoadStatus();
 }
 
+// กดให้เซิร์ฟเวอร์สั่ง Google อัปเดตสำเนาในชีตเดี๋ยวนั้น (ปกติทำเองทุก 15 นาที) — Google ใช้เวลาเขียนราว 10–40 วินาที
+async function adminMirrorNow(btn) {
+  if (btn) { btn.disabled = true; btn.textContent = "⏳ กำลังอัปเดต… (ราวครึ่งนาที)"; }
+  try {
+    const r = await (await fetch(GAS_URL, { method: "POST", headers: { "Content-Type": "text/plain;charset=utf-8" },
+      body: JSON.stringify({ module: "SYSTEM", action: "MIRRORPUSH" }) })).json();
+    if (handleTokenExpired(r)) return;
+    if (r && r.ok) showToast(r.last && r.last.busy ? "กำลังอัปเดตอยู่แล้ว รอสักครู่" : "อัปเดตสำเนาใน Google Sheets แล้ว ✅", "success");
+    else showToast("อัปเดตสำเนาไม่สำเร็จ: " + ((r && r.message) || "ไม่ได้รับคำตอบ"), "error", 6000);
+  } catch (e) { showToast("อัปเดตสำเนาไม่สำเร็จ: " + (e.message || ""), "error", 6000); }
+  adminLoadStatus();
+}
+
 // ── ข้อ 22: สถานะระบบ — แยกให้ออกว่าปัญหาอยู่ที่เน็ต ข้อมูล หรือโปรแกรม ──
 async function adminLoadStatus() {
   const el = document.getElementById("adminStatusBody");
@@ -185,6 +198,15 @@ async function adminLoadStatus() {
   const row = (k, v, cls) => `<tr><td style="width:42%;color:var(--sq-muted);font-weight:700;">${k}</td><td class="${cls || ""}">${v}</td></tr>`;
   const chip = (ok, yes, no) => `<span class="sq-chip ${ok ? "ok" : "crit"}">${ok ? yes : no}</span>`;
   const tg = srv && srv.lastTelegram;
+  // สำเนาลง Google Sheets — เซิร์ฟเวอร์สั่งเองทุก 15 นาทีเมื่อข้อมูลเปลี่ยน (อย่างช้าชั่วโมงละครั้ง)
+  const mr = srv && srv.lastMirror;
+  const mirrorCell = !srv ? "" : !srv.mirrorConfigured
+    ? '<span class="sq-chip warn">ยังไม่ได้ตั้งค่าปลายทาง</span>'
+    : (mr
+        ? `${t(mr.at)} · ${mr.ok ? chip(true, "สำเร็จ", "") : `<span class="sq-chip crit">ไม่สำเร็จ: ${escapeHtml(mr.message || "")}</span>`}
+           <div class="sq-meter-note">ใช้เวลา ${Math.round((mr.ms || 0) / 100) / 10} วินาที${mr.rows ? " · " + Object.keys(mr.rows).length + " แท็บ" : ""} · ชีตเป็นสำเนาอ่านอย่างเดียว แก้ในชีตไม่มีผลกับระบบ</div>`
+        : '<span class="sq-chip warn">ยังไม่เคยสำเนา</span>')
+      + ` <button class="sq-btn sq-btn-sm" style="margin-top:4px;" onclick="adminMirrorNow(this)">🔄 อัปเดตสำเนาเดี๋ยวนี้</button>`;
   el.innerHTML = `
     <div class="sq-card"><div class="sq-card-head"><span class="sq-card-title">🖥️ หน้าจอ (เครื่องนี้)</span></div>
       <div class="sq-tablewrap"><table class="sq-table"><tbody>
@@ -204,6 +226,7 @@ async function adminLoadStatus() {
         ${row("เวลาเซิร์ฟเวอร์", t(srv.serverTime))}
         ${row("บัญชีเจ้าของระบบใน Config", chip(srv.superAdminConfigured, "ตั้งไว้แล้ว", "⚠️ ไม่มี — เกราะ super admin ปิดอยู่"))}
         ${row("สำรองข้อมูลล่าสุด", srv.lastBackup ? `${t(srv.lastBackup.at)} · ${escapeHtml(String(srv.lastBackup.result))}<div class="sq-meter-note">${escapeHtml(String(srv.lastBackup.detail || "").split(" | ")[0])}</div>` : '<span class="sq-chip warn">ยังไม่มีบันทึก</span>')}
+        ${row("สำเนาลง Google Sheets", mirrorCell)}
         ${row("Telegram ครั้งล่าสุด", tg ? `${t(tg.at)} · ${tg.sent ? chip(true, "ส่งสำเร็จ", "") : `<span class="sq-chip warn">ไม่ได้ส่ง: ${escapeHtml(tg.reason || "")}</span>`}` : "ยังไม่มีการส่งในรอบนี้")}
         ${row("Telegram ผิดพลาดล่าสุด", srv.lastTelegramError ? `${t(srv.lastTelegramError.at)} · ${escapeHtml(String(srv.lastTelegramError.detail))}` : chip(true, "ไม่มี", ""))}
         ${row("จำนวนแถวข้อมูล", Object.keys(srv.rowCounts || {}).map(k => `${escapeHtml(k)}: <b>${srv.rowCounts[k] == null ? "—" : srv.rowCounts[k].toLocaleString()}</b>`).join(" · "))}

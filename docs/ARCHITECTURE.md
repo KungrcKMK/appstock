@@ -15,11 +15,11 @@
 Cloudflare Worker "appstock-api" (cloudflare/appstock-api/src/ ~2,300 บรรทัด, deploy ด้วย wrangler)
    │   GET  ?module=SQF|MLM  = อ่านวัตถุดิบ
    │   POST {module, action, ...} = ทุกอย่างที่เหลือ (src/index.js แจกงานตาม module/action)
-   │   cron ทุก 5 นาที = ส่ง Telegram ที่ค้าง · 08:00 แจ้งหมดอายุ + สำรองลง R2 · อาทิตย์ 02:00 เก็บล็อตเก่า
+   │   cron ทุก 5 นาที = ส่ง Telegram ที่ค้าง · ทุก 15 นาทีสั่งสำเนาลงชีต · 08:00 แจ้งหมดอายุ + สำรองลง R2 + สรุปที่ต้องสั่ง · อาทิตย์ 02:00 เก็บล็อตเก่า
    ▼
 D1 "appstock" (SQLite, 16 ตาราง — โครงใน cloudflare/appstock-api/schema.sql)
    │
-   └─▶ Google Sheets เดิม = สำเนาอ่านอย่างเดียว (gas_code.js: mirrorFromCloud ดึงมาลงเป็นรอบ)
+   └─▶ Google Sheets เดิม = สำเนาอ่านอย่างเดียว (Worker สั่ง → gas_code.js ดึงข้อมูลมาเขียนลงชีต)
 ```
 
 **สัญญา request/response เหมือนสมัย GAS ทุกตัวอักษร** (key ในคำตอบ = หัวคอลัมน์ชีตเดิม เช่น `SKU`, `Name`, `Qty`)
@@ -102,7 +102,13 @@ D1 "appstock" (SQLite, 16 ตาราง — โครงใน cloudflare/apps
 `gas_code.js` → `mirrorFromCloud()` เรียก action `EXPORT` ของ Worker ด้วยกุญแจ `MIRROR_KEY`
 (Worker: `wrangler secret` · GAS: Script Properties — **ไม่มีในโค้ด**) แล้วเขียนทับทุกแท็บ
 · ข้อมูลที่ส่งไปไม่มีรหัสผ่าน/ค่าลับ (`exportSheets(full=false)`) · ข้อความขึ้นต้น `= + - @` ถูกเติม `'` กันชีตตีความเป็นคำสั่ง
-· **แก้ในชีตไม่มีผลกับระบบ** และถูกเขียนทับรอบถัดไป · ต้องตั้ง time trigger `mirrorFromCloud` เอง (15–30 นาที)
+· **แก้ในชีตไม่มีผลกับระบบ** และถูกเขียนทับรอบถัดไป
+
+**ใครเป็นคนสั่ง:** งานตามเวลาของ Worker (`ticks` → `mirrorPush` ใน src/system.js) ยิงไปที่สคริปต์ฝั่ง Google (`MIRROR_URL` ใน wrangler.toml, action `MIRRORNOW`)
+ทุก 15 นาที — **ไม่ต้องตั้ง time trigger ใน Apps Script** (ตั้ง `mirrorFromCloud` ซ้อนไว้ก็ไม่เสียหาย มีล็อกกันชนกัน)
+· ข้ามรอบเมื่อข้อมูลไม่เปลี่ยน (`mirrorSig` เทียบกับรอบก่อน) แต่อย่างช้าชั่วโมงละครั้งสั่งหนึ่งครั้ง
+· ผลรอบล่าสุดเก็บใน `kv` key `mirror_last` → แท็บ "สถานะระบบ" แสดงเวลา/ผล และมีปุ่มอัปเดตเดี๋ยวนี้ (action `MIRRORPUSH`, manager ขึ้นไป)
+· เครื่องทดสอบไม่มี `MIRROR_KEY` จึงไม่สั่ง — และสคริปต์ฝั่ง Google ดึงจากเซิร์ฟเวอร์จริงเสมอ ข้อมูลทดสอบไม่มีทางลงชีต
 
 ### สำรองข้อมูล
 cron 08:00 (เวลาไทย) → `backupAll` เขียน JSON ทั้งฐานข้อมูลลง R2 `appstock-backups` · กดเองได้จากหน้า Admin (action `BACKUP`)

@@ -43,6 +43,7 @@ const SYSTEM = {
   getActivityLog: (c, p) => S.getActivityLog(c, p),
   getMyHistory: (c, p, d) => S.getMyHistory(c, p, d),
   SYSSTATUS: (c) => S.sysStatus(c),
+  MIRRORPUSH: (c, p, d) => S.mirrorPushNow(c, p, d),
   TGFLUSH: (c) => tgFlushQueue(c),
   EXPORT: (c, p) => S.exportSheets(c, false, Number(p.maxHistory) || 5000),
   submitDelivery: (c, p) => C.submitDelivery(c, p),

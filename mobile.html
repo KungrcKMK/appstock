@@ -972,9 +972,9 @@ async function loadData(opts) {
     data = fresh;
     mCacheSet("list_" + mod, data);
     _mShownMod = mod;
-    filt = [...data];
     populateDropdown();
-    renderList();
+    _filterListNow();        // คงตัวกรอง/คำค้นที่เลือกไว้ ไม่เด้งกลับไป "ทั้งหมด" ทุกครั้งที่รีเฟรช
+    planRefreshBadge();      // ป้ายจำนวนที่ต้องสั่ง — ดึงเบื้องหลัง ไม่ถ่วงรายการ
     const _age = $("mSub"); if (_age) _age.textContent = user + " · " + MOD_CFG[mod].sub + " · อัปเดต " + new Date().toLocaleTimeString("th-TH", { hour: "2-digit", minute: "2-digit" });
     if (!quiet) toast("โหลดข้อมูลสำเร็จ · " + data.length + " รายการ");
     loadData._retried = false;

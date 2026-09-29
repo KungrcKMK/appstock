@@ -165,7 +165,7 @@ export async function planCompute(c, module, over) {
       else if (orderInDays <= SOON_DAYS) status = "soon";
       else status = "ok";
       if (status === "late") reasons.push(qty <= 0 ? "ของหมดแล้ว" : "พอใช้อีก " + r1(daysCover) + " วัน แต่รอของ " + leadDays + " วัน");
-      else if (status === "now") reasons.push("พอใช้อีก " + r1(daysCover) + " วัน — ถ้าสั่งวันนี้ของมาถึงพอดีกันชน");
+      else if (status === "now") reasons.push("พอใช้อีก " + r1(daysCover) + " วัน · รอของ " + leadDays + " วัน" + (S.safetyDays ? " + กันชน " + S.safetyDays + " วัน" : "") + " — ถึงเวลาสั่งแล้ว");
       else if (status === "soon") reasons.push("ต้องสั่งภายใน " + orderInDays + " วัน");
       // ของที่จะเหลือตอนของใหม่มาถึง → สั่งให้พอใช้ต่ออีก coverDays (+กันชน)
       const leftAtArrival = Math.max(0, qty - rate * leadDays);

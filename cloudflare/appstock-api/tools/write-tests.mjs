@@ -72,13 +72,16 @@ console.log("3) ตรวจนับ + นับตอนออฟไลน์�
   const v3 = await raw("VERIFY", { sku: SKU, qty: 50, clientAt: past });
   T("มีการนับใหม่กว่าเวลาที่นับไว้ → ปฏิเสธ", v3.status === "error" && /นับสต๊อกใหม่กว่า/.test(v3.message), v3);
 
-  const SKU2 = "SQF-0005";
+  // ของใหม่ทุกรอบ — รันชุดทดสอบซ้ำภายใน 20 นาทีแล้วรายการของรอบก่อนต้องไม่มาปน
+  const SKU2 = "CNT-" + Date.now();
+  await raw("CREATE", { sku: SKU2, name: "ของนับย้อนหลัง " + SKU2, unit: "ชิ้น", qty: 0 });
   const base = new Date(Date.now() - 30 * 60000).toISOString();
   await raw("VERIFY", { sku: SKU2, qty: 200, clientAt: base });                       // นับเมื่อ 30 นาทีก่อน
   await raw("UPDATE", { sku: SKU2, type: "OUT", qty: 10, purpose: "หลังนับ" });        // เบิกตอนนี้
   await raw("UPDATE", { sku: SKU2, type: "IN", qty: 4 });
   const v4 = await raw("VERIFY", { sku: SKU2, qty: 150, clientAt: new Date(Date.now() - 20 * 60000).toISOString() });   // นับไว้เมื่อ 20 นาทีก่อน ส่งตอนนี้
   T("นับ 150 เมื่อ 20 นาทีก่อน + เบิก 10 รับ 4 หลังนับ → ใช้ 144", v4.status === "success" && v4.applied === 144 && v4.movementsAfter === 2, v4);
+  await raw("DELETE", { sku: SKU2 });
 }
 
 console.log("4) สิทธิ์");
@@ -141,8 +144,8 @@ console.log("6) รายงานใบเบิก + รับทราบ + �
   const la = await raw("LEDGERAUDIT", {});
   T("ยอดในคลังตรงกับประวัติทุกรายการ", la.status === "success" && la.checked > 0 && la.mismatches.length === 0, la);
   const tr = await raw("TRENDS", {}), rop = await raw("ROPSTATS", {}), up = await raw("USAGEPLAN", {});
-  T("เทรนด์ / สถิติจุดสั่งซื้อ / แผนการใช้ ตอบได้", tr.status === "success" && rop.status === "success" && up.status === "success" && Object.keys(up.items).length > 0, Object.keys(up.items || {}).length);
-  T("แผนการใช้: มีค่าเฉลี่ย 30 วัน", Object.values(up.items).some((x) => x.avg30 > 0));
+  T("เทรนด์ / สถิติจุดสั่งซื้อ / แผนการใช้ ตอบได้", tr.status === "success" && rop.status === "success" && up.status === "success" && Array.isArray(up.items) && up.items.length > 0, (up.items || []).length);
+  T("แผนการใช้: มียอดเบิก 30 วันจากประวัติจริง", up.items.some((x) => x.out30 > 0 && x.tx30 > 0));
 }
 
 console.log("7) ห้องเย็น");

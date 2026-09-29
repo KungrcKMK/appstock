@@ -1061,27 +1061,29 @@ let _mShown = M_PAGE;
 function renderList(more) {
   const el = $("mList");
   if (!filt.length) {
-    el.innerHTML = '<p class="text-slate-600 text-center py-16 font-bold">ไม่พบรายการ</p>';
+    const why = mListFilter === "low" ? "✅ ไม่มีรายการที่ต่ำกว่าขั้นต่ำ"
+      : mListFilter === "freq" ? "ยังไม่มีรายการที่ใช้บ่อย<br><span class=\"text-xs\">ทำรายการแล้วจะขึ้นที่นี่เอง</span>" : "ไม่พบรายการ";
+    el.innerHTML = `<p class="text-slate-600 text-center py-16 font-bold">${why}</p>`;
     return;
   }
   _mShown = more ? _mShown + M_PAGE : M_PAGE;
   const part = filt.slice(0, _mShown);
   el.innerHTML = part.map(item => {
-    const isLow  = item.min > 0 && item.qty <= item.min;
+    const isLow  = isLowItem(item);
     const days   = item.daily > 0 ? Math.floor(item.qty / item.daily) : null;
     const dayStr = days !== null
-      ? `<span class="font-black text-xs" style="color:${daysColor(days)}">${days} วัน</span>` : "";
+      ? `<span class="font-black text-xs" style="color:${daysColor(days)}">พอ ${fmtNum(days)} วัน</span>` : "";
     return `
-    <button onclick='pickItem("${item.sku}")'
+    <button onclick='pickItem("${escH(item.sku)}")'
       class="item-card w-full bg-slate-800 rounded-xl p-3 text-left border-2 ${isLow ? "border-red-500/60" : "border-transparent"}">
       <div class="flex items-center justify-between gap-3">
         <div class="flex-1 min-w-0">
-          <div class="font-black text-white text-sm leading-snug">${item.name}</div>
-          <div class="text-slate-500 text-xs mt-0.5">${item.sku}${isLow ? ' · <span class="text-red-400">⚠️ ต่ำกว่าขั้นต่ำ</span>' : ""}</div>
+          <div class="font-black text-white text-base leading-snug">${escH(item.name)}</div>
+          <div class="text-slate-500 text-xs mt-0.5">${escH(item.sku)}${isLow ? ' · <span class="text-red-400">⚠️ ต่ำกว่าขั้นต่ำ</span>' : ""}</div>
         </div>
         <div class="text-right flex-shrink-0">
-          <div class="font-black text-indigo-300 text-lg leading-none">${item.qty}</div>
-          <div class="text-slate-500 text-xs">${item.unit}${dayStr ? ' · '+dayStr : ""}</div>
+          <div class="font-black ${isLow ? "text-red-400" : "text-indigo-300"} text-xl leading-none">${fmtNum(item.qty)}</div>
+          <div class="text-slate-500 text-xs mt-0.5">${escH(item.unit)}${dayStr ? ' · '+dayStr : ""}</div>
         </div>
       </div>
     </button>`;

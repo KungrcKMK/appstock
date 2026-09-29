@@ -1001,10 +1001,39 @@ function filterList() {
   clearTimeout(_mFilterTimer);
   _mFilterTimer = setTimeout(_filterListNow, 180);
 }
+let mListFilter = "all";   // all | low | freq
+const isLowItem = d => d.min > 0 && d.qty <= d.min;
 function _filterListNow() {
   const q = $("mSearch").value.trim().toLowerCase();
-  filt = q ? data.filter(d => d.name.toLowerCase().includes(q) || d.sku.toLowerCase().includes(q)) : [...data];
+  let list = q ? data.filter(d => d.name.toLowerCase().includes(q) || d.sku.toLowerCase().includes(q)) : [...data];
+  if (mListFilter === "low") list = list.filter(isLowItem);
+  else if (mListFilter === "freq") {
+    const f = mStoreGet("m_freq_" + mod, {});
+    list = list.filter(d => f[d.sku] > 0).sort((a, b) => (f[b.sku] - f[a.sku]) || a.name.localeCompare(b.name, "th"));
+  }
+  filt = list;
+  renderChips();
   renderList();
+}
+function setListFilter(f) {
+  mListFilter = f;
+  _filterListNow();
+  const el = $("mList"); if (el) el.scrollTop = 0;
+}
+function renderChips() {
+  const el = $("mChips");
+  if (!el) return;
+  const f = mStoreGet("m_freq_" + mod, {});
+  const low = data.filter(isLowItem).length, freq = data.filter(d => f[d.sku] > 0).length;
+  const chip = (key, label, warn) => {
+    const on = mListFilter === key;
+    const cls = on ? "bg-indigo-600 text-white border-indigo-600"
+      : warn ? "bg-slate-800 text-red-400 border-red-500/60" : "bg-slate-800 text-slate-300 border-slate-700";
+    return `<button onclick="setListFilter('${key}')" class="btn-tap flex-shrink-0 border ${cls} px-4 py-2 rounded-full text-xs font-black">${label}</button>`;
+  };
+  el.innerHTML = chip("all", "ทั้งหมด " + data.length)
+    + (mod === "COLDROOM" ? "" : chip("low", "⚠️ ใกล้หมด " + low, low > 0))
+    + chip("freq", "⭐ ใช้บ่อย" + (freq ? " " + freq : ""));
 }
 
 function populateDropdown() {

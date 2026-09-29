@@ -945,6 +945,15 @@ async function loadData(opts) {
     } else {
       const res = await fetch(`${GAS_URL}?module=${mod}`);
       const r   = await gasJson(res);
+      // งานที่คนในคลังนี้เพิ่งเบิกไปใช้ (ช่องที่ 9 ของประวัติ) — เอาไปทำปุ่มเลือกงาน
+      if (m0 === mod) {
+        const seen = [];
+        (r.recentHistory || []).forEach(h => {
+          const p = String((h && h[8]) || "").trim();
+          if (p && String(h[2] || "") === "เบิกออก" && seen.indexOf(p) < 0) seen.push(p);
+        });
+        mStoreSet("m_purposes_srv_" + mod, seen.slice(0, 12));
+      }
       fresh = (r.materials || [])
         .filter(m => !m.Discontinued)
         .map(m => ({

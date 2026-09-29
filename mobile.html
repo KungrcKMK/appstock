@@ -1378,24 +1378,102 @@ function setType(t) {
     ? "เช่น ผลิตวุ้นมะพร้าว ล็อต 3"
     : "ระบุหรือไม่ก็ได้";
 
+  // ปุ่มยืนยันสีเดียวกับประเภทที่เลือก — มองปุ่มก็รู้ว่ากำลังจะเบิกหรือรับ
   const confirmBtn = $("aConfirm");
-  if (t === "COUNT") {
-    // pre-fill ด้วยยอดปัจจุบัน
-    $("aQtyIn").value = sel ? sel.qty : 0;
-    confirmBtn.textContent = "📊 บันทึกการนับ";
-    confirmBtn.className = confirmBtn.className.replace(/bg-\w+-\d+/, "bg-cyan-600");
+  const COLOR = { OUT: "bg-orange-600", RETURN: "bg-sky-600", IN: "bg-emerald-600", COUNT: "bg-cyan-600" };
+  confirmBtn.className = confirmBtn.className.replace(/bg-\w+-\d+/, COLOR[t] || "bg-indigo-600");
+  // pre-fill: นับ = ยอดปัจจุบัน · อื่นๆ = 1
+  $("aQtyIn").value = (t === "COUNT") ? (sel ? sel.qty : 0) : 1;
+  renderQuick();
+  updateAfter();
+}
+
+// ข้อความบนปุ่มยืนยัน — บอกทั้งประเภทและจำนวน ("📤 เบิก 500 ใบ") ให้อ่านทวนก่อนกด
+function confirmLabel() {
+  const q = numVal($("aQtyIn").value), u = sel ? (sel.unit || "") : "";
+  const n = isNaN(q) ? "" : " " + fmtNum(q) + " " + u;
+  return ({ OUT: "📤 เบิก", RETURN: "↩️ คืน", IN: "📥 รับเข้า", COUNT: "📊 บันทึกยอดนับ" }[aType] || "✅ ยืนยัน") + n;
+}
+
+// ยอดหลังบันทึก — เห็นก่อนกดยืนยัน
+function updateAfter() {
+  const el = $("aAfter");
+  if (!el || !sel || sel.cr) return;
+  const q = numVal($("aQtyIn").value), u = sel.unit || "";
+  const btn = $("aConfirm");
+  if (btn && !btn.disabled) btn.textContent = confirmLabel();
+  if (isNaN(q) || q < 0) { el.className = "text-center text-sm font-black mt-2 text-slate-500"; el.textContent = ""; return; }
+  let txt, cls = "text-slate-400";
+  if (aType === "COUNT") {
+    const diff = Math.round((q - sel.qty) * 1000) / 1000;
+    txt = diff === 0 ? "ตรงกับยอดในระบบ" : "ต่างจากยอดในระบบ " + (diff > 0 ? "+" : "−") + fmtNum(Math.abs(diff)) + " " + u;
+    if (diff !== 0) cls = "text-amber-400";
   } else {
-    $("aQtyIn").value = 1;
-    confirmBtn.textContent = "✅ ยืนยัน";
-    confirmBtn.className = confirmBtn.className.replace(/bg-\w+-\d+/, "bg-indigo-600");
+    const after = Math.round((aType === "OUT" ? sel.qty - q : sel.qty + q) * 1000) / 1000;
+    if (after < 0) { txt = "⚠️ เกินยอดที่มี (" + fmtNum(sel.qty) + " " + u + ")"; cls = "text-red-400"; }
+    else {
+      txt = "หลังบันทึก: คงเหลือ " + fmtNum(after) + " " + u;
+      if (after === 0) { txt += " (หมดพอดี)"; cls = "text-amber-400"; }
+      else if (aType === "OUT" && sel.min > 0 && after <= sel.min) { txt += " · ต่ำกว่าขั้นต่ำ"; cls = "text-amber-400"; }
+    }
   }
+  el.className = "text-center text-sm font-black mt-2 " + cls;
+  el.textContent = txt;
+}
+
+// ปุ่มบวกเร็ว — ขนาดก้าวตามยอดของตัวนั้น
+function quickSteps() {
+  const q = sel ? Math.abs(sel.qty) : 0;
+  if (q >= 50000) return [100, 1000, 10000];
+  if (q >= 1000)  return [10, 100, 1000];
+  if (q >= 100)   return [5, 10, 100];
+  return [1, 5, 10];
+}
+function renderQuick() {
+  const el = $("aQuick");
+  if (!el) return;
+  const b = "btn-tap flex-1 py-2.5 rounded-xl font-black text-sm";
+  let html = quickSteps().map(n => `<button onclick="addQty(${n})" class="${b} bg-slate-700 text-slate-200">+${fmtNum(n)}</button>`).join("");
+  if (aType === "OUT" && sel && sel.qty > 0) html += `<button onclick="setQty(${Number(sel.qty)})" class="${b} bg-slate-700 text-orange-300">ทั้งหมด</button>`;
+  html += `<button onclick="setQty('')" class="${b} bg-slate-900 text-slate-400 border border-slate-700">ล้าง</button>`;
+  el.innerHTML = html;
+}
+function setQty(v) {
+  const el = $("aQtyIn");
+  el.value = v === "" ? "" : v;
+  updateAfter();
+  if (v === "") el.focus();
+}
+// กดบวกครั้งแรกขณะยังเป็นค่าตั้งต้น 1 → แทนที่ (ตั้งใจจะได้ 100 ไม่ใช่ 101)
+function addQty(n) {
+  const el = $("aQtyIn"), cur = numVal(el.value);
+  const fresh = aType !== "COUNT" && (isNaN(cur) || (cur === 1 && !el.dataset.touched));
+  el.value = Math.round(((fresh ? 0 : cur) + n) * 1000) / 1000;
+  el.dataset.touched = "1";
+  updateAfter();
 }
 
 function adjQty(d) {
   const el = $("aQtyIn");
   const min = aType === "COUNT" ? 0 : 1;
-  el.value = Math.max(min, (Number(el.value) || min) + d);
+  const cur = numVal(el.value);
+  el.value = Math.max(min, Math.round(((isNaN(cur) ? min : cur) + d) * 1000) / 1000);
+  el.dataset.touched = "1";
+  updateAfter();
 }
+
+// งานที่เบิกบ่อย — ของเครื่องนี้ก่อน แล้วตามด้วยของคนอื่นในคลังเดียวกัน
+function renderPurposeChips() {
+  const el = $("aPurposeChips");
+  if (!el) return;
+  const mine = mStoreGet("m_purposes_" + mod, []), srv = mStoreGet("m_purposes_srv_" + mod, []);
+  const list = [...mine, ...srv.filter(p => mine.indexOf(p) < 0)].slice(0, 8);
+  el.innerHTML = list.map(p =>
+    `<button onclick="pickPurpose(this)" data-p="${escH(p)}" class="btn-tap bg-slate-700 text-slate-200 px-3 py-2 rounded-full text-xs font-black">${escH(p.length > 26 ? p.slice(0, 25) + "…" : p)}</button>`).join("");
+  const dl = $("aPurposeList");
+  if (dl) dl.innerHTML = list.map(p => `<option value="${escH(p)}">`).join("");
+}
+function pickPurpose(btn) { $("aPurposeIn").value = btn.getAttribute("data-p") || ""; }
 
 async function confirmAction() {
   if (!sel) return;

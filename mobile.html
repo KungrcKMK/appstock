@@ -1394,6 +1394,8 @@ function setType(t) {
   // pre-fill: นับ = ยอดปัจจุบัน · อื่นๆ = 1
   $("aQtyIn").value = (t === "COUNT") ? (sel ? sel.qty : 0) : 1;
   $("aQtyIn").dataset.touched = "";
+  $("aQtyIn").inputMode = "decimal";
+  $("aQtyIn").placeholder = "";
   renderQuick();
   updateAfter();
 }
@@ -1413,16 +1415,17 @@ function updateAfter() {
   const btn = $("aConfirm");
   if (btn && !btn.disabled) btn.textContent = confirmLabel();
   if (isNaN(q) || q < 0) { el.className = "text-center text-sm font-black mt-2 text-slate-500"; el.textContent = ""; return; }
+  const expr = /[-+*\/x×÷()]/i.test(String($("aQtyIn").value)) ? "= " + fmtNum(q) + " " + u + " · " : "";
   let txt, cls = "text-slate-400";
   if (aType === "COUNT") {
     const diff = Math.round((q - sel.qty) * 1000) / 1000;
-    txt = diff === 0 ? "ตรงกับยอดในระบบ" : "ต่างจากยอดในระบบ " + (diff > 0 ? "+" : "−") + fmtNum(Math.abs(diff)) + " " + u;
+    txt = expr + (diff === 0 ? "ตรงกับยอดในระบบ" : "ต่างจากยอดในระบบ " + (diff > 0 ? "+" : "−") + fmtNum(Math.abs(diff)) + " " + u);
     if (diff !== 0) cls = "text-amber-400";
   } else {
     const after = Math.round((aType === "OUT" ? sel.qty - q : sel.qty + q) * 1000) / 1000;
     if (after < 0) { txt = "⚠️ เกินยอดที่มี (" + fmtNum(sel.qty) + " " + u + ")"; cls = "text-red-400"; }
     else {
-      txt = "หลังบันทึก: คงเหลือ " + fmtNum(after) + " " + u;
+      txt = expr + "หลังบันทึก: คงเหลือ " + fmtNum(after) + " " + u;
       if (after === 0) { txt += " (หมดพอดี)"; cls = "text-amber-400"; }
       else if (aType === "OUT" && sel.min > 0 && after <= sel.min) { txt += " · ต่ำกว่าขั้นต่ำ"; cls = "text-amber-400"; }
     }
@@ -1446,7 +1449,18 @@ function renderQuick() {
   let html = quickSteps().map(n => `<button onclick="addQty(${n})" class="${b} bg-slate-700 text-slate-200">+${fmtNum(n)}</button>`).join("");
   if (aType === "OUT" && sel && sel.qty > 0) html += `<button onclick="setQty(${Number(sel.qty)})" class="${b} bg-slate-700 text-orange-300">ทั้งหมด</button>`;
   html += `<button onclick="setQty('')" class="${b} bg-slate-900 text-slate-400 border border-slate-700">ล้าง</button>`;
+  // 🧮 เปิดแป้นพิมพ์เต็มเพื่อพิมพ์โจทย์ เช่น 16*48+5 (แป้นตัวเลขไม่มีเครื่องหมายคูณ)
+  html += `<button onclick="calcMode()" class="${b} bg-slate-900 text-slate-400 border border-slate-700" title="คิดเลขในช่อง เช่น 16*48+5">🧮</button>`;
   el.innerHTML = html;
+}
+function calcMode() {
+  const el = $("aQtyIn");
+  el.inputMode = "text";
+  el.value = "";
+  el.placeholder = "16*48+5";
+  el.dataset.touched = "1";
+  updateAfter();
+  el.focus();
 }
 function setQty(v) {
   const el = $("aQtyIn");

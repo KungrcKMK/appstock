@@ -145,7 +145,7 @@
     </button>
     <select id="mDropdown" onchange="onDropdownChange()"
       class="w-full bg-slate-800 text-white py-2 px-3 rounded-xl border border-slate-700 text-sm font-bold outline-none appearance-none"
-      style="background-image:url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='%2394a3b8' viewBox='0 0 16 16'%3E%3Cpath d='M7.247 11.14 2.451 5.658C1.885 5.013 2.345 4 3.204 4h9.592a1 1 0 0 1 .753 1.659l-4.796 5.48a1 1 0 0 1-1.506 0z'/%3E%3C/svg%3E\");background-repeat:no-repeat;background-position:right 10px center;padding-right:32px">
+      style="background-image:url(&quot;data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' fill='%2394a3b8' viewBox='0 0 16 16'%3E%3Cpath d='M7.247 11.14 2.451 5.658C1.885 5.013 2.345 4 3.204 4h9.592a1 1 0 0 1 .753 1.659l-4.796 5.48a1 1 0 0 1-1.506 0z'/%3E%3C/svg%3E&quot;);background-repeat:no-repeat;background-position:right 10px center;padding-right:32px">
       <option value="">📋 เลือกสินค้า / วัตถุดิบ...</option>
     </select>
     <input id="mSearch" type="search" placeholder="🔍 ค้นหาชื่อหรือรหัส..." oninput="filterList()"
@@ -277,7 +277,7 @@
           class="btn-tap flex-shrink-0 w-12 h-12 text-3xl text-slate-400 font-black flex items-center justify-center">−</button>
         <!-- inputmode=decimal: ของที่ชั่งเป็น กก. ต้องพิมพ์จุดทศนิยมได้ (แป้นตัวเลขล้วนของ iPhone ไม่มีจุด) -->
         <input id="aQtyIn" type="text" inputmode="decimal" autocomplete="off" value="1"
-          oninput="updateAfter()" onfocus="this.select()"
+          oninput="this.dataset.touched='1';updateAfter()" onfocus="this.select()"
           class="flex-1 min-w-0 w-0 bg-transparent text-white text-4xl font-black text-center outline-none py-1">
         <button onclick="adjQty(1)"
           class="btn-tap flex-shrink-0 w-12 h-12 text-3xl text-slate-400 font-black flex items-center justify-center">+</button>
@@ -617,8 +617,17 @@ function daysColor(d) {
 
 // ตัวเลขบนจอมีลูกน้ำคั่นหลักพัน — 186660 กับ 18660 ดูด้วยตาแยกยาก
 const fmtNum = n => Number(n || 0).toLocaleString("en-US", { maximumFractionDigits: 3 });
-// อ่านตัวเลขจากช่องกรอก (รับลูกน้ำที่คนพิมพ์มาด้วย) — ไม่ใช่ตัวเลข = NaN
-const numVal = v => { const s = String(v == null ? "" : v).replace(/,/g, "").trim(); return s === "" ? NaN : Number(s); };
+// อ่านตัวเลขจากช่องกรอก — รับลูกน้ำ และโจทย์คิดเลขง่ายๆ เช่น 16*48+5 (16 ลัง ลังละ 48 เศษ 5) · อ่านไม่ได้ = NaN
+function numVal(v) {
+  const s = String(v == null ? "" : v).replace(/,/g, "").replace(/[x×]/gi, "*").replace(/÷/g, "/").trim();
+  if (s === "") return NaN;
+  if (/^\d*\.?\d+$/.test(s) || /^\d+\.$/.test(s)) return Number(s);
+  if (!/^[\d\s+\-*/().]+$/.test(s) || !/\d/.test(s)) return NaN;
+  try {
+    const r = Function('"use strict";return(' + s + ')')();
+    return (typeof r === "number" && isFinite(r)) ? Math.round(r * 1e6) / 1e6 : NaN;
+  } catch (e) { return NaN; }
+}
 const escH = s => String(s == null ? "" : s).replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
 // ค่าที่ไปอยู่ใน onclick="fn('...')" — escape แบบ JS ก่อน แล้วค่อย escape แบบ HTML ซ้อน
 const escJA = s => escH(String(s == null ? "" : s).replace(/\\/g, "\\\\").replace(/'/g, "\\'").replace(/"/g, '\\"').replace(/[\r\n]+/g, " "));
@@ -1384,6 +1393,7 @@ function setType(t) {
   confirmBtn.className = confirmBtn.className.replace(/bg-\w+-\d+/, COLOR[t] || "bg-indigo-600");
   // pre-fill: นับ = ยอดปัจจุบัน · อื่นๆ = 1
   $("aQtyIn").value = (t === "COUNT") ? (sel ? sel.qty : 0) : 1;
+  $("aQtyIn").dataset.touched = "";
   renderQuick();
   updateAfter();
 }
@@ -1477,11 +1487,11 @@ function pickPurpose(btn) { $("aPurposeIn").value = btn.getAttribute("data-p") |
 
 async function confirmAction() {
   if (!sel) return;
-  const qty = Number($("aQtyIn").value);
-  if (isNaN(qty) || qty < 0) { toast("ระบุจำนวนให้ถูกต้อง", "warn"); return; }
+  const qty = numVal($("aQtyIn").value);
+  if (isNaN(qty) || qty < 0) { toast("ระบุจำนวนให้ถูกต้อง", "warn"); $("aQtyIn").focus(); return; }
   if (aType !== "COUNT" && qty <= 0) { toast("ระบุจำนวนมากกว่า 0", "warn"); return; }
   if (aType === "OUT" && qty > sel.qty) {
-    toast(`⚠️ สต๊อกไม่พอ — มี ${sel.qty} ${sel.unit}`, "err"); return;
+    toast(`⚠️ สต๊อกไม่พอ — มี ${fmtNum(sel.qty)} ${sel.unit}`, "err"); return;
   }
   const btn = $("aConfirm");
   btn.disabled = true; btn.textContent = "กำลังบันทึก...";
@@ -1491,7 +1501,7 @@ async function confirmAction() {
   if (aType === "OUT" && !($("aPurposeIn").value || "").trim()) {
     toast("กรุณาระบุว่าเบิกไปใช้กับงานอะไร", "warn");
     $("aPurposeIn").focus();
-    btn.disabled = false;
+    btn.disabled = false; btn.textContent = confirmLabel();
     return;
   }
   const BUSY  = { COUNT:"กำลังบันทึกการนับ...", OUT:"กำลังบันทึกการเบิก...", RETURN:"กำลังบันทึกการคืน...", IN:"กำลังบันทึกรับเข้า..." };
@@ -1507,7 +1517,12 @@ async function confirmAction() {
                         workOrderId: ($("aWorkOrder")?.value || "").trim(), user }, label);
 
     setLoading(false); btn.disabled = false;
-    btn.textContent = isCount ? "📊 บันทึกการนับ" : "✅ ยืนยัน";
+    btn.textContent = confirmLabel();
+    // ส่งถึงเซิร์ฟเวอร์หรือเก็บเข้าคิวแล้ว = งานของพนักงานเสร็จ → จำไว้ให้ครั้งหน้าแตะเลือกได้
+    if (!r.storeFailed && !r.needLogin && (r.queued || r.status === "success")) {
+      mBumpPick(sel.sku);
+      if (aType === "OUT") mRememberPurpose($("aPurposeIn").value);
+    }
 
     // ข้อ 2: เน็ตล่มและเก็บลงเครื่องไม่ได้ — ต้องบอกตรงๆ ไม่ปิดแผง ให้พนักงานจดไว้
     if (r.storeFailed) {
@@ -1525,22 +1540,152 @@ async function confirmAction() {
 
     const ok = isCount ? r.status === "success" : r.status === "success";
     if (ok) {
-      const LABEL = { COUNT:`📊 นับ → ${qty}`, OUT:`📤 เบิก ${qty}`, RETURN:`↩️ คืน ${qty}`, IN:`📥 รับ ${qty}` };
+      const LABEL = { COUNT:`📊 นับ → ${fmtNum(qty)}`, OUT:`📤 เบิก ${fmtNum(qty)}`, RETURN:`↩️ คืน ${fmtNum(qty)}`, IN:`📥 รับ ${fmtNum(qty)}` };
       const label = LABEL[aType] || `${qty}`;
       toast(`${label} ${sel.unit} · ${sel.name}`);
       closeAction();
       // ข้อ 2: ยอดใหม่ที่เซิร์ฟเวอร์ยืนยันแล้ว → ปรับรายการบนจอทันที ไม่ต้องรอโหลดทั้งคลัง (ดึงใหม่เบื้องหลังตามหลัง)
       const newQty = isCount ? Number(r.applied) : (r.slip && r.slip.balance != null ? Number(r.slip.balance) : NaN);
       const it = data.find(d => d.sku === sel.sku);
-      if (it && !isNaN(newQty)) { it.qty = newQty; filt = filt.map(d => d.sku === sel.sku ? it : d); populateDropdown(); renderList(); }
+      if (it && !isNaN(newQty)) { it.qty = newQty; populateDropdown(); _filterListNow(); }
       tgFlushSoon();
       loadData({ silent: true });
     } else { toast(r.message || "บันทึกไม่สำเร็จ", "err"); }
   } catch(e) {
     setLoading(false); btn.disabled = false;
-    btn.textContent = isCount ? "📊 บันทึกการนับ" : "✅ ยืนยัน";
+    btn.textContent = confirmLabel();
     toast("เกิดข้อผิดพลาด: " + e.message, "err");
   }
+}
+
+// ─────────────────────────────────────────────
+// 📈 ต้องสั่ง — วัตถุดิบตัวไหนจะหมดก่อนของมาถึง
+// ตัวเลขทั้งหมดคิดที่หลังบ้าน (action USAGEPLAN) — ที่นี่แค่แสดงผล จึงตรงกับหน้าคอมเสมอ
+// ─────────────────────────────────────────────
+let planData = null, planFilter = "todo", _planSeq = 0;
+const PLAN_TONE = {
+  late:   { text: "text-red-400",     border: "border-red-500/60" },
+  now:    { text: "text-orange-400",  border: "border-orange-500/60" },
+  soon:   { text: "text-amber-400",   border: "border-amber-500/40" },
+  ok:     { text: "text-emerald-400", border: "border-transparent" },
+  nodata: { text: "text-slate-400",   border: "border-transparent" }
+};
+const thDate = iso => { const m = String(iso || "").match(/^(\d{4})-(\d{2})-(\d{2})/); return m ? m[3] + "/" + m[2] + "/" + String(Number(m[1]) + 543).slice(2) : "—"; };
+
+function planSetBadge(r) {
+  const b = $("navPlanBadge");
+  if (!b) return;
+  const n = r && r.summary ? r.summary.late + r.summary.now : 0;
+  b.textContent = n > 99 ? "99+" : String(n);
+  b.classList.toggle("hidden", !n);
+}
+async function planFetch() {
+  const m0 = mod;
+  const r = await gasPost({ module: m0, action: "USAGEPLAN" });
+  if (!r || r.status !== "success") throw new Error((r && r.message) || "โหลดไม่สำเร็จ");
+  if (m0 !== mod) return null;
+  planData = r;
+  planSetBadge(r);
+  return r;
+}
+async function planRefreshBadge() {
+  if (mod !== "SQF" && mod !== "MLM") return;
+  const seq = ++_planSeq;
+  try { await planFetch(); if (seq === _planSeq && !$("planSheet").classList.contains("hidden")) renderPlan(); } catch (e) { /* ออฟไลน์ — ป้ายคงเดิม */ }
+}
+
+async function openPlan() {
+  if (mod !== "SQF" && mod !== "MLM") return;
+  $("planSheet").classList.remove("hidden");
+  $("planSub").textContent = MOD_CFG[mod].title;
+  planFilter = "todo";
+  if (planData && planData.module === mod) renderPlan();
+  else { $("planTiles").innerHTML = ""; $("planList").innerHTML = '<p class="text-slate-500 text-center py-10 font-bold">⏳ กำลังอ่านประวัติการเบิก...</p>'; }
+  try { if (await planFetch()) renderPlan(); }
+  catch (e) {
+    if (!planData || planData.module !== mod)
+      $("planList").innerHTML = '<p class="text-red-400 text-center py-10 font-bold">โหลดไม่สำเร็จ<br><span class="text-xs text-slate-500">' + escH(e.message || "") + "</span></p>";
+    else toast("ตรวจข้อมูลล่าสุดไม่ได้ — แสดงของเดิม", "warn");
+  }
+}
+function closePlan() { $("planSheet").classList.add("hidden"); }
+function planSetFilter(f) { planFilter = f; renderPlan(); $("planList").scrollTop = 0; }
+function planRows() {
+  const items = (planData && planData.items) || [];
+  if (planFilter === "all") return items;
+  if (planFilter === "todo") return items.filter(x => x.status === "late" || x.status === "now" || x.status === "soon");
+  return items.filter(x => x.status === planFilter);
+}
+const planOrderList = () => ((planData && planData.items) || []).filter(x => (x.status === "late" || x.status === "now") && x.suggestQty > 0);
+
+function renderPlan() {
+  if (!planData) return;
+  const sum = planData.summary, S = planData.settings;
+  $("planSub").textContent = MOD_CFG[mod].title + " · รอของ " + S.leadDays + " วัน + กันชน " + S.safetyDays + " วัน";
+  const todo = sum.late + sum.now + sum.soon;
+  const tile = (key, label, n, tone) => {
+    const on = planFilter === key;
+    return `<button onclick="planSetFilter('${key}')" class="btn-tap flex-shrink-0 rounded-2xl px-4 py-2 text-center border-2 ${on ? "border-indigo-500 bg-slate-800" : "border-transparent bg-slate-900"}">
+      <div class="text-xl font-black ${tone}">${n}</div>
+      <div class="text-[10px] font-bold text-slate-400 mt-0.5">${label}</div></button>`;
+  };
+  $("planTiles").innerHTML =
+      tile("todo", "ต้องลงมือ", todo, todo ? "text-white" : "text-slate-500")
+    + tile("late", "🔴 สั่งไม่ทันแล้ว", sum.late, sum.late ? "text-red-400" : "text-slate-500")
+    + tile("now",  "🟠 สั่งวันนี้", sum.now, sum.now ? "text-orange-400" : "text-slate-500")
+    + tile("soon", "🟡 ใกล้ถึงเวลา", sum.soon, sum.soon ? "text-amber-400" : "text-slate-500")
+    + tile("ok",   "🟢 ยังพอ", sum.ok, "text-emerald-400")
+    + tile("all",  "ทั้งหมด", sum.total, "text-slate-300");
+
+  const rows = planRows();
+  $("planList").innerHTML = rows.length ? rows.map(x => {
+    const T = PLAN_TONE[x.status] || PLAN_TONE.nodata;
+    const cover = x.daysCover === null || x.daysCover === undefined ? "—" : fmtNum(x.daysCover);
+    const when = x.orderInDays === null || x.orderInDays === undefined ? "—"
+      : x.status === "late" ? "เลยกำหนดแล้ว" : x.orderInDays <= 0 ? "วันนี้" : thDate(x.orderByDate) + " (อีก " + x.orderInDays + " วัน)";
+    const src = { actual: "เบิกจริง", plan: "ค่าที่ตั้งไว้", thin: "เบิกจริง (ข้อมูลน้อย)" }[x.rateSource] || "";
+    const boxes = (x.status === "ok" || x.status === "nodata") ? "" : `<div class="grid grid-cols-2 gap-2 mt-2.5">
+        <div class="bg-slate-900 rounded-xl px-3 py-2"><div class="text-[10px] font-bold text-slate-500">ต้องสั่งภายใน</div><div class="text-sm font-black ${T.text}">${when}</div></div>
+        <div class="bg-slate-900 rounded-xl px-3 py-2"><div class="text-[10px] font-bold text-slate-500">แนะนำสั่ง</div><div class="text-sm font-black text-white">${x.suggestQty > 0 ? fmtNum(x.suggestQty) + " " + escH(x.unit) : "—"}</div></div>
+      </div>`;
+    const why = (x.reasons || []).length
+      ? `<div class="text-slate-400 text-xs mt-2 leading-relaxed">${x.reasons.map(t => "• " + escH(t)).join("<br>")}</div>` : "";
+    return `<button onclick="planPick('${escJA(x.sku)}')" class="item-card w-full text-left bg-slate-800 rounded-2xl p-3 border-2 ${T.border}">
+      <div class="flex items-start justify-between gap-3">
+        <div class="flex-1 min-w-0">
+          <div class="text-xs font-black ${T.text}">${x.icon} ${escH(x.statusText)}</div>
+          <div class="font-black text-white text-base leading-snug mt-0.5">${escH(x.name)}</div>
+          <div class="text-slate-500 text-xs mt-0.5">เหลือ ${fmtNum(x.qty)} ${escH(x.unit)}${x.rate > 0 ? " · ใช้ " + fmtNum(x.rate) + "/วัน" + (src ? " (" + src + ")" : "") : ""}</div>
+        </div>
+        <div class="text-right flex-shrink-0">
+          <div class="text-2xl font-black leading-none ${T.text}">${cover}</div>
+          <div class="text-slate-500 text-[10px] font-bold mt-1">วันที่พอใช้</div>
+        </div>
+      </div>
+      ${boxes}${why}
+    </button>`;
+  }).join("") + '<p class="text-slate-600 text-[11px] text-center font-bold pt-2 pb-1 leading-relaxed">แตะรายการเพื่อรับเข้า / เบิก / นับ<br>ตัวเลขเป็นคำแนะนำจากการเบิกจริง — ระบบไม่สั่งซื้อเอง</p>'
+  : `<p class="text-slate-500 text-center py-14 font-bold">${planFilter === "todo" ? "✅ ไม่มีรายการที่ต้องสั่งในตอนนี้" : "ไม่มีรายการในกลุ่มนี้"}</p>`;
+
+  const n = planOrderList().length, btn = $("planCopyBtn");
+  btn.textContent = n ? "📋 คัดลอกรายการสั่ง (" + n + " รายการ)" : "ไม่มีรายการที่ต้องสั่งวันนี้";
+  btn.disabled = !n;
+  btn.classList.toggle("opacity-40", !n);
+}
+function planPick(sku) {
+  if (!data.find(d => d.sku === sku)) { toast("ไม่พบรายการนี้ในคลัง ลองกดรีเฟรช", "warn"); return; }
+  closePlan();
+  pickItem(sku);
+}
+async function planCopy() {
+  const list = planOrderList();
+  if (!list.length) return;
+  const txt = "📈 รายการที่ต้องสั่งซื้อ — " + MOD_CFG[mod].title + " (" + mod + ")\n" + thDate(planData.today) + "\n" +
+    list.map((x, i) => (i + 1) + ". " + x.name + " — สั่ง " + fmtNum(x.suggestQty) + " " + x.unit +
+      "\n    เหลือ " + fmtNum(x.qty) + " " + x.unit + (x.daysCover !== null ? " · พอใช้ " + fmtNum(x.daysCover) + " วัน" : "") + " · รอของ " + x.leadDays + " วัน").join("\n");
+  if (navigator.share) { try { await navigator.share({ text: txt }); return; } catch (e) { /* กดยกเลิก → ตกไปคัดลอก */ } }
+  try { await navigator.clipboard.writeText(txt); toast("คัดลอกแล้ว — วางในแชตได้เลย ✅"); }
+  catch (e) { toast("คัดลอกไม่สำเร็จ", "err"); }
 }
 
 // ─────────────────────────────────────────────

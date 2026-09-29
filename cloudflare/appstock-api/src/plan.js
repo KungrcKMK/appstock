@@ -192,7 +192,7 @@ export async function planCompute(c, module, over) {
     if (enough && plan > 0) {
       gapPct = Math.round((actual30 - plan) / plan * 100);
       if (gapPct >= 30) reasons.push("เบิกจริง (" + fmtN(r1(actual30)) + "/วัน) มากกว่าค่าที่ตั้งไว้ " + gapPct + "% — คำนวณด้วยยอดเบิกจริง");
-      else if (gapPct <= -30) reasons.push("เบิกจริง (" + fmtN(r1(actual30)) + "/วัน) น้อยกว่าค่าที่ตั้งไว้ " + Math.abs(gapPct) + "% — ยังคำนวณด้วยค่าที่ตั้งไว้ ถ้าค่านั้นสูงไปให้แก้ \"ใช้ต่อวัน\"");
+      else if (gapPct <= -30) reasons.push("เบิกจริง (" + fmtN(r1(actual30)) + "/วัน) น้อยกว่าค่าที่ตั้งไว้ " + Math.min(99, Math.abs(gapPct)) + "% — ยังคำนวณด้วยค่าที่ตั้งไว้ ถ้าค่านั้นสูงไปให้แก้ \"ใช้ต่อวัน\"");
     }
     const prev30 = s ? Math.max(0, s.prev30) : 0, out30 = s ? Math.max(0, s.n30) : 0;
     const dayVals = s ? Object.values(s.days30) : [];

@@ -1109,13 +1109,15 @@ function pickItem(sku) {
 
   $("aName").textContent = sel.name;
   $("aSku").textContent  = sel.sku + (cfg ? " · " + cfg.sub : "");
-  $("aQty").textContent  = sel.qty;
+  $("aQty").textContent  = fmtNum(sel.qty);
   $("aUnit").textContent = "คงเหลือ (" + sel.unit + ")";
   $("aQtyIn").value = 1;
+  if ($("aPurposeIn")) $("aPurposeIn").value = "";   // กันงานของรายการก่อนหน้าติดมา
+  renderPurposeChips();
 
   if (sel.daily > 0) {
     const d = Math.floor(sel.qty / sel.daily);
-    $("aDays").textContent = d;
+    $("aDays").textContent = fmtNum(d);
     $("aDays").style.color = daysColor(d);
     show("aDaysWrap");
   } else { hide("aDaysWrap"); }

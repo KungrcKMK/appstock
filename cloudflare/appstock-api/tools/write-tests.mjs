@@ -330,6 +330,21 @@ console.log("10) วางแผนสั่งซื้อ — วิเคร�
   const e = (await plan({})).items.find((x) => x.sku === sku2);
   T("ไม่มีข้อมูลการใช้ → ไม่เดาตัวเลข", e.status === "nodata" && e.daysCover === null && e.suggestQty === 0, e);
 
+  // ของที่มีประวัติเบิกมากพอ (เบิก ≥5 ครั้ง เห็นมา ≥14 วัน): เลือกค่าที่มากกว่าระหว่างเบิกจริงกับค่าที่ตั้งไว้
+  const old = (await plan({})).items.find((x) => x.tx30 >= 5 && x.obsDays >= 14 && x.actual30 > 0);
+  if (old) {
+    const m0 = await matOf("SQF", old.sku);
+    const edit = (daily) => raw("EDIT", { sku: old.sku, name: m0.Name, unit: m0.Unit, min: m0.Min, dailyUsage: daily, expiryDate: m0.ExpiryDate || "", alertDays: m0.AlertDays });
+    const real = old.accel ? old.actual7 : old.actual30;
+    await edit(real / 10);
+    const lo = (await plan({})).items.find((x) => x.sku === old.sku);
+    T("เบิกจริงมากกว่าค่าที่ตั้งไว้ → ใช้เบิกจริง + บอกในข้อสังเกต", lo.rateSource === "actual" && lo.rate === real && lo.reasons.some((x) => /มากกว่าค่าที่ตั้งไว้/.test(x)), lo);
+    await edit(real * 10);
+    const hi = (await plan({})).items.find((x) => x.sku === old.sku);
+    T("เบิกจริงน้อยกว่าค่าที่ตั้งไว้ → ยังใช้ค่าที่ตั้งไว้ (กันของหมด) + บอกในข้อสังเกต", hi.rateSource === "plan" && Math.abs(hi.rate - real * 10) < 0.002 && hi.reasons.some((x) => /น้อยกว่าค่าที่ตั้งไว้/.test(x)), hi);
+    await edit(m0.DailyUsage);
+  } else console.log("  ⏭️  ข้าม: ฐานข้อมูลทดสอบไม่มีของที่ประวัติเบิกมากพอ");
+
   // ตั้งค่ากลาง
   const s0 = await raw("PLANSET", { leadDays: 12, safetyDays: 4, coverDays: 45, alert: false });
   T("ผู้ใช้ทั่วไปตั้งค่ากลางไม่ได้", s0.status === "error", s0);

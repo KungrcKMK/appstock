@@ -172,6 +172,8 @@ function _rawApplyData(data, startup, source, at, opts = {}) {
   //    Chart.js วาดในกล่องที่ซ่อนอยู่ไม่ได้ (ความสูงเป็น 0) จึงวาดตอนเปิดหน้าต่างแทน
   if (!opts.skipAlerts) rawCheckCritical(rawLastData, rawCurrentModule, startup);
   if (!opts.skipTrends) rawLoadTrends();   // เส้นเทรนด์เบิกตามมาทีหลัง — ไม่ถ่วงการโหลดหลัก
+  // ป้าย "ต้องสั่ง N" บนปุ่มวางแผนสั่งซื้อ — ของเก่าจากเครื่องไม่มีตัวเลขนี้ ล้างไว้ก่อนกันเลขของคลังอื่นค้าง
+  if (typeof planRefreshTile === "function") { if (opts.skipTrends) planUpdateTile(null); else planRefreshTile(); }
 
   // ── Autocomplete: rawSearch (ตั้งค่าครั้งเดียว) ──
   if (!_rawSearchAcInit) {
@@ -902,6 +904,32 @@ function openRawAction(sku, name, unit, currentQty) {
     qty <= 0 ? "var(--sq-crit)" : qty < 10 ? "var(--sq-high)" : "var(--sq-accent)";
   document.getElementById("rawActionModal").classList.remove("hidden");
   setRawType("OUT");
+  setTimeout(() => { const q = document.getElementById("rawModalQty"); if (q) { q.focus(); q.select && q.select(); } }, 60);
+}
+
+// ยอดหลังทำรายการ — ให้เห็นก่อนกดบันทึก (พิมพ์เกินหลัก/เลือกผิดประเภทจะเห็นทันที)
+function rawUpdateAfter() {
+  const el = document.getElementById("rawModalAfter");
+  if (!el) return;
+  const raw = String(document.getElementById("rawModalQty").value || "").trim();
+  const cur = Number(document.getElementById("rawModalCurrentQty").value) || 0;
+  const type = document.getElementById("rawModalType").value;
+  const unit = (document.getElementById("rawModalUnit").innerText || "").replace(/^หน่วยนับ:\s*/, "").replace(/^-$/, "");
+  const q = Number(raw.replace(/,/g, ""));
+  if (!raw || /[+\-*\/()]/.test(raw) || isNaN(q) || q <= 0) { el.textContent = ""; return; }   // กำลังพิมพ์โจทย์คำนวณ — รอผลก่อน
+  const after = Math.round((type === "OUT" ? cur - q : cur + q) * 1000) / 1000;
+  const f = n => Number(n).toLocaleString("th-TH", { maximumFractionDigits: 3 });
+  if (after < 0) {
+    el.style.color = "var(--sq-crit)";
+    el.textContent = "⚠️ เกินยอดที่มี (" + f(cur) + " " + unit + ")";
+  } else {
+    el.style.color = after === 0 ? "var(--sq-high)" : "var(--sq-ink2)";
+    el.textContent = "หลังบันทึก: คงเหลือ " + f(after) + " " + unit + (after === 0 ? " (หมดพอดี)" : "");
+  }
+}
+function rawPickPurpose(btn) {
+  const inp = document.getElementById("rawModalPurpose");
+  if (inp) { inp.value = btn.getAttribute("data-p") || ""; inp.focus(); }
 }
 function closeRawAction() { document.getElementById("rawActionModal").classList.add("hidden"); }
 
@@ -944,6 +972,7 @@ function setRawType(t) {
   if (_pin) _pin.placeholder = (t === "OUT")
     ? "เช่น ผลิตวุ้นมะพร้าว ล็อต 3"
     : "ระบุหรือไม่ก็ได้ เช่น รับจากซัพพลายเออร์ ก";
+  rawUpdateAfter();
 }
 
 function openRawQr() {
@@ -1303,6 +1332,10 @@ function rawFillPurposeList() {
     if (p && seen.indexOf(p) < 0) seen.push(p);
   });
   dl.innerHTML = seen.slice(0, 15).map(p => '<option value="' + escapeAttr(p) + '">').join("");
+  const chips = document.getElementById("rawPurposeChips");
+  if (chips) chips.innerHTML = seen.slice(0, 6).map(p =>
+    '<button type="button" class="sq-btn sq-btn-sm" data-p="' + escapeAttr(p) + '" onclick="rawPickPurpose(this)" title="' + escapeAttr(p) + '">' +
+    escapeHtml(p.length > 28 ? p.slice(0, 27) + "…" : p) + "</button>").join("");
 }
 
 

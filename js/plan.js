@@ -13,8 +13,8 @@ let _planFilter = "todo";      // todo = ต้องลงมือ (late+now+s
 let _planReqSeq = 0;           // กันคำตอบเก่ามาทับ เมื่อพิมพ์ค่าลองดูเร็วๆ
 const PLAN_SEV = { late: "crit", now: "high", soon: "warn", ok: "ok", nodata: "" };
 const PLAN_SRC = {
-  actual: ["เบิกจริง", "คิดจากยอดเบิกจริง 30 วันล่าสุด"],
-  plan:   ["ค่าที่ตั้งไว้", "ประวัติเบิกยังน้อย — ใช้ค่า \"ใช้ต่อวัน\" ที่ตั้งไว้ในรายการวัตถุดิบ"],
+  actual: ["เบิกจริง", "คิดจากยอดเบิกจริง 30 วันล่าสุด (มากกว่าค่าที่ตั้งไว้)"],
+  plan:   ["ค่าที่ตั้งไว้", "ใช้ค่า \"ใช้ต่อวัน\" ที่ตั้งไว้ในรายการวัตถุดิบ — ประวัติเบิกยังน้อย หรือยอดเบิกจริงต่ำกว่าค่านี้"],
   thin:   ["เบิกจริง (ข้อมูลน้อย)", "ยังเบิกไม่ถึง 5 ครั้ง และไม่ได้ตั้ง \"ใช้ต่อวัน\" ไว้ — ตัวเลขอาจคลาดเคลื่อน"],
   none:   ["—", "ยังไม่เคยเบิก และไม่ได้ตั้ง \"ใช้ต่อวัน\" ไว้"]
 };
@@ -38,6 +38,7 @@ async function openPlanModal() {
   document.getElementById("planTarget").textContent = planFactoryName();
   document.querySelectorAll(".plan-manage").forEach(el => { el.style.display = planCanManage() ? "" : "none"; });
   _planFilter = "todo";
+  _planData = null;   // กันแผนของอีกโรงงานค้างบนจอระหว่างรอ
   ["planLead", "planSafety", "planCover"].forEach(id => { document.getElementById(id).value = ""; });
   await planLoad(false);
 }
@@ -191,13 +192,13 @@ function planRender() {
       <td class="rail"></td>
       <td><span class="sq-chip ${PLAN_SEV[x.status] || ""}">${x.icon} ${escapeHtml(x.statusText)}</span></td>
       <td><div class="sq-name">${escapeHtml(x.name)}</div><div class="sq-meta"><span>${escapeHtml(x.sku)}</span><span>รอของ ${x.leadDays} วัน${x.leadOwn ? " (รายตัว)" : ""}</span></div></td>
-      <td class="n"><span class="sq-num sq-num-lg">${planFmt(x.qty)}</span><span class="sq-unit">${escapeHtml(x.unit)}</span>
+      <td class="n" style="white-space:nowrap;"><span class="sq-num sq-num-lg">${planFmt(x.qty)}</span><span class="sq-unit">${escapeHtml(x.unit)}</span>
           ${x.min > 0 ? `<div class="sq-meter-note">จุดสั่งซื้อ ${planFmt(x.min)}</div>` : ""}</td>
-      <td class="n">${x.rate > 0 ? `<span class="sq-num">${planFmt(x.rate)}</span><span class="sq-unit">/วัน</span>` : '<span class="sq-dim">—</span>'}
+      <td class="n" style="white-space:nowrap;">${x.rate > 0 ? `<span class="sq-num">${planFmt(x.rate)}</span><span class="sq-unit">/วัน</span>` : '<span class="sq-dim">—</span>'}
           <div class="sq-meter-note" title="${escapeAttr(src[1])}">${escapeHtml(src[0])}</div></td>
       <td class="n" style="min-width:120px;">${_planCover(x)}</td>
-      <td>${_planWhen(x)}</td>
-      <td class="n">${sug}</td>
+      <td style="white-space:nowrap;">${_planWhen(x)}</td>
+      <td class="n" style="white-space:nowrap;">${sug}</td>
       <td style="font-size:12px;line-height:1.55;min-width:220px;">${_planNotes(x)}</td>
     </tr>`;
   }).join("");
@@ -230,7 +231,7 @@ function planRender() {
     <p class="sq-note">
       <b>อ่านยังไง</b> · <b>พอใช้อีก</b> = คงเหลือ ÷ ใช้ต่อวัน · <b>ต้องสั่งภายใน</b> = วันที่ของจะหมด − วันรอของ − วันกันชน ·
       <b>แนะนำสั่ง</b> = ให้พอใช้ ${S.coverDays} วันนับจากวันที่ของมาถึง (ปัดตามขนาดบรรจุ / ไม่ต่ำกว่าสั่งขั้นต่ำ)<br>
-      <b>ใช้ต่อวัน</b> ใช้ยอดเบิกจริง 30 วัน (เบิก − คืน) เมื่อเบิกครบ 5 ครั้งและมีข้อมูล 14 วันขึ้นไป — ถ้ายังไม่ถึงจะใช้ค่า "ใช้ต่อวัน" ที่ตั้งไว้ในรายการวัตถุดิบ ·
+      <b>ใช้ต่อวัน</b> เลือกค่าที่มากกว่าระหว่าง ยอดเบิกจริง 30 วัน (เบิก − คืน · นับเมื่อเบิกครบ 5 ครั้งและมีข้อมูล 14 วันขึ้นไป) กับค่า "ใช้ต่อวัน" ที่ตั้งไว้ในรายการวัตถุดิบ — เผื่อไว้ทางปลอดภัยเพื่อกันของหมด ·
       วันรอของ / ขนาดบรรจุ / สั่งขั้นต่ำ ของแต่ละตัว แก้ได้ที่ปุ่ม <b>แก้ไข</b> ในตารางวัตถุดิบ<br>
       ระบบ<b>ไม่สั่งซื้อเองและไม่บล็อกการเบิก</b> — เป็นข้อมูลให้ทุกคนช่วยกันดูเท่านั้น
     </p>`;

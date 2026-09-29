@@ -421,6 +421,11 @@
     .sq-dot { width:7px;height:7px;border-radius:50%;flex:none;background:var(--sq-muted); }
     .sq-tile-num { font:800 25px/1.15 var(--sq-mono);font-variant-numeric:tabular-nums;letter-spacing:-.02em;margin-top:3px; }
     .sq-tile-note { font-size:11px;color:var(--sq-muted); }
+    /* การ์ดตัวเลขที่กดกรองได้ (หน้าวางแผนสั่งซื้อ) */
+    button.plan-tile { font:inherit;text-align:left;background:none;border:0;border-right:1px solid var(--sq-line-soft);cursor:pointer;color:inherit; }
+    button.plan-tile:hover { background:var(--sq-raised); }
+    button.plan-tile:focus-visible { outline:2px solid var(--sq-accent);outline-offset:-2px; }
+    button.plan-tile.is-on { background:var(--sq-accent-2);box-shadow:inset 0 -3px 0 var(--sq-accent); }
 
     .sq-tablewrap { overflow-x:auto; }
     table.sq-table { width:100%;border-collapse:collapse;font-size:13px; }
@@ -1516,7 +1521,10 @@
             <button onclick="setRawType('RETURN')" id="rawBtnRet" class="flex-1 py-4 rounded-[2.5rem] font-black text-base text-slate-400 uppercase">คืน ↩️</button>
             <button onclick="setRawType('IN')"     id="rawBtnIn"  class="flex-1 py-4 rounded-[2.5rem] font-black text-base text-slate-400 uppercase">รับ 📥</button>
           </div>
-          <input type="number" id="rawModalQty" class="w-full border-4 border-slate-200 p-8 text-7xl font-black rounded-[3rem] text-center outline-none bg-stone-50 focus:border-blue-600" value="1" min="1" placeholder="เช่น 16*48+5">
+          <div>
+            <input type="number" id="rawModalQty" oninput="rawUpdateAfter()" class="w-full border-4 border-slate-200 p-8 text-7xl font-black rounded-[3rem] text-center outline-none bg-stone-50 focus:border-blue-600" value="1" min="1" placeholder="เช่น 16*48+5">
+            <div id="rawModalAfter" style="margin-top:10px;font-size:14px;font-weight:800;color:var(--sq-ink2);min-height:21px;"></div>
+          </div>
           <!-- ใช้กับงานอะไร — บังคับกรอกตอนเบิก ข้อมูลนี้ขึ้นบนใบเบิกและออดิเตอร์ใช้ตรวจ -->
           <div id="rawPurposeWrap" style="text-align:left;">
             <label for="rawModalPurpose" style="font-size:13px;font-weight:800;color:var(--sq-ink2);display:block;margin:0 0 6px 4px;">
@@ -1528,6 +1536,8 @@
                           font-family:inherit;font-size:16px;font-weight:700;outline:none;box-sizing:border-box;
                           background:var(--sq-surface);color:var(--sq-ink);">
             <datalist id="rawPurposeList"></datalist>
+            <!-- งานที่ใช้บ่อย — กดเลือกแทนพิมพ์ -->
+            <div id="rawPurposeChips" style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;"></div>
           </div>
           <!-- ข้อ 19: อ้างอิงใบสั่งผลิต (ไม่บังคับ) — ไว้เทียบใช้จริงกับสูตรทีหลัง -->
           <div id="rawWoWrap" style="text-align:left;margin-top:8px;">
@@ -1666,6 +1676,7 @@
 
         <div class="rm-head-actions" id="rawActionBtns">
           <button onclick="openRawHistory()" class="rm-btn">📜 ประวัติการใช้งาน</button>
+          <button id="rawPlanBtn" onclick="openPlanModal()" class="rm-btn">📈 วางแผนสั่งซื้อ</button>
           <button onclick="openRawScanner()" class="rm-btn">📷 สแกน QR</button>
           <button onclick="openRawCreate()" class="rm-btn rm-btn-primary viewer-hide">+ เพิ่มวัตถุดิบ</button>
           <details class="rm-more" id="rawMoreMenu">
@@ -1753,6 +1764,7 @@
   <script src="js/slip.js"></script>
   <script src="js/docreport.js"></script>
   <script src="js/rop.js"></script>
+  <script src="js/plan.js"></script>
 
   <!-- ═══ 📜 ประวัติของฉัน (ทุก role เห็นได้ — เฉพาะรายการของตัวเอง) ═══ -->
   <div id="myHistModal" class="hidden fixed inset-0 bg-black/70 backdrop-blur-sm z-[600] flex items-center justify-center p-4">
@@ -1801,6 +1813,42 @@
       </div>
 
       <div id="ropBody" style="padding:14px 16px;overflow-y:auto;"></div>
+    </div>
+  </div>
+
+  <!-- ═══ 📈 วางแผนสั่งซื้อ — วิเคราะห์การเบิก กันของหมด/สั่งไม่ทัน (js/plan.js) ═══ -->
+  <div id="planModal" class="hidden fixed inset-0 z-[630] flex items-center justify-center p-4"
+       style="background:rgba(22,36,27,.55);backdrop-filter:blur(3px);">
+    <div class="sq-page" style="width:100%;max-width:1240px;border-radius:14px;overflow:hidden;
+                box-shadow:0 20px 50px rgba(0,0,0,.3);display:flex;flex-direction:column;max-height:94vh;">
+
+      <div style="background:var(--sq-surface);border-bottom:1px solid var(--sq-line);
+                  padding:13px 16px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+        <div style="flex:1;min-width:190px;">
+          <div class="sq-card-title">📈 วางแผนสั่งซื้อ</div>
+          <div class="sq-card-note"><b id="planTarget">—</b> · ตัวไหนจะหมดก่อนของมาถึง — ดูจากการเบิกจริง</div>
+        </div>
+        <label style="font-size:12px;font-weight:800;color:var(--sq-ink2);display:flex;align-items:center;gap:6px;">
+          สั่งของแล้วรอกี่วัน
+          <input type="number" id="planLead" min="1" max="180" oninput="planOnSettingInput()"
+                 class="sq-input" style="width:62px;text-align:center;">
+        </label>
+        <label style="font-size:12px;font-weight:800;color:var(--sq-ink2);display:flex;align-items:center;gap:6px;"
+               title="เผื่อของมาช้า / ใช้มากกว่าปกติ">
+          กันชน (วัน)
+          <input type="number" id="planSafety" min="0" max="60" oninput="planOnSettingInput()"
+                 class="sq-input" style="width:56px;text-align:center;">
+        </label>
+        <label style="font-size:12px;font-weight:800;color:var(--sq-ink2);display:flex;align-items:center;gap:6px;">
+          สั่งให้พอใช้ (วัน)
+          <input type="number" id="planCover" min="1" max="365" oninput="planOnSettingInput()"
+                 class="sq-input" style="width:62px;text-align:center;">
+        </label>
+        <button onclick="planLoad(false)" class="sq-btn" title="ดึงข้อมูลล่าสุด">↻</button>
+        <button onclick="closePlanModal()" class="sq-btn">✕ ปิด</button>
+      </div>
+
+      <div id="planBody" style="padding:14px 16px;overflow-y:auto;"></div>
     </div>
   </div>
 

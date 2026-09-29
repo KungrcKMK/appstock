@@ -285,7 +285,12 @@
       <!-- ปุ่มบวกเร็ว — ขนาดก้าวปรับตามยอดของตัวนั้น (ของหลักแสนไม่ต้องกด + ทีละ 1) -->
       <div id="aQuick" class="flex gap-1.5 mt-2"></div>
       <!-- ยอดหลังบันทึก — เห็นก่อนกดยืนยัน กันพิมพ์เกินหลัก/เลือกผิดประเภท -->
-      <div id="aAfter" class="text-center text-sm font-black mt-2 text-slate-400" style="min-height:20px"></div>
+      <div class="flex items-center gap-2 mt-2">
+        <button onclick="setQty('')" class="btn-tap flex-shrink-0 bg-slate-900 border border-slate-700 text-slate-400 px-3 py-2 rounded-lg text-xs font-black">ล้าง</button>
+        <div id="aAfter" class="flex-1 text-center text-sm font-black text-slate-400" style="min-height:20px"></div>
+        <!-- 🧮 เปิดแป้นพิมพ์เต็มเพื่อพิมพ์โจทย์ เช่น 16*48+5 (แป้นตัวเลขไม่มีเครื่องหมายคูณ) -->
+        <button onclick="calcMode()" class="btn-tap flex-shrink-0 bg-slate-900 border border-slate-700 text-slate-400 px-3 py-2 rounded-lg text-xs font-black">🧮 คิดเลข</button>
+      </div>
 
       <!-- ใช้กับงานอะไร — บังคับกรอกตอนเบิก ข้อมูลนี้ขึ้นบนใบเบิกให้ออดิเตอร์ตรวจ -->
       <div id="aPurposeWrap" class="mt-2">
@@ -1414,23 +1419,23 @@ function updateAfter() {
   const q = numVal($("aQtyIn").value), u = sel.unit || "";
   const btn = $("aConfirm");
   if (btn && !btn.disabled) btn.textContent = confirmLabel();
-  if (isNaN(q) || q < 0) { el.className = "text-center text-sm font-black mt-2 text-slate-500"; el.textContent = ""; return; }
+  if (isNaN(q) || q < 0) { el.className = "flex-1 text-center text-sm font-black text-slate-500"; el.textContent = ""; return; }
   const expr = /[-+*\/x×÷()]/i.test(String($("aQtyIn").value)) ? "= " + fmtNum(q) + " " + u + " · " : "";
   let txt, cls = "text-slate-400";
   if (aType === "COUNT") {
     const diff = Math.round((q - sel.qty) * 1000) / 1000;
-    txt = expr + (diff === 0 ? "ตรงกับยอดในระบบ" : "ต่างจากยอดในระบบ " + (diff > 0 ? "+" : "−") + fmtNum(Math.abs(diff)) + " " + u);
+    txt = expr + (diff === 0 ? "ตรงกับยอดในระบบ" : "ต่างจากระบบ " + (diff > 0 ? "+" : "−") + fmtNum(Math.abs(diff)) + " " + u);
     if (diff !== 0) cls = "text-amber-400";
   } else {
     const after = Math.round((aType === "OUT" ? sel.qty - q : sel.qty + q) * 1000) / 1000;
     if (after < 0) { txt = "⚠️ เกินยอดที่มี (" + fmtNum(sel.qty) + " " + u + ")"; cls = "text-red-400"; }
     else {
-      txt = expr + "หลังบันทึก: คงเหลือ " + fmtNum(after) + " " + u;
+      txt = expr + "จะเหลือ " + fmtNum(after) + " " + u;
       if (after === 0) { txt += " (หมดพอดี)"; cls = "text-amber-400"; }
       else if (aType === "OUT" && sel.min > 0 && after <= sel.min) { txt += " · ต่ำกว่าขั้นต่ำ"; cls = "text-amber-400"; }
     }
   }
-  el.className = "text-center text-sm font-black mt-2 " + cls;
+  el.className = "flex-1 text-center text-sm font-black " + cls;
   el.textContent = txt;
 }
 
@@ -1448,9 +1453,6 @@ function renderQuick() {
   const b = "btn-tap flex-1 py-2.5 rounded-xl font-black text-sm";
   let html = quickSteps().map(n => `<button onclick="addQty(${n})" class="${b} bg-slate-700 text-slate-200">+${fmtNum(n)}</button>`).join("");
   if (aType === "OUT" && sel && sel.qty > 0) html += `<button onclick="setQty(${Number(sel.qty)})" class="${b} bg-slate-700 text-orange-300">ทั้งหมด</button>`;
-  html += `<button onclick="setQty('')" class="${b} bg-slate-900 text-slate-400 border border-slate-700">ล้าง</button>`;
-  // 🧮 เปิดแป้นพิมพ์เต็มเพื่อพิมพ์โจทย์ เช่น 16*48+5 (แป้นตัวเลขไม่มีเครื่องหมายคูณ)
-  html += `<button onclick="calcMode()" class="${b} bg-slate-900 text-slate-400 border border-slate-700" title="คิดเลขในช่อง เช่น 16*48+5">🧮</button>`;
   el.innerHTML = html;
 }
 function calcMode() {

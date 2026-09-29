@@ -74,6 +74,8 @@ frontend (GitHub Pages, vanilla JS) → Cloudflare Worker (`cloudflare/appstock-
 - ฟังก์ชัน frontend ขึ้นต้นด้วย prefix ประจำไฟล์: `raw*` (raw.js), `cr*` (coldroom.js), `dr*`, `imp*`, `slip*`, `plan*` (plan.js) — ฟังก์ชันใหม่ต้องตามนี้ เพราะทุกไฟล์แชร์ global scope เดียวกัน
 - ฝั่งหลังบ้าน (`cloudflare/appstock-api/src/`): `raw.js` = วัตถุดิบ (`rm*`), `cold.js` = ห้องเย็น (`cr*`), `bom.js`, `auth.js`, `system.js`, `lib.js` (ตัวช่วยกลาง)
   เพิ่ม action ใหม่ที่ switch ใน `handleRaw` (`src/raw.js`) หรือตาราง handler ใน `src/index.js`
+- **การคำนวณอยู่ที่หลังบ้านที่เดียว หน้าจอแค่แสดงผล** — มี 2 หน้าจอ ถ้าคิดสองที่ตัวเลขจะไม่ตรงกันสักวัน (ตัวอย่าง: `src/plan.js` → `js/plan.js` + แผ่น `#planSheet` ใน mobile.html)
+- มือถือ: อ่านตัวเลขจากช่องกรอกด้วย `numVal()` แสดงด้วย `fmtNum()` — ห้ามใช้ `Number(el.value)` ตรงๆ (ลูกน้ำ/ทศนิยม/โจทย์คิดเลขจะพัง)
 - **คำตอบต้องใช้ชื่อ key แบบเดิม** (หัวคอลัมน์ชีต: `SKU`, `Name`, `Qty`, ...) — หน้าจอทั้งสองอ่านชื่อพวกนี้อยู่
 - การเขียนที่อ่านก่อนเขียน (read-then-write) ต้องทำใน `env.DB.batch([...])` เดียว และ **ตรวจเงื่อนไขซ้ำใน SQL**
   (เช่น `WHERE qty >= ?`) ไม่ใช่เชื่อค่าที่อ่านมาก่อน — ดูตัวอย่าง `rmUpdate` ใน `src/raw.js`

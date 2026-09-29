@@ -196,7 +196,7 @@ async function adminLoadStatus() {
           ? `เซิร์ฟเวอร์รวม ${window._gasLastWriteTiming.totalMs || 0} ms · รอล็อก ${window._gasLastWriteTiming.lockWaitMs || 0} ms · ต่อคิว Telegram ${window._gasLastWriteTiming.tgMs || 0} ms`
           : "ยังไม่มีการบันทึกในรอบนี้")}
       </tbody></table></div></div>
-    <div class="sq-card" style="margin-top:12px;"><div class="sq-card-head"><span class="sq-card-title">☁️ เซิร์ฟเวอร์ (Google Apps Script)</span>
+    <div class="sq-card" style="margin-top:12px;"><div class="sq-card-head"><span class="sq-card-title">☁️ เซิร์ฟเวอร์ (Cloudflare)</span>
       ${srv ? `<span class="sq-chip ok">ตอบใน ${srvMs} ms${srv.serverMs ? ` · เซิร์ฟเวอร์ใช้ ${srv.serverMs} ms` : ""}</span>` : `<span class="sq-chip crit">ติดต่อไม่ได้</span>`}</div>
       <div class="sq-tablewrap"><table class="sq-table"><tbody>
         ${srv ? `
@@ -212,7 +212,7 @@ async function adminLoadStatus() {
         ${row("Telegram รอส่ง", srv.tgPending == null ? "—" : (srv.tgPending ? `<span class="sq-chip warn">${srv.tgPending} ข้อความ</span>` : chip(true, "ไม่มี", "")))}
         ` : row("ข้อผิดพลาด", `<span style="color:var(--sq-crit);font-weight:800;">${escapeHtml(srvErr)}</span>`)}
       </tbody></table></div></div>
-    <p class="sq-note" style="margin-top:10px;">อ่านผล: "ตอบใน" มากแต่ "เซิร์ฟเวอร์ใช้" น้อย = ช้าที่ทางเดินของ Google (รอคิว/redirect) ไม่ใช่โปรแกรม · เซิร์ฟเวอร์ตอบช้า/ไม่ตอบ = ปัญหาที่ Google หรือเน็ต · รุ่นแอปไม่ตรงกับที่ deploy ล่าสุด = เครื่องนี้ยังไม่ได้อัปเดต (กด 🔄 อัปเดต) · งานค้างในเครื่องอื่นจะไม่เห็นจากที่นี่</p>`;
+    <p class="sq-note" style="margin-top:10px;">อ่านผล: "ตอบใน" มากแต่ "เซิร์ฟเวอร์ใช้" น้อย = ช้าที่เน็ตของเครื่องนี้ ไม่ใช่โปรแกรม · เซิร์ฟเวอร์ไม่ตอบ = เน็ตหลุดหรือเซิร์ฟเวอร์มีปัญหา · รุ่นแอปไม่ตรงกับที่ deploy ล่าสุด = เครื่องนี้ยังไม่ได้อัปเดต (กด 🔄 อัปเดต) · งานค้างในเครื่องอื่นจะไม่เห็นจากที่นี่</p>`;
 }
 
 async function loadUsers() {

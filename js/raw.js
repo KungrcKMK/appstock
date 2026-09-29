@@ -125,14 +125,14 @@ async function _rawLoadDataRun(startup, retry, opts, mod) {
     if (quiet && rawLastData.length) {
       // มีข้อมูลบนจออยู่แล้ว (ของเดิม/จากเครื่อง) → คงไว้ แค่บอกว่าตรวจไม่ได้ — ไม่วาดซ้ำ ไม่เด้งแจ้งเตือนซ้ำ
       rawSetDataAge("stale", window._rawDataAt);
-      showToast(err.gasHtml ? "⚠️ ตรวจข้อมูลล่าสุดไม่ได้ (Google ตอบไม่ปกติ) — แสดงข้อมูลเดิมไว้ก่อน" : "⚠️ ตรวจข้อมูลล่าสุดไม่ได้ (เชื่อมต่อไม่ได้) — แสดงข้อมูลเดิมไว้ก่อน", "warn", 5000);
+      showToast(err.gasHtml ? "⚠️ ตรวจข้อมูลล่าสุดไม่ได้ (เซิร์ฟเวอร์ตอบไม่ปกติ) — แสดงข้อมูลเดิมไว้ก่อน" : "⚠️ ตรวจข้อมูลล่าสุดไม่ได้ (เชื่อมต่อไม่ได้) — แสดงข้อมูลเดิมไว้ก่อน", "warn", 5000);
       return;
     }
     // fetch fail → ลองใช้ข้อมูลเก่าจาก cache
     const cachedRaw = (() => { try { return JSON.parse(localStorage.getItem("cache_raw_" + mod) || "null"); } catch (e) { return null; } })();
     if (cachedRaw && cachedRaw.d) {
       _rawApplyData(cachedRaw.d, startup, "cache", cachedRaw.t);
-      showToast(err.gasHtml ? "⏳ แสดงข้อมูลเก่า — Google ตอบไม่ปกติ ลองรีเฟรชอีกสักครู่" : "⏳ แสดงข้อมูลเก่า (เชื่อมต่อไม่ได้)", "warn", 5000);
+      showToast(err.gasHtml ? "⏳ แสดงข้อมูลเก่า — เซิร์ฟเวอร์ตอบไม่ปกติ ลองรีเฟรชอีกสักครู่" : "⏳ แสดงข้อมูลเก่า (เชื่อมต่อไม่ได้)", "warn", 5000);
     } else {
       showToast(err.gasHtml ? err.message : "เชื่อมต่อฐานข้อมูลล้มเหลว ❌", "error", 6000);
     }

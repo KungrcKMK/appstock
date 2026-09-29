@@ -12,7 +12,7 @@ APP_VERSION = "cf-2026-09-29"
 [[d1_databases]]
 binding = "DB"
 database_name = "appstock"
-database_id = "00000000-0000-0000-0000-000000000000"
+database_id = "be2386d0-843f-4f47-8397-de4f4e795dd0"
 
 # ที่เก็บไฟล์สำรองข้อมูล (JSON รายวัน + ตอนกดสำรองเอง)
 [[r2_buckets]]

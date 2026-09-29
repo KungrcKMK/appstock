@@ -39,6 +39,80 @@
 // 5. Copy URL ไปใส่ใน index.html ที่ตัวแปร GAS_URL
 // ============================================================
 
+// ═══════════════════════════════════════════════════════════
+// ☁️ ย้ายหลังบ้านไป Cloudflare Workers แล้ว (2026-09-29) — โค้ดอยู่ที่ cloudflare/appstock-api/
+//   สคริปต์นี้เหลือหน้าที่เดียว: ดึงสำเนาข้อมูลมาลงชีต (mirrorFromCloud) ให้เปิดดูได้เหมือนเดิม
+//   ⚠️ ชีต = สำเนาอ่านอย่างเดียว · แก้ในชีตไม่มีผลกับระบบ และจะถูกเขียนทับในรอบถัดไป
+//   โค้ดหลังบ้านเดิมข้างล่างเก็บไว้เผื่อถอยกลับ: ตั้ง MIGRATED_TO_CLOUDFLARE = false แล้ว deploy
+// ═══════════════════════════════════════════════════════════
+var MIGRATED_TO_CLOUDFLARE = true;
+var CLOUD_API_URL = "https://appstock-api.pitak-ttg.workers.dev";
+
+function _movedOut(obj) { return ContentService.createTextOutput(JSON.stringify(obj)).setMimeType(ContentService.MimeType.JSON); }
+function _movedMsg() {
+  return { ok: false, status: "error", migrated: true, message: "ระบบย้ายไปเซิร์ฟเวอร์ใหม่แล้ว — กรุณากดปุ่ม 🔄 อัปเดตแอป แล้วทำรายการใหม่" };
+}
+// แอปรุ่นเก่าที่ยังค้างในเครื่อง (ก่อนอัปเดต) จะได้ข้อความนี้ — ไม่เขียนข้อมูลลงชีตอีก กันข้อมูลแตกเป็นสองชุด
+function _movedPost(e) {
+  var data = {};
+  try { data = JSON.parse(e.postData.contents); } catch (err) {}
+  if (data.action === "MIRRORSETUP") return _movedOut(_mirrorSetup(String(data.key || "")));
+  if (data.action === "MIRRORNOW")   return _movedOut(_mirrorNowWeb(String(data.key || "")));
+  return _movedOut(_movedMsg());
+}
+function _mirrorFetch(key) {
+  var resp = UrlFetchApp.fetch(CLOUD_API_URL, {
+    method: "post", contentType: "text/plain;charset=utf-8", muteHttpExceptions: true,
+    payload: JSON.stringify({ module: "SYSTEM", action: "EXPORT", mirrorKey: key, maxHistory: 5000 })
+  });
+  try { return JSON.parse(resp.getContentText()); } catch (err) { return { ok: false, message: "คำตอบอ่านไม่ได้ (" + resp.getResponseCode() + ")" }; }
+}
+// ตั้งกุญแจครั้งแรก: ตรวจกับ Cloudflare ว่ากุญแจใช้ได้จริงก่อนเก็บ (ไม่มีความลับในโค้ด — repo เป็นสาธารณะ)
+function _mirrorSetup(key) {
+  if (!key) return { ok: false, message: "ไม่ระบุกุญแจ" };
+  var d = _mirrorFetch(key);
+  if (!d || !d.ok) return { ok: false, message: "กุญแจไม่ถูกต้อง" };
+  PropertiesService.getScriptProperties().setProperty("MIRROR_KEY", key);
+  return { ok: true };
+}
+function _mirrorNowWeb(key) {
+  var stored = PropertiesService.getScriptProperties().getProperty("MIRROR_KEY");
+  if (!stored || key !== stored) return { ok: false, message: "unauthorized" };
+  return _mirrorRun();
+}
+// ตั้ง Time Trigger: ฟังก์ชัน mirrorFromCloud · ตามเวลา · ทุก 15–30 นาที
+function mirrorFromCloud() { return _mirrorRun(); }
+function _mirrorRun() {
+  var key = PropertiesService.getScriptProperties().getProperty("MIRROR_KEY");
+  if (!key) return { ok: false, message: "ยังไม่ได้ตั้งกุญแจ (MIRRORSETUP)" };
+  var lock = LockService.getScriptLock();
+  if (!lock.tryLock(0)) return { ok: true, skipped: true };
+  try {
+    var d = _mirrorFetch(key);
+    if (!d || !d.ok) return { ok: false, message: (d && d.message) || "ดึงข้อมูลไม่สำเร็จ" };
+    var ss = SpreadsheetApp.getActiveSpreadsheet();
+    var written = {};
+    Object.keys(d.sheets).forEach(function (name) {
+      var rows = d.sheets[name];
+      if (!rows || !rows.length || !rows[0].length) return;
+      // ข้อความที่ขึ้นต้นด้วย = + - @ จะถูกชีตตีความเป็นสูตร — ใส่ ' นำหน้าให้เป็นข้อความเสมอ
+      var safe = rows.map(function (r) { return r.map(function (v) {
+        return (typeof v === "string" && /^[=+\-@]/.test(v)) ? "'" + v : v; }); });
+      var sh = ss.getSheetByName(name) || ss.insertSheet(name);
+      sh.clearContents();
+      sh.getRange(1, 1, safe.length, safe[0].length).setValues(safe);
+      sh.getRange(1, 1, 1, safe[0].length).setFontWeight("bold").setBackground("#1e293b").setFontColor("#ffffff");
+      sh.setFrozenRows(1);
+      sh.getRange(1, 1).setNote("สำเนาอ่านอย่างเดียวจากระบบ (Cloudflare)\nอัปเดตล่าสุด " + (d.generatedAtTH || d.generatedAt) +
+                                "\nแก้ในชีตนี้ไม่มีผลกับระบบ และจะถูกเขียนทับรอบถัดไป");
+      written[name] = safe.length - 1;
+    });
+    return { ok: true, at: d.generatedAt, rows: written };
+  } catch (err) {
+    return { ok: false, message: String(err) };
+  } finally { try { lock.releaseLock(); } catch (e2) {} }
+}
+
 // ============================================================
 // SHEET HELPERS
 // ============================================================
@@ -695,6 +769,7 @@ function _rawCacheBust(module) {
 }
 
 function doGet(e) {
+  if (MIGRATED_TO_CLOUDFLARE) return _movedOut(_movedMsg());
   _reqBegin();
   try {
     if (!_checkApiKey(e.parameter && e.parameter.k)) {
@@ -819,6 +894,7 @@ function sysStatus() {
 }
 
 function doPost(e) {
+  if (MIGRATED_TO_CLOUDFLARE) return _movedPost(e);
   _reqBegin();
   try {
     const data = JSON.parse(e.postData.contents);
@@ -1871,6 +1947,7 @@ function _tgEnqueue(message) {
   }
 }
 function tgFlushQueue() {
+  if (MIGRATED_TO_CLOUDFLARE) return { ok: true, skipped: true };
   var lock = LockService.getScriptLock();          // คนละตัวกับล็อกเขียนข้อมูล — flush ไม่บล็อกการบันทึก
   if (!lock.tryLock(0)) return { ok: true, skipped: true };
   var sent = 0, failed = 0;
@@ -1950,6 +2027,7 @@ function _crSendTelegramRaw(message) {
 // ============================================================
 
 function archiveOldStock(payload) {
+  if (MIGRATED_TO_CLOUDFLARE) return { ok: true, archived: 0, message: "ย้ายไป Cloudflare แล้ว" };
   if (payload && payload.adminToken && !verifyAdminToken(payload.adminToken)) {
     return { ok: false, message: "ไม่มีสิทธิ์" };
   }
@@ -2007,6 +2085,7 @@ function archiveOldStock(payload) {
 // ============================================================
 
 function checkExpiryAlerts() {
+  if (MIGRATED_TO_CLOUDFLARE) return;   // แจ้งเตือนหมดอายุย้ายไปงานตามเวลาของ Cloudflare แล้ว
   try {
     var s = crGetAlertSettings().settings;
     var token   = String(s.telegramBotToken || "").trim();

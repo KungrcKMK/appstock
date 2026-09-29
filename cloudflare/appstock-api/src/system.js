@@ -131,31 +131,51 @@ export async function checkExpiryAlerts(c) {
 }
 
 // ───────────── ส่งออก: สำเนาไปชีต (อ่านอย่างเดียว) และสำรองข้อมูลเต็ม ─────────────
-// full = true → ข้อมูลครบทุกช่อง (ใช้กับไฟล์สำรองใน R2 เท่านั้น)
-// full = false → สำหรับสำเนาในชีต: ไม่มีรหัสผ่าน ไม่มีโทเคนบอท
-const SHEETS = [
-  ["SQF_Materials", "materials", "module = 'SQF'"], ["MLM_Materials", "materials", "module = 'MLM'"],
-  ["SQF_History", "history", "module = 'SQF'"], ["MLM_History", "history", "module = 'MLM'"],
-  ["ColdRoom_Products", "cr_products", ""], ["ColdRoom_Stock", "cr_stock", "archived = 0"], ["ColdRoom_Stock_Archive", "cr_stock", "archived = 1"],
-  ["ColdRoom_LotHistory", "cr_lot_history", ""], ["ColdRoom_WorkOrders", "work_orders", ""], ["ColdRoom_DeliveryNotes", "delivery_notes", ""],
-  ["ColdRoom_StockIn", "stock_in", ""], ["BOM", "bom", ""], ["AppUsers", "users", ""], ["PendingUsers", "pending_users", ""],
-  ["Config", "config", ""], ["System_Log", "system_log", ""],
-];
+// สำเนาในชีตใช้ "หัวคอลัมน์แบบเดิม" ทุกแท็บ — เจ้าของ/ออดิเตอร์เปิดดูได้เหมือนก่อนย้าย และถอยกลับไปหลังบ้านเดิมได้
+// full = true → ข้อมูลดิบครบทุกช่องของทุกตาราง (ใช้กับไฟล์สำรองใน R2 เท่านั้น)
+// full = false → สำหรับชีต: ไม่มีรหัสผ่าน ไม่มีโทเคนบอท
+const b2 = (v) => Number(v) !== 0;
+const nb = (v) => (v === null || v === undefined ? "" : v);
+const MAT_COLS = [["SKU", "sku"], ["Name", "name"], ["Qty", "qty"], ["Unit", "unit"], ["Min", "min"], ["DailyUsage", "daily_usage"], ["ExpiryDate", "expiry_date"],
+  ["LastVerified", "last_verified"], ["Discontinued", (r) => b2(r.discontinued)], ["AlertDays", "alert_days"], ["RopStart", "rop_start"], ["LeadDays", "lead_days"], ["Moq", "moq"], ["PackSize", "pack_size"]];
+const HIST_COLS = [["Timestamp", "ts"], ["Name", "name"], ["Action", "action"], ["Qty", "qty"], ["User", "user"], ["DocNo", "doc_no"], ["SKU", "sku"], ["Unit", "unit"],
+  ["Purpose", "purpose"], ["OpId", "op_id"], ["BalanceAfter", "balance_after"], ["WorkOrder", "work_order"], ["AckBy", "ack_by"], ["AckAt", "ack_at"]];
+const STOCK_COLS = [["RowID", "row_id"], ["Barcode", "barcode"], ["ProductName", "product_name"], ["MFG", "mfg"], ["EXP", "exp"], ["Qty", "qty"], ["Note", "note"],
+  ["EmployeeName", "employee_name"], ["DeviceInfo", "device_info"], ["UpdatedAt", "updated_at"]];
 const SECRET_CONFIG = /token|apikey|secret/i;
+const SHEETS = [
+  ["SQF_Materials", "materials", "module = 'SQF'", "seq, rowid", MAT_COLS], ["MLM_Materials", "materials", "module = 'MLM'", "seq, rowid", MAT_COLS],
+  ["SQF_History", "history", "module = 'SQF'", "id", HIST_COLS, true], ["MLM_History", "history", "module = 'MLM'", "id", HIST_COLS, true],
+  ["ColdRoom_Products", "cr_products", "", "seq, rowid", [["Barcode", "barcode"], ["ProductName", "product_name"], ["SKU", "sku"], ["DefaultUnit", "default_unit"],
+    ["StandardShelfLifeDays", "shelf_life_days"], ["WarningPercentage", "warning_pct"], ["WarningDays", "warning_days"], ["SetName", "set_name"], ["UnitsPerSet", "units_per_set"], ["CreatedAt", "created_at"]]],
+  ["ColdRoom_Stock", "cr_stock", "archived = 0", "seq, rowid", STOCK_COLS], ["ColdRoom_Stock_Archive", "cr_stock", "archived = 1", "seq, rowid", STOCK_COLS],
+  ["ColdRoom_LotHistory", "cr_lot_history", "", "id", [["Timestamp", "ts"], ["Barcode", "barcode"], ["ProductName", "product_name"], ["MFG", "mfg"], ["Action", "action"],
+    ["QtyBefore", "qty_before"], ["QtyAfter", "qty_after"], ["Reason", "reason"], ["EmployeeName", "employee_name"], ["DeviceInfo", "device_info"], ["OpId", "op_id"]], true],
+  ["ColdRoom_WorkOrders", "work_orders", "", "id", [["OrderID", "order_id"], ["Date", "date"], ["Items", "items"], ["Note", "note"], ["CreatedBy", "created_by"], ["CreatedAt", "created_at"], ["Status", "status"]]],
+  ["ColdRoom_DeliveryNotes", "delivery_notes", "", "id", [["DeliveryID", "delivery_id"], ["WorkOrderID", "work_order_id"], ["Items", "items"], ["SubmittedBy", "submitted_by"],
+    ["SubmittedAt", "submitted_at"], ["ApprovedBy", "approved_by"], ["ApprovedAt", "approved_at"], ["Status", "status"], ["Note", "note"]]],
+  ["ColdRoom_StockIn", "stock_in", "", "id", [["StockInID", "stock_in_id"], ["SubmittedBy", "submitted_by"], ["SubmittedAt", "submitted_at"], ["Items", "items"], ["Status", "status"],
+    ["Note", "note"], ["ReviewedBy", "reviewed_by"], ["ReviewedAt", "reviewed_at"]]],
+  ["BOM", "bom", "", "id", [["BomID", "bom_id"], ["ProductBarcode", "product_barcode"], ["ProductName", "product_name"], ["Factory", "factory"], ["MaterialSKU", "material_sku"],
+    ["MaterialName", "material_name"], ["QtyPerUnit", "qty_per_unit"], ["Unit", "unit"]]],
+  ["AppUsers", "users", "", "rowid", [["Username", "username"], ["Active", (r) => b2(r.active)], ["Role", "role"], ["CreatedAt", "created_at"], ["HasPassword", (r) => (r.password ? "มี" : "")]]],
+  ["PendingUsers", "pending_users", "", "id", [["Username", "username"], ["RequestedAt", "requested_at"], ["Status", "status"], ["ReviewedAt", "reviewed_at"], ["ReviewedBy", "reviewed_by"], ["RequestedRole", "requested_role"]]],
+  ["Config", "config", "", "rowid", [["Key", "key"], ["Value", (r) => (SECRET_CONFIG.test(String(r.key)) ? (r.value ? "(ซ่อน — ดู/แก้ในแอป)" : "") : r.value)]]],
+  ["System_Log", "system_log", "", "id", [["Timestamp", "ts"], ["Type", "type"], ["Detail", "detail"], ["User", "user"], ["Result", "result"]], true],
+];
 export async function exportSheets(c, full, maxHistory) {
   const out = {};
-  for (const [sheet, table, where] of SHEETS) {
-    const order = table === "materials" || table === "cr_products" || table === "cr_stock" ? "seq, rowid" : "rowid";
+  for (const [sheet, table, where, order, cols, isLog] of SHEETS) {
     let rows = await all(c, "SELECT * FROM " + table + (where ? " WHERE " + where : "") + " ORDER BY " + order);
-    if (!full) {
-      if (table === "users") rows = rows.map((r) => ({ username: r.username, active: r.active, role: r.role, has_password: r.password ? "yes" : "", created_at: r.created_at }));
-      if (table === "config") rows = rows.map((r) => ({ key: r.key, value: SECRET_CONFIG.test(String(r.key)) ? (r.value ? "(ซ่อน)" : "") : r.value }));
-      if (maxHistory && (table === "history" || table === "system_log" || table === "cr_lot_history") && rows.length > maxHistory) rows = rows.slice(-maxHistory);
+    if (full) {
+      const head = rows.length ? Object.keys(rows[0]) : [];
+      out[sheet] = [head].concat(rows.map((r) => head.map((k) => nb(r[k]))));
+      continue;
     }
-    const head = rows.length ? Object.keys(rows[0]) : [];
-    out[sheet] = [head].concat(rows.map((r) => head.map((k) => (r[k] === null || r[k] === undefined ? "" : r[k]))));
+    if (isLog && maxHistory && rows.length > maxHistory) rows = rows.slice(-maxHistory);
+    out[sheet] = [cols.map((x) => x[0])].concat(rows.map((r) => cols.map((x) => nb(typeof x[1] === "function" ? x[1](r) : r[x[1]]))));
   }
-  return { ok: true, status: "success", generatedAt: nowIso(), sheets: out };
+  return { ok: true, status: "success", generatedAt: nowIso(), generatedAtTH: fmtTH(Date.now(), "dd/MM/yyyy HH:mm"), sheets: out };
 }
 
 export async function backupAll(c, label, user) {

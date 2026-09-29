@@ -45,7 +45,7 @@ async function gasJson(res) {
   try { return JSON.parse(txt); }
   catch (e) {
     const err = new Error(/^\s*</.test(txt)
-      ? "Google ตอบเป็นหน้าเว็บแทนข้อมูล (เซิร์ฟเวอร์สะดุดชั่วคราว) — ลองใหม่อีกครั้งได้เลย"
+      ? "เซิร์ฟเวอร์ตอบไม่ปกติชั่วคราว — ลองใหม่อีกครั้งได้เลย"
       : "คำตอบจากเซิร์ฟเวอร์อ่านไม่ได้");
     err.gasHtml = true;
     throw err;

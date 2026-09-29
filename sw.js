@@ -3,7 +3,7 @@
 // Cache static assets สำหรับใช้งาน offline บางส่วน
 // =====================================================
 
-const CACHE_NAME = "appstock-v71";
+const CACHE_NAME = "appstock-v72";
 
 // ไฟล์ที่ cache ไว้ใช้ offline
 // ⚠️ addAll เป็น all-or-nothing — ไฟล์เดียวโหลดไม่ได้ = ติดตั้งไม่สำเร็จทั้งชุด
@@ -82,8 +82,10 @@ self.addEventListener("activate", e => {
 self.addEventListener("fetch", e => {
   const url = e.request.url;
 
-  // GAS API — ไม่ cache เด็ดขาด
-  if (url.includes("script.google.com")) {
+  // หลังบ้าน (Cloudflare Worker) และทุกคำขอข้ามโดเมนที่ไม่ใช่ฟอนต์ — ไม่ cache เด็ดขาด ต้องได้ข้อมูลจริงเสมอ
+  // ⚠️ ถ้าปล่อยให้ตกไปถึงกิ่ง "Static files" คำตอบ GET ของหลังบ้านจะถูกเก็บแล้วเสิร์ฟของเก่าตลอดไป
+  const sameOrigin = url.startsWith(self.location.origin);
+  if (!sameOrigin && !CDN_URLS.some(cdn => url.startsWith(cdn))) {
     return; // ให้ browser จัดการเอง (network only)
   }
 

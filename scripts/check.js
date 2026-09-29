@@ -33,6 +33,14 @@ for (const f of jsFiles) {
   if (!fs.existsSync(p)) continue;
   checkSyntax(f, fs.readFileSync(p, "utf8"));
 }
+// โค้ดหลังบ้าน (Cloudflare Worker) — เป็น ES module ตรวจในโฟลเดอร์ของมันเอง (package.json ระบุ type: module)
+{
+  const wdir = path.join(root, "cloudflare/appstock-api/src");
+  if (fs.existsSync(wdir)) for (const f of fs.readdirSync(wdir).filter(x => x.endsWith(".js"))) {
+    try { execFileSync(process.execPath, ["--check", path.join(wdir, f)], { stdio: "pipe" }); ok("cloudflare/appstock-api/src/" + f); }
+    catch (e) { bad("cloudflare/appstock-api/src/" + f + "\n" + String(e.stderr || e.message).split("\n").slice(0, 4).join("\n")); }
+  }
+}
 // สคริปต์ที่ฝังใน mobile.html
 {
   const html = fs.readFileSync(path.join(root, "mobile.html"), "utf8");

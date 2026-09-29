@@ -206,6 +206,8 @@ export const tgCfgProblem = (r) => !!(r && TG_CFG_PROBLEMS.indexOf(r.reason) >= 
 /** ส่งจริงไปทุก chat — คืน { sent, reason } · force = ส่งแม้ปิดแจ้งเตือนสต๊อก (ใช้กับแจ้งเตือนหมดอายุ) */
 export async function tgSendRaw(c, message, force) {
   try {
+    // เครื่องทดสอบ (wrangler dev + .dev.vars) ห้ามส่งเข้ากลุ่มจริง — เคยเผลอส่งข้อความทดสอบเข้ากลุ่มตอนรันชุดทดสอบ
+    if (c.env.TG_DISABLED) return { sent: false, reason: "disabled" };
     message = await maskNames(c, String(message));
     const s = await tgSettings(c);
     const enabled = String(s.enableTelegramStockUpdate).toLowerCase();

@@ -1,7 +1,7 @@
 // ─────────────────────────────────────────────
-// ⚙️ CONFIG — แก้ URL ตรงนี้หลัง Deploy GAS
+// ⚙️ CONFIG — ที่อยู่หลังบ้าน (Cloudflare Worker: cloudflare/appstock-api) · ชื่อตัวแปรยังเป็น GAS_URL เพราะอ้างถึงทั้งแอป
 // ─────────────────────────────────────────────
-const GAS_URL = "https://script.google.com/macros/s/AKfycbx72vWVvUgaOgZEnzAc8ltaV-a7Rfx_CL9DK1c-B5nAIOxtrlnbi8_b6bmfnDeAZ_xeaw/exec";
+const GAS_URL = "https://appstock-api.pitak-ttg.workers.dev";
 
 // 🔑 API key — เว้นว่าง = ปิด (fail-open) ระบบทำงานปกติ
 // เปิดใช้ต้องทำ 2 ขั้นพร้อมกันเท่านั้น: (1) ใส่รหัสตรงนี้ (2) เพิ่มแถว apiKey ใน Config sheet ให้ค่าตรงกัน

@@ -186,7 +186,7 @@ export async function planCompute(c, module, over) {
       if (pack > 0) suggestQty = Math.ceil(suggestQty / pack - 1e-9) * pack;
       if (moq > 0 && suggestQty < moq) suggestQty = moq;
     }
-    if (accel) reasons.push("7 วันล่าสุดใช้เร็วขึ้น (" + fmtN(r1(actual7)) + "/วัน จากเดิม " + fmtN(r1(actual30)) + ")");
+    if (accel && rateSource === "actual") reasons.push("7 วันล่าสุดใช้เร็วขึ้น (" + fmtN(r1(actual7)) + "/วัน จากเดิม " + fmtN(r1(actual30)) + ")");
     // เบิกจริงต่างจากค่าที่ตั้งไว้มาก → ชวนให้ไปแก้ "ใช้ต่อวัน" ให้ตรง
     let gapPct = null;
     if (enough && plan > 0) {

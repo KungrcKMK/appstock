@@ -1332,8 +1332,14 @@ function rawFillPurposeList() {
     if (p && seen.indexOf(p) < 0) seen.push(p);
   });
   dl.innerHTML = seen.slice(0, 15).map(p => '<option value="' + escapeAttr(p) + '">').join("");
+  // ปุ่มลัด: เฉพาะงานที่เคย "เบิกออก" จริง (ช่องเดียวกันของรายการนับ/รับ เป็นหมายเหตุ ไม่ใช่ชื่องาน)
+  const used = [];
+  (window._rawRecentHistory || []).forEach(x => {
+    const p = String(x[8] || "").trim();
+    if (p && String(x[2] || "") === "เบิกออก" && used.indexOf(p) < 0) used.push(p);
+  });
   const chips = document.getElementById("rawPurposeChips");
-  if (chips) chips.innerHTML = seen.slice(0, 6).map(p =>
+  if (chips) chips.innerHTML = used.slice(0, 6).map(p =>
     '<button type="button" class="sq-btn sq-btn-sm" data-p="' + escapeAttr(p) + '" onclick="rawPickPurpose(this)" title="' + escapeAttr(p) + '">' +
     escapeHtml(p.length > 28 ? p.slice(0, 27) + "…" : p) + "</button>").join("");
 }

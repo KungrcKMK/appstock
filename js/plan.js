@@ -272,7 +272,11 @@ async function planSendTelegram(btn) {
     const r = await rawFetch({ action: "PLANDIGEST", send: true, user: currentUser });
     const res = r && r.result && r.result[rawCurrentModule];
     if (res === "sent") showToast("ส่งเข้า Telegram แล้ว ✅", "success");
-    else showToast("ส่งไม่สำเร็จ: " + String(res || (r && r.message) || "").replace(/^not-sent:\s*/, ""), "error", 5000);
+    else {
+      const why = String(res || (r && r.message) || "").replace(/^not-sent:\s*/, "");
+      const TH = { "disabled": "ระบบปิดการส่ง Telegram อยู่", "no token": "ยังไม่ได้ตั้งค่าโทเคนบอท", "no chatId": "ยังไม่ได้ตั้งค่ากลุ่มปลายทาง" };
+      showToast("ส่งไม่สำเร็จ: " + (TH[why] || why), "error", 5000);
+    }
   } catch (e) { showToast("ส่งไม่สำเร็จ: " + (e.message || ""), "error"); }
   finally { if (btn) btn.disabled = false; }
 }

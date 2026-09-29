@@ -173,6 +173,17 @@
       class="flex-1 py-3 flex flex-col items-center gap-0.5 text-slate-500">
       <span class="text-2xl">📷</span><span class="text-[10px] font-black">สแกน</span>
     </button>
+    <!-- 📈 ต้องสั่ง — เฉพาะคลังวัตถุดิบ · ตัวเลขแดง = จำนวนที่ต้องสั่งวันนี้ -->
+    <button id="navPlan" onclick="openPlan()"
+      class="flex-1 py-3 flex flex-col items-center gap-0.5 text-slate-500 relative">
+      <span class="text-2xl">📈</span><span class="text-[10px] font-black">ต้องสั่ง</span>
+      <span id="navPlanBadge" class="hidden absolute top-1 bg-red-600 text-white text-[10px] font-black rounded-full px-1.5"
+            style="left:calc(50% + 6px);min-width:18px;line-height:18px;">0</span>
+    </button>
+    <button onclick="openMyHistory()"
+      class="flex-1 py-3 flex flex-col items-center gap-0.5 text-slate-500">
+      <span class="text-2xl">📜</span><span class="text-[10px] font-black">ของฉัน</span>
+    </button>
   </nav>
 </div>
 

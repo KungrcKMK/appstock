@@ -275,11 +275,17 @@
       <div class="flex items-center gap-2 bg-slate-900 rounded-2xl px-2 py-1 overflow-hidden">
         <button onclick="adjQty(-1)"
           class="btn-tap flex-shrink-0 w-12 h-12 text-3xl text-slate-400 font-black flex items-center justify-center">−</button>
-        <input id="aQtyIn" type="text" inputmode="numeric" pattern="[0-9]*" value="1"
+        <!-- inputmode=decimal: ของที่ชั่งเป็น กก. ต้องพิมพ์จุดทศนิยมได้ (แป้นตัวเลขล้วนของ iPhone ไม่มีจุด) -->
+        <input id="aQtyIn" type="text" inputmode="decimal" autocomplete="off" value="1"
+          oninput="updateAfter()" onfocus="this.select()"
           class="flex-1 min-w-0 w-0 bg-transparent text-white text-4xl font-black text-center outline-none py-1">
         <button onclick="adjQty(1)"
           class="btn-tap flex-shrink-0 w-12 h-12 text-3xl text-slate-400 font-black flex items-center justify-center">+</button>
       </div>
+      <!-- ปุ่มบวกเร็ว — ขนาดก้าวปรับตามยอดของตัวนั้น (ของหลักแสนไม่ต้องกด + ทีละ 1) -->
+      <div id="aQuick" class="flex gap-1.5 mt-2"></div>
+      <!-- ยอดหลังบันทึก — เห็นก่อนกดยืนยัน กันพิมพ์เกินหลัก/เลือกผิดประเภท -->
+      <div id="aAfter" class="text-center text-sm font-black mt-2 text-slate-400" style="min-height:20px"></div>
 
       <!-- ใช้กับงานอะไร — บังคับกรอกตอนเบิก ข้อมูลนี้ขึ้นบนใบเบิกให้ออดิเตอร์ตรวจ -->
       <div id="aPurposeWrap" class="mt-2">

@@ -118,10 +118,12 @@ CREATE UNIQUE INDEX IF NOT EXISTS idx_lot_op ON cr_lot_history(op_id) WHERE op_i
 
 CREATE TABLE IF NOT EXISTS work_orders (            -- ColdRoom_WorkOrders
   id INTEGER PRIMARY KEY AUTOINCREMENT,
-  order_id TEXT NOT NULL UNIQUE,
+  order_id TEXT NOT NULL,                           -- ไม่บังคับไม่ซ้ำ: ของเดิมในชีตยอมให้ซ้ำได้ (ค้นจากแถวแรกที่เจอ)
   date TEXT NOT NULL DEFAULT '', items TEXT NOT NULL DEFAULT '[]', note TEXT NOT NULL DEFAULT '',
   created_by TEXT NOT NULL DEFAULT '', created_at TEXT NOT NULL DEFAULT '', status TEXT NOT NULL DEFAULT 'รอดำเนินการ'
 );
+
+CREATE INDEX IF NOT EXISTS idx_wo_order ON work_orders(order_id);
 
 CREATE TABLE IF NOT EXISTS delivery_notes (         -- ColdRoom_DeliveryNotes
   id INTEGER PRIMARY KEY AUTOINCREMENT,

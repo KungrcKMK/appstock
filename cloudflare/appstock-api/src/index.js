@@ -8,6 +8,7 @@ import * as R from "./raw.js";
 import * as C from "./cold.js";
 import * as B from "./bom.js";
 import * as S from "./system.js";
+import * as P from "./plan.js";
 
 const CORS = {
   "access-control-allow-origin": "*",
@@ -116,7 +117,7 @@ export default {
         return reply(c, h ? await h(c, payload, data) : { ok: false, message: "Unknown action: " + action });
       }
       if (module === "SQF" || module === "MLM")
-        return reply(c, await R.handleRaw(c, action, data, module, { backup: S.rmBackup, usagePlan: S.usagePlan }));
+        return reply(c, await R.handleRaw(c, action, data, module, { backup: S.rmBackup, usagePlan: P.usagePlan, planSet: P.planSet, planDigestNow: P.planDigestNow }));
       return reply(c, { status: "error", message: "ไม่รู้จัก module: " + module });
     } catch (err) {
       return reply(c, { ok: false, status: "error", message: String(err && err.message || err) });

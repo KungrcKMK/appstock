@@ -1,8 +1,10 @@
 // งานระบบ: สถานะ · ความเคลื่อนไหวข้ามคลัง · ประวัติของฉัน · แจ้งเตือนหมดอายุ · สำรองข้อมูล · ส่งออกไปชีต · งานตามเวลา
+// (วิเคราะห์การเบิก/วางแผนสั่งซื้ออยู่ที่ plan.js)
 import { all, first, run, kvGet, kvPut, claim, nowIso, fmtTH, dayTH, formatCellDate, thaiMidnightMs, superAdminName, tgSettings, tgSendRaw,
          tgFlushQueue, tgPendingCount, sysLog, sysLast, TZ_MS, DAY_MS } from "./lib.js";
 import { getTokenData, verifyAdminToken } from "./auth.js";
 import { archiveOldStock } from "./cold.js";
+import { planDigest } from "./plan.js";
 
 // ───────────── สถานะระบบ (manager ขึ้นไป) ─────────────
 export async function sysStatus(c) {
@@ -195,79 +197,17 @@ export async function backupAll(c, label, user) {
 }
 export const rmBackup = (c, data, module) => backupAll(c, module, data.user);
 
-// ───────────── 📊 วิเคราะห์การเบิก — วัตถุดิบตัวไหนจะหมดก่อนของมาถึง ─────────────
-// คืนสถิติดิบต่อ SKU (เบิกสุทธิ = เบิก − คืน) หน้าจอเอาไปคิด "พอใช้อีกกี่วัน / ต้องสั่งภายในวันไหน"
-// ร่วมกับวันรอของรายตัว เพราะผู้ใช้ปรับค่าได้สดๆ โดยไม่ต้องยิงถามใหม่
-export async function usagePlan(c, data, module) {
-  const now = Date.now(), W = [7, 30, 90];
-  const mats = await all(c, "SELECT sku, name, rop_start FROM materials WHERE module = ? AND discontinued = 0 ORDER BY seq, rowid", module);
-  const nameToSku = {}, ropStart = {};
-  mats.forEach((m) => {
-    nameToSku[String(m.name).trim()] = String(m.sku);
-    const mm = String(m.rop_start || "").match(/^(\d{4})-(\d{2})-(\d{2})/);
-    if (mm) ropStart[m.sku] = thaiMidnightMs(+mm[1], +mm[2], +mm[3]);
-  });
-  const rows = await all(c, "SELECT ts, name, action, qty, sku, purpose FROM history WHERE module = ? ORDER BY id", module);
-  const st = {};
-  const get = (sku) => st[sku] || (st[sku] = { net: { 7: 0, 30: 0, 90: 0 }, tx30: 0, days30: {}, first: 0, lastOut: 0, purposes: {}, prev30: 0 });
-  for (const r of rows) {
-    const ts = r.ts ? new Date(r.ts).getTime() : NaN;
-    if (isNaN(ts)) continue;
-    let sku = String(r.sku || "").trim();
-    if (!sku) sku = nameToSku[String(r.name || "").trim()] || "";
-    if (!sku) continue;
-    if (ropStart[sku] && ts < ropStart[sku]) continue;
-    const s = get(sku);
-    if (!s.first || ts < s.first) s.first = ts;
-    const q = Number(r.qty);
-    if (!isFinite(q) || q <= 0) continue;
-    const delta = r.action === "เบิกออก" ? q : r.action === "คืนวัตถุดิบ" ? -q : 0;
-    if (!delta) continue;
-    const age = now - ts;
-    W.forEach((w) => { if (age <= w * DAY_MS) s.net[w] += delta; });
-    if (age > 30 * DAY_MS && age <= 60 * DAY_MS) s.prev30 += delta;
-    if (r.action === "เบิกออก") {
-      if (ts > s.lastOut) s.lastOut = ts;
-      if (age <= 30 * DAY_MS) {
-        s.tx30++;
-        const day = dayTH(ts);
-        s.days30[day] = (s.days30[day] || 0) + q;
-        const p = String(r.purpose || "").trim() || "(ไม่ระบุ)";
-        s.purposes[p] = (s.purposes[p] || 0) + q;
-      }
-    }
-  }
-  const r3 = (n) => Math.round(n * 1000) / 1000;
-  const items = {};
-  mats.forEach((m) => {
-    const s = st[m.sku];
-    if (!s) return;
-    const base = ropStart[m.sku] || s.first || now;
-    // ของที่เพิ่งเข้าระบบ 10 วัน ห้ามหารด้วย 30 — ค่าเฉลี่ยจะเจือจางเกินจริง
-    const obs = (w) => Math.max(1, Math.min(w, Math.ceil((now - base) / DAY_MS)));
-    const dayVals = Object.values(s.days30);
-    items[m.sku] = {
-      avg7: r3(Math.max(0, s.net[7]) / obs(7)), avg30: r3(Math.max(0, s.net[30]) / obs(30)), avg90: r3(Math.max(0, s.net[90]) / obs(90)),
-      out30: r3(Math.max(0, s.net[30])), prev30: r3(Math.max(0, s.prev30)),
-      peakDay30: dayVals.length ? r3(Math.max.apply(null, dayVals)) : 0,
-      activeDays30: dayVals.length, tx30: s.tx30, obsDays: Math.ceil((now - base) / DAY_MS),
-      lastOut: s.lastOut ? dayTH(s.lastOut) : "",
-      topPurposes: Object.keys(s.purposes).map((p) => ({ purpose: p, qty: r3(s.purposes[p]) })).sort((a, b) => b.qty - a.qty).slice(0, 3),
-    };
-  });
-  return { status: "success", generatedAt: nowIso(), today: dayTH(now), items };
-}
-
 // ───────────── งานตามเวลา (Cron ทุก 5 นาที → แจกงานตามช่วงเวลาไทย) ─────────────
 export async function ticks(c, via) {
   const th = new Date(Date.now() + TZ_MS);
   const day = th.toISOString().slice(0, 10), hh = th.getUTCHours(), dow = th.getUTCDay();
   await kvPut(c, "cron_last", fmtTH(Date.now(), "dd/MM/yyyy HH:mm") + " " + via, 7 * 86400);
   try { await tgFlushQueue(c); } catch (e) {}
-  // 08:00–08:59: แจ้งเตือนวันหมดอายุ + สำรองข้อมูลประจำวัน (ครั้งเดียวต่อวัน)
+  // 08:00–08:59: แจ้งเตือนวันหมดอายุ + สำรองข้อมูลประจำวัน + สรุปวัตถุดิบที่ต้องสั่ง (ครั้งเดียวต่อวัน)
   if (hh === 8 && await claim(c, "tick_morning_" + day, 2 * 86400)) {
     try { await checkExpiryAlerts(c); } catch (e) { await sysLog(c, "cron-error", "checkExpiryAlerts: " + e, "-", "error"); }
     try { await backupAll(c, "daily", "ระบบ"); } catch (e) {}
+    try { await planDigest(c); } catch (e) { await sysLog(c, "cron-error", "planDigest: " + e, "-", "error"); }
   }
   // อาทิตย์ 02:00–02:59: เก็บถาวรล็อตที่หมดแล้ว
   if (dow === 0 && hh === 2 && await claim(c, "tick_archive_" + day, 2 * 86400)) {

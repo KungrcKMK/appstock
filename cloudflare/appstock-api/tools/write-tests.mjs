@@ -274,5 +274,74 @@ console.log("9) งานระบบ");
   T("ออกจากระบบ → บัตรใช้ไม่ได้", lo.ok && (await raw("VERIFY", { sku: "SQF-0002", qty: 1 }, vtok)).needLogin === true);
 }
 
+console.log("10) วางแผนสั่งซื้อ — วิเคราะห์การเบิก");
+{
+  const plan = (extra, token = tok) => post(Object.assign({ module: "SQF", action: "USAGEPLAN", sessionToken: token }, extra));
+  const sku = "PLAN-" + Date.now();
+  await raw("CREATE", { sku, name: "ของวางแผน " + sku, unit: "ชิ้น", qty: 100, min: 0, dailyUsage: 10 });
+  const find = (p) => (p.items || []).find((x) => x.sku === sku);
+  const p0 = await plan({});
+  const g0 = await get("SQF");
+  T("คืนทุกรายการที่ยังใช้อยู่ + สรุปรวมตรงกัน", p0.status === "success" && p0.items.length === g0.materials.length &&
+    p0.summary.total === p0.items.length && ["late", "now", "soon", "ok", "nodata"].reduce((a, k) => a + p0.summary[k], 0) === p0.items.length, p0.summary);
+  const D = p0.saved;
+  const a = find(p0);
+  // ของเพิ่งสร้าง: ยังไม่มีประวัติเบิก → ใช้ค่าที่ตั้งไว้ 10/วัน · 100 ÷ 10 = 10 วัน
+  T("ประวัติน้อย → ใช้ 'ใช้ต่อวัน' ที่ตั้งไว้", a && a.rateSource === "plan" && a.rate === 10 && a.daysCover === 10, a);
+  const lead7 = find(await plan({ leadDays: 7, safetyDays: 3, coverDays: 30 }));
+  T("พอ 10 วัน รอของ 7 + กันชน 3 → ต้องสั่งวันนี้", lead7.status === "now" && lead7.orderInDays === 0 && lead7.orderByDate === p0.today, lead7);
+  T("แนะนำสั่ง = ใช้ 33 วัน − ของที่เหลือตอนของมาถึง (100−70)", lead7.suggestQty === 300, lead7.suggestQty);
+  const lead15 = find(await plan({ leadDays: 15, safetyDays: 3, coverDays: 30 }));
+  T("รอของ 15 วัน แต่พอใช้ 10 วัน → สั่งวันนี้ก็ไม่ทัน", lead15.status === "late" && lead15.suggestQty === 330, lead15);
+  const lead2 = find(await plan({ leadDays: 2, safetyDays: 3, coverDays: 30 }));
+  T("รอของ 2 วัน → ใกล้ถึงเวลาสั่ง (อีก 5 วัน)", lead2.status === "soon" && lead2.orderInDays === 5, lead2);
+  const lead1 = find(await plan({ leadDays: 1, safetyDays: 0, coverDays: 30 }));
+  T("รอของ 1 วัน ไม่มีกันชน → ยังพอ ไม่แนะนำสั่ง", lead1.status === "ok" && lead1.suggestQty === 0, lead1);
+  T("ค่าที่ลองดูไม่ถูกบันทึก", JSON.stringify((await plan({})).saved) === JSON.stringify(D));
+
+  // เบิกจริง 5 ครั้งในวันเดียว: เห็นข้อมูลไม่ถึง 14 วัน → ยังไม่เชื่ออัตราเบิกจริง
+  for (let i = 0; i < 5; i++) await raw("UPDATE", { sku, type: "OUT", qty: 4, purpose: i < 3 ? "ผลิต ก" : "ผลิต ข" });
+  const b = find(await plan({ leadDays: 7, safetyDays: 3, coverDays: 30 }));
+  T("เบิกแล้วยอดลด 100 → 80 · พอใช้ 8 วัน", b.qty === 80 && b.daysCover === 8 && b.rateSource === "plan", b);
+  T("นับครั้งเบิก 30 วัน + งานที่เบิกไปใช้มากสุด", b.tx30 === 5 && b.out30 === 20 && b.topPurposes[0].purpose === "ผลิต ก" && b.topPurposes[0].qty === 12, b.topPurposes);
+  await raw("UPDATE", { sku, type: "RETURN", qty: 4 });
+  T("คืนของ → ยอดเบิกสุทธิลดลง", find(await plan({})).out30 === 16);
+
+  // วันรอของรายตัว / ขนาดบรรจุ / สั่งขั้นต่ำ
+  await raw("EDIT", { sku, name: "ของวางแผน " + sku, unit: "ชิ้น", min: 0, dailyUsage: 10, leadDays: 20, moq: 0, packSize: 48 });
+  const cRow = find(await plan({ leadDays: 7, safetyDays: 3, coverDays: 30 }));
+  T("วันรอของรายตัว (20) ชนะค่ากลาง (7)", cRow.leadDays === 20 && cRow.leadOwn === true && cRow.status === "late", cRow);
+  T("ปัดขึ้นตามขนาดบรรจุ 48", cRow.suggestQty % 48 === 0 && cRow.suggestQty >= 330, cRow.suggestQty);
+  await raw("EDIT", { sku, name: "ของวางแผน " + sku, unit: "ชิ้น", min: 0, dailyUsage: 10, leadDays: 0, moq: 1000, packSize: 0 });
+  T("ไม่ต่ำกว่าสั่งขั้นต่ำ 1000", find(await plan({ leadDays: 7, safetyDays: 3, coverDays: 30 })).suggestQty === 1000);
+
+  // ต่ำกว่าจุดสั่งซื้อที่ตั้งเอง = ต้องสั่ง แม้ตัวเลขการใช้บอกว่ายังพอ
+  await raw("EDIT", { sku, name: "ของวางแผน " + sku, unit: "ชิ้น", min: 90, dailyUsage: 1, leadDays: 0, moq: 0, packSize: 0 });
+  const dRow = find(await plan({ leadDays: 7, safetyDays: 3, coverDays: 30 }));
+  T("ต่ำกว่าจุดสั่งซื้อ → ต้องสั่งวันนี้", dRow.status === "now" && dRow.belowMin === true && dRow.reasons.some((x) => /ต่ำกว่าจุดสั่งซื้อ/.test(x)), dRow);
+  // ไม่มีทั้งประวัติและค่าที่ตั้งไว้
+  const sku2 = sku + "-N";
+  await raw("CREATE", { sku: sku2, name: "ไม่มีข้อมูล " + sku2, unit: "ชิ้น", qty: 5, min: 0, dailyUsage: 0 });
+  const e = (await plan({})).items.find((x) => x.sku === sku2);
+  T("ไม่มีข้อมูลการใช้ → ไม่เดาตัวเลข", e.status === "nodata" && e.daysCover === null && e.suggestQty === 0, e);
+
+  // ตั้งค่ากลาง
+  const s0 = await raw("PLANSET", { leadDays: 12, safetyDays: 4, coverDays: 45, alert: false });
+  T("ผู้ใช้ทั่วไปตั้งค่ากลางไม่ได้", s0.status === "error", s0);
+  const s1 = await raw("PLANSET", { leadDays: 12, safetyDays: 4, coverDays: 45, alert: false }, atok);
+  const p1 = await plan({});
+  T("admin ตั้งค่ากลาง → ทุกคนได้ค่าเดียวกัน", s1.status === "success" && p1.settings.leadDays === 12 && p1.settings.safetyDays === 4 && p1.settings.coverDays === 45 && p1.saved.alert === false, p1.settings);
+  const s2 = await raw("PLANSET", { leadDays: 9999, safetyDays: -5, coverDays: "abc" }, atok);
+  T("ค่านอกช่วง → ถูกบีบให้อยู่ในช่วง ไม่พัง", s2.status === "success" && s2.settings.leadDays === 180 && s2.settings.safetyDays === 0 && s2.settings.coverDays === 45, s2.settings);
+  const dg0 = await raw("PLANDIGEST", { send: false });
+  T("ผู้ใช้ทั่วไปสั่งส่งสรุปไม่ได้", dg0.status === "error", dg0);
+  const dg = await raw("PLANDIGEST", { send: false }, atok);
+  T("ดูตัวอย่างข้อความสรุป (ไม่ส่งจริง)", dg.ok && /วัตถุดิบที่ต้องสั่งซื้อ/.test((dg.preview || {}).SQF || "") && !(dg.preview || {}).MLM, dg.result);
+  await raw("PLANSET", { leadDays: D.leadDays, safetyDays: D.safetyDays, coverDays: D.coverDays, alert: D.alert }, atok);
+  T("คืนค่ากลางเดิม", JSON.stringify((await plan({})).saved) === JSON.stringify(D));
+  await raw("DELETE", { sku }); await raw("DELETE", { sku: sku2 });
+  T("ของที่ยกเลิกแล้วไม่อยู่ในแผน", !(await plan({})).items.some((x) => x.sku === sku || x.sku === sku2));
+}
+
 console.log(`\nสรุป: ผ่าน ${pass} · ไม่ผ่าน ${fail}`);
 process.exit(fail ? 1 : 0);

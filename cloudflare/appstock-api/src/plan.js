@@ -233,8 +233,8 @@ export async function planDigest(c, opts) {
   const set = await planSettings(c);
   if (!set.saved.alert && !o.force) return { ok: true, skipped: "off" };
   const monday = new Date(Date.now() + TZ_MS).getUTCDay() === 1;
-  const out = {};
-  for (const module of ["SQF", "MLM"]) {
+  const out = {}, preview = {};
+  for (const module of (o.modules || ["SQF", "MLM"])) {
     const p = await planCompute(c, module);
     const urgent = p.items.filter((x) => x.status === "late" || x.status === "now");
     const sig = urgent.map((x) => x.sku + ":" + x.status).sort().join("|");
@@ -242,12 +242,20 @@ export async function planDigest(c, opts) {
     const last = await kvGet(c, key);
     if (!urgent.length) { if (last) await kvPut(c, key, "", 60 * 86400); out[module] = "none"; continue; }
     if (!o.force && last === sig && !monday) { out[module] = "same"; continue; }
+    if (o.dry) { preview[module] = planMessage(module, p); out[module] = "preview"; continue; }
     const r = await tgSendRaw(c, planMessage(module, p), true);
     if (r && r.sent) await kvPut(c, key, sig, 60 * 86400);
     else if (r && r.reason !== "disabled") await sysLog(c, "telegram-error", "plan digest: " + (r && r.reason), "-", "failed");
     out[module] = r && r.sent ? "sent" : "not-sent: " + ((r && r.reason) || "");
   }
-  return { ok: true, result: out };
+  return o.dry ? { ok: true, status: "success", result: out, preview } : { ok: true, status: "success", result: out };
+}
+/** action PLANDIGEST — คนกดส่งรายการที่ต้องสั่งเข้ากลุ่มเอง (manager ขึ้นไป) · send ไม่ใช่ true = ดูตัวอย่างข้อความ */
+export async function planDigestNow(c, data, module) {
+  const mods = (module === "SQF" || module === "MLM") ? [module] : ["SQF", "MLM"];
+  const r = await planDigest(c, { force: true, modules: mods, dry: data.send !== true });
+  if (data.send === true) await sysLog(c, "plan-digest", mods.join(",") + " → " + JSON.stringify(r.result), data.user || c.user || "-", "ok");
+  return r;
 }
 
 export { STATUS_TEXT, STATUS_ICON, isoToThai };

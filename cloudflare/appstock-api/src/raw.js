@@ -575,6 +575,8 @@ export async function handleRaw(c, action, data, module, extra) {
     case "SETMIN": return rmSetMin(c, data, module);
     case "SETROPSTART": return rmSetRopStart(c, data, module);
     case "USAGEPLAN": return extra.usagePlan(c, data, module);
+    case "PLANSET": return extra.planSet(c, data);
+    case "PLANDIGEST": return extra.planDigestNow(c, data, module);
     default: return { status: "error", message: "Unknown action: " + action };
   }
 }

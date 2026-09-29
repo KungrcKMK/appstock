@@ -104,6 +104,35 @@ export async function hashPwd(pwd) {
   return Array.from(new Uint8Array(h)).map((b) => b.toString(16).padStart(2, "0")).join("");
 }
 export const isHashed = (s) => /^[0-9a-f]{64}$/.test(s);
+
+// ───────────── รหัสผ่าน: PBKDF2-SHA256 + เกลือรายบัญชี ─────────────
+// รูปแบบที่เก็บ: pbkdf2$<รอบ>$<เกลือ hex>$<ผล hex>
+// ของเดิมเป็น SHA-256 เปล่า (ไม่มีเกลือ) — รหัสเดียวกันได้ค่าเดียวกันทุกบัญชี และเดารหัสง่ายๆ ได้เร็วมากถ้าค่าหลุด
+// บัญชีเดิมจะถูกแปลงเป็นรูปแบบใหม่เองตอนเข้าสู่ระบบสำเร็จครั้งถัดไป
+const PBKDF2_ITER = 30000;
+const hex = (buf) => Array.from(new Uint8Array(buf)).map((b) => b.toString(16).padStart(2, "0")).join("");
+const unhex = (s) => new Uint8Array((String(s).match(/../g) || []).map((h) => parseInt(h, 16)));
+async function pbkdf2(pwd, salt, iter) {
+  const key = await crypto.subtle.importKey("raw", new TextEncoder().encode(String(pwd)), "PBKDF2", false, ["deriveBits"]);
+  return hex(await crypto.subtle.deriveBits({ name: "PBKDF2", hash: "SHA-256", salt, iterations: iter }, key, 256));
+}
+export async function hashPassword(pwd) {
+  if (!pwd) return "";
+  const salt = crypto.getRandomValues(new Uint8Array(16));
+  return "pbkdf2$" + PBKDF2_ITER + "$" + hex(salt) + "$" + (await pbkdf2(pwd, salt, PBKDF2_ITER));
+}
+const sameText = (a, b) => { if (a.length !== b.length) return false; let d = 0; for (let i = 0; i < a.length; i++) d |= a.charCodeAt(i) ^ b.charCodeAt(i); return d === 0; };
+/** ตรวจรหัสผ่านกับค่าที่เก็บไว้ (รองรับ 3 รูปแบบ) — upgrade = ควรเขียนทับด้วยรูปแบบใหม่ */
+export async function verifyPassword(pwd, stored) {
+  stored = String(stored || "");
+  if (stored.indexOf("pbkdf2$") === 0) {
+    const p = stored.split("$");
+    const iter = parseInt(p[1], 10) || PBKDF2_ITER;
+    return { ok: sameText(await pbkdf2(pwd, unhex(p[2]), iter), String(p[3] || "")), upgrade: iter < PBKDF2_ITER };
+  }
+  if (isHashed(stored)) return { ok: sameText(await hashPwd(pwd), stored), upgrade: true };
+  return { ok: sameText(String(pwd), stored), upgrade: true };   // ข้อความธรรมดา (ตั้งไว้ตรงๆ ในฐานข้อมูล)
+}
 /** ค่าตัวเลขที่อาจว่าง: NULL ในฐานข้อมูล → "" ในคำตอบ (เหมือนช่องว่างในชีตเดิม) */
 export const numOrBlank = (v) => (v === null || v === undefined ? "" : v);
 export const userWithDevice = (c, user) => (c.deviceName ? (user || "-") + " (📱 " + c.deviceName + ")" : (user || "-"));

@@ -1,5 +1,5 @@
 // ตัวตนและสิทธิ์: เข้าสู่ระบบ · บัตรผ่าน · ด่านตรวจคำสั่งเขียน · คำขอสิทธิ์ · จัดการผู้ใช้
-import { all, first, run, stmt, changed, kvGet, kvPut, kvDel, uuid, hashPwd, isHashed, isSuperAdmin, fmtTH, nowIso, tgNotify, deviceTag, DAY_MS } from "./lib.js";
+import { all, first, run, stmt, changed, kvGet, kvPut, kvDel, uuid, hashPassword, verifyPassword, isSuperAdmin, fmtTH, nowIso, tgNotify, deviceTag, DAY_MS } from "./lib.js";
 
 // ───────────── บัตรผ่าน (session) ─────────────
 // อยู่ได้ 30 วัน — งานที่ค้างในคิวออฟไลน์ข้ามคืนต้องส่งได้ ไม่ใช่ถูกปฏิเสธเพราะบัตรหมดอายุ
@@ -94,11 +94,10 @@ export async function verifyUser(c, payload) {
     const storedPwd = String(u.password || "").trim();
     if (storedPwd) {
       if (!password) return { ok: false, requirePassword: true, message: "กรุณาระบุรหัสผ่าน" };
-      const inputHash = await hashPwd(password);
-      const pwdOk = isHashed(storedPwd) ? (inputHash === storedPwd) : (password === storedPwd);
-      if (!pwdOk) return { ok: false, message: "รหัสผ่านไม่ถูกต้อง ❌" };
-      // รหัสที่ยังเป็นข้อความธรรมดา → แปลงเป็น hash เมื่อเข้าสู่ระบบสำเร็จ
-      if (!isHashed(storedPwd)) await run(c, "UPDATE users SET password = ? WHERE username = ?", inputHash, u.username);
+      const v = await verifyPassword(password, storedPwd);
+      if (!v.ok) return { ok: false, message: "รหัสผ่านไม่ถูกต้อง ❌" };
+      // รูปแบบเก่า (SHA-256 เปล่า / ข้อความธรรมดา) → แปลงเป็นรูปแบบใหม่เมื่อเข้าสู่ระบบสำเร็จ
+      if (v.upgrade) await run(c, "UPDATE users SET password = ? WHERE username = ?", await hashPassword(password), u.username);
     }
     await kvDel(c, "rl_" + username.toLowerCase());
     const role = String(u.role || "user");
@@ -220,7 +219,7 @@ export async function createUser(c, payload) {
   if (role === "admin" && !(await callerIsSuperAdmin(c, payload.adminToken)))
     return { ok: false, message: "เฉพาะเจ้าของระบบเท่านั้นที่ตั้ง admin ได้" };
   const r = await run(c, "INSERT OR IGNORE INTO users (username, active, role, password, created_at) VALUES (?, 1, ?, ?, ?)",
-    username, role, password ? await hashPwd(password) : "", nowIso());
+    username, role, password ? await hashPassword(password) : "", nowIso());
   if (!changed(r)) return { ok: false, message: "ชื่อ \"" + username + "\" มีอยู่ในระบบแล้ว" };
   tgNotify(c, "➕ เพิ่มผู้ใช้ใหม่\n👤 " + username + "\n🔖 " + role + "\nโดย: " + ((await getTokenUsername(c, payload.adminToken)) || "-") + deviceTag(c));
   return { ok: true };
@@ -286,7 +285,7 @@ export async function setUserRole(c, payload) {
     if (!n || n.n <= 1) return { ok: false, message: "ไม่สามารถเปลี่ยน role ของ admin คนสุดท้ายได้" };
   }
   if (newPassword !== undefined)
-    await run(c, "UPDATE users SET role = ?, password = ? WHERE username = ?", newRole, newPassword ? await hashPwd(newPassword) : "", u.username);
+    await run(c, "UPDATE users SET role = ?, password = ? WHERE username = ?", newRole, newPassword ? await hashPassword(newPassword) : "", u.username);
   else
     await run(c, "UPDATE users SET role = ? WHERE username = ?", newRole, u.username);
   return { ok: true };

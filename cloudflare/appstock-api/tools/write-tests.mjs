@@ -264,7 +264,7 @@ console.log("9) งานระบบ");
   T("สำรองข้อมูลลงที่เก็บไฟล์", bk.status === "success" && /Backup_SQF_/.test(bk.message), bk);
   const ex = await post({ module: "SYSTEM", action: "EXPORT", sessionToken: atok });
   const cfgRows = ex.sheets ? ex.sheets.Config : [];
-  T("ส่งออกไปชีต: ไม่มีรหัสผ่าน ไม่มีโทเคน", ex.ok && ex.sheets.AppUsers[0].indexOf("Password") < 0 && ex.sheets.SQF_Materials[0][0] === "SKU" && !cfgRows.some((r) => /token/i.test(String(r[0])) && r[1] && r[1] !== "(ซ่อน)"), ex.sheets && ex.sheets.AppUsers[0]);
+  T("ส่งออกไปชีต: ไม่มีรหัสผ่าน ไม่มีโทเคน", ex.ok && ex.sheets.AppUsers[0].indexOf("Password") < 0 && ex.sheets.SQF_Materials[0][0] === "SKU" && !cfgRows.some((r) => /token/i.test(String(r[0])) && r[1] && !String(r[1]).startsWith("(ซ่อน")), ex.sheets && ex.sheets.AppUsers[0]);
   T("ส่งออกโดยไม่มีสิทธิ์ → ปฏิเสธ", (await post({ module: "SYSTEM", action: "EXPORT", sessionToken: tok })).status === "error");
   const al = await sys("getActivityLog", {});
   T("ความเคลื่อนไหวข้ามคลัง เรียงล่าสุดก่อน", al.ok && al.list.length > 0 && al.list.length <= 200);

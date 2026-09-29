@@ -134,7 +134,8 @@ export async function bomHealthReport(c) {
       matBySku[sk] = { name: nm, unit: String(m.unit || "").trim(), dailyUsage: Number(m.daily_usage) || 0, discontinued: Number(m.discontinued) !== 0, module: mod };
       if (nm) matByName[mod][nm] = sk;
     }
-    for (const h of await all(c, "SELECT name, action, qty FROM history WHERE module = ? ORDER BY id DESC LIMIT 300", mod)) {
+    // 300 รายการล่าสุด ไล่จากเก่าไปใหม่ (ลำดับมีผลกับการเรียงเมื่อจำนวนครั้งเท่ากัน — ให้เหมือนของเดิม)
+    for (const h of (await all(c, "SELECT name, action, qty FROM history WHERE module = ? ORDER BY id DESC LIMIT 300", mod)).reverse()) {
       if (String(h.action || "") !== "เบิกออก") continue;
       const nm = String(h.name || "").trim();
       if (!nm) continue;

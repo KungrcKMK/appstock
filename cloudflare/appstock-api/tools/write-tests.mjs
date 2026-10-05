@@ -589,6 +589,8 @@ console.log("13) ⏰ ห้องเย็น — ล็อตที่ไม่
     const a = mine(ov).find((l) => l.MFG === isoA), b = mine(ov).find((l) => l.MFG !== isoA);
     T("ล็อตที่ไม่มีใครแตะ 12 วัน → เตือน (แยกรายล็อต ล็อตอื่นของสินค้าเดียวกันไม่โดน)", a.Stale === true && a.IdleDays === 12 && b.Stale === false, [a, b]);
     T("ภาพรวมมีรายการล็อตค้าง + จำนวน", ov.staleLots.some((l) => l.Barcode === bc && l.MFG === isoA) && ov.summary.staleLots === ov.staleLots.length, ov.summary);
+    const prod = ov.totalByProduct.find((p) => p.ProductName === "ล็อตค้าง " + bc);
+    T("ระดับสินค้า (หน้าผู้บริหาร): อัปเดตล่าสุด = ล็อตที่มีคนแตะล่าสุด", prod && prod.IdleDays === 0 && !!prod.LastUpdate && !("_lu" in prod), prod);
     const lite = await cr("getStartupOverview", { lite: true });
     T("มือถือ (แบบย่อ) ได้ Stale/IdleDays ต่อล็อต + ค่ากลาง", lite.staleDays === 7 && lite.allLots.find((l) => l.Barcode === bc && l.MFG === isoA).Stale === true && lite.staleLots === undefined);
     const pv = await post({ module: "COLDROOM", action: "staleDigest", payload: { send: false }, sessionToken: atok });

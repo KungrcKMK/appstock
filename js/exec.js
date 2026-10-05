@@ -567,12 +567,12 @@ function execMobileView() {
       exp.map(x => _xmLotCard(x, "expired", sd)).join("") +
       near.map(x => _xmLotCard(x, "expiring", sd)).join("") +
       (sd ? staleLots.map(x => _xmLotCard(x, "stale", sd)).join("") : "");
-    if (!list) list = '<p class="sq-empty">✅ ไม่มีรายการที่ต้องดูตอนนี้</p>';
+    if (!needs.length && !crNeeds) list += '<p class="sq-empty">✅ ไม่มีรายการที่ต้องดูตอนนี้</p>';
   } else if (_xmTab === "SQF" || _xmTab === "MLM") {
     const items = _xmTab === "SQF" ? sqf : mlm;
-    list = items.length ? items.map(m => _xmRawCard(m, "", sd)).join("") : '<p class="sq-empty">ยังไม่มีรายการ</p>';
+    list = items.length ? _xmChartCard(_xmTab) + items.map(m => _xmRawCard(m, "", sd)).join("") : '<p class="sq-empty">ยังไม่มีรายการ</p>';
   } else {
-    list = prods.length ? prods.map(p => {
+    list = prods.length ? _xmChartCard("CR") + prods.map(p => {
       const stale = execIsStale(p.IdleDays, sd);
       return `<div class="xm-card">
         <div class="xm-top"><div class="xm-name">${escapeHtml(String(p.ProductName || "-"))}</div>

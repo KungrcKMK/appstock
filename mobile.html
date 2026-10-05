@@ -945,6 +945,7 @@ async function loadData(opts) {
     if (mod === "COLDROOM") {
       // ข้อ 5: ขอเฉพาะที่มือถือใช้ (allLots) ไม่ต้องแบก totalByProduct/expiring/expired
       const r = await gasPost({ module: "COLDROOM", action: "getStartupOverview", payload: { lite: true } });
+      if (m0 === mod && r.staleDays !== undefined) mStoreSet("m_staledays_" + mod, Number(r.staleDays) || 0);
       // Aggregate lots by barcode, keep individual lots for counting
       const byBc = {};
       (r.allLots || []).forEach(lot => {
@@ -959,8 +960,14 @@ async function loadData(opts) {
         byBc[bc].lots.push({
           mfg: lot.MFG || "", exp: lot.EXP || "",
           qty: Number(lot.Qty || 0), unit: lot.Unit || "",
-          expDays: lot.ExpireDays, expStatus: lot.ExpireStatus || "ปกติ"
+          expDays: lot.ExpireDays, expStatus: lot.ExpireStatus || "ปกติ",
+          idle: lot.IdleDays, stale: !!lot.Stale   // ⏰ หลังบ้านตัดสินให้แล้ว
         });
+      });
+      // ⏰ ระดับสินค้า = ล็อตที่ค้างนานที่สุด (มีล็อตที่ไม่เคยบันทึก = null) — ใช้กรอง/ป้ายในรายการ
+      Object.values(byBc).forEach(p => {
+        if (!p.lots.some(l => l.idle !== undefined)) return;
+        p.idle = p.lots.some(l => l.idle === null) ? null : Math.max(...p.lots.map(l => Number(l.idle) || 0));
       });
       fresh = Object.values(byBc).filter(i => i.qty > 0).sort((a,b) => a.name.localeCompare(b.name,"th"));
     } else {
@@ -1061,7 +1068,7 @@ function renderChips() {
   const stale = data.filter(isStaleItem).length;
   el.innerHTML = chip("all", "ทั้งหมด " + data.length)
     + (mod === "COLDROOM" ? "" : chip("low", "⚠️ ใกล้หมด " + low, low > 0))
-    + (mod === "COLDROOM" || !mStaleDays() ? "" : chip("stale", "⏰ ไม่อัปเดต " + stale, stale > 0))
+    + (!mStaleDays() ? "" : chip("stale", "⏰ ไม่อัปเดต " + stale, stale > 0))
     + chip("freq", "⭐ ใช้บ่อย" + (freq ? " " + freq : ""));
 }
 
@@ -1230,6 +1237,7 @@ function renderCrLots() {
           <div class="text-slate-400">MFG <span class="text-white font-black">${fmtDate(lot.mfg)}</span>
             · EXP <span class="text-white font-black">${fmtDate(lot.exp)}</span></div>
           <div class="mt-0.5 font-bold">${daysLabel}</div>
+          ${lot.stale ? '<div class="mt-0.5 font-black text-amber-400">⏰ ' + (lot.idle === null ? "ไม่เคยบันทึกยอด" : "ไม่อัปเดต " + lot.idle + " วัน") + ' — ช่วยนับยืนยัน</div>' : ""}
           <div class="text-cyan-400 font-black text-base mt-1">${lot.qty} <span class="text-slate-500 text-xs font-normal">${lot.unit}</span></div>
         </div>
         ${(role||"").toLowerCase() === "viewer" ? "" : `<div class="flex flex-col gap-1.5 flex-shrink-0">

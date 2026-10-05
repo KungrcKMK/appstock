@@ -181,6 +181,7 @@
     #module-COLDROOM .pill { padding:4px 10px;border-radius:99px;font-size:12px;font-weight:700; }
     #module-COLDROOM .pill-danger { background:#fee2e2;color:#dc2626; }
     #module-COLDROOM .pill-ok    { background:#dcfce7;color:#16a34a; }
+    #module-COLDROOM .pill-stale { background:var(--sq-high-bg);color:var(--sq-high);white-space:nowrap; }   /* ⏰ ล็อตไม่มีการอัปเดตเกินกำหนด */
     #module-COLDROOM .sticky-actions { position:fixed;bottom:0;left:0;right:0;background:#fff;padding:16px;display:flex;gap:10px;border-top:1px solid var(--line);z-index:100;box-shadow:0 -5px 15px rgba(0,0,0,.05); }
 
     /* ═══════════════════════════════════════════════════════
@@ -1492,6 +1493,7 @@
             <div class="stat"><div class="v" id="crSumLots">0</div><div>รอบผลิต</div></div>
             <div class="stat"><div class="v" id="crSumExpiring" style="color:var(--warn)">0</div><div>ใกล้หมดอายุ</div></div>
             <div class="stat"><div class="v" id="crSumExpired"  style="color:var(--danger)">0</div><div>หมดอายุแล้ว</div></div>
+            <div class="stat" id="crStatStale" style="display:none;"><div class="v" id="crSumStale" style="color:var(--sq-high)">0</div><div id="crSumStaleLbl">ไม่อัปเดต</div></div>
           </div>
           <h3>📦 ยอดรวมตามสินค้า</h3>
           <div class="table-wrap"><table><thead><tr><th>ชื่อสินค้า</th><th>ยอดรวม</th><th>หน่วย</th><th>รอบผลิต</th></tr></thead><tbody id="crTotalBody"></tbody></table></div>
@@ -1499,6 +1501,16 @@
           <div class="table-wrap"><table><thead><tr><th>ชื่อสินค้า</th><th>MFG</th><th>EXP</th><th>เหลือ(วัน)</th><th>จำนวน</th></tr></thead><tbody id="crExpiringBody"></tbody></table></div>
           <h3>❌ หมดอายุตกค้าง</h3>
           <div class="table-wrap"><table><thead><tr><th>ชื่อสินค้า</th><th>MFG</th><th>EXP</th><th>เลย(วัน)</th><th>จำนวน</th></tr></thead><tbody id="crExpiredBody"></tbody></table></div>
+          <!-- ⏰ ล็อตที่ไม่มีใครนับ/เบิก/รับ เกินจำนวนวันที่ตั้ง (ค่าเดียวกับหน้าวัตถุดิบ) -->
+          <div id="crStaleWrap" style="display:none;">
+            <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;">
+              <h3 id="crStaleTitle">⏰ ไม่มีการอัปเดต</h3>
+              <button class="cr-btn btn-light" id="crStaleSendBtn" onclick="crSendStale(this)" style="display:none;">⏰ ส่งเตือนให้ช่วยนับ</button>
+            </div>
+            <div class="table-wrap"><table><thead><tr><th>ชื่อสินค้า</th><th>MFG</th><th>อัปเดตล่าสุด</th><th>ไม่อัปเดต(วัน)</th><th>จำนวน</th></tr></thead><tbody id="crStaleBody"></tbody></table></div>
+            <p style="font-size:12px;color:var(--muted);margin-top:6px;">ช่วยกันนับยืนยัน: แท็บ 📱 นับสต๊อก → เลือกสินค้า → นับที่ล็อตนั้น (ยอดตรงอยู่แล้วก็ใส่ตัวเลขเดิมแล้วบันทึก) ·
+              จำนวนวันใช้ค่าเดียวกับหน้าวัตถุดิบ (ช่อง "⏰ เตือนไม่อัปเดตเกิน")</p>
+          </div>
         </div>
       </div>
 

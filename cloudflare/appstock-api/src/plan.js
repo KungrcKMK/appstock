@@ -17,6 +17,7 @@
 import { all, getCfg, cfgSet, kvGet, kvPut, nowIso, fmtTH, dayTH, thaiMidnightMs, tgSendRaw, sysLog, DAY_MS, TZ_MS, FACTORY_NAME } from "./lib.js";
 import { lineConfig, lineSend, lineStatus } from "./line.js";
 import { lastStockUpdate, idleDaysTH, staleDaysOf } from "./raw.js";
+import { crGetStartupOverview } from "./cold.js";
 
 export const PLAN_DEFAULTS = { leadDays: 7, safetyDays: 3, coverDays: 30, alert: true };
 const PLAN_MIN_TX = 5;      // เบิกอย่างน้อยกี่ครั้งใน 30 วัน ถึงจะเชื่ออัตราเบิกจริง (เกณฑ์เดียวกับจุดสั่งซื้อแนะนำ)
@@ -267,6 +268,19 @@ function staleMessage(module, p) {
   return msg;
 }
 
+// ห้องเย็นนับเป็นล็อต (บาร์โค้ด + วันผลิต) — แต่ละล็อตต้องมีคนนับยืนยันเป็นระยะเหมือนวัตถุดิบ
+function crStaleMessage(ov) {
+  const list = ov.staleLots || [];
+  const d = (iso) => { const m = String(iso || "").match(/^(\d{4})-(\d{2})-(\d{2})/); return m ? m[3] + "/" + m[2] + "/" + String(Number(m[1]) + 543).slice(2) : "-"; };
+  const lines = list.slice(0, 20).map((x) => "• " + x.ProductName + " (MFG " + d(x.MFG) + ") — " +
+    (x.IdleDays === null ? "ไม่เคยมีการบันทึก" : "ไม่อัปเดต " + x.IdleDays + " วัน") + " · เหลือ " + fmtN(x.Qty) + " " + (x.Unit || ""));
+  let msg = "⏰ ล็อตที่ไม่มีการอัปเดตสต๊อกเกิน " + ov.staleDays + " วัน — " + FACTORY_NAME.COLDROOM + "\n" +
+    fmtTH(Date.now(), "dd/MM/yyyy HH:mm") + " · " + list.length + " ล็อต\n\n" + lines.join("\n");
+  if (list.length > 20) msg += "\n… และอีก " + (list.length - 20) + " ล็อต";
+  msg += "\n\nช่วยกันนับยืนยันยอด: เปิดแอป → คลังสินค้าห้องเย็น → เลือกสินค้า → 📊 นับ ที่ล็อตนั้น";
+  return msg;
+}
+
 /**
  * ส่งสรุปเข้ากลุ่ม (Telegram + LINE)
  *   what: "plan" = ที่ต้องสั่งซื้อ · "stale" = ไม่มีการอัปเดตเกินกำหนด · "both" = ทั้งสอง (งานตามเวลาตอนเช้า)
@@ -303,7 +317,15 @@ export async function planDigest(c, opts) {
     else if (r && r.reason !== "disabled") await sysLog(c, "telegram-error", kind + " digest: " + (r && r.reason), "-", "failed");
     out[k] = r && r.sent ? "sent" : "not-sent: " + ((r && r.reason) || "");
   };
-  for (const module of (o.modules || ["SQF", "MLM"])) {
+  for (const module of (o.modules || ["SQF", "MLM", "COLDROOM"])) {
+    if (module === "COLDROOM") {   // ห้องเย็นมีแค่เรื่อง "ไม่อัปเดต" (ไม่มีแผนสั่งซื้อ)
+      if (wantStale) {
+        const ov = await crGetStartupOverview(c, {});
+        const sl = ov.staleLots || [];
+        await one("COLDROOM", "stale", sl.length ? crStaleMessage(ov) : "", sl.map((x) => x.Barcode + "|" + x.MFG).sort().join("|"), sl.length > 0);
+      }
+      continue;
+    }
     const p = await planCompute(c, module);
     if (wantPlan) {
       const urgent = p.items.filter((x) => x.status === "late" || x.status === "now");

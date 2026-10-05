@@ -264,6 +264,26 @@ async function crCallServer(action, payload = {}, opts = {}) {
 }
 const CR_TG_ACTIONS = { saveOrUpdateCount: 1, clearLotStock: 1, importLots: 1, saveNewProduct: 1, saveWorkOrder: 1, updateProduct: 1 };
 
+// ⏰ ส่งรายการล็อตที่ไม่มีการอัปเดตเข้ากลุ่ม (Telegram + LINE) ให้ช่วยกันนับ — หัวหน้า/แอดมิน · ดูข้อความก่อนเสมอ
+async function crSendStale(btn) {
+  if (btn) btn.disabled = true;
+  try {
+    const pv = await crCallServer("staleDigest", { send: false }, { silent: true });
+    const msg = pv && pv.preview && pv.preview.COLDROOM;
+    if (!msg) { showToast((pv && pv.message) || "ไม่มีล็อตที่ค้างการอัปเดต", (pv && pv.message) ? "error" : "info"); return; }
+    const ln = pv.preview.line, lineOn = pv.result && pv.result.line === "preview" && ln;
+    const members = lineOn ? ln.groups.reduce((a, g) => a + (Number(g.members) || 0), 0) : 0;
+    const lineTxt = lineOn ? "\n+ LINE: " + ln.groups.map(g => g.name).join(", ") + (members ? " (ใช้โควตา " + members + " ข้อความ)" : "") : "";
+    if (!confirm("ส่งข้อความนี้เข้ากลุ่ม Telegram" + lineTxt + "?\n\n" + msg.slice(0, 900) + (msg.length > 900 ? "\n…" : ""))) return;
+    const r = await crCallServer("staleDigest", { send: true }, { silent: true });
+    const tg = r && r.result && r.result.COLDROOM, lr = r && r.result && r.result.line;
+    const parts = [tg === "sent" ? "Telegram ✅" : "Telegram ❌ " + String(tg || (r && r.message) || "").replace(/^not-sent:\s*/, "")];
+    if (lineOn) parts.push(lr === "sent" ? "LINE ✅" : "LINE ❌ " + String(lr || "").replace(/^(not-sent|partial):\s*/, ""));
+    showToast(parts.join(" · "), tg === "sent" ? "success" : "warn", 6000);
+  } catch (e) { showToast("ส่งไม่สำเร็จ: " + (e.message || ""), "error"); }
+  finally { if (btn) btn.disabled = false; }
+}
+
 // ── ข้อ 21: ประวัติล็อต (ก่อน/หลัง ใคร เมื่อไหร่ เหตุผล) ──
 async function crOpenLotHistory(barcode) {
   const m = document.getElementById("crLotHistModal");
@@ -1258,6 +1278,24 @@ function _crRenderOverview(res, stale) {
   $$cr("crExpiringBody").innerHTML = res.expiringLots.map(x =>
     `<tr><td data-label="ชื่อ">${escapeHtml(x.ProductName)}</td><td data-label="MFG"><b>${isoToDdmmyy(x.MFG)}</b></td><td data-label="EXP">${isoToDdmmyy(x.EXP)}</td><td data-label="เหลือ(วัน)" style="color:var(--warn)">${x.ExpireDays}</td><td data-label="จำนวน"><b>${x.Qty}</b></td></tr>`).join("");
 
+  // ⏰ ล็อตที่ไม่มีการอัปเดตเกินกำหนด — หลังบ้านคิดวันและตัดสินให้แล้ว (Stale / IdleDays / staleDays)
+  const sd = Number(res.staleDays) || 0, sl = res.staleLots || [];
+  const fmtD = iso => { try { return iso ? new Date(iso).toLocaleDateString("th-TH", { day: "2-digit", month: "2-digit", year: "2-digit" }) : "—"; } catch (e) { return "—"; } };
+  if ($$cr("crStatStale")) {
+    $$cr("crStatStale").style.display = sd ? "" : "none";
+    $$cr("crSumStale").textContent = sl.length;
+    $$cr("crSumStaleLbl").textContent = "ไม่อัปเดตเกิน " + sd + " วัน";
+    $$cr("crStaleWrap").style.display = sd ? "" : "none";
+    $$cr("crStaleTitle").textContent = "⏰ ไม่มีการอัปเดตเกิน " + sd + " วัน — ช่วยนับยืนยัน (" + sl.length + " ล็อต)";
+    $$cr("crStaleSendBtn").style.display = (sl.length && typeof planCanManage === "function" && planCanManage()) ? "" : "none";
+    $$cr("crStaleBody").innerHTML = sl.length ? sl.map(x =>
+      `<tr><td data-label="ชื่อ">${escapeHtml(x.ProductName)}</td><td data-label="MFG"><b>${isoToDdmmyy(x.MFG)}</b></td>
+        <td data-label="อัปเดตล่าสุด">${fmtD(x.LastUpdate)}</td>
+        <td data-label="ไม่อัปเดต(วัน)" style="color:var(--sq-high);font-weight:700;">${x.IdleDays == null ? "ไม่เคยบันทึก" : x.IdleDays}</td>
+        <td data-label="จำนวน"><b>${x.Qty}</b> ${escapeHtml(x.Unit || "")}</td></tr>`).join("")
+      : '<tr><td colspan="5" style="text-align:center;padding:14px;color:var(--muted);">✅ ทุกล็อตมีการอัปเดตภายใน ' + sd + ' วัน</td></tr>';
+  }
+
   $$cr("crExpiredBody").innerHTML = res.expiredLots.map(x =>
     `<tr><td data-label="ชื่อ">${escapeHtml(x.ProductName)}</td><td data-label="MFG"><b>${isoToDdmmyy(x.MFG)}</b></td><td data-label="EXP">${isoToDdmmyy(x.EXP)}</td><td data-label="เลย(วัน)" style="color:var(--danger)">${Math.abs(x.ExpireDays)} วัน</td><td data-label="จำนวน"><b>${x.Qty}</b></td></tr>`).join("");
 
@@ -1296,7 +1334,7 @@ function crRenderLotRow(r, i) {
     <td data-label="EXP">${isoToDdmmyy(r.EXP)}</td>
     <td data-label="จำนวน" style="color:var(--primary);font-weight:700;">${r.Qty} <span style="font-size:12px;color:var(--text);font-weight:normal;">${escapeHtml(r.Unit)}</span></td>
     <td data-label="เหลือ(วัน)">${r.ExpireDays}</td>
-    <td data-label="สถานะ"><span class="pill ${r.ExpireStatus.includes('ปกติ') ? 'pill-ok' : 'pill-danger'}">${r.ExpireStatus}</span></td>
+    <td data-label="สถานะ"><span class="pill ${r.ExpireStatus.includes('ปกติ') ? 'pill-ok' : 'pill-danger'}">${r.ExpireStatus}</span>${r.Stale ? ` <span class="pill pill-stale" title="ไม่มีใครนับ/เบิก/รับ ล็อตนี้เกินจำนวนวันที่ตั้ง — ยอดอาจไม่ตรงของจริง">⏰ ${r.IdleDays == null ? "ไม่เคยบันทึก" : "ไม่อัปเดต " + r.IdleDays + " วัน"}</span>` : ""}</td>
     <td data-label="QC">${r.QcShelfLifeStatus}</td>
   </tr>`;
 }

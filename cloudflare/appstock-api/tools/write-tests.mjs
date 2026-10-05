@@ -548,5 +548,59 @@ console.log("12) ⏰ เตือนเมื่อไม่มีการอ�
   T("คืนค่าเดิม", (await plan({})).saved.staleDays === s0.staleDays);
 }
 
+console.log("13) ⏰ ห้องเย็น — ล็อตที่ไม่มีการอัปเดตเกินกำหนด (ย้อนเวลาล็อตทดสอบในฐานข้อมูลในเครื่องด้วย wrangler)");
+{
+  const { execFileSync } = await import("node:child_process");
+  const { fileURLToPath } = await import("node:url");
+  const here = fileURLToPath(new URL("..", import.meta.url));
+  // ย้อนเวลาเฉพาะล็อตทดสอบที่เพิ่งสร้าง — คำสั่ง --local เท่านั้น ห้ามมี --remote
+  const sqlLocal = (sql) => execFileSync(process.platform === "win32" ? "wrangler.cmd" : "wrangler", ["d1", "execute", "appstock", "--local", "--command", sql],
+    { cwd: here, stdio: "pipe", shell: process.platform === "win32" });
+  const s0 = (await post({ module: "SQF", action: "USAGEPLAN", sessionToken: tok })).saved;
+  await raw("PLANSET", { staleDays: 7 }, atok);
+  const bc = "STALE" + Date.now();
+  await cr("saveNewProduct", { barcode: bc, productName: "ล็อตค้าง " + bc, sku: "SK" + bc, defaultUnit: "ถ้วย", standardShelfLifeDays: 60, warningPercentage: 10 });
+  const th = new Date(Date.now() + 7 * 3600000), dd = (d) => String(d.getUTCDate()).padStart(2, "0") + String(d.getUTCMonth() + 1).padStart(2, "0") + String(d.getUTCFullYear()).slice(2);
+  const mfgA = dd(new Date(th.getTime() - 20 * 86400000)), mfgB = dd(new Date(th.getTime() - 2 * 86400000)), expAll = dd(new Date(th.getTime() + 50 * 86400000));
+  await cr("saveOrUpdateCount", { barcode: bc, mfg: mfgA, exp: expAll, newQty: 30, note: "ล็อต A" });
+  await cr("saveOrUpdateCount", { barcode: bc, mfg: mfgB, exp: expAll, newQty: 12, note: "ล็อต B" });
+  let ov = await cr("getStartupOverview", {});
+  const mine = (o) => o.allLots.filter((l) => l.Barcode === bc);
+  T("ล็อตที่เพิ่งบันทึก → ไม่อัปเดต 0 วัน ไม่เตือน", mine(ov).length === 2 && mine(ov).every((l) => l.IdleDays === 0 && l.Stale === false) && ov.staleDays === 7, mine(ov));
+  const isoA = mine(ov).sort((a, b) => a.MFG.localeCompare(b.MFG))[0].MFG;
+  let backdated = false;
+  try {
+    const old = new Date(Date.now() - 12 * 86400000).toISOString();
+    sqlLocal(`UPDATE cr_stock SET updated_at = '${old}' WHERE barcode = '${bc}' AND mfg = '${isoA}'; UPDATE cr_lot_history SET ts = '${old}' WHERE barcode = '${bc}' AND mfg = '${isoA}'`);
+    backdated = true;
+  } catch (e) { console.log("  ⏭️  ข้าม: ย้อนเวลาในฐานข้อมูลในเครื่องไม่ได้ (" + String(e.message).slice(0, 80) + ")"); }
+  if (backdated) {
+    ov = await cr("getStartupOverview", {});
+    const a = mine(ov).find((l) => l.MFG === isoA), b = mine(ov).find((l) => l.MFG !== isoA);
+    T("ล็อตที่ไม่มีใครแตะ 12 วัน → เตือน (แยกรายล็อต ล็อตอื่นของสินค้าเดียวกันไม่โดน)", a.Stale === true && a.IdleDays === 12 && b.Stale === false, [a, b]);
+    T("ภาพรวมมีรายการล็อตค้าง + จำนวน", ov.staleLots.some((l) => l.Barcode === bc && l.MFG === isoA) && ov.summary.staleLots === ov.staleLots.length, ov.summary);
+    const lite = await cr("getStartupOverview", { lite: true });
+    T("มือถือ (แบบย่อ) ได้ Stale/IdleDays ต่อล็อต + ค่ากลาง", lite.staleDays === 7 && lite.allLots.find((l) => l.Barcode === bc && l.MFG === isoA).Stale === true && lite.staleLots === undefined);
+    const pv = await post({ module: "COLDROOM", action: "staleDigest", payload: { send: false }, sessionToken: atok });
+    T("ดูตัวอย่างข้อความเตือนห้องเย็น", /ล็อตที่ไม่มีการอัปเดตสต๊อกเกิน 7 วัน/.test((pv.preview || {}).COLDROOM || "") && pv.preview.COLDROOM.includes("ล็อตค้าง " + bc), pv.preview && pv.preview.COLDROOM && pv.preview.COLDROOM.slice(0, 120));
+    T("ผู้ใช้ทั่วไปสั่งส่งเตือนห้องเย็นไม่ได้", (await post({ module: "COLDROOM", action: "staleDigest", payload: { send: true }, sessionToken: tok })).status === "error");
+    const sd = await post({ module: "COLDROOM", action: "staleDigest", payload: { send: true }, sessionToken: atok });
+    T("กดส่งเตือนห้องเย็น → Telegram (เครื่องทดสอบปิดไว้ = disabled)", /disabled/.test((sd.result || {}).COLDROOM || ""), sd.result);
+    await cr("saveOrUpdateCount", { barcode: bc, mfg: dd(new Date(th.getTime() - 20 * 86400000)), exp: expAll, newQty: 30, note: "นับยืนยัน" });
+    ov = await cr("getStartupOverview", {});
+    T("นับยืนยันที่ล็อตนั้น (ยอดเท่าเดิม) → หายจากรายการเตือน", mine(ov).find((l) => l.MFG === isoA).Stale === false && !ov.staleLots.some((l) => l.Barcode === bc));
+    sqlLocal(`UPDATE cr_stock SET updated_at = 'Win11/10/Chrome xx' WHERE barcode = '${bc}' AND mfg = '${isoA}'`);
+    ov = await cr("getStartupOverview", {});
+    T("ช่องเวลาเพี้ยน (ชื่อเครื่อง) → ใช้เวลาจากประวัติล็อตแทน ไม่พัง", mine(ov).find((l) => l.MFG === isoA).IdleDays === 0);
+    await raw("PLANSET", { staleDays: 0 }, atok);
+    ov = await cr("getStartupOverview", {});
+    T("ตั้ง 0 = ปิดเตือนห้องเย็นด้วย", ov.staleDays === 0 && ov.summary.staleLots === 0 && !ov.allLots.some((l) => l.Stale));
+  }
+  // เก็บกวาด: ล้างยอดล็อตทดสอบ (ไม่ค้างในภาพรวมรอบหน้า)
+  for (const l of mine(await cr("getStartupOverview", {}))) await cr("clearLotStock", { barcode: bc, mfg: l.MFG, reason: "ล้างของทดสอบ" });
+  await raw("PLANSET", { staleDays: s0.staleDays }, atok);
+  T("เก็บกวาดล็อตทดสอบ + คืนค่าเดิม", !mine(await cr("getStartupOverview", {})).length && (await post({ module: "SQF", action: "USAGEPLAN", sessionToken: tok })).saved.staleDays === s0.staleDays);
+}
+
 console.log(`\nสรุป: ผ่าน ${pass} · ไม่ผ่าน ${fail}`);
 process.exit(fail ? 1 : 0);

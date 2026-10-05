@@ -140,6 +140,9 @@ cron 08:00 (เวลาไทย) → `backupAll` เขียน JSON ทั�
 - แสดงที่: หน้าวัตถุดิบ (การ์ด + ตัวกรอง + ป้ายในแถว) · หน้าวางแผนสั่งซื้อ (การ์ด/ตัวกรอง + เหตุผลในข้อสังเกต + ปุ่ม "ส่งเตือนให้ช่วยนับ") · มือถือ (ตัวกรอง ⏰ + ป้ายในการ์ด + กล่องในหน้าต้องสั่ง)
 - สรุปเช้า: `planDigest` ส่งเรื่อง stale แยกข้อความ (ลายเซ็น `stale_sig_<module>` / `stale_sig_line_<module>`) — ส่งเมื่อรายการเปลี่ยนหรือวันจันทร์ · ใน LINE รวมอยู่ใน push เดียวกับเรื่องที่ต้องสั่ง (ไม่เสียโควตาเพิ่ม)
 - `PLANDIGEST {what: "stale"}` = ปุ่มส่งเตือนเอง (manager ขึ้นไป)
+- **ห้องเย็น** (เพิ่ม 2026-10-05): ระดับ**ล็อต** (บาร์โค้ด + วันผลิต) · อัปเดตล่าสุด = max(cr_lot_history.ts, cr_stock.updated_at ที่เป็นเวลาจริง —
+  แถวเก่าจากชีตบางแถวมีชื่อเครื่องอยู่ในช่องนี้) · `getStartupOverview` คืน `IdleDays` / `LastUpdate` / `Stale` ต่อล็อต + `staleDays` + `summary.staleLots` + `staleLots[]`
+  · ใช้จำนวนวันเดียวกับวัตถุดิบ · สรุปเช้าเป็นข้อความที่ 5 (`stale_sig_COLDROOM`) · ปุ่มส่งเอง = COLDROOM action `staleDigest` (manager ขึ้นไป)
 
 **LINE กลุ่ม** (`src/line.js` · หน้าตั้งค่า `js/line.js` ในหน้าต่าง ⚙️ ตั้งค่าการแจ้งเตือน · admin เท่านั้น)
 - ใช้ LINE Official Account + Messaging API (LINE Notify ปิดบริการแล้ว) · config: `lineChannelToken` `lineChannelSecret` (ถูกซ่อนในสำเนาชีต — ชื่อมีคำว่า token/secret)

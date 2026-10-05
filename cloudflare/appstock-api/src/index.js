@@ -80,6 +80,8 @@ const COLDROOM = {
   deleteBom: (c, p) => B.bomDelete(c, p.barcode),
   calcWorkOrderMaterials: (c, p) => B.bomCalcWorkOrder(c, p),
   archiveOldStock: (c, p) => C.archiveOldStock(c, p),
+  // ⏰ ปุ่มส่งเตือน "ล็อตที่ไม่มีการอัปเดต" เข้ากลุ่ม (manager ขึ้นไป) · send ไม่ใช่ true = ดูตัวอย่างข้อความ
+  staleDigest: (c, p) => P.planDigest(c, { force: true, modules: ["COLDROOM"], what: "stale", dry: p.send !== true }),
 };
 
 const newCtx = (env, ctx) => ({ env, ctx, t0: Date.now(), cfg: null, deviceId: "", deviceName: "", user: "", timed: false });

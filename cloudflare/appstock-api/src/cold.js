@@ -1,8 +1,9 @@
 // ห้องเย็น: สินค้า · ล็อต (บาร์โค้ด+วันผลิต) · ภาพรวม · นับ/รับ/นำออก · นำเข้าไฟล์ · ใบสั่งผลิต · ส่งยอด/รับยอด · เก็บถาวร
 // คำตอบทุกตัวคงรูปแบบเดิมของหลังบ้าน Apps Script
-import { all, first, run, stmt, changed, kvGet, kvPut, uuid, nowIso, fmtTH, eventTime, qtyStrict, validateQty, ddmmyyToIso, formatCellDate,
+import { all, first, run, stmt, changed, kvGet, kvPut, uuid, getCfg, nowIso, fmtTH, eventTime, qtyStrict, validateQty, ddmmyyToIso, formatCellDate,
          parseLocalDateMs, todayThaiMidnightMs, numOrBlank, deviceTag, tgNotify, tgSettings, cfgSet, DAY_MS } from "./lib.js";
 import { getTokenData, verifyApproverToken, verifyAdminToken } from "./auth.js";
+import { idleDaysTH, staleDaysOf } from "./raw.js";
 
 const CR_IMPORT_MAX_ROWS = 500;
 
@@ -251,9 +252,24 @@ export async function crGetColdRoomProducts(c) {
 }
 
 // ───────────── ภาพรวมห้องเย็น ─────────────
+// ───────────── ⏰ ล็อตที่ไม่มีการอัปเดตเกินกำหนด ─────────────
+// "อัปเดต" ของล็อต = มีคนนับ/เบิก/รับเข้า/นำเข้า (ทุกอย่างลง cr_lot_history และแตะ updated_at)
+// updated_at ของแถวเก่าจากชีตบางแถวเพี้ยน (เป็นชื่อเครื่องแทนเวลา) → เชื่อเฉพาะค่าที่เป็นเวลาจริง แล้วเทียบกับประวัติล็อต
+async function crLotLastUpdate(c, stock) {
+  const out = {};
+  const put = (k, t) => { if (isFinite(t) && (!out[k] || t > out[k])) out[k] = t; };
+  for (const r of await all(c, "SELECT barcode, mfg, MAX(ts) AS t FROM cr_lot_history GROUP BY barcode, mfg"))
+    put(String(r.barcode) + "|" + String(r.mfg).slice(0, 10), r.t ? new Date(r.t).getTime() : NaN);
+  for (const r of stock)
+    if (/^\d{4}-\d{2}-\d{2}T/.test(String(r.updated_at || ""))) put(String(r.barcode) + "|" + String(r.mfg).slice(0, 10), new Date(r.updated_at).getTime());
+  return out;
+}
+
 export async function crGetStartupOverview(c, payload) {
   const lite = !!(payload && payload.lite);
   const stock = await all(c, "SELECT * FROM cr_stock WHERE archived = 0 AND qty > 0 ORDER BY seq, rowid");
+  const staleDays = staleDaysOf(await getCfg(c)), lastUpd = await crLotLastUpdate(c, stock), nowMs = Date.now();
+  let staleCount = 0;
   const today = todayThaiMidnightMs();
   const warnMap = {}, unitMap = {};
   (await products(c)).forEach((p) => {
@@ -273,15 +289,21 @@ export async function crGetStartupOverview(c, payload) {
     let expireStatus = "ปกติ", qcStatus = "✅ ผ่าน";
     if (expireDays < 0) { expireStatus = "หมดอายุ"; qcStatus = "❌ หมดอายุ"; expiredCount++; }
     else if (expireDays <= threshold) { expireStatus = "ใกล้หมดอายุ"; qcStatus = "⚠️ ใกล้หมด"; expiringCount++; }
-    allLots.push({ Barcode: barcode, ProductName: productName, MFG: mfg, EXP: exp, Qty: qty, Unit: unit, ExpireDays: expireDays, ExpireStatus: expireStatus, QcShelfLifeStatus: qcStatus });
+    const lu = lastUpd[barcode + "|" + String(row.mfg).slice(0, 10)];
+    const idle = idleDaysTH(lu, nowMs);
+    const isStale = staleDays > 0 && (idle === null || idle > staleDays);
+    if (isStale) staleCount++;
+    allLots.push({ Barcode: barcode, ProductName: productName, MFG: mfg, EXP: exp, Qty: qty, Unit: unit, ExpireDays: expireDays, ExpireStatus: expireStatus, QcShelfLifeStatus: qcStatus,
+                   LastUpdate: lu ? new Date(lu).toISOString() : "", IdleDays: idle, Stale: isStale });
     if (!productTotals[barcode]) productTotals[barcode] = { ProductName: productName, TotalQty: 0, Unit: unit, LotCount: 0 };
     productTotals[barcode].TotalQty += qty;
     productTotals[barcode].LotCount++;
   }
-  const summary = { totalProducts: Object.keys(productTotals).length, totalLots: allLots.length, expiringLots: expiringCount, expiredLots: expiredCount };
-  if (lite) return { ok: true, allLots, summary };   // มือถือใช้แค่นี้
+  const summary = { totalProducts: Object.keys(productTotals).length, totalLots: allLots.length, expiringLots: expiringCount, expiredLots: expiredCount, staleLots: staleCount };
+  if (lite) return { ok: true, allLots, summary, staleDays };   // มือถือใช้แค่นี้
   return {
-    ok: true, allLots, summary,
+    ok: true, allLots, summary, staleDays,
+    staleLots: allLots.filter((l) => l.Stale).sort((a, b) => (b.IdleDays === null ? 1e9 : b.IdleDays) - (a.IdleDays === null ? 1e9 : a.IdleDays)),
     totalByProduct: Object.values(productTotals),
     expiringLots: allLots.filter((l) => l.ExpireStatus === "ใกล้หมดอายุ").sort((a, b) => a.ExpireDays - b.ExpireDays),
     expiredLots: allLots.filter((l) => l.ExpireStatus === "หมดอายุ").sort((a, b) => a.ExpireDays - b.ExpireDays),

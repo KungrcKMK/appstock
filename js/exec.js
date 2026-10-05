@@ -103,7 +103,7 @@ async function loadExecDashboard() {
   }
   const now = new Date().toLocaleString("th-TH", { dateStyle:"medium", timeStyle:"short" });
   document.getElementById("execDashTimestamp").textContent = "อัปเดตล่าสุด " + now;
-  if (mobile) { el.innerHTML = execMobileView(); loadExecDashboard._retried = false; return; }
+  if (mobile) { el.innerHTML = execMobileView(); _xmDrawCharts(); loadExecDashboard._retried = false; return; }
   if (slot("execKpiSlot"))   slot("execKpiSlot").innerHTML   = execBuildKpi([...(_execChartData.SQF||[]), ...(_execChartData.MLM||[])], _execChartData.staleDays || 0);
   if (slot("execChartSlot")) slot("execChartSlot").innerHTML = execChartSection();
   // วาดหลังจาก canvas อยู่บนจอแล้ว (Chart.js วัดขนาดจากกล่องที่มองเห็น)
@@ -654,7 +654,7 @@ function _xmChartConfig(key) {
   if (key === "status") {
     const bucket = items => [0, 1, 2].map(u => items.filter(m => m.urgency === u).length).concat([items.filter(m => m.urgency >= 3).length]);
     const s = bucket(execRawItems(_execChartData.SQF || [])), m = bucket(execRawItems(_execChartData.MLM || []));
-    const ds = [["🔴 วิกฤต", "220,38,38"], ["🟠 เร่งด่วน", "234,88,12"], ["🟡 ควรวางแผน", "245,158,11"], ["✓ ปกติ", "148,163,154"]]
+    const ds = [["วิกฤต ≤7 วัน", "220,38,38"], ["เร่งด่วน ≤14", "234,88,12"], ["ควรวางแผน ≤30", "245,158,11"], ["ปกติ", "148,163,154"]]
       .map(([label, c], i) => ({ label, data: [s[i], m[i]], backgroundColor: `rgba(${c},0.85)`, borderRadius: 4, barThickness: 26 }));
     return {
       type: "bar", data: { labels: ["SQF", "MLM"], datasets: ds },

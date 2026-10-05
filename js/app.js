@@ -209,7 +209,8 @@ function checkAuth() {
   const saved = localStorage.getItem("unified_stock_user");
   if (saved) {
     // session ยังอยู่ → ตรวจ mode session (ไม่ใช้ pref เพื่อป้องกัน auto-redirect)
-    const sessionMode = sessionStorage.getItem("appstock_mode_session");
+    // 📊 ลิงก์ผู้บริหาร: เป็นหน้าคอมเสมอ ไม่ถามโหมด ไม่พาไปหน้ามือถือ (มือถือก็เปิดหน้านี้ได้ — หน้าภาพรวมปรับตามจอเอง)
+    const sessionMode = window.APP_EXEC_ONLY ? "desktop" : sessionStorage.getItem("appstock_mode_session");
     if (!sessionMode) {
       // ไม่มี session mode → แสดง mode picker ทุกครั้ง (ไม่ auto-redirect)
       showModePicker(saved); return;
@@ -275,6 +276,14 @@ function checkAuth() {
     window._appIsViewer = isViewer;
     if (isViewer) document.querySelectorAll(".viewer-hide").forEach(el => el.style.display = "none");
     _watchNavHeight();   // ปุ่มถูกซ่อน/แสดงตาม role ครบแล้ว ค่อยวัดความสูงเมนู
+    // 📊 ลิงก์ผู้บริหาร: เปิดได้เฉพาะบัญชีที่ดูภาพรวมได้ (ดูอย่างเดียว / หัวหน้า / แอดมิน)
+    if (window.APP_EXEC_ONLY) {
+      window._execDenied = !isExecDash;
+      const u = document.getElementById("execOnlyUser");
+      if (u) u.textContent = "👤 " + currentUser;
+      switchModule("EXEC");
+      return;
+    }
     // เข้าระบบแล้วเจอหน้าเลือกคลังก่อน (เหมือนมือถือ) — viewer ไปหน้าภาพรวมซึ่งเป็นหน้าหลักของเขา
     switchModule(isViewer ? "EXEC" : "HOME");
   }
@@ -284,6 +293,7 @@ function checkAuth() {
 // MODULE SWITCHER
 // ─────────────────────────────────────────────
 function switchModule(mod) {
+  if (window.APP_EXEC_ONLY) mod = "EXEC";   // ลิงก์ผู้บริหาร: มีหน้าเดียว
   activeModule = mod;
 
   // หน้าแรกไม่โชว์แถบเมนู (เจ้าของสั่ง 2026-07-31) — กลับมาเมื่อเข้าคลัง

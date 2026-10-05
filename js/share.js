@@ -12,6 +12,7 @@ const SHARE_TARGETS = [
 ];
 
 let _shareUrl = "";
+let _shareMode = "staff";   // staff = แอปหลักของพนักงาน · exec = ลิงก์ผู้บริหาร (?view=exec)
 
 function _shareDefaultUrl() {
   // ถ้าเปิดจาก production อยู่แล้ว ใช้ที่อยู่นั้น — ถ้าทดสอบในเครื่องใช้ GitHub Pages
@@ -21,8 +22,27 @@ function _shareDefaultUrl() {
 }
 
 function openShareApp() {
-  _shareUrl = _shareDefaultUrl();
+  // ตัวเลือก "ผู้บริหาร" เห็นเฉพาะหัวหน้า/แอดมิน (คนที่สร้างบัญชีผู้บริหารให้ได้)
+  const r = (localStorage.getItem("unified_stock_role") || "").toLowerCase();
+  const row = document.getElementById("shareModeRow");
+  if (row) row.style.display = (r === "admin" || r === "manager") ? "grid" : "none";
   document.getElementById("shareAppModal").classList.remove("hidden");
+  shareSetMode("staff");
+}
+
+function shareSetMode(mode) {
+  _shareMode = mode === "exec" ? "exec" : "staff";
+  const base = _shareDefaultUrl().replace(/[?#].*$/, "");
+  _shareUrl = _shareMode === "exec" ? base + "?view=exec" : base;
+  const on = (el, c) => { if (!el) return; el.style.background = c; el.style.color = "#fff"; };
+  const off = (el, c) => { if (!el) return; el.style.background = "#fff"; el.style.color = c; };
+  if (_shareMode === "exec") { on(document.getElementById("shareModeExec"), "#0e7a3f"); off(document.getElementById("shareModeStaff"), "#0f172a"); }
+  else { on(document.getElementById("shareModeStaff"), "#0f172a"); off(document.getElementById("shareModeExec"), "#0e7a3f"); }
+  const note = document.getElementById("shareModeNote");
+  if (note) {
+    note.style.display = _shareMode === "exec" ? "" : "none";
+    note.textContent = "เปิดได้เฉพาะหน้าภาพรวมทั้งระบบ · ต้องเข้าด้วยบัญชีสิทธิ์ \"ดูอย่างเดียว\" หัวหน้า หรือแอดมิน · ติดตั้งเป็นแอปชื่อ \"ผู้บริหาร\" ได้";
+  }
   shareRenderQr();
 }
 
@@ -75,7 +95,9 @@ async function shareCopyLink() {
 }
 
 async function shareNative() {
-  const data = { title: "ระบบจัดการสต๊อก SQF & MLM", text: "เข้าใช้งานระบบสต๊อกได้ที่ลิงก์นี้", url: _shareUrl };
+  const data = _shareMode === "exec"
+    ? { title: "ภาพรวมผู้บริหาร — SQF & MLM", text: "ดูภาพรวมสต๊อกทั้งระบบได้ที่ลิงก์นี้", url: _shareUrl }
+    : { title: "ระบบจัดการสต๊อก SQF & MLM", text: "เข้าใช้งานระบบสต๊อกได้ที่ลิงก์นี้", url: _shareUrl };
   if (navigator.share) {
     try { await navigator.share(data); } catch (e) { /* ผู้ใช้กดยกเลิก */ }
   } else {
@@ -87,7 +109,7 @@ function shareDownloadQr() {
   const src = _shareQrDataUrl();
   if (!src) { showToast("ไม่พบ QR", "error"); return; }
   const a = document.createElement("a");
-  a.href = src; a.download = "QR_เข้าใช้ระบบสต๊อก.png"; a.click();
+  a.href = src; a.download = _shareMode === "exec" ? "QR_ภาพรวมผู้บริหาร.png" : "QR_เข้าใช้ระบบสต๊อก.png"; a.click();
   showToast("ดาวน์โหลด QR แล้ว", "success");
 }
 
@@ -113,7 +135,7 @@ function sharePrintQr() {
     </style></head><body>
     <img src="${logoUrl()}" alt="" onerror="this.style.display='none'"
          style="width:100%;max-width:420px;height:auto;margin:0 auto 18px;display:block;">
-    <h1>📦 ระบบจัดการสต๊อก</h1>
+    <h1>${_shareMode === "exec" ? "📊 ภาพรวมผู้บริหาร" : "📦 ระบบจัดการสต๊อก"}</h1>
     <div class="sub">สุพรรณคิวฟู้ดส์ | แม่ละมาย</div>
     <img src="${src}" alt="QR">
     <div class="url">${escapeHtml(_shareUrl)}</div>
@@ -122,14 +144,15 @@ function sharePrintQr() {
       <ol>
         <li>เปิดกล้องมือถือ แล้วสแกน QR ด้านบน</li>
         <li>กดลิงก์ที่ขึ้นมา ระบบจะเปิดในเบราว์เซอร์</li>
-        <li>พิมพ์ชื่อพนักงาน แล้วกด "เข้าสู่ระบบ"<br>
-            ถ้ายังไม่มีชื่อในระบบ จะมีกล่องขึ้นมาให้กด <b>"ขอสิทธิ์เข้าใช้งานจาก Admin"</b> แล้วรอหัวหน้าอนุมัติ</li>
+        ${_shareMode === "exec"
+          ? '<li>พิมพ์ชื่อบัญชีผู้บริหาร (+ รหัสผ่านถ้ามี) แล้วกด "เข้าสู่ระบบ" — ครั้งเดียวจำไว้ 30 วัน<br>ยังไม่มีบัญชี: ให้แอดมินเพิ่มให้ (สิทธิ์ "ดูอย่างเดียว")</li>'
+          : '<li>พิมพ์ชื่อพนักงาน แล้วกด "เข้าสู่ระบบ"<br>ถ้ายังไม่มีชื่อในระบบ จะมีกล่องขึ้นมาให้กด <b>"ขอสิทธิ์เข้าใช้งานจาก Admin"</b> แล้วรอหัวหน้าอนุมัติ</li>'}
         <li><b>ติดตั้งลงหน้าจอโฮม</b> เพื่อเปิดง่ายครั้งต่อไป:<br>
             • Android: กดเมนู ⋮ → "เพิ่มลงในหน้าจอหลัก"<br>
             • iPhone: กดปุ่มแชร์ ⬆️ → "เพิ่มไปยังหน้าจอโฮม"</li>
       </ol>
     </div>
-    <div class="note">พิมพ์แผ่นนี้ติดบอร์ดให้พนักงานสแกนได้เลย</div>
+    <div class="note">${_shareMode === "exec" ? "ติดตั้งแล้วจะได้ไอคอนชื่อ \"ผู้บริหาร\" แยกจากแอปของพนักงาน" : "พิมพ์แผ่นนี้ติดบอร์ดให้พนักงานสแกนได้เลย"}</div>
     <script>window.onload=function(){setTimeout(function(){window.print();},400);}<\/script>
     </body></html>`);
   w.document.close();

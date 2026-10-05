@@ -3,7 +3,7 @@
 // Cache static assets สำหรับใช้งาน offline บางส่วน
 // =====================================================
 
-const CACHE_NAME = "appstock-v78";
+const CACHE_NAME = "appstock-v79";
 
 // ไฟล์ที่ cache ไว้ใช้ offline
 // ⚠️ addAll เป็น all-or-nothing — ไฟล์เดียวโหลดไม่ได้ = ติดตั้งไม่สำเร็จทั้งชุด
@@ -18,6 +18,9 @@ const STATIC_ASSETS = [
   "./css/tw-desktop.css",
   "./css/tw-mobile.css",
   "./manifest.json",
+  "./manifest-exec.json",
+  "./icons/exec-192.png",
+  "./icons/exec-512.png",
   "./icons/icon-192.png",
   "./icons/icon-512.png",
   "./js/offline.js",
@@ -111,8 +114,11 @@ self.addEventListener("fetch", e => {
   }
 
   // Static files — Cache first, fallback network
+  // เปิดหน้าเว็บ (navigate) ไม่สนส่วน ?… — ลิงก์ผู้บริหาร (?view=exec) ใช้ index.html ชุดเดียวกับรุ่นที่ติดตั้ง
+  // ไม่งั้นจะได้ index.html อีกชุดที่ถูกเก็บแยก แล้วค้างรุ่นเก่าคนละจังหวะกับแอปหลัก
+  const isNav = e.request.mode === "navigate";
   e.respondWith(
-    caches.match(e.request).then(cached => {
+    caches.match(e.request, isNav ? { ignoreSearch: true } : undefined).then(cached => {
       if (cached) return cached;
       return fetch(e.request).then(res => {
         if (res.ok && e.request.method === "GET") {

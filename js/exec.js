@@ -5,8 +5,46 @@
 // ══════════════════════════════════════════════════
 function openExecDashboard() { switchModule("EXEC"); }
 
+// ── 📲 ติดตั้งลิงก์ผู้บริหารเป็นแอป (ชื่อ "ผู้บริหาร" · manifest-exec.json) ──
+//    Chrome/Edge/Android: ปุ่มกดติดตั้งได้เลย · iPhone: ต้องกดแชร์ → เพิ่มไปยังหน้าจอโฮม (Safari ไม่มีปุ่มให้กดแทน)
+let _execInstallEvt = null;
+const _execStandalone = () => (window.matchMedia && matchMedia("(display-mode: standalone)").matches) || window.navigator.standalone === true;
+function _execShowInstall() {
+  const b = document.getElementById("execInstallBtn");
+  if (!b) return;
+  const ios = /iPhone|iPad|iPod/i.test(navigator.userAgent);
+  b.style.display = window.APP_EXEC_ONLY && !_execStandalone() && (_execInstallEvt || ios) ? "" : "none";
+}
+window.addEventListener("beforeinstallprompt", e => {
+  if (!window.APP_EXEC_ONLY) return;   // แอปหลักใช้ปุ่มของเบราว์เซอร์ตามเดิม
+  e.preventDefault();
+  _execInstallEvt = e;
+  _execShowInstall();
+});
+window.addEventListener("appinstalled", () => { _execInstallEvt = null; _execShowInstall(); });
+async function execInstallApp() {
+  if (_execInstallEvt) {
+    _execInstallEvt.prompt();
+    try { await _execInstallEvt.userChoice; } catch (e) {}
+    _execInstallEvt = null;
+    _execShowInstall();
+    return;
+  }
+  alert("ติดตั้งบน iPhone / iPad:\n1. เปิดหน้านี้ใน Safari\n2. กดปุ่มแชร์ ⬆️ ด้านล่าง\n3. เลือก \"เพิ่มไปยังหน้าจอโฮม\"\n\nจะได้ไอคอนชื่อ \"ผู้บริหาร\" เปิดเข้าหน้าภาพรวมได้ทันที");
+}
+document.addEventListener("DOMContentLoaded", _execShowInstall);
+
 async function loadExecDashboard() {
   const el = document.getElementById("execDashContent");
+  // ลิงก์ผู้บริหารแต่บัญชีนี้เป็นพนักงานหน้างาน → บอกตรงๆ ไม่โหลดข้อมูล
+  if (window._execDenied) {
+    document.getElementById("execDashTimestamp").textContent = "";
+    el.innerHTML = '<div class="sq-card"><div class="sq-card-body" style="text-align:center;padding:28px 16px;">' +
+      '<div style="font-size:40px;">🔒</div><div class="sq-card-title" style="justify-content:center;margin-top:6px;">บัญชีนี้ไม่มีสิทธิ์ดูภาพรวมผู้บริหาร</div>' +
+      '<p class="sq-card-note" style="margin-top:6px;">ใช้บัญชีผู้บริหาร (สิทธิ์ "ดูอย่างเดียว") หรือหัวหน้า/แอดมิน · ถ้ายังไม่มี ให้แอดมินเพิ่มบัญชีให้ที่หน้า Admin</p>' +
+      '<button class="sq-btn sq-btn-primary" style="margin-top:12px;" onclick="logout()">ออกจากระบบ แล้วเข้าด้วยบัญชีอื่น</button></div></div>';
+    return;
+  }
   document.getElementById("execDashTimestamp").textContent = "กำลังดึงข้อมูล...";
   // ข้อ 9: สามคลังโหลดพร้อมกัน แต่ละส่วนวาดทันทีที่มาถึง ไม่รอครบ · ตัวเลขรวม (KPI) รอจนครบสองโรงงานเท่านั้น
   el.innerHTML =

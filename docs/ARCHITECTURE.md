@@ -185,9 +185,22 @@ cron 08:00 (เวลาไทย) → `backupAll` เขียน JSON ทั�
 - ลืมรหัส super admin: แก้ในชีตไม่ได้แล้ว → `wrangler d1 execute appstock --remote --command "UPDATE users SET password='' WHERE username='...'"`
   จากเครื่องเจ้าของ แล้วตั้งรหัสใหม่ในแอป
 
+## 📊 ลิงก์ผู้บริหาร (`?view=exec`) — แอปแยกชื่อ "ผู้บริหาร" (เพิ่ม 2026-10-05)
+
+- ลิงก์: `https://kungrckmk.github.io/appstock/?view=exec` — เปิดเฉพาะหน้าภาพรวมทั้งระบบ (EXEC) ไม่มีแถบเมนู ไม่ถามโหมด ไม่เด้งแจ้งเตือนสต๊อก
+- กลไก: สคริปต์ใน `<head>` ของ index.html ตั้ง `window.APP_EXEC_ONLY` + class `exec-only` บน `<html>` และสลับ manifest เป็น `manifest-exec.json`
+  (ชื่อ "ภาพรวมผู้บริหาร — SQF & MLM" / short_name "ผู้บริหาร" / `id` + `start_url` = `./?view=exec` → ติดตั้งเป็นแอปแยกจากแอปหลัก)
+  · ไอคอน `icons/exec-*.png` = ไอคอนหลัก + ป้ายกราฟแท่ง (สร้างใน generate-icons.js)
+- `_loginSuccess` ข้ามหน้าเลือกโหมด · `checkAuth` บังคับโหมดคอม · `switchModule` ล็อกไว้ที่ EXEC
+- สิทธิ์เดียวกับปุ่ม 📊 เดิม: viewer / manager / admin · บัญชีพนักงาน (user) เห็นข้อความ 🔒 ไม่มีสิทธิ์ (`window._execDenied`)
+- ปุ่ม "📲 ติดตั้งเป็นแอป" ใช้ `beforeinstallprompt` (Chrome/Edge/Android) · iPhone แสดงวิธีแชร์ → เพิ่มไปยังหน้าจอโฮม
+- แชร์: หน้าต่าง 🔗 แชร์แอป มีตัวเลือก 👷 พนักงาน / 📊 ผู้บริหาร (หัวหน้า/แอดมินเห็น) — QR และใบพิมพ์เปลี่ยนตาม
+- sw.js: คำขอเปิดหน้า (navigate) จับคู่ cache แบบ `ignoreSearch` → `?view=exec` ใช้ index.html ชุดเดียวกับรุ่นที่ติดตั้ง
+
 ## PWA / อัปเดตแอป
 
 - `sw.js` — เปลี่ยนอะไรในไฟล์ที่ cache ต้องเลื่อน `CACHE_NAME` (sw.js:6) เสมอ
+  · ตอนติดตั้งดึงไฟล์ด้วย `cache: "reload"` — GitHub Pages ส่ง max-age=600 ถ้าไม่ reload ชุดรุ่นใหม่จะได้ไฟล์รุ่นเก่าจาก cache ของเบราว์เซอร์ (เจอจริง v77)
 - อัปเดตอัตโนมัติ: `controllerchange` + เช็คทุก 10 นาที + ตอนสลับแท็บกลับมา (js/app.js)
   มี `_appIsBusy()` กันรีโหลดตอน modal เปิดหรือกำลังพิมพ์
 - ปุ่ม "🔄 อัปเดต" = `forceRefresh()` ล้าง cache ทั้งหมดแล้วโหลดใหม่

@@ -209,8 +209,7 @@ function checkAuth() {
   const saved = localStorage.getItem("unified_stock_user");
   if (saved) {
     // session ยังอยู่ → ตรวจ mode session (ไม่ใช้ pref เพื่อป้องกัน auto-redirect)
-    // 📊 ลิงก์ผู้บริหาร: เป็นหน้าคอมเสมอ ไม่ถามโหมด ไม่พาไปหน้ามือถือ (มือถือก็เปิดหน้านี้ได้ — หน้าภาพรวมปรับตามจอเอง)
-    const sessionMode = window.APP_EXEC_ONLY ? "desktop" : sessionStorage.getItem("appstock_mode_session");
+    const sessionMode = sessionStorage.getItem("appstock_mode_session");
     if (!sessionMode) {
       // ไม่มี session mode → แสดง mode picker ทุกครั้ง (ไม่ auto-redirect)
       showModePicker(saved); return;

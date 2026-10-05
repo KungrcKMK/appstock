@@ -1,0 +1,27 @@
+{
+  "id": "./?view=exec",
+  "name": "ภาพรวมผู้บริหาร — SQF & MLM",
+  "short_name": "ผู้บริหาร",
+  "description": "ภาพรวมสต๊อกทั้งระบบสำหรับผู้บริหาร (ดูอย่างเดียว) — คลังสินค้าห้องเย็น วัตถุดิบ SQF และ MLM",
+  "start_url": "./?view=exec",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#0f172a",
+  "theme_color": "#0e7a3f",
+  "orientation": "any",
+  "lang": "th",
+  "icons": [
+    {
+      "src": "icons/exec-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "icons/exec-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

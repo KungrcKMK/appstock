@@ -213,13 +213,6 @@ function _loginSuccess(user, role, adminToken) {
   loadDevice();
   // เข้าระบบใหม่แล้ว บัตรผ่านเปลี่ยน → งานที่ค้างเพราะ "รอเข้าสู่ระบบใหม่" ส่งต่อได้ทันที
   if (typeof offlineCount === "function" && offlineCount()) setTimeout(() => offlineSync(), 800);
-  // 📊 ลิงก์ผู้บริหาร: ไม่ถามโหมด ไม่เด้งแจ้งเตือนสต๊อก — เข้าหน้าภาพรวมเลย
-  if (window.APP_EXEC_ONLY) {
-    sessionStorage.setItem("appstock_mode_session", "desktop");
-    document.getElementById("modePicker").style.display = "none";
-    checkAuth();
-    return;
-  }
   // แสดงหน้าเลือกอุปกรณ์ทุกครั้งที่ Login (ไม่ข้ามแม้จะมี pref บันทึกไว้)
   showModePicker(user);
 }

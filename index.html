@@ -64,11 +64,10 @@
     /* ความสูงแถบเมนู 2 แถว — ใช้ร่วมกับ padding-top ของทุกโมดูล แก้ที่เดียวพอ */
     :root { --nav-h: 100px; }
     /* 📊 ลิงก์ผู้บริหาร — ซ่อนเมนูทั้งหมด เหลือหน้าภาพรวมหน้าเดียว (หน้าเลือกโหมด/หน้าแรกก็ไม่โชว์) */
-    html.exec-only #mainNav, html.exec-only #modePicker { display:none !important; }
+    html.exec-only #mainNav, html.exec-only #modePicker, html.exec-only #loginOverlay { display:none !important; }
     html.exec-only #module-EXEC { padding-top:0 !important; }
     .exec-only-show { display:none !important; }
     html.exec-only .exec-only-show { display:inline-flex !important; }
-    html.exec-only .exec-only-block { display:block !important; }
     html.exec-only .exec-only-hide { display:none !important; }
     #main-nav { display:none; }
     /* 2 แถว: แถวบน = ผู้ใช้ + คลังที่ทำงาน · แถวล่าง = เครื่องมือ */
@@ -800,9 +799,6 @@
              onerror="this.remove();document.getElementById('loginFallbackIcon').style.display='';"
              style="display:block;width:100%;max-width:250px;height:auto;margin:0 auto 14px;">
         <div id="loginFallbackIcon" class="text-6xl mb-4" style="display:none;">🏭</div>
-        <div class="exec-only-block" style="display:none;margin:-4px 0 10px;">
-          <span style="display:inline-block;background:#0e7a3f;color:#fff;font-weight:800;font-size:13px;padding:5px 14px;border-radius:999px;">📊 ภาพรวมผู้บริหาร</span>
-        </div>
         <h2 class="text-2xl font-black mb-1" style="color:var(--sq-ink);">SQF &amp; MLM</h2>
         <p class="font-black mb-2 text-xs tracking-widest" style="color:var(--sq-accent);">ระบบจัดการสต๊อกรวม</p>
         <p class="font-bold mb-6 text-xs" style="color:var(--sq-muted);">สุพรรณคิวฟู้ดส์ | แม่ละมาย</p>
@@ -920,11 +916,9 @@
           <div class="sq-hsub" id="execDashTimestamp">—</div>
         </div>
         <div class="sq-head-actions">
-          <!-- ลิงก์ผู้บริหาร: ไม่มีแถบเมนู → ชื่อผู้ใช้ / ติดตั้งแอป / ออกจากระบบ อยู่ตรงนี้แทน -->
-          <span class="exec-only-show sq-hsub" id="execOnlyUser" style="align-items:center;margin-right:4px;"></span>
+          <!-- ลิงก์ผู้บริหาร (ไม่ต้องเข้าระบบ · ไม่มีแถบเมนู) → ปุ่มติดตั้งแอปอยู่ตรงนี้ -->
           <button id="execInstallBtn" onclick="execInstallApp()" class="sq-btn" style="display:none;">📲 ติดตั้งเป็นแอป</button>
           <button onclick="loadExecDashboard()" class="sq-btn sq-btn-primary">🔄 รีเฟรช</button>
-          <button onclick="logout()" class="sq-btn exec-only-show" style="color:var(--sq-crit);">ออกจากระบบ</button>
         </div>
       </header>
       <div id="execDashContent">

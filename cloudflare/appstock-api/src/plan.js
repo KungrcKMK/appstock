@@ -16,6 +16,7 @@
 // หลักการ: แค่ "ชี้ให้เห็น" — ไม่สั่งซื้อเอง ไม่บล็อกการเบิก คนตัดสินใจเองทุกครั้ง
 import { all, getCfg, cfgSet, kvGet, kvPut, nowIso, fmtTH, dayTH, thaiMidnightMs, tgSendRaw, sysLog, DAY_MS, TZ_MS, FACTORY_NAME } from "./lib.js";
 import { lineConfig, lineSend, lineStatus } from "./line.js";
+import { lastStockUpdate, idleDaysTH, staleDaysOf } from "./raw.js";
 
 export const PLAN_DEFAULTS = { leadDays: 7, safetyDays: 3, coverDays: 30, alert: true };
 const PLAN_MIN_TX = 5;      // เบิกอย่างน้อยกี่ครั้งใน 30 วัน ถึงจะเชื่ออัตราเบิกจริง (เกณฑ์เดียวกับจุดสั่งซื้อแนะนำ)
@@ -43,6 +44,7 @@ export async function planSettings(c, over) {
     safetyDays: clampNum(m.planSafetyDays, 0, 60, PLAN_DEFAULTS.safetyDays),
     coverDays: clampNum(m.planCoverDays, 1, 365, PLAN_DEFAULTS.coverDays),
     alert: String(m.planAlert || "on").toLowerCase() !== "off",
+    staleDays: staleDaysOf(m),   // ⏰ เตือนเมื่อไม่มีการอัปเดตสต๊อกเกินกี่วัน (0 = ปิด)
   };
   const o = over || {};
   return {
@@ -52,6 +54,7 @@ export async function planSettings(c, over) {
       safetyDays: clampNum(o.safetyDays, 0, 60, saved.safetyDays),
       coverDays: clampNum(o.coverDays, 1, 365, saved.coverDays),
       alert: saved.alert,
+      staleDays: saved.staleDays,
     },
   };
 }
@@ -64,12 +67,15 @@ export async function planSet(c, data) {
     safetyDays: clampNum(data.safetyDays, 0, 60, cur.safetyDays),
     coverDays: clampNum(data.coverDays, 1, 365, cur.coverDays),
     alert: data.alert === undefined ? cur.alert : !(data.alert === false || String(data.alert).toLowerCase() === "off" || String(data.alert) === "false"),
+    staleDays: clampNum(data.staleDays, 0, 365, cur.staleDays),
   };
   await cfgSet(c, "planLeadDays", next.leadDays);
   await cfgSet(c, "planSafetyDays", next.safetyDays);
   await cfgSet(c, "planCoverDays", next.coverDays);
   await cfgSet(c, "planAlert", next.alert ? "on" : "off");
-  await sysLog(c, "plan-settings", "รอของ " + next.leadDays + " วัน · กันชน " + next.safetyDays + " วัน · สั่งให้พอ " + next.coverDays + " วัน · แจ้งเตือนเช้า " + (next.alert ? "เปิด" : "ปิด"), data.user || c.user || "-", "ok");
+  await cfgSet(c, "planStaleDays", next.staleDays);
+  await sysLog(c, "plan-settings", "รอของ " + next.leadDays + " วัน · กันชน " + next.safetyDays + " วัน · สั่งให้พอ " + next.coverDays + " วัน · แจ้งเตือนเช้า " + (next.alert ? "เปิด" : "ปิด") +
+    " · เตือนไม่อัปเดต " + (next.staleDays ? "เกิน " + next.staleDays + " วัน" : "ปิด"), data.user || c.user || "-", "ok");
   return { status: "success", ok: true, settings: next };
 }
 
@@ -78,7 +84,8 @@ export async function planCompute(c, module, over) {
   const now = Date.now();
   const set = await planSettings(c, over);
   const S = set.use;
-  const mats = await all(c, "SELECT sku, name, qty, unit, min, daily_usage, lead_days, moq, pack_size, rop_start FROM materials WHERE module = ? AND discontinued = 0 ORDER BY seq, rowid", module);
+  const mats = await all(c, "SELECT sku, name, qty, unit, min, daily_usage, lead_days, moq, pack_size, rop_start, last_verified FROM materials WHERE module = ? AND discontinued = 0 ORDER BY seq, rowid", module);
+  const lastUpd = await lastStockUpdate(c, module, mats);
 
   const nameToSku = {}, ropStart = {};
   mats.forEach((m) => {
@@ -131,7 +138,7 @@ export async function planCompute(c, module, over) {
 
   const todayMs = now + TZ_MS;   // ใช้คิด "อีกกี่วัน" เป็นวันปฏิทินไทย
   const dateAfter = (days) => new Date(todayMs + days * DAY_MS).toISOString().slice(0, 10);
-  const summary = { late: 0, now: 0, soon: 0, ok: 0, nodata: 0, total: mats.length };
+  const summary = { late: 0, now: 0, soon: 0, ok: 0, nodata: 0, total: mats.length, stale: 0 };
   const items = mats.map((m) => {
     const sku = String(m.sku), qty = Number(m.qty) || 0, min = Number(m.min) || 0, plan = Math.max(0, Number(m.daily_usage) || 0);
     const s = st[sku] || null;
@@ -195,6 +202,10 @@ export async function planCompute(c, module, over) {
       if (gapPct >= 30) reasons.push("เบิกจริง (" + fmtN(r1(actual30)) + "/วัน) มากกว่าค่าที่ตั้งไว้ " + gapPct + "% — คำนวณด้วยยอดเบิกจริง");
       else if (gapPct <= -30) reasons.push("เบิกจริง (" + fmtN(r1(actual30)) + "/วัน) น้อยกว่าค่าที่ตั้งไว้ " + Math.min(99, Math.abs(gapPct)) + "% — ยังคำนวณด้วยค่าที่ตั้งไว้ ถ้าค่านั้นสูงไปให้แก้ \"ใช้ต่อวัน\"");
     }
+    // ⏰ ไม่มีการอัปเดตสต๊อกเกินกำหนด — ยอดในระบบอาจไม่ตรงของจริง ตัวเลขข้างบนก็เชื่อได้น้อยลง
+    const idleDays = idleDaysTH(lastUpd[sku], now);
+    const stale = S.staleDays > 0 && (idleDays === null || idleDays > S.staleDays);
+    if (stale) { summary.stale++; reasons.push(idleDays === null ? "ไม่เคยมีการบันทึกยอด — ช่วยนับยืนยัน" : "ไม่มีการอัปเดตสต๊อก " + idleDays + " วัน — ยอดอาจไม่ตรงของจริง ช่วยนับยืนยัน"); }
     const prev30 = s ? Math.max(0, s.prev30) : 0, out30 = s ? Math.max(0, s.n30) : 0;
     const dayVals = s ? Object.values(s.days30) : [];
     summary[status]++;
@@ -207,6 +218,7 @@ export async function planCompute(c, module, over) {
       out30: r3(out30), prev30: r3(prev30), trendPct: prev30 > 0 ? Math.round((out30 - prev30) / prev30 * 100) : null,
       peakDay30: dayVals.length ? r3(Math.max.apply(null, dayVals)) : 0, activeDays30: dayVals.length, tx30, obsDays,
       lastOut: s && s.lastOut ? dayTH(s.lastOut) : "",
+      lastUpdate: lastUpd[sku] ? dayTH(lastUpd[sku]) : "", idleDays, stale,
       topPurposes: s ? Object.keys(s.purposes).map((p) => ({ purpose: p, qty: r3(s.purposes[p]) })).sort((a, b) => b.qty - a.qty).slice(0, 3) : [],
     };
   });
@@ -244,35 +256,65 @@ export function lineDue(mode, force, lastSig, sig, monday) {
   return lastSig !== sig || monday;
 }
 
+function staleMessage(module, p) {
+  const list = p.items.filter((x) => x.stale).sort((a, b) => (b.idleDays === null ? 1e9 : b.idleDays) - (a.idleDays === null ? 1e9 : a.idleDays));
+  const lines = list.slice(0, 20).map((x) => "• " + x.name + " — " + (x.idleDays === null ? "ไม่เคยมีการบันทึก" : "ไม่อัปเดต " + x.idleDays + " วัน (ล่าสุด " + isoToThai(x.lastUpdate) + ")") +
+    " · ในระบบ " + fmtN(x.qty) + " " + x.unit);
+  let msg = "⏰ วัตถุดิบที่ไม่มีการอัปเดตสต๊อกเกิน " + p.settings.staleDays + " วัน — " + (FACTORY_NAME[module] || module) + "\n" +
+    fmtTH(Date.now(), "dd/MM/yyyy HH:mm") + " · " + list.length + " รายการ\n\n" + lines.join("\n");
+  if (list.length > 20) msg += "\n… และอีก " + (list.length - 20) + " รายการ";
+  msg += "\n\nช่วยกันนับยืนยันยอด: เปิดแอป → เลือกรายการ → 📊 นับ (ยอดตรงอยู่แล้วก็กดบันทึกได้เลย)";
+  return msg;
+}
+
+/**
+ * ส่งสรุปเข้ากลุ่ม (Telegram + LINE)
+ *   what: "plan" = ที่ต้องสั่งซื้อ · "stale" = ไม่มีการอัปเดตเกินกำหนด · "both" = ทั้งสอง (งานตามเวลาตอนเช้า)
+ *   force = คนกดส่งเอง (ไม่สนว่าเคยส่งรายการเดิมไปแล้ว) · dry = ดูตัวอย่างข้อความ ไม่ส่ง
+ * แต่ละเรื่องต่อโรงงานจำ "ลายเซ็น" ของรายการที่ส่งล่าสุด แยก Telegram / LINE — ส่งซ้ำเฉพาะเมื่อรายการเปลี่ยน หรือวันจันทร์
+ */
 export async function planDigest(c, opts) {
   const o = opts || {};
+  const what = o.what || "both";
   const set = await planSettings(c);
-  if (!set.saved.alert && !o.force) return { ok: true, skipped: "off" };
+  const wantPlan = (what === "plan" || what === "both") && (set.saved.alert || o.force);
+  const wantStale = (what === "stale" || what === "both") && set.saved.staleDays > 0;
+  if (!wantPlan && !wantStale) return { ok: true, status: "success", skipped: "off", result: {}, preview: {} };
   const monday = new Date(Date.now() + TZ_MS).getUTCDay() === 1;
   const L = await lineConfig(c);
   const lineReady = !!L.token && L.groups.some((g) => g.on);
   const out = {}, preview = {}, lineMsgs = [], lineSigs = [];
+  // ผลของเรื่องหลักใช้คีย์ = ชื่อโรงงาน (หน้าจอเดิมอ่านแบบนี้) · ตอนส่งทั้งสองเรื่อง เรื่องไม่อัปเดตใช้คีย์ <โรงงาน>_stale
+  const keyOf = (module, kind) => (what === "both" && kind === "stale") ? module + "_stale" : module;
+  const one = async (module, kind, msg, sig, has) => {
+    const k = keyOf(module, kind);
+    const tgKey = (kind === "plan" ? "plan_sig_" : "stale_sig_") + module, lnKey = (kind === "plan" ? "plan_sig_line_" : "stale_sig_line_") + module;
+    const last = await kvGet(c, tgKey), lastLine = await kvGet(c, lnKey);
+    if (!has) {
+      if (last) await kvPut(c, tgKey, "", 60 * 86400);
+      if (lastLine) await kvPut(c, lnKey, "", 60 * 86400);
+      out[k] = "none"; return;
+    }
+    if (o.dry) { preview[k] = msg; out[k] = "preview"; return; }
+    if (lineReady && lineDue(L.mode, o.force, lastLine, sig, monday)) { lineMsgs.push(msg); lineSigs.push([lnKey, sig]); }
+    if (!o.force && last === sig && !monday) { out[k] = "same"; return; }
+    const r = await tgSendRaw(c, msg, true);
+    if (r && r.sent) await kvPut(c, tgKey, sig, 60 * 86400);
+    else if (r && r.reason !== "disabled") await sysLog(c, "telegram-error", kind + " digest: " + (r && r.reason), "-", "failed");
+    out[k] = r && r.sent ? "sent" : "not-sent: " + ((r && r.reason) || "");
+  };
   for (const module of (o.modules || ["SQF", "MLM"])) {
     const p = await planCompute(c, module);
-    const urgent = p.items.filter((x) => x.status === "late" || x.status === "now");
-    const sig = urgent.map((x) => x.sku + ":" + x.status).sort().join("|");
-    const key = "plan_sig_" + module, lkey = "plan_sig_line_" + module;
-    const last = await kvGet(c, key), lastLine = await kvGet(c, lkey);
-    if (!urgent.length) {
-      if (last) await kvPut(c, key, "", 60 * 86400);
-      if (lastLine) await kvPut(c, lkey, "", 60 * 86400);
-      out[module] = "none"; continue;
+    if (wantPlan) {
+      const urgent = p.items.filter((x) => x.status === "late" || x.status === "now");
+      await one(module, "plan", urgent.length ? planMessage(module, p) : "", urgent.map((x) => x.sku + ":" + x.status).sort().join("|"), urgent.length > 0);
     }
-    const msg = planMessage(module, p);
-    if (o.dry) { preview[module] = msg; out[module] = "preview"; continue; }
-    if (lineReady && lineDue(L.mode, o.force, lastLine, sig, monday)) { lineMsgs.push(msg); lineSigs.push([lkey, sig]); }
-    if (!o.force && last === sig && !monday) { out[module] = "same"; continue; }
-    const r = await tgSendRaw(c, msg, true);
-    if (r && r.sent) await kvPut(c, key, sig, 60 * 86400);
-    else if (r && r.reason !== "disabled") await sysLog(c, "telegram-error", "plan digest: " + (r && r.reason), "-", "failed");
-    out[module] = r && r.sent ? "sent" : "not-sent: " + ((r && r.reason) || "");
+    if (wantStale) {
+      const stale = p.items.filter((x) => x.stale);
+      await one(module, "stale", stale.length ? staleMessage(module, p) : "", stale.map((x) => x.sku).sort().join("|"), stale.length > 0);
+    }
   }
-  // LINE: ทุกโรงงานรวมเป็นคำขอเดียว — โควตานับครั้งเดียวต่อสมาชิก ไม่ว่ากี่กล่องข้อความ
+  // LINE: ทุกข้อความรวมเป็นคำขอเดียว (สูงสุด 5 กล่อง) — โควตานับครั้งเดียวต่อสมาชิก ไม่ว่ากี่กล่อง
   if (o.dry) {
     out.line = !L.token ? "not-configured" : !lineReady ? "no-group" : L.mode === "off" ? "off" : "preview";
     const st = lineReady && Object.keys(preview).length ? await lineStatus(c) : null;
@@ -282,8 +324,8 @@ export async function planDigest(c, opts) {
   else if (L.mode === "off") out.line = "off";
   else if (!lineMsgs.length) out.line = "same";
   else {
-    const r = await lineSend(c, lineMsgs, { what: "plan" });
-    if (r.sent) for (const [k, s] of lineSigs) await kvPut(c, k, s, 60 * 86400);
+    const r = await lineSend(c, lineMsgs.slice(0, 5), { what });
+    if (r.sent) for (const [k, sg] of lineSigs) await kvPut(c, k, sg, 60 * 86400);
     out.line = r.sent ? (r.reason ? "partial: " + r.reason : "sent") : "not-sent: " + (r.reason || "");
   }
   return o.dry ? { ok: true, status: "success", result: out, preview } : { ok: true, status: "success", result: out };
@@ -291,8 +333,9 @@ export async function planDigest(c, opts) {
 /** action PLANDIGEST — คนกดส่งรายการที่ต้องสั่งเข้ากลุ่มเอง (Telegram + LINE · manager ขึ้นไป) · send ไม่ใช่ true = ดูตัวอย่างข้อความ */
 export async function planDigestNow(c, data, module) {
   const mods = (module === "SQF" || module === "MLM") ? [module] : ["SQF", "MLM"];
-  const r = await planDigest(c, { force: true, modules: mods, dry: data.send !== true });
-  if (data.send === true) await sysLog(c, "plan-digest", mods.join(",") + " → " + JSON.stringify(r.result), data.user || c.user || "-", "ok");
+  const what = data.what === "stale" ? "stale" : "plan";   // ปุ่มในหน้าจอส่งทีละเรื่อง
+  const r = await planDigest(c, { force: true, modules: mods, dry: data.send !== true, what });
+  if (data.send === true) await sysLog(c, what === "stale" ? "stale-digest" : "plan-digest", mods.join(",") + " → " + JSON.stringify(r.result), data.user || c.user || "-", "ok");
   return r;
 }
 

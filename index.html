@@ -338,6 +338,8 @@
     #module-RAW .rm-unit { font-size:11px;color:var(--sq-muted);font-weight:600;margin-left:3px;font-family:inherit; }
     #module-RAW .rm-min { font:600 13px/1.2 var(--sq-mono);font-variant-numeric:tabular-nums;color:var(--sq-muted); }
     #module-RAW .rm-runout { font:600 11px/1.4 var(--sq-mono);color:var(--sq-muted);margin-top:1px;white-space:nowrap; }
+    /* ⏰ ไม่มีการอัปเดตสต๊อกเกินกำหนด — ป้ายในบรรทัดรายละเอียดของแถว */
+    #module-RAW .rm-stale { color:var(--sq-high);font-weight:700;background:var(--sq-high-bg);border-radius:4px;padding:0 5px; }
     #module-RAW .rm-runout.crit { color:var(--sq-crit);font-weight:700; }
     #module-RAW .rm-runout.high { color:var(--sq-high);font-weight:700; }
     #module-RAW .rm-runout.warn { color:var(--sq-warn);font-weight:700; }
@@ -658,6 +660,56 @@
             class="w-full bg-blue-100 text-blue-800 py-3 rounded-2xl font-black hover:bg-blue-200 transition-all uppercase text-sm">
             📨 ทดสอบ Telegram
           </button>
+        </div>
+
+        <!-- ─── LINE SECTION (js/line.js) — ส่งเฉพาะสรุปที่ต้องสั่งซื้อ เพราะ LINE นับโควตาตามจำนวนสมาชิก ─── -->
+        <div class="bg-green-50 border-2 border-green-200 rounded-3xl p-5 space-y-4">
+          <div class="flex items-center justify-between gap-2">
+            <h3 class="text-base font-black text-green-800 uppercase tracking-wide">💚 LINE กลุ่ม</h3>
+            <span id="lineBadge" class="text-xs font-black px-3 py-1 rounded-full bg-amber-100 text-amber-800">กำลังตรวจ…</span>
+          </div>
+          <p class="text-xs text-slate-500 font-bold leading-relaxed">ส่งเฉพาะ <b>สรุปวัตถุดิบที่ต้องสั่งซื้อ</b> (ทุกเช้า 08:00 + ปุ่มส่งในหน้าวางแผนสั่งซื้อ) ·
+            LINE นับโควตา<b>ตามจำนวนสมาชิกในกลุ่ม</b> — แพ็กเกจฟรี 300 ข้อความ/เดือน</p>
+          <div id="lineInfo" class="text-sm space-y-1.5"></div>
+          <div>
+            <label class="text-xs font-black uppercase text-slate-400 mb-1 block">🔑 Channel access token (long-lived)</label>
+            <input type="password" id="lineTokenIn" autocomplete="off" class="w-full bg-white border-2 border-slate-200 p-3 rounded-2xl font-bold outline-none focus:border-green-500 transition-colors text-sm">
+          </div>
+          <div>
+            <label class="text-xs font-black uppercase text-slate-400 mb-1 block">🔐 Channel secret</label>
+            <input type="password" id="lineSecretIn" autocomplete="off" class="w-full bg-white border-2 border-slate-200 p-3 rounded-2xl font-bold outline-none focus:border-green-500 transition-colors text-sm">
+          </div>
+          <div>
+            <label class="text-xs font-black uppercase text-slate-400 mb-1 block">🔗 Webhook URL — คัดลอกไปใส่ใน LINE Developers</label>
+            <div class="flex gap-2">
+              <input type="text" id="lineWebhookUrl" readonly class="w-full bg-white border-2 border-slate-200 p-3 rounded-2xl font-bold outline-none focus:border-green-500 transition-colors text-sm text-xs" onclick="this.select()">
+              <button type="button" onclick="lineCopyWebhook()" class="bg-green-100 text-green-800 px-4 rounded-2xl font-black text-sm hover:bg-green-200">คัดลอก</button>
+            </div>
+          </div>
+          <div>
+            <label class="text-xs font-black uppercase text-slate-400 mb-1 block">ส่งสรุปที่ต้องสั่งเข้า LINE</label>
+            <select id="lineModeSel" class="w-full bg-white border-2 border-slate-200 p-3 rounded-2xl font-bold outline-none focus:border-green-500 transition-colors text-sm">
+              <option value="change">ทุกครั้งที่รายการเปลี่ยน + ทุกวันจันทร์ (เหมือน Telegram)</option>
+              <option value="monday">สัปดาห์ละครั้ง (วันจันทร์) — ประหยัดโควตา</option>
+              <option value="off">ไม่ส่ง</option>
+            </select>
+          </div>
+          <div class="grid grid-cols-2 gap-2">
+            <button type="button" onclick="lineSaveSettings(this)" class="bg-green-700 text-white py-3 rounded-2xl font-black hover:bg-green-800 transition-all text-sm">💾 บันทึก LINE</button>
+            <button type="button" onclick="lineTestSend(this)" class="bg-green-100 text-green-800 py-3 rounded-2xl font-black hover:bg-green-200 transition-all text-sm">📨 ทดสอบส่ง LINE</button>
+          </div>
+          <details class="text-xs text-slate-600 leading-relaxed">
+            <summary class="font-black text-green-800 cursor-pointer">วิธีตั้งค่าครั้งแรก (ทำครั้งเดียว ~10 นาที)</summary>
+            <ol class="list-decimal pl-5 mt-2 space-y-1">
+              <li>สร้าง LINE Official Account ที่ <b>manager.line.biz</b> (ใช้บัญชี LINE ของเจ้าของ)</li>
+              <li>ใน LINE Official Account Manager: ตั้งค่า → <b>Messaging API</b> → เปิดใช้งาน ·
+                  ตั้งค่าการตอบกลับ → <b>ปิด</b>ข้อความตอบกลับอัตโนมัติ · ตั้งค่าบัญชี → <b>อนุญาตให้เข้าร่วมแชทกลุ่ม</b></li>
+              <li>ที่ <b>developers.line.biz</b> → channel ของบัญชีนี้: คัดลอก <b>Channel secret</b> (แท็บ Basic settings)
+                  และกด Issue <b>Channel access token</b> (แท็บ Messaging API) → วางสองช่องด้านบน → <b>บันทึก LINE</b></li>
+              <li>แท็บ Messaging API: วาง <b>Webhook URL</b> ด้านบน → กด Verify → เปิด <b>Use webhook</b></li>
+              <li>เชิญบัญชีนี้เข้ากลุ่ม LINE — บอทจะตอบในกลุ่มว่า "เชื่อมแล้ว" แล้วกด <b>ทดสอบส่ง</b></li>
+            </ol>
+          </details>
         </div>
 
         <!-- ─── EMAIL SECTION ─── -->
@@ -1713,10 +1765,17 @@
               <button id="rawFilter-low"  onclick="setRawFilter('low')"  class="rm-chip">🟠 ต่ำกว่าจุดสั่งซื้อ</button>
               <button id="rawFilter-exp"  onclick="setRawFilter('exp')"  class="rm-chip">⛔ หมดอายุ</button>
               <button id="rawFilter-near" onclick="setRawFilter('near')" class="rm-chip">⏳ ใกล้หมดอายุ</button>
+              <button id="rawFilter-stale" onclick="setRawFilter('stale')" class="rm-chip" style="display:none;">⏰ ไม่อัปเดต</button>
             </div>
             <div class="rm-alertdays">
               <label for="rawAlertDaysInput">เตือนล่วงหน้า</label>
               <input type="number" id="rawAlertDaysInput" min="1" max="365" value="7" onchange="rawSetAlertDays(this.value)">
+              <span>วัน</span>
+            </div>
+            <!-- ⏰ เตือนเมื่อไม่มีการอัปเดตสต๊อก (เบิก/รับ/คืน/นับ) เกินกี่วัน — ค่ากลางของทุกคน (หัวหน้า/แอดมินแก้ได้ · 0 = ปิด) -->
+            <div class="rm-alertdays" title="รายการที่ไม่มีใครเบิก/รับ/คืน/นับ เกินจำนวนวันนี้ จะขึ้นเตือน และสรุปเข้ากลุ่มตอนเช้า · 0 = ปิด">
+              <label for="rawStaleDaysInput">⏰ เตือนไม่อัปเดตเกิน</label>
+              <input type="number" id="rawStaleDaysInput" min="0" max="365" value="7" onchange="rawSetStaleDays(this.value)">
               <span>วัน</span>
             </div>
           </div>
@@ -1765,6 +1824,7 @@
   <script src="js/docreport.js"></script>
   <script src="js/rop.js"></script>
   <script src="js/plan.js"></script>
+  <script src="js/line.js"></script>
 
   <!-- ═══ 📜 ประวัติของฉัน (ทุก role เห็นได้ — เฉพาะรายการของตัวเอง) ═══ -->
   <div id="myHistModal" class="hidden fixed inset-0 bg-black/70 backdrop-blur-sm z-[600] flex items-center justify-center p-4">

@@ -227,6 +227,7 @@ async function adminLoadStatus() {
         ${row("บัญชีเจ้าของระบบใน Config", chip(srv.superAdminConfigured, "ตั้งไว้แล้ว", "⚠️ ไม่มี — เกราะ super admin ปิดอยู่"))}
         ${row("สำรองข้อมูลล่าสุด", srv.lastBackup ? `${t(srv.lastBackup.at)} · ${escapeHtml(String(srv.lastBackup.result))}<div class="sq-meter-note">${escapeHtml(String(srv.lastBackup.detail || "").split(" | ")[0])}</div>` : '<span class="sq-chip warn">ยังไม่มีบันทึก</span>')}
         ${row("สำเนาลง Google Sheets", mirrorCell)}
+        ${row("LINE ครั้งล่าสุด", srv.lastLine ? `${t(srv.lastLine.at)} · ${srv.lastLine.sent ? chip(true, "ส่งสำเร็จ " + srv.lastLine.groups + "/" + srv.lastLine.of + " กลุ่ม", "") : `<span class="sq-chip warn">ไม่ได้ส่ง: ${escapeHtml(srv.lastLine.reason || "")}</span>`}` : "ยังไม่มีการส่ง (ตั้งค่าที่ปุ่ม ⚙️ Telegram)")}
         ${row("Telegram ครั้งล่าสุด", tg ? `${t(tg.at)} · ${tg.sent ? chip(true, "ส่งสำเร็จ", "") : `<span class="sq-chip warn">ไม่ได้ส่ง: ${escapeHtml(tg.reason || "")}</span>`}` : "ยังไม่มีการส่งในรอบนี้")}
         ${row("Telegram ผิดพลาดล่าสุด", srv.lastTelegramError ? `${t(srv.lastTelegramError.at)} · ${escapeHtml(String(srv.lastTelegramError.detail))}` : chip(true, "ไม่มี", ""))}
         ${row("จำนวนแถวข้อมูล", Object.keys(srv.rowCounts || {}).map(k => `${escapeHtml(k)}: <b>${srv.rowCounts[k] == null ? "—" : srv.rowCounts[k].toLocaleString()}</b>`).join(" · "))}

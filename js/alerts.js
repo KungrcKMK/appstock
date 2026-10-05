@@ -198,6 +198,7 @@ async function openUnifiedSettings() {
     }
   } catch(e) { hideLoading(); showToast("โหลดการตั้งค่าไม่สำเร็จ","error"); return; }
   document.getElementById("unifiedSettingsModal").classList.remove("hidden");
+  if (typeof lineLoadStatus === "function") lineLoadStatus();   // ส่วน LINE โหลดสถานะเอง (js/line.js)
 }
 
 function closeUnifiedSettings() {

@@ -3,7 +3,7 @@
 // Cache static assets สำหรับใช้งาน offline บางส่วน
 // =====================================================
 
-const CACHE_NAME = "appstock-v74";
+const CACHE_NAME = "appstock-v76";
 
 // ไฟล์ที่ cache ไว้ใช้ offline
 // ⚠️ addAll เป็น all-or-nothing — ไฟล์เดียวโหลดไม่ได้ = ติดตั้งไม่สำเร็จทั้งชุด
@@ -37,7 +37,8 @@ const STATIC_ASSETS = [
   "./js/slip.js",
   "./js/docreport.js",
   "./js/rop.js",
-  "./js/plan.js"
+  "./js/plan.js",
+  "./js/line.js"
 ];
 
 // CDN ที่ยังใช้: เหลือแค่ฟอนต์ (ข้อ 12 — library ทั้งหมดย้ายมาเก็บในแอปแล้ว)

@@ -122,7 +122,7 @@ cron 08:00 (เวลาไทย) → `backupAll` เขียน JSON ทั�
 |---|---|---|
 | `USAGEPLAN` | ทุกคน (อ่าน) | คืน `items[]` เรียงตามความเร่งด่วน + `summary` + `settings` (ที่ใช้คิด) + `saved` (ค่ากลาง) · ส่ง `leadDays/safetyDays/coverDays` มา "ลองดู" ได้ ไม่บันทึก |
 | `PLANSET` | manager ขึ้นไป | บันทึกค่ากลางลง `config`: `planLeadDays` (7) · `planSafetyDays` (3) · `planCoverDays` (30) · `planAlert` (on) |
-| `PLANDIGEST` | manager ขึ้นไป | `send:false` = ดูตัวอย่างข้อความ · `send:true` = ส่งเข้า Telegram เดี๋ยวนั้น |
+| `PLANDIGEST` | manager ขึ้นไป | (Telegram + LINE) `send:false` = ดูตัวอย่างข้อความ + กลุ่ม LINE/โควตาที่จะใช้ · `send:true` = ส่งเข้า Telegram เดี๋ยวนั้น |
 
 วิธีคิด (ต่อรายการ):
 - **อัตราใช้ต่อวัน** = ค่าที่มากกว่าระหว่าง "เบิกจริง 30 วัน (เบิก − คืน)" กับ `daily_usage` ที่ตั้งไว้ — เป้าหมายคือกันของหมด จึงเผื่อทางปลอดภัย
@@ -131,6 +131,15 @@ cron 08:00 (เวลาไทย) → `backupAll` เขียน JSON ทั�
 - **พอใช้อีก** = qty ÷ อัตราใช้ · **ต้องสั่งภายใน** = วันที่หมด − วันรอของ (`lead_days` รายตัว ชนะค่ากลาง) − กันชน
 - **สถานะ**: `late` พอใช้ < วันรอของ · `now` ถึงเวลาสั่งแล้ว หรือต่ำกว่า `min` ที่คนตั้งเอง · `soon` ภายใน 7 วัน · `ok` · `nodata` ไม่รู้อัตราใช้ (ไม่เดาตัวเลข)
 - **แนะนำสั่ง** = อัตราใช้ × (coverDays + กันชน) − ของที่จะเหลือตอนของมาถึง → ปัดขึ้นตาม `pack_size` → ไม่ต่ำกว่า `moq`
+
+**LINE กลุ่ม** (`src/line.js` · หน้าตั้งค่า `js/line.js` ในหน้าต่าง ⚙️ ตั้งค่าการแจ้งเตือน · admin เท่านั้น)
+- ใช้ LINE Official Account + Messaging API (LINE Notify ปิดบริการแล้ว) · config: `lineChannelToken` `lineChannelSecret` (ถูกซ่อนในสำเนาชีต — ชื่อมีคำว่า token/secret)
+  `lineGroups` (JSON รายการกลุ่ม + เปิด/ปิด) `lineDigestMode` (change / monday / off) `lineBotName`
+- `POST /line-webhook` ตรวจลายเซ็น HMAC ด้วย secret → เหตุการณ์ join จำกลุ่มเอง (กลุ่มแรกเปิดส่งให้เลย กลุ่มถัดไปแอดมินต้องติ๊ก) + ตอบในกลุ่ม (reply ไม่เสียโควตา) · leave ลบกลุ่ม
+- action `LINESTATUS` / `LINESAVE` / `LINETEST` (admin) — token/secret ไม่ถูกส่งกลับหน้าจอ เห็นแค่ 4 ตัวท้าย · ช่องว่าง = ใช้ค่าเดิม · token ถูกตรวจกับ `/v2/bot/info` ก่อนบันทึก
+- **โควตานับตามจำนวนสมาชิกในกลุ่ม** (ฟรีไทย 300/เดือน) → ส่งเข้า LINE เฉพาะสรุปที่ต้องสั่ง และรวมทุกโรงงานใน push เดียว (หลายกล่องนับครั้งเดียว)
+  · ความถี่ตัดสินที่ `lineDue` (src/plan.js) ลายเซ็นแยกจาก Telegram (`plan_sig_line_<module>`)
+- เครื่องทดสอบ: `.dev.vars` ต้องมี `LINE_API="http://127.0.0.1:8799"` — write-tests.mjs เปิดตัวจำลอง LINE เองที่พอร์ตนั้น · ถ้ามี `TG_DISABLED` แต่ไม่มี `LINE_API` จะไม่ยิงหา LINE จริงเลย
 
 สรุปเช้า (`planDigest` เรียกจาก `ticks` ช่วง 08:00): ส่งเฉพาะเมื่อชุดรายการ late/now **เปลี่ยนไปจากที่เคยส่ง** (ลายเซ็นเก็บใน `kv` key `plan_sig_<module>`)
 หรือเป็นวันจันทร์ — ไม่ส่งข้อความเดิมซ้ำทุกเช้าจนคนเลิกอ่าน

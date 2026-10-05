@@ -974,6 +974,7 @@ async function loadData(opts) {
           if (p && String(h[2] || "") === "เบิกออก" && seen.indexOf(p) < 0) seen.push(p);
         });
         mStoreSet("m_purposes_srv_" + mod, seen.slice(0, 12));
+        if (r.staleDays !== undefined) mStoreSet("m_staledays_" + mod, Number(r.staleDays) || 0);
       }
       fresh = (r.materials || [])
         .filter(m => !m.Discontinued)
@@ -984,6 +985,7 @@ async function loadData(opts) {
           unit:  m.Unit  || "",
           min:   Number(m.Min   || 0),
           daily: Number(m.DailyUsage || 0),
+          idle:  m.IdleDays === undefined ? undefined : m.IdleDays,   // ⏰ วันที่ไม่มีการอัปเดต (หลังบ้านนับให้)
           cr:    false
         }))
         .sort((a, b) => a.name.localeCompare(b.name, "th"));
@@ -1022,12 +1024,16 @@ function filterList() {
   clearTimeout(_mFilterTimer);
   _mFilterTimer = setTimeout(_filterListNow, 180);
 }
-let mListFilter = "all";   // all | low | freq
+let mListFilter = "all";   // all | low | stale | freq
 const isLowItem = d => d.min > 0 && d.qty <= d.min;
+// ⏰ ไม่มีการอัปเดตสต๊อกเกินกำหนด — ค่ากลางมากับข้อมูลคลัง (หัวหน้าตั้งที่หน้าคอม)
+const mStaleDays = () => Number(mStoreGet("m_staledays_" + mod, 0)) || 0;
+const isStaleItem = d => { const n = mStaleDays(); return !!n && d.idle !== undefined && (d.idle === null || d.idle > n); };
 function _filterListNow() {
   const q = $("mSearch").value.trim().toLowerCase();
   let list = q ? data.filter(d => d.name.toLowerCase().includes(q) || d.sku.toLowerCase().includes(q)) : [...data];
   if (mListFilter === "low") list = list.filter(isLowItem);
+  else if (mListFilter === "stale") list = list.filter(isStaleItem);
   else if (mListFilter === "freq") {
     const f = mStoreGet("m_freq_" + mod, {});
     list = list.filter(d => f[d.sku] > 0).sort((a, b) => (f[b.sku] - f[a.sku]) || a.name.localeCompare(b.name, "th"));
@@ -1052,8 +1058,10 @@ function renderChips() {
       : warn ? "bg-slate-800 text-red-400 border-red-500/60" : "bg-slate-800 text-slate-300 border-slate-700";
     return `<button onclick="setListFilter('${key}')" class="btn-tap flex-shrink-0 border ${cls} px-4 py-2 rounded-full text-xs font-black">${label}</button>`;
   };
+  const stale = data.filter(isStaleItem).length;
   el.innerHTML = chip("all", "ทั้งหมด " + data.length)
     + (mod === "COLDROOM" ? "" : chip("low", "⚠️ ใกล้หมด " + low, low > 0))
+    + (mod === "COLDROOM" || !mStaleDays() ? "" : chip("stale", "⏰ ไม่อัปเดต " + stale, stale > 0))
     + chip("freq", "⭐ ใช้บ่อย" + (freq ? " " + freq : ""));
 }
 
@@ -1083,6 +1091,7 @@ function renderList(more) {
   const el = $("mList");
   if (!filt.length) {
     const why = mListFilter === "low" ? "✅ ไม่มีรายการที่ต่ำกว่าขั้นต่ำ"
+      : mListFilter === "stale" ? "✅ ทุกรายการมีการอัปเดตภายใน " + mStaleDays() + " วัน"
       : mListFilter === "freq" ? "ยังไม่มีรายการที่ใช้บ่อย<br><span class=\"text-xs\">ทำรายการแล้วจะขึ้นที่นี่เอง</span>" : "ไม่พบรายการ";
     el.innerHTML = `<p class="text-slate-600 text-center py-16 font-bold">${why}</p>`;
     return;
@@ -1100,7 +1109,7 @@ function renderList(more) {
       <div class="flex items-center justify-between gap-3">
         <div class="flex-1 min-w-0">
           <div class="font-black text-white text-base leading-snug">${escH(item.name)}</div>
-          <div class="text-slate-500 text-xs mt-0.5">${escH(item.sku)}${isLow ? ' · <span class="text-red-400">⚠️ ต่ำกว่าขั้นต่ำ</span>' : ""}</div>
+          <div class="text-slate-500 text-xs mt-0.5">${escH(item.sku)}${isLow ? ' · <span class="text-red-400">⚠️ ต่ำกว่าขั้นต่ำ</span>' : ""}${isStaleItem(item) ? ' · <span class="text-amber-400">⏰ ' + (item.idle === null ? "ไม่เคยบันทึกยอด" : "ไม่อัปเดต " + item.idle + " วัน") + '</span>' : ""}</div>
         </div>
         <div class="text-right flex-shrink-0">
           <div class="font-black ${isLow ? "text-red-400" : "text-indigo-300"} text-xl leading-none">${fmtNum(item.qty)}</div>
@@ -1563,7 +1572,7 @@ async function confirmAction() {
       // ข้อ 2: ยอดใหม่ที่เซิร์ฟเวอร์ยืนยันแล้ว → ปรับรายการบนจอทันที ไม่ต้องรอโหลดทั้งคลัง (ดึงใหม่เบื้องหลังตามหลัง)
       const newQty = isCount ? Number(r.applied) : (r.slip && r.slip.balance != null ? Number(r.slip.balance) : NaN);
       const it = data.find(d => d.sku === sel.sku);
-      if (it && !isNaN(newQty)) { it.qty = newQty; populateDropdown(); _filterListNow(); }
+      if (it && !isNaN(newQty)) { it.qty = newQty; it.idle = 0; populateDropdown(); _filterListNow(); }
       tgFlushSoon();
       loadData({ silent: true });
     } else { toast(r.message || "บันทึกไม่สำเร็จ", "err"); }
@@ -1630,6 +1639,7 @@ function planRows() {
   const items = (planData && planData.items) || [];
   if (planFilter === "all") return items;
   if (planFilter === "todo") return items.filter(x => x.status === "late" || x.status === "now" || x.status === "soon");
+  if (planFilter === "stale") return items.filter(x => x.stale);
   return items.filter(x => x.status === planFilter);
 }
 const planOrderList = () => ((planData && planData.items) || []).filter(x => (x.status === "late" || x.status === "now") && x.suggestQty > 0);
@@ -1650,6 +1660,7 @@ function renderPlan() {
     + tile("late", "🔴 สั่งไม่ทันแล้ว", sum.late, sum.late ? "text-red-400" : "text-slate-500")
     + tile("now",  "🟠 สั่งวันนี้", sum.now, sum.now ? "text-orange-400" : "text-slate-500")
     + tile("soon", "🟡 ใกล้ถึงเวลา", sum.soon, sum.soon ? "text-amber-400" : "text-slate-500")
+    + (S.staleDays ? tile("stale", "⏰ ไม่อัปเดต", sum.stale || 0, sum.stale ? "text-amber-400" : "text-slate-500") : "")
     + tile("ok",   "🟢 ยังพอ", sum.ok, "text-emerald-400")
     + tile("all",  "ทั้งหมด", sum.total, "text-slate-300");
 
@@ -1660,7 +1671,7 @@ function renderPlan() {
     const when = x.orderInDays === null || x.orderInDays === undefined ? "—"
       : x.status === "late" ? "เลยกำหนดแล้ว" : x.orderInDays <= 0 ? "วันนี้" : thDate(x.orderByDate) + " (อีก " + x.orderInDays + " วัน)";
     const src = { actual: "เบิกจริง", plan: "ค่าที่ตั้งไว้", thin: "เบิกจริง (ข้อมูลน้อย)" }[x.rateSource] || "";
-    const boxes = (x.status === "ok" || x.status === "nodata") ? "" : `<div class="grid grid-cols-2 gap-2 mt-2.5">
+    const boxes = (x.status === "ok" || x.status === "nodata" || planFilter === "stale") ? "" : `<div class="grid grid-cols-2 gap-2 mt-2.5">
         <div class="bg-slate-900 rounded-xl px-3 py-2"><div class="text-[10px] font-bold text-slate-500">ต้องสั่งภายใน</div><div class="text-sm font-black ${T.text}">${when}</div></div>
         <div class="bg-slate-900 rounded-xl px-3 py-2"><div class="text-[10px] font-bold text-slate-500">แนะนำสั่ง</div><div class="text-sm font-black text-white">${x.suggestQty > 0 ? fmtNum(x.suggestQty) + " " + escH(x.unit) : "—"}</div></div>
       </div>`;
@@ -1681,7 +1692,7 @@ function renderPlan() {
       ${boxes}${why}
     </button>`;
   }).join("") + '<p class="text-slate-600 text-[11px] text-center font-bold pt-2 pb-1 leading-relaxed">แตะรายการเพื่อรับเข้า / เบิก / นับ<br>ตัวเลขเป็นคำแนะนำจากการเบิกจริง — ระบบไม่สั่งซื้อเอง</p>'
-  : `<p class="text-slate-500 text-center py-14 font-bold">${planFilter === "todo" ? "✅ ไม่มีรายการที่ต้องสั่งในตอนนี้" : "ไม่มีรายการในกลุ่มนี้"}</p>`;
+  : `<p class="text-slate-500 text-center py-14 font-bold">${planFilter === "todo" ? "✅ ไม่มีรายการที่ต้องสั่งในตอนนี้" : planFilter === "stale" ? "✅ ทุกรายการมีการอัปเดตตามกำหนด" : "ไม่มีรายการในกลุ่มนี้"}</p>`;
 
   const n = planOrderList().length, btn = $("planCopyBtn");
   btn.textContent = n ? "📋 คัดลอกรายการสั่ง (" + n + " รายการ)" : "ไม่มีรายการที่ต้องสั่งวันนี้";

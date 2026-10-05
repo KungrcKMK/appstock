@@ -1,6 +1,6 @@
 // วัตถุดิบ (SQF / MLM): อ่านคลัง · เบิก/รับ/คืน · ตรวจนับ · แก้ไข · นำเข้า · รายงานใบเบิก · จุดสั่งซื้อ · เทรนด์
 // คำตอบทุกตัวคงรูปแบบเดิมของหลังบ้าน Apps Script — หน้าจอทั้งสองไม่ต้องแก้
-import { all, first, run, stmt, changed, kvGet, kvPut, uuid, nowIso, fmtTH, dayTH, thaiMidnightMs, eventTime, qtyStrict,
+import { all, first, run, stmt, changed, kvGet, kvPut, uuid, getCfg, nowIso, fmtTH, dayTH, thaiMidnightMs, eventTime, qtyStrict,
          numOrBlank, userWithDevice, deviceTag, sendAlert, stockSummaryLines, sysLog, TZ_MS, DAY_MS } from "./lib.js";
 
 // ประเภทรายการ — IN รับเข้าจากซัพพลายเออร์ / OUT เบิกไปใช้ / RETURN คืนของที่เบิกเกิน
@@ -18,6 +18,34 @@ export const TREND_DAYS = 30;
 const RM_IMPORT_MAX_ROWS = 500;
 
 const skuPrefix = (module) => (module === "SQF" ? "SQF-" : "MLM-");
+
+// ───────────── ⏰ อัปเดตสต๊อกล่าสุด — ใช้เตือน "ไม่มีการอัปเดตเกิน N วัน" ─────────────
+// นับเฉพาะรายการที่แตะยอดจริง (เบิก/รับ/คืน/นับ/สร้าง/นำเข้า) — แก้ชื่อ/ตั้งจุดสั่งซื้อ ไม่นับ
+// ของที่ใช้นานๆ ครั้งก็ต้องมีคนนับยืนยันยอดเป็นระยะ ไม่งั้นตัวเลขในแผนสั่งซื้อจะเชื่อไม่ได้
+export const STALE_DEFAULT_DAYS = 7;
+export const STOCK_ACTION_SQL = "(action IN ('เบิกออก', 'รับเข้า', 'คืนวัตถุดิบ', '" + COUNT_LABEL + "', 'สร้างรายการ') OR action LIKE 'นำเข้าจากไฟล์%')";
+export function staleDaysOf(cfg) {
+  const v = cfg ? cfg.planStaleDays : undefined;
+  if (v === undefined || v === null || String(v).trim() === "") return STALE_DEFAULT_DAYS;
+  const n = Math.round(Number(v));
+  return isFinite(n) ? Math.min(365, Math.max(0, n)) : STALE_DEFAULT_DAYS;
+}
+/** sku → เวลา (ms) ที่ยอดถูกแตะล่าสุด · ไม่เคยเลย = ไม่มีในแผนที่ */
+export async function lastStockUpdate(c, module, mats) {
+  const nameToSku = {}, out = {};
+  (mats || []).forEach((m) => { nameToSku[String(m.name).trim()] = String(m.sku); });
+  const put = (sku, t) => { if (sku && isFinite(t) && (!out[sku] || t > out[sku])) out[sku] = t; };
+  for (const r of await all(c, "SELECT sku, name, MAX(ts) AS t FROM history WHERE module = ? AND " + STOCK_ACTION_SQL + " GROUP BY sku, name", module))
+    put(String(r.sku || "").trim() || nameToSku[String(r.name || "").trim()] || "", r.t ? new Date(r.t).getTime() : NaN);
+  (mats || []).forEach((m) => { if (/^\d{4}-\d{2}-\d{2}/.test(String(m.last_verified || ""))) put(String(m.sku), new Date(m.last_verified).getTime()); });
+  return out;
+}
+/** ผ่านมากี่วัน (นับเป็นวันปฏิทินไทย) */
+export function idleDaysTH(ms, now) {
+  if (!ms) return null;
+  const a = Date.parse(dayTH(ms) + "T00:00:00Z"), b = Date.parse(dayTH(now || Date.now()) + "T00:00:00Z");
+  return Math.max(0, Math.round((b - a) / DAY_MS));
+}
 const blankIfNull = (v) => (v === null || v === undefined ? "" : v);
 
 /** แถวตาราง materials → รูปแบบเดิม (ชื่อคีย์ = หัวคอลัมน์ชีต) */
@@ -40,12 +68,20 @@ async function addHistory(c, module, row) {
 export async function getRawMaterials(c, module) {
   const rows = await all(c, "SELECT * FROM materials WHERE module = ? ORDER BY seq, rowid", module);
   const materials = [], discontinued = [];
-  rows.forEach((r) => { (Number(r.discontinued) !== 0 ? discontinued : materials).push(matOut(r)); });
+  // ⏰ อัปเดตสต๊อกล่าสุด — หน้าจอแค่แสดง/กรอง ตัวเลขคิดที่นี่ที่เดียว
+  const last = await lastStockUpdate(c, module, rows), now = Date.now();
+  rows.forEach((r) => {
+    const o = matOut(r);
+    o.LastUpdate = last[r.sku] ? new Date(last[r.sku]).toISOString() : "";
+    o.IdleDays = idleDaysTH(last[r.sku], now);
+    (Number(r.discontinued) !== 0 ? discontinued : materials).push(o);
+  });
   const hist = await all(c, "SELECT ts, name, action, qty, user, doc_no, sku, unit, purpose FROM history WHERE module = ? ORDER BY id DESC LIMIT 30", module);
   const prefix = skuPrefix(module);
   const nums = rows.map((r) => String(r.sku)).filter((s) => s.startsWith(prefix)).map((s) => parseInt(s.replace(prefix, ""), 10)).filter((n) => !isNaN(n));
   const nextNum = nums.length ? Math.max(...nums) + 1 : 1;
-  return { status: "success", materials, discontinued, recentHistory: hist.map(histArr), nextSku: prefix + String(nextNum).padStart(4, "0") };
+  return { status: "success", materials, discontinued, recentHistory: hist.map(histArr), nextSku: prefix + String(nextNum).padStart(4, "0"),
+           staleDays: staleDaysOf(await getCfg(c)) };
 }
 
 // ───────────── เพิ่มรายการใหม่ ─────────────

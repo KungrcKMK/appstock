@@ -30,6 +30,40 @@ document.addEventListener("click", function(e) {
   if (e.target.closest(".rm-more-menu button")) menu.open = false;
 });
 
+// ⏰ ไม่มีการอัปเดตสต๊อกเกินกำหนด — วันที่นับมาจากหลังบ้าน (IdleDays) หน้าจอแค่เทียบกับค่ากลาง
+function rawIsStale(item) {
+  const n = Number(window._rawStaleDays) || 0;
+  if (!n || !item || item.IdleDays === undefined) return false;
+  return item.IdleDays === null || Number(item.IdleDays) > n;
+}
+function rawUpdateStaleUi() {
+  const n = Number(window._rawStaleDays) || 0;
+  const inp = document.getElementById("rawStaleDaysInput");
+  if (inp && document.activeElement !== inp) inp.value = n;
+  const role = (localStorage.getItem("unified_stock_role") || "").toLowerCase();
+  if (inp) { inp.disabled = !(role === "admin" || role === "manager"); inp.title = inp.disabled ? "หัวหน้า/แอดมินเป็นคนตั้งค่านี้" : ""; }
+  const chip = document.getElementById("rawFilter-stale");
+  if (chip) {
+    const k = (rawLastData || []).filter(rawIsStale).length;
+    chip.style.display = n ? "" : "none";
+    chip.textContent = "⏰ ไม่อัปเดตเกิน " + n + " วัน" + (k ? " (" + k + ")" : "");
+    if (!n && rawCurrentFilter === "stale") setRawFilter("all");
+  }
+}
+async function rawSetStaleDays(v) {
+  const n = Math.max(0, Math.min(365, parseInt(v, 10) || 0));
+  try {
+    const r = await rawFetch({ action: "PLANSET", staleDays: n, user: currentUser });
+    if (r.status !== "success") throw new Error(r.message || "บันทึกไม่สำเร็จ");
+    window._rawStaleDays = r.settings.staleDays;
+    showToast(n ? "เตือนเมื่อไม่มีการอัปเดตเกิน " + n + " วัน — ใช้กับทุกคนแล้ว ✅" : "ปิดการเตือนไม่อัปเดตแล้ว", "success");
+    rawLoadData(false, 0, { silent: true });   // ดึงใหม่ให้ตัวเลขทุกแถวตรงกับค่าใหม่
+  } catch (e) { showToast("บันทึกไม่สำเร็จ: " + (e.message || ""), "error"); }
+  rawUpdateStaleUi();
+  renderRawInventory(rawLastData);
+  renderRawStats(rawLastData, window._rawDiscontinued || []);
+}
+
 function rawSetAlertDays(v) {
   rawAlertDays = Math.max(1, Math.min(365, parseInt(v) || 7));
   localStorage.setItem("rawAlertDays", rawAlertDays);
@@ -159,6 +193,8 @@ function rawSetDataAge(source, at) {
 function _rawApplyData(data, startup, source, at, opts = {}) {
   rawLastData = Array.isArray(data.materials) ? data.materials : [];
   window._rawDiscontinued = data.discontinued || [];
+  if (data.staleDays !== undefined) window._rawStaleDays = Number(data.staleDays) || 0;
+  rawUpdateStaleUi();
   window._rawDataAt = at || Date.now();   // เวลาของข้อมูลที่อยู่บนจอ (ไว้ขึ้นป้ายเมื่อตรวจข้อมูลใหม่ไม่ได้)
   rawSetDataAge(source || "server", at);
   const inp = document.getElementById("rawAlertDaysInput");
@@ -299,6 +335,7 @@ function renderRawInventory(items) {
     if (rawCurrentFilter==="low"   && !isLow)            return false;
     if (rawCurrentFilter==="exp"   && !isExp)            return false;
     if (rawCurrentFilter==="near"  && !rawNearExpiry(item, rawAlertDays)) return false;
+    if (rawCurrentFilter==="stale" && !rawIsStale(item)) return false;
     return true;
   });
 
@@ -364,6 +401,7 @@ function rawRenderItemRow(item) {
         <span>${escapeHtml(item.SKU||"-")}</span>
         <span>หมดอายุ ${rawForceThaiDate(item.ExpiryDate)}</span>
         <span>นับล่าสุด ${rawForceThaiDate(item.LastVerified)}</span>
+        ${rawIsStale(item) ? `<span class="rm-stale" title="ไม่มีใครเบิก/รับ/คืน/นับ เกิน ${window._rawStaleDays} วัน — ยอดในระบบอาจไม่ตรงของจริง กด นับ เพื่อยืนยัน">⏰ ${item.IdleDays == null ? "ไม่เคยบันทึกยอด" : "ไม่อัปเดต " + item.IdleDays + " วัน"}</span>` : ""}
       </div>
       <div class="rm-trend" data-sku="${escapeAttr(item.SKU)}"></div>
     </td>
@@ -491,6 +529,7 @@ function renderRawStats(items, discontinued) {
       tile("var(--sq-muted)", "รายการทั้งหมด", items.length, "ในคลังนี้", "")
     + tile("var(--sq-high)",  "ต่ำกว่าจุดสั่งซื้อ", low,  "ควรสั่งเพิ่ม",   low  ? "var(--sq-high)" : "")
     + tile("var(--sq-crit)",  "หมดอายุแล้ว",       exp,  "ต้องจัดการด่วน", exp  ? "var(--sq-crit)" : "")
+    + (Number(window._rawStaleDays) ? tile("var(--sq-high)", "⏰ ไม่อัปเดตเกิน " + window._rawStaleDays + " วัน", items.filter(rawIsStale).length, "ช่วยกันนับยืนยัน", items.some(rawIsStale) ? "var(--sq-high)" : "") : "")
     + tile("var(--sq-muted)", "ยกเลิกการใช้",      stop, "ไม่นับรวมข้างบน", "");
 }
 
@@ -1137,6 +1176,7 @@ function rawApplyLocalWrite(sku, newQty, hist) {
   const it = (rawLastData || []).find(m => String(m.SKU) === String(sku));
   if (it && newQty !== undefined && newQty !== null && !isNaN(Number(newQty))) {
     it.Qty = Number(newQty);
+    it.IdleDays = 0;   // เพิ่งแตะยอด → ไม่ค้างแล้ว (หลังบ้านยืนยันอีกทีตอนดึงใหม่เบื้องหลัง)
     if (hist && hist.verified) it.LastVerified = hist.at;
   }
   if (hist) {

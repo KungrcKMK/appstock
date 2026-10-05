@@ -5,7 +5,7 @@
 // ไฟล์นี้แค่ "แสดงผล" — หน้าคอม มือถือ และข้อความ Telegram ตอนเช้า จึงได้ตัวเลขชุดเดียวกันเสมอ
 //
 // หลักการ: ชี้ให้เห็นว่าตัวไหนต้องสั่งเมื่อไร — ไม่สั่งเอง ไม่บล็อกการเบิก คนตัดสินใจเองทุกครั้ง
-// ทุกคนเปิดดูได้ (รวม viewer) · ตั้งค่ากลาง / ส่งเข้า Telegram = manager ขึ้นไป
+// ทุกคนเปิดดูได้ (รวม viewer) · ตั้งค่ากลาง / ส่งเข้ากลุ่ม (Telegram + LINE) = manager ขึ้นไป
 // ═════════════════════════════════════════════
 
 let _planData = null;          // คำตอบล่าสุดจากหลังบ้าน
@@ -119,6 +119,7 @@ function _planFiltered() {
   const items = (_planData && _planData.items) || [];
   if (_planFilter === "all") return items;
   if (_planFilter === "todo") return items.filter(x => x.status === "late" || x.status === "now" || x.status === "soon");
+  if (_planFilter === "stale") return items.filter(x => x.stale);
   return items.filter(x => x.status === _planFilter);
 }
 function _planOrderList() {
@@ -169,6 +170,7 @@ function planRender() {
       ${tile("soon", "var(--sq-warn)", "🟡 ใกล้ถึงเวลาสั่ง",   sum.soon, "ภายใน 7 วัน")}
       ${tile("ok",   "var(--sq-accent)", "🟢 ยังพอ",            sum.ok,   "ยังไม่ต้องสั่ง")}
       ${tile("nodata", "var(--sq-muted)", "⚪ ยังไม่มีข้อมูล",   sum.nodata, "ไม่เคยเบิก / ไม่ได้ตั้งค่า")}
+      ${S.staleDays ? tile("stale", "var(--sq-high)", "⏰ ไม่อัปเดตเกิน " + S.staleDays + " วัน", sum.stale || 0, "ยอดอาจไม่ตรง — ช่วยนับ") : ""}
     </div>`;
 
   const chips = [["todo", `ต้องลงมือ (${todo})`], ["all", `ทั้งหมด (${sum.total})`]].map(([k, t]) =>
@@ -216,7 +218,8 @@ function planRender() {
       <span style="flex:1;"></span>
       <button class="sq-btn sq-btn-sm" onclick="planCopyList()" ${orderN ? "" : "disabled"}>📋 คัดลอกรายการสั่ง (${orderN})</button>
       <button class="sq-btn sq-btn-sm" onclick="planPrint()">🖨️ พิมพ์</button>
-      ${planCanManage() ? `<button class="sq-btn sq-btn-sm" onclick="planSendTelegram(this)" ${sum.late + sum.now ? "" : "disabled"}>📨 ส่งเข้า Telegram</button>` : ""}
+      ${planCanManage() ? `<button class="sq-btn sq-btn-sm" onclick="planSendTelegram(this)" ${sum.late + sum.now ? "" : "disabled"}>📨 ส่งเข้ากลุ่มแชต</button>` : ""}
+      ${planCanManage() && sum.stale ? `<button class="sq-btn sq-btn-sm" onclick="planSendTelegram(this, 'stale')" title="ส่งรายการที่ไม่มีการอัปเดตเข้ากลุ่ม ให้ช่วยกันนับ">⏰ ส่งเตือนให้ช่วยนับ (${sum.stale})</button>` : ""}
     </div>
     <div class="sq-card" style="margin-bottom:12px;"><div class="sq-tablewrap">
       ${rows.length ? `<table class="sq-table">
@@ -226,7 +229,7 @@ function planRender() {
     </div></div>
     ${planCanManage() ? `<label class="sq-note" style="display:flex;align-items:center;gap:9px;cursor:pointer;">
         <input type="checkbox" ${d.saved.alert ? "checked" : ""} onchange="planToggleAlert(this)" style="width:17px;height:17px;">
-        <span><b>สรุปเข้า Telegram ทุกเช้า 08:00</b> — ส่งเฉพาะเมื่อรายการที่ต้องสั่งเปลี่ยนไปจากที่เคยแจ้ง และทวนอีกครั้งทุกวันจันทร์ (ไม่ส่งข้อความเดิมซ้ำทุกวัน)</span>
+        <span><b>สรุปเข้า Telegram / LINE ทุกเช้า 08:00</b> (ที่ต้องสั่ง + ⏰ ที่ไม่มีการอัปเดตเกินกำหนด) — ส่งเฉพาะเมื่อรายการที่ต้องสั่งเปลี่ยนไปจากที่เคยแจ้ง และทวนอีกครั้งทุกวันจันทร์ (ไม่ส่งข้อความเดิมซ้ำทุกวัน)</span>
       </label>` : ""}
     <p class="sq-note">
       <b>อ่านยังไง</b> · <b>พอใช้อีก</b> = คงเหลือ ÷ ใช้ต่อวัน · <b>ต้องสั่งภายใน</b> = วันที่ของจะหมด − วันรอของ − วันกันชน ·
@@ -260,23 +263,28 @@ async function planCopyList() {
   }
 }
 
-// ── ส่งเข้า Telegram (คนกดเอง) — ดูตัวอย่างข้อความก่อนเสมอ ──
-async function planSendTelegram(btn) {
+// ── ส่งเข้ากลุ่มแชต Telegram + LINE (คนกดเอง) — ดูตัวอย่างข้อความก่อนเสมอ ──
+async function planSendTelegram(btn, what) {
   if (!planCanManage()) return;
+  what = what === "stale" ? "stale" : "plan";
   if (btn) btn.disabled = true;
   try {
-    const pv = await rawFetch({ action: "PLANDIGEST", send: false, user: currentUser });
+    const pv = await rawFetch({ action: "PLANDIGEST", what, send: false, user: currentUser });
     const msg = pv && pv.preview && pv.preview[rawCurrentModule];
-    if (!msg) { showToast("ไม่มีรายการที่ต้องสั่งในตอนนี้", "info"); return; }
-    if (!confirm("ส่งข้อความนี้เข้ากลุ่ม Telegram?\n\n" + msg.slice(0, 900) + (msg.length > 900 ? "\n…" : ""))) return;
-    const r = await rawFetch({ action: "PLANDIGEST", send: true, user: currentUser });
-    const res = r && r.result && r.result[rawCurrentModule];
-    if (res === "sent") showToast("ส่งเข้า Telegram แล้ว ✅", "success");
-    else {
-      const why = String(res || (r && r.message) || "").replace(/^not-sent:\s*/, "");
-      const TH = { "disabled": "ระบบปิดการส่ง Telegram อยู่", "no token": "ยังไม่ได้ตั้งค่าโทเคนบอท", "no chatId": "ยังไม่ได้ตั้งค่ากลุ่มปลายทาง" };
-      showToast("ส่งไม่สำเร็จ: " + (TH[why] || why), "error", 5000);
-    }
+    if (!msg) { showToast(what === "stale" ? "ไม่มีรายการที่ค้างการอัปเดต" : "ไม่มีรายการที่ต้องสั่งในตอนนี้", "info"); return; }
+    // LINE นับโควตาตามจำนวนสมาชิก — บอกก่อนกดว่าจะใช้เท่าไร
+    const ln = pv.preview.line, lineOn = pv.result && pv.result.line === "preview" && ln;
+    const members = lineOn ? ln.groups.reduce((a, g) => a + (Number(g.members) || 0), 0) : 0;
+    const lineTxt = lineOn ? "\n+ LINE: " + ln.groups.map(g => g.name).join(", ") + (members ? " (ใช้โควตา " + members + " ข้อความ" +
+      (ln.quota && ln.quota.limited && ln.quota.used != null ? " · เดือนนี้ใช้ไป " + ln.quota.used + "/" + ln.quota.limit : "") + ")" : "") : "";
+    if (!confirm("ส่งข้อความนี้เข้ากลุ่ม Telegram" + lineTxt + "?\n\n" + msg.slice(0, 900) + (msg.length > 900 ? "\n…" : ""))) return;
+    const r = await rawFetch({ action: "PLANDIGEST", what, send: true, user: currentUser });
+    const res = r && r.result && r.result[rawCurrentModule], lres = r && r.result && r.result.line;
+    const TH = { "disabled": "ระบบปิดการส่งอยู่", "no token": "ยังไม่ได้ตั้งค่าโทเคนบอท", "no chatId": "ยังไม่ได้ตั้งค่ากลุ่มปลายทาง" };
+    const tgOk = res === "sent", lineOk = lres === "sent";
+    const parts = [tgOk ? "Telegram ✅" : "Telegram ❌ " + (TH[String(res || "").replace(/^not-sent:\s*/, "")] || String(res || (r && r.message) || "").replace(/^not-sent:\s*/, ""))];
+    if (lineOn) parts.push(lineOk ? "LINE ✅" : "LINE ❌ " + String(lres || "").replace(/^(not-sent|partial):\s*/, ""));
+    showToast(parts.join(" · "), (tgOk || lineOk) ? (tgOk && (!lineOn || lineOk) ? "success" : "warn") : "error", 6000);
   } catch (e) { showToast("ส่งไม่สำเร็จ: " + (e.message || ""), "error"); }
   finally { if (btn) btn.disabled = false; }
 }

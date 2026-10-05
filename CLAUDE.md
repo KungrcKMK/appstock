@@ -8,7 +8,7 @@
 frontend (GitHub Pages, vanilla JS) → Cloudflare Worker (`cloudflare/appstock-api/`) → D1 (SQLite)
 · Google Sheets เดิมเป็น **สำเนาอ่านอย่างเดียว** — Worker สั่งให้ `gas_code.js` ดึงมาลงทุก 15 นาที ไม่ต้องตั้ง trigger (ย้ายเมื่อ 2026-09-29)
 
-## ⚠️ กับดัก 9 ข้อ — เคยพลาดมาแล้วทุกข้อ
+## ⚠️ กับดัก 10 ข้อ — เคยพลาดมาแล้วทุกข้อ
 
 1. **มี 2 frontend แยกกัน** — `index.html` (ใช้ `js/*.js`) และ `mobile.html` (โค้ดจบในไฟล์เดียว
    รวม util ที่ก๊อปมา เช่น `mathEval` อยู่ทั้ง `js/utils.js` และ `mobile.html`)
@@ -43,11 +43,14 @@ frontend (GitHub Pages, vanilla JS) → Cloudflare Worker (`cloudflare/appstock-
    (`js/app.js` ดัก fetch, `gasPost` ใน mobile, `offlineSend`) · การเขียนจากหน้างานให้ผ่าน `offlineSend`
    ไม่ยิง fetch ตรง — เพื่อให้ "เน็ตล่มก็ทำงานได้" และมี `opId` กันหักซ้ำ
 
-8. **Telegram ไม่ส่งในคำขอที่ผู้ใช้รอ** — หลังบ้านส่งหลังตอบแล้ว (`tgNotify` → `ctx.waitUntil`) ส่งไม่ผ่านจะลงตาราง `tg_queue`
+8. **LINE นับโควตาตามจำนวนสมาชิกในกลุ่ม** (ฟรี 300/เดือน) — ส่งเข้า LINE เฉพาะสรุปที่ต้องสั่ง (`src/line.js`) ห้ามเอาไปผูกกับทุกการเบิก/รับแบบ Telegram
+   · ทดสอบในเครื่อง: `.dev.vars` ต้องมี `LINE_API="http://127.0.0.1:8799"` (ตัวจำลองใน write-tests.mjs) — ห้ามชี้ไป api.line.me
+
+9. **Telegram ไม่ส่งในคำขอที่ผู้ใช้รอ** — หลังบ้านส่งหลังตอบแล้ว (`tgNotify` → `ctx.waitUntil`) ส่งไม่ผ่านจะลงตาราง `tg_queue`
    แล้ว cron ทุก 5 นาที / action `TGFLUSH` ส่งซ้ำให้ · หน้าจอยังเรียก `tgFlushSoon()` หลังบันทึกสำเร็จ — จุดบันทึกใหม่เรียกด้วย
    · ไลบรารีหนัก (Chart.js / สแกน QR / QRCode) ไม่โหลดตอนเปิดแอป — ใช้ `await loadVendor("chart"|"qrscan"|"qrcode")` ก่อนเรียก
 
-9. **repo นี้เป็นสาธารณะ และ hook commit ทุกไฟล์ที่เห็น** — เคยทำฐานข้อมูลทดสอบในเครื่อง (ข้อมูลจริง) หลุดขึ้น GitHub มาแล้ว (2026-09-29)
+10. **repo นี้เป็นสาธารณะ และ hook commit ทุกไฟล์ที่เห็น** — เคยทำฐานข้อมูลทดสอบในเครื่อง (ข้อมูลจริง) หลุดขึ้น GitHub มาแล้ว (2026-09-29)
    · เครื่องมือใดที่สร้างไฟล์/โฟลเดอร์สถานะ (`.wrangler/`, export, dump) **ต้องเพิ่ม `.gitignore` ก่อนรันครั้งแรก** แล้วเช็ค `git status`
    · ไฟล์ข้อมูลจริง / กุญแจ / SQL นำเข้า ให้อยู่นอก repo เท่านั้น · ความลับของ Worker ใช้ `wrangler secret put`
    · ทดสอบในเครื่องต้องมี `cloudflare/appstock-api/.dev.vars` ที่มี `TG_DISABLED="1"` — ไม่งั้นข้อความทดสอบเข้ากลุ่ม Telegram จริง
@@ -63,7 +66,7 @@ frontend (GitHub Pages, vanilla JS) → Cloudflare Worker (`cloudflare/appstock-
 - deploy frontend: `git push` เฉยๆ → GitHub Actions (`.github/workflows/deploy.yml`) ขึ้น GitHub Pages เอง (~30 วิ) · **Netlify ปิดอยู่** (`if: false` ใน workflow)
 - deploy backend: `cd cloudflare/appstock-api && wrangler deploy` · ดู log สด: `wrangler tail`
 - หลังบ้านในเครื่อง: `wrangler dev --port 8791 --local` (ฐานข้อมูลจำลองอยู่ใน `.wrangler/` — ไม่เข้า git)
-  แล้วทดสอบการเขียน 97 เคส: `node tools/write-tests.mjs http://127.0.0.1:8791 ...` (สคริปต์ปฏิเสธ URL ที่ไม่ใช่เครื่องตัวเอง)
+  แล้วทดสอบการเขียน 157 เคส: `node tools/write-tests.mjs http://127.0.0.1:8791 ...` (สคริปต์ปฏิเสธ URL ที่ไม่ใช่เครื่องตัวเอง)
 - แก้โครงตาราง: เพิ่มใน `schema.sql` แล้วรัน `wrangler d1 execute appstock --remote --command "ALTER TABLE ..."` (D1 ไม่มี migration อัตโนมัติในโปรเจกต์นี้)
 - สำเนาลงชีต (GAS): `clasp push -f && clasp deploy -i AKfycbx72vWVvUgaOgZEnzAc8ltaV-a7Rfx_CL9DK1c-B5nAIOxtrlnbi8_b6bmfnDeAZ_xeaw`
   — แตะเฉพาะตอนแก้ตัวดึงสำเนา (`mirrorFromCloud`) · ถอยกลับไป GAS: ตั้ง `MIGRATED_TO_CLOUDFLARE = false` แล้ว deploy

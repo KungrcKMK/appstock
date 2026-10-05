@@ -128,6 +128,22 @@ async function main() {
     const out = path.join(OUT_DIR, "icon-" + size + ".png");
     fs.writeFileSync(out, c.toBuffer("image/png"));
     console.log("✅ " + out + "  (" + (fs.statSync(out).size / 1024).toFixed(0) + " KB)");
+
+    // 📊 ไอคอนแอป "ผู้บริหาร" (manifest-exec.json · ?view=exec) — ไอคอนเดียวกัน + ป้ายกราฟแท่ง
+    //    ให้แยกออกจากแอปหลักบนหน้าจอโฮม · ป้ายอยู่ในวงกลม 80% กลางไอคอน (เขตปลอดภัยของ maskable)
+    //    Android ตัดขอบเป็นวงกลม/หยดน้ำแล้วยังเห็นครบ
+    const e = createCanvas(size, size);
+    const ectx = e.getContext("2d");
+    ectx.drawImage(c, 0, 0);
+    const cx = size * 0.66, cy = size * 0.66, r = size * 0.15;
+    ectx.beginPath(); ectx.arc(cx, cy, r + size * 0.016, 0, Math.PI * 2); ectx.fillStyle = "#ffffff"; ectx.fill();
+    ectx.beginPath(); ectx.arc(cx, cy, r, 0, Math.PI * 2); ectx.fillStyle = "#0e7a3f"; ectx.fill();
+    const bw = r * 0.3, gap = r * 0.14, baseY = cy + r * 0.5, x0 = cx - (bw * 3 + gap * 2) / 2;
+    ectx.fillStyle = "#ffffff";
+    [0.42, 0.72, 1.02].forEach((h, i) => { const bh = r * h; ectx.fillRect(x0 + i * (bw + gap), baseY - bh, bw, bh); });
+    const outE = path.join(OUT_DIR, "exec-" + size + ".png");
+    fs.writeFileSync(outE, e.toBuffer("image/png"));
+    console.log("✅ " + outE + "  (" + (fs.statSync(outE).size / 1024).toFixed(0) + " KB)");
   }
 }
 

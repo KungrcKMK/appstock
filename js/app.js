@@ -276,14 +276,6 @@ function checkAuth() {
     window._appIsViewer = isViewer;
     if (isViewer) document.querySelectorAll(".viewer-hide").forEach(el => el.style.display = "none");
     _watchNavHeight();   // ปุ่มถูกซ่อน/แสดงตาม role ครบแล้ว ค่อยวัดความสูงเมนู
-    // 📊 ลิงก์ผู้บริหาร: เปิดได้เฉพาะบัญชีที่ดูภาพรวมได้ (ดูอย่างเดียว / หัวหน้า / แอดมิน)
-    if (window.APP_EXEC_ONLY) {
-      window._execDenied = !isExecDash;
-      const u = document.getElementById("execOnlyUser");
-      if (u) u.textContent = "👤 " + currentUser;
-      switchModule("EXEC");
-      return;
-    }
     // เข้าระบบแล้วเจอหน้าเลือกคลังก่อน (เหมือนมือถือ) — viewer ไปหน้าภาพรวมซึ่งเป็นหน้าหลักของเขา
     switchModule(isViewer ? "EXEC" : "HOME");
   }

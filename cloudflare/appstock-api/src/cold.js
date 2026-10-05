@@ -295,10 +295,17 @@ export async function crGetStartupOverview(c, payload) {
     if (isStale) staleCount++;
     allLots.push({ Barcode: barcode, ProductName: productName, MFG: mfg, EXP: exp, Qty: qty, Unit: unit, ExpireDays: expireDays, ExpireStatus: expireStatus, QcShelfLifeStatus: qcStatus,
                    LastUpdate: lu ? new Date(lu).toISOString() : "", IdleDays: idle, Stale: isStale });
-    if (!productTotals[barcode]) productTotals[barcode] = { ProductName: productName, TotalQty: 0, Unit: unit, LotCount: 0 };
+    if (!productTotals[barcode]) productTotals[barcode] = { ProductName: productName, TotalQty: 0, Unit: unit, LotCount: 0, _lu: 0 };
     productTotals[barcode].TotalQty += qty;
     productTotals[barcode].LotCount++;
+    if (lu && lu > productTotals[barcode]._lu) productTotals[barcode]._lu = lu;
   }
+  // อัปเดตล่าสุดระดับสินค้า = ล็อตที่มีคนแตะล่าสุด (หน้าภาพรวมผู้บริหารโชว์ "อัปเดต X วันก่อน")
+  Object.values(productTotals).forEach((p) => {
+    p.LastUpdate = p._lu ? new Date(p._lu).toISOString() : "";
+    p.IdleDays = idleDaysTH(p._lu || 0, nowMs);
+    delete p._lu;
+  });
   const summary = { totalProducts: Object.keys(productTotals).length, totalLots: allLots.length, expiringLots: expiringCount, expiredLots: expiredCount, staleLots: staleCount };
   if (lite) return { ok: true, allLots, summary, staleDays };   // มือถือใช้แค่นี้
   return {

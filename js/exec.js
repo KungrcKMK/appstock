@@ -87,6 +87,10 @@ async function loadExecDashboard() {
       return;
     }
     document.getElementById("execDashTimestamp").textContent = "โหลดไม่ครบ";
+    if (keepOld) {  // มือถือที่มีของเดิมบนจอ → คงไว้ บอกแค่ว่าตรวจล่าสุดไม่ได้
+      document.getElementById("execDashTimestamp").textContent = "⚠️ ตรวจข้อมูลล่าสุดไม่ได้ — แสดงของเดิม (กดรีเฟรชอีกครั้ง)";
+      return;
+    }
     if (mobile) {   // มือถือ: บอกว่าไม่ครบ + ปุ่มลองใหม่ (ไม่โชว์ตัวเลขจากบางคลัง จะหลอกตา)
       el.innerHTML = `<div class="sq-card"><p class="sq-empty" style="color:var(--sq-crit);font-weight:700;">⚠️ ข้อมูลไม่ครบ (${failed.length} คลังโหลดไม่สำเร็จ)</p>
         <p style="text-align:center;margin:0 0 14px;"><button onclick="loadExecDashboard()" class="sq-btn sq-btn-primary">🔄 ลองใหม่</button></p></div>`;

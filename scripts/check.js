@@ -62,6 +62,9 @@ console.log("2) ไฟล์ใน sw.js STATIC_ASSETS");
     if (!fs.existsSync(path.join(root, a))) { bad("ไม่มีไฟล์ " + a); missing++; }
   }
   if (!missing && list.length) ok(list.length + " ไฟล์มีครบ");
+  // ตอนติดตั้งต้องดึงไฟล์ใหม่จากเซิร์ฟเวอร์จริง — เคยเอาไฟล์รุ่นเก่าจาก cache ของเบราว์เซอร์มาใส่ชุดรุ่นใหม่ (2026-10-05)
+  if (/cache\.addAll\(\s*STATIC_ASSETS\.map\([^)]*cache:\s*"reload"/.test(sw)) ok("ติดตั้งด้วย cache: \"reload\" (ไม่หยิบไฟล์เก่าจาก cache ของเบราว์เซอร์)");
+  else bad("sw.js install ต้องใช้ cache.addAll(STATIC_ASSETS.map(u => new Request(u, { cache: \"reload\" })))");
 }
 
 // ── 3. GAS_URL ตรงกัน ──

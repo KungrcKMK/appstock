@@ -555,12 +555,15 @@ function execMobileView() {
 
   const tab = (key, label, n) => `<button type="button" class="xm-tab${_xmTab === key ? " on" : ""}" onclick="execMobileTab('${key}')">${label}${n !== undefined ? ` <span class="xm-tab-n">${n}</span>` : ""}</button>`;
   const tabs = `<div class="xm-tabs" role="tablist">
-    ${tab("todo", "🚨 ต้องดู", todoCount)}${tab("SQF", "SQF", sqf.length)}${tab("MLM", "MLM", mlm.length)}${tab("CR", "❄️ ห้องเย็น", prods.length)}
+    ${tab("todo", "🚨 ต้องดู", todoCount)}${tab("chart", "📈 กราฟ")}${tab("SQF", "SQF", sqf.length)}${tab("MLM", "MLM", mlm.length)}${tab("CR", "❄️ ห้องเย็น", prods.length)}
   </div>`;
 
   let list = "";
-  if (_xmTab === "todo") {
-    list = needs.map(({ m, f }) => _xmRawCard(m, f, sd)).join("") +
+  if (_xmTab === "chart") {
+    // 📈 กราฟทุกคลังในหน้าเดียว — แท่งแนวนอน อ่านชื่อได้เต็มบนจอแคบ ตัวเลขเขียนไว้ปลายแท่ง ไม่ต้องแตะดู
+    list = _xmChartCard("status") + _xmChartCard("SQF") + _xmChartCard("MLM") + _xmChartCard("CR");
+  } else if (_xmTab === "todo") {
+    list = _xmChartCard("status") + needs.map(({ m, f }) => _xmRawCard(m, f, sd)).join("") +
       exp.map(x => _xmLotCard(x, "expired", sd)).join("") +
       near.map(x => _xmLotCard(x, "expiring", sd)).join("") +
       (sd ? staleLots.map(x => _xmLotCard(x, "stale", sd)).join("") : "");

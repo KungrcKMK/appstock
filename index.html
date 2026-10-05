@@ -69,6 +69,44 @@
     .exec-only-show { display:none !important; }
     html.exec-only .exec-only-show { display:inline-flex !important; }
     html.exec-only .exec-only-hide { display:none !important; }
+
+    /* 📱 ภาพรวมผู้บริหารบนมือถือ (js/exec.js → execMobileView) — การ์ดแทนตาราง */
+    .xm { padding-bottom:28px; }
+    .xm-kpis { display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;margin-bottom:12px; }
+    .xm-kpi { background:var(--sq-surface);border:1px solid var(--sq-line);border-radius:12px;padding:9px 8px;text-align:center;box-shadow:var(--sq-shadow); }
+    .xm-kpi-n { font:800 22px/1.1 var(--sq-mono);color:var(--sq-muted); }
+    .xm-kpi-n.crit { color:var(--sq-crit); } .xm-kpi-n.high { color:var(--sq-high); } .xm-kpi-n.warn { color:var(--sq-warn); }
+    .xm-kpi-l { font-size:11px;font-weight:700;color:var(--sq-ink2);margin-top:3px;line-height:1.3; }
+    .xm-tabs { display:flex;gap:6px;overflow-x:auto;padding:2px 0 10px;scrollbar-width:none; }
+    .xm-tabs::-webkit-scrollbar { display:none; }
+    .xm-tab { flex:0 0 auto;font:inherit;font-size:14px;font-weight:800;padding:9px 14px;border-radius:999px;
+              border:1px solid var(--sq-line);background:var(--sq-surface);color:var(--sq-ink2);cursor:pointer; }
+    .xm-tab.on { background:var(--sq-accent);border-color:var(--sq-accent);color:#fff; }
+    .xm-tab-n { display:inline-block;min-width:20px;padding:0 6px;border-radius:999px;background:rgba(0,0,0,.08);font-size:12px;margin-left:3px; }
+    .xm-tab.on .xm-tab-n { background:rgba(255,255,255,.25); }
+    .xm-list { display:flex;flex-direction:column;gap:8px; }
+    .xm-card { background:var(--sq-surface);border:1px solid var(--sq-line);border-left:4px solid var(--sq-line);border-radius:12px;
+               padding:11px 12px;box-shadow:var(--sq-shadow); }
+    .xm-card.sev-crit { border-left-color:var(--sq-crit); } .xm-card.sev-high { border-left-color:var(--sq-high); } .xm-card.sev-warn { border-left-color:var(--sq-warn); }
+    .xm-top { display:flex;align-items:flex-start;justify-content:space-between;gap:10px; }
+    .xm-name { font-weight:800;font-size:15.5px;line-height:1.35;color:var(--sq-ink); }
+    .xm-fac { display:inline-block;font-size:10.5px;font-weight:800;color:var(--sq-ink2);background:var(--sq-none-bg);border-radius:5px;padding:1px 6px;vertical-align:2px; }
+    .xm-days { flex:none;font:800 22px/1 var(--sq-mono);color:var(--sq-muted);text-align:right;white-space:nowrap; }
+    .xm-days small { font:700 11px var(--sq-font, inherit);margin-left:2px;color:var(--sq-muted); }
+    .xm-days.crit { color:var(--sq-crit); } .xm-days.high { color:var(--sq-high); } .xm-days.warn { color:var(--sq-warn); } .xm-days.ok { color:var(--sq-accent); }
+    .xm-line { font-size:13px;color:var(--sq-ink2);margin-top:5px;line-height:1.5; }
+    .xm-line b { color:var(--sq-ink);font-family:var(--sq-mono); }
+    .xm-sub { font-size:11.5px;color:var(--sq-muted);margin-top:3px; }
+    .xm-tags { display:flex;flex-wrap:wrap;gap:5px;margin-top:7px; }
+    .xm-foot { font-size:11.5px;color:var(--sq-muted);text-align:center;margin-top:14px;line-height:1.6; }
+    @media (max-width:360px) { .xm-kpis { grid-template-columns:repeat(2,minmax(0,1fr)); } }
+    /* หัวหน้าบนมือถือ: เล็กลง + ติดด้านบนตอนเลื่อน (เฉพาะลิงก์ผู้บริหาร ซึ่งไม่มีแถบเมนูบัง) */
+    @media (max-width:700px) {
+      #module-EXEC .sq-wrap { padding:12px 12px 40px; }
+      #module-EXEC .sq-h1 { font-size:19px; }
+      html.exec-only #module-EXEC .sq-head { position:sticky;top:0;z-index:20;background:var(--sq-ground);
+        margin:-12px -12px 10px;padding:calc(env(safe-area-inset-top,0px) + 10px) 12px 8px;border-bottom:1px solid var(--sq-line); }
+    }
     #main-nav { display:none; }
     /* 2 แถว: แถวบน = ผู้ใช้ + คลังที่ทำงาน · แถวล่าง = เครื่องมือ */
     .nav-row { display:flex;align-items:center;gap:6px;flex-wrap:wrap; }

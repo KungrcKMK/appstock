@@ -262,7 +262,8 @@
 
     /* ตัวเลขสรุป */
     #module-RAW .rm-tiles {
-      display:grid;grid-template-columns:repeat(4,minmax(0,1fr));
+      /* 4 ช่อง หรือ 5 ช่องเมื่อเปิดเตือน "ไม่อัปเดต" — ปรับจำนวนคอลัมน์ตามจำนวนการ์ดจริง */
+      display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));
       background:var(--sq-surface);border:1px solid var(--sq-line);border-radius:12px;
       box-shadow:var(--sq-shadow);overflow:hidden;margin-bottom:12px;
     }

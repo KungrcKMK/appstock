@@ -169,6 +169,7 @@ export async function lineStatus(c) {
 export async function lineSave(c, p) {
   if (p.clear === true) {
     for (const k of ["lineChannelToken", "lineChannelSecret", "lineBotName", "lineGroups", "lineDigestMode"]) await cfgSet(c, k, "");
+    await kvPut(c, "line_last", "", 1);
     await sysLog(c, "line-settings", "ลบการตั้งค่า LINE", p.user || c.user || "-", "ok");
     return { ok: true, status: "success" };
   }

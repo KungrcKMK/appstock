@@ -53,9 +53,12 @@ const CDN_URLS = [
 // Install: cache static files
 // ──────────────────────────────────────────────────
 self.addEventListener("install", e => {
+  // ⚠️ ต้องดึงจากเซิร์ฟเวอร์จริง (cache: "reload") — GitHub Pages ส่ง max-age=600 มา
+  //    ถ้าใช้ค่าปกติ เครื่องที่เพิ่งเปิดแอปภายใน 10 นาทีก่อน deploy จะเอาไฟล์รุ่นเก่าจาก cache ของเบราว์เซอร์
+  //    มาใส่ในชุดรุ่นใหม่ แล้วค้างของเก่าไปจนกว่าจะเลื่อนเลขรุ่นอีกรอบ (เจอจริง 2026-10-05: v77 มีไฟล์ของ v76)
   e.waitUntil(
     caches.open(CACHE_NAME)
-      .then(cache => cache.addAll(STATIC_ASSETS))
+      .then(cache => cache.addAll(STATIC_ASSETS.map(u => new Request(u, { cache: "reload" }))))
       .then(() => self.skipWaiting())
   );
 });

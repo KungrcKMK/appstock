@@ -232,25 +232,58 @@ function planMessage(module, p) {
   msg += "\n\nดูรายละเอียดและจำนวนที่แนะนำ: เปิดแอป → 📈 วางแผนสั่งซื้อ";
   return msg;
 }
+/**
+ * LINE ถึงรอบส่งไหม — แยกจาก Telegram เพราะ LINE เสียโควตาตามจำนวนสมาชิกในกลุ่ม เจ้าของจึงเลือกความถี่ได้
+ *   change = เหมือน Telegram (รายการเปลี่ยน หรือวันจันทร์) · monday = จันทร์ละครั้ง · off = ไม่ส่ง · force = คนกดส่งเอง
+ */
+export function lineDue(mode, force, lastSig, sig, monday) {
+  if (mode === "off") return false;
+  if (force) return true;
+  if (mode === "monday") return monday;
+  return lastSig !== sig || monday;
+}
+
 export async function planDigest(c, opts) {
   const o = opts || {};
   const set = await planSettings(c);
   if (!set.saved.alert && !o.force) return { ok: true, skipped: "off" };
   const monday = new Date(Date.now() + TZ_MS).getUTCDay() === 1;
-  const out = {}, preview = {};
+  const L = await lineConfig(c);
+  const lineReady = !!L.token && L.groups.some((g) => g.on);
+  const out = {}, preview = {}, lineMsgs = [], lineSigs = [];
   for (const module of (o.modules || ["SQF", "MLM"])) {
     const p = await planCompute(c, module);
     const urgent = p.items.filter((x) => x.status === "late" || x.status === "now");
     const sig = urgent.map((x) => x.sku + ":" + x.status).sort().join("|");
-    const key = "plan_sig_" + module;
-    const last = await kvGet(c, key);
-    if (!urgent.length) { if (last) await kvPut(c, key, "", 60 * 86400); out[module] = "none"; continue; }
+    const key = "plan_sig_" + module, lkey = "plan_sig_line_" + module;
+    const last = await kvGet(c, key), lastLine = await kvGet(c, lkey);
+    if (!urgent.length) {
+      if (last) await kvPut(c, key, "", 60 * 86400);
+      if (lastLine) await kvPut(c, lkey, "", 60 * 86400);
+      out[module] = "none"; continue;
+    }
+    const msg = planMessage(module, p);
+    if (o.dry) { preview[module] = msg; out[module] = "preview"; continue; }
+    if (lineReady && lineDue(L.mode, o.force, lastLine, sig, monday)) { lineMsgs.push(msg); lineSigs.push([lkey, sig]); }
     if (!o.force && last === sig && !monday) { out[module] = "same"; continue; }
-    if (o.dry) { preview[module] = planMessage(module, p); out[module] = "preview"; continue; }
-    const r = await tgSendRaw(c, planMessage(module, p), true);
+    const r = await tgSendRaw(c, msg, true);
     if (r && r.sent) await kvPut(c, key, sig, 60 * 86400);
     else if (r && r.reason !== "disabled") await sysLog(c, "telegram-error", "plan digest: " + (r && r.reason), "-", "failed");
     out[module] = r && r.sent ? "sent" : "not-sent: " + ((r && r.reason) || "");
+  }
+  // LINE: ทุกโรงงานรวมเป็นคำขอเดียว — โควตานับครั้งเดียวต่อสมาชิก ไม่ว่ากี่กล่องข้อความ
+  if (o.dry) {
+    out.line = !L.token ? "not-configured" : !lineReady ? "no-group" : L.mode === "off" ? "off" : "preview";
+    const st = lineReady && Object.keys(preview).length ? await lineStatus(c) : null;
+    preview.line = st ? { groups: st.groups.filter((g) => g.on).map((g) => ({ name: g.name, members: g.members })), quota: st.quota } : null;
+  } else if (!L.token) out.line = "not-configured";
+  else if (!lineReady) out.line = "no-group";
+  else if (L.mode === "off") out.line = "off";
+  else if (!lineMsgs.length) out.line = "same";
+  else {
+    const r = await lineSend(c, lineMsgs, { what: "plan" });
+    if (r.sent) for (const [k, s] of lineSigs) await kvPut(c, k, s, 60 * 86400);
+    out.line = r.sent ? (r.reason ? "partial: " + r.reason : "sent") : "not-sent: " + (r.reason || "");
   }
   return o.dry ? { ok: true, status: "success", result: out, preview } : { ok: true, status: "success", result: out };
 }

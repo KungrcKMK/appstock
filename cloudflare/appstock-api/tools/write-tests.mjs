@@ -554,8 +554,18 @@ console.log("13) ⏰ ห้องเย็น — ล็อตที่ไม่
   const { fileURLToPath } = await import("node:url");
   const here = fileURLToPath(new URL("..", import.meta.url));
   // ย้อนเวลาเฉพาะล็อตทดสอบที่เพิ่งสร้าง — คำสั่ง --local เท่านั้น ห้ามมี --remote
-  const sqlLocal = (sql) => execFileSync(process.platform === "win32" ? "wrangler.cmd" : "wrangler", ["d1", "execute", "appstock", "--local", "--command", sql],
-    { cwd: here, stdio: "pipe", shell: process.platform === "win32" });
+  // ส่ง SQL ผ่านไฟล์ (--file): บน Windows ต้องเรียกผ่าน shell ซึ่งไม่ครอบเครื่องหมายคำพูดให้ ส่งเป็นข้อความตรงๆ แล้ว SQL ขาด
+  const { writeFileSync, unlinkSync } = await import("node:fs");
+  const { tmpdir } = await import("node:os");
+  const { join } = await import("node:path");
+  const sqlLocal = (sql) => {
+    const f = join(tmpdir(), "appstock_test_" + Date.now() + ".sql");
+    writeFileSync(f, sql, "utf8");
+    try {
+      execFileSync(process.platform === "win32" ? "wrangler.cmd" : "wrangler", ["d1", "execute", "appstock", "--local", "--file", f],
+        { cwd: here, stdio: "pipe", shell: process.platform === "win32" });
+    } finally { try { unlinkSync(f); } catch (e) {} }
+  };
   const s0 = (await post({ module: "SQF", action: "USAGEPLAN", sessionToken: tok })).saved;
   await raw("PLANSET", { staleDays: 7 }, atok);
   const bc = "STALE" + Date.now();

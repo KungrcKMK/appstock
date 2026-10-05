@@ -277,7 +277,9 @@ async function crSendStale(btn) {
     if (!confirm("ส่งข้อความนี้เข้ากลุ่ม Telegram" + lineTxt + "?\n\n" + msg.slice(0, 900) + (msg.length > 900 ? "\n…" : ""))) return;
     const r = await crCallServer("staleDigest", { send: true }, { silent: true });
     const tg = r && r.result && r.result.COLDROOM, lr = r && r.result && r.result.line;
-    const parts = [tg === "sent" ? "Telegram ✅" : "Telegram ❌ " + String(tg || (r && r.message) || "").replace(/^not-sent:\s*/, "")];
+    const TH = { "disabled": "ระบบปิดการส่งอยู่", "no token": "ยังไม่ได้ตั้งค่าโทเคนบอท", "no chatId": "ยังไม่ได้ตั้งค่ากลุ่มปลายทาง" };
+    const why = String(tg || (r && r.message) || "").replace(/^not-sent:\s*/, "");
+    const parts = [tg === "sent" ? "Telegram ✅" : "Telegram ❌ " + (TH[why] || why)];
     if (lineOn) parts.push(lr === "sent" ? "LINE ✅" : "LINE ❌ " + String(lr || "").replace(/^(not-sent|partial):\s*/, ""));
     showToast(parts.join(" · "), tg === "sent" ? "success" : "warn", 6000);
   } catch (e) { showToast("ส่งไม่สำเร็จ: " + (e.message || ""), "error"); }

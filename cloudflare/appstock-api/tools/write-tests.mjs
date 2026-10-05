@@ -368,5 +368,132 @@ console.log("10) วางแผนสั่งซื้อ — วิเคร�
   T("ของที่ยกเลิกแล้วไม่อยู่ในแผน", !(await plan({})).items.some((x) => x.sku === sku || x.sku === sku2));
 }
 
+console.log("11) LINE กลุ่ม — ตั้งค่า / webhook / ส่งสรุปที่ต้องสั่ง (LINE จำลองที่ 127.0.0.1:8799 — .dev.vars ต้องมี LINE_API)");
+{
+  const { createServer } = await import("node:http");
+  const { createHmac } = await import("node:crypto");
+  const { lineDue } = await import("../src/plan.js");
+  // ── ตัวจำลอง LINE API: จดทุกคำขอไว้ตรวจ ──
+  const calls = [];
+  let quotaFull = false;
+  const GOOD = "good-token-1234";
+  const mock = createServer((req, res) => {
+    let b = "";
+    req.on("data", (d) => (b += d));
+    req.on("end", () => {
+      const auth = req.headers.authorization || "";
+      calls.push({ method: req.method, url: req.url, auth, body: b ? JSON.parse(b) : null });
+      const send = (code, obj) => { res.writeHead(code, { "content-type": "application/json" }); res.end(JSON.stringify(obj)); };
+      if (auth !== "Bearer " + GOOD) return send(401, { message: "Authentication failed" });
+      if (req.url === "/v2/bot/info") return send(200, { displayName: "บอทสต๊อก", basicId: "@stocktest" });
+      if (req.url === "/v2/bot/message/quota") return send(200, { type: "limited", value: 300 });
+      if (req.url === "/v2/bot/message/quota/consumption") return send(200, { totalUsage: 12 });
+      let m = req.url.match(/^\/v2\/bot\/group\/([^/]+)\/summary$/);
+      if (m) return send(200, { groupId: m[1], groupName: m[1] === "G1" ? "ฝ่ายจัดซื้อ" : "กลุ่มอื่น" });
+      m = req.url.match(/^\/v2\/bot\/group\/([^/]+)\/members\/count$/);
+      if (m) return send(200, { count: m[1] === "G1" ? 7 : 3 });
+      if (req.url === "/v2/bot/message/reply") return send(200, {});
+      if (req.url === "/v2/bot/message/push") return quotaFull ? send(429, { message: "You have reached your monthly limit." }) : send(200, {});
+      send(404, { message: "Not found" });
+    });
+  });
+  await new Promise((ok, bad) => { mock.once("error", bad); mock.listen(8799, "127.0.0.1", ok); });
+  try {
+    const lsys = (action, extra, token = atok) => post(Object.assign({ module: "SYSTEM", action, sessionToken: token }, extra || {}));
+    const SECRET = "0123456789abcdef0123456789abcdef";
+    const hook = async (events, secret = SECRET) => {
+      const body = JSON.stringify({ destination: "U0", events });
+      const sig = createHmac("sha256", secret).update(body).digest("base64");
+      const r = await fetch(BASE + "/line-webhook", { method: "POST", headers: { "content-type": "application/json", "x-line-signature": sig }, body });
+      await new Promise((ok) => setTimeout(ok, 400));   // งานหลังตอบ (waitUntil) ให้เสร็จก่อนตรวจ
+      return r.status;
+    };
+    const joinEv = (gid) => ({ type: "join", replyToken: "rt-" + gid, source: { type: "group", groupId: gid }, timestamp: Date.now() });
+    await lsys("LINESAVE", { clear: true });
+
+    T("ผู้ใช้ทั่วไปดู/ตั้งค่า LINE ไม่ได้", (await lsys("LINESTATUS", {}, tok)).status === "error" && (await lsys("LINESAVE", { token: GOOD }, tok)).status === "error");
+    T("manager ก็ตั้งค่า LINE ไม่ได้ (admin เท่านั้น)", (await lsys("LINESAVE", { token: GOOD }, await login("นุ่น").catch(() => tok))).status === "error");
+    const s0 = await lsys("LINESTATUS");
+    T("ยังไม่ตั้งค่า → สถานะบอกว่ายังไม่มี token", s0.ok && s0.tokenSet === false && s0.secretSet === false && s0.groups.length === 0, s0);
+    T("webhook ก่อนตั้ง secret → ปฏิเสธ (401)", (await hook([joinEv("G1")])) === 401);
+
+    const bad1 = await lsys("LINESAVE", { token: "wrong-token" });
+    T("token ผิด → ไม่บันทึก + บอกเหตุผลภาษาคน", bad1.status === "error" && /token/.test(bad1.message) && (await lsys("LINESTATUS")).tokenSet === false, bad1);
+    const bad2 = await lsys("LINESAVE", { secret: "not-hex" });
+    T("secret รูปแบบผิด → ไม่บันทึก", bad2.status === "error" && (await lsys("LINESTATUS")).secretSet === false, bad2);
+    const ok1 = await lsys("LINESAVE", { token: GOOD, secret: SECRET });
+    const s1 = await lsys("LINESTATUS");
+    T("token+secret ถูก → บันทึก + ได้ชื่อบอท", ok1.ok && /บอทสต๊อก/.test(ok1.botName) && s1.tokenSet && s1.secretSet, ok1);
+    T("หน้าจอไม่เคยได้ token/secret ตัวจริง (แค่ 4 ตัวท้าย)", !JSON.stringify(s1).includes(GOOD) && !JSON.stringify(s1).includes(SECRET) && s1.tokenTail === "••••1234", s1.tokenTail);
+    T("สถานะบอกโควตาเดือนนี้", s1.quota && s1.quota.limit === 300 && s1.quota.used === 12, s1.quota);
+    const ex = await post({ module: "SYSTEM", action: "EXPORT", sessionToken: atok });
+    T("สำเนาลงชีตไม่มี token/secret ของ LINE", !JSON.stringify(ex.sheets.Config).includes(GOOD) && !JSON.stringify(ex.sheets.Config).includes(SECRET));
+
+    T("ลายเซ็นปลอม → ปฏิเสธ ไม่จำกลุ่ม", (await hook([joinEv("GX")], "ffffffffffffffffffffffffffffffff")) === 401 && (await lsys("LINESTATUS")).groups.length === 0);
+    T("ปุ่ม Verify ใน LINE (events ว่าง) → 200", (await hook([])) === 200);
+    calls.length = 0;
+    T("บอทเข้ากลุ่มแรก → 200", (await hook([joinEv("G1")])) === 200);
+    let st = await lsys("LINESTATUS");
+    const g1 = st.groups.find((g) => g.id === "G1");
+    T("กลุ่มแรกถูกจำ + เปิดส่งให้เลย + รู้ชื่อกลุ่ม/จำนวนสมาชิก", g1 && g1.on === true && g1.name === "ฝ่ายจัดซื้อ" && g1.members === 7, st.groups);
+    const rep1 = calls.find((x) => x.url === "/v2/bot/message/reply");
+    T("ตอบในกลุ่มว่าเชื่อมแล้ว (ใช้ reply = ไม่เสียโควตา)", rep1 && rep1.body.replyToken === "rt-G1" && /เชื่อมกลุ่มนี้/.test(rep1.body.messages[0].text), rep1 && rep1.body);
+    calls.length = 0;
+    await hook([joinEv("G2")]);
+    st = await lsys("LINESTATUS");
+    const g2 = st.groups.find((g) => g.id === "G2");
+    const rep2 = calls.find((x) => x.url === "/v2/bot/message/reply");
+    T("กลุ่มที่สอง → จำไว้แต่ยังไม่เปิดส่ง + บอกให้แอดมินเปิด", g2 && g2.on === false && rep2 && /แอดมิน/.test(rep2.body.messages[0].text), [g2, rep2 && rep2.body]);
+    await hook([joinEv("G1")]);
+    T("เชิญกลุ่มเดิมซ้ำ → ไม่เกิดรายการซ้ำ", (await lsys("LINESTATUS")).groups.filter((g) => g.id === "G1").length === 1);
+
+    const pv = await raw("PLANDIGEST", { send: false }, atok);
+    T("ดูตัวอย่างก่อนส่ง → บอกกลุ่มปลายทางและจำนวนสมาชิก (= โควตาที่จะใช้)", pv.result.line === "preview" && pv.preview.line && pv.preview.line.groups.length === 1 && pv.preview.line.groups[0].members === 7, pv.preview.line);
+    calls.length = 0;
+    const sd = await raw("PLANDIGEST", { send: true }, atok);
+    const pushes = calls.filter((x) => x.url === "/v2/bot/message/push");
+    T("กดส่ง → push เข้าเฉพาะกลุ่มที่เปิด (G1) 1 ครั้ง", sd.result.line === "sent" && pushes.length === 1 && pushes[0].body.to === "G1", [sd.result, pushes.map((p) => p.body.to)]);
+    T("ข้อความ LINE = ข้อความเดียวกับ Telegram + มี retry key กันส่งซ้ำ", pushes[0] && /วัตถุดิบที่ต้องสั่งซื้อ/.test(pushes[0].body.messages[0].text) && pushes[0].body.messages.length === 1);
+
+    await lsys("LINESAVE", { groupsOn: ["G1", "G2"] });
+    calls.length = 0;
+    await post({ module: "MLM", action: "PLANDIGEST", send: true, sessionToken: atok });
+    T("เปิดกลุ่มที่สอง → ส่งทั้งสองกลุ่ม", calls.filter((x) => x.url === "/v2/bot/message/push").map((x) => x.body.to).sort().join(",") === "G1,G2");
+
+    await lsys("LINESAVE", { token: "", secret: "", mode: "change" });
+    st = await lsys("LINESTATUS");
+    T("ช่อง token/secret เว้นว่าง → ใช้ค่าเดิม", st.tokenSet && st.secretSet && st.tokenTail === "••••1234");
+
+    quotaFull = true;
+    const q = await raw("PLANDIGEST", { send: true }, atok);
+    T("โควตาหมด → บอกเหตุผลเป็นภาษาคน", /โควตา/.test(q.result.line || ""), q.result);
+    quotaFull = false;
+    const ls = await post({ module: "SYSTEM", action: "SYSSTATUS", sessionToken: atok });
+    T("หน้าสถานะระบบเห็นผล LINE ครั้งล่าสุด", ls.lastLine && ls.lastLine.sent === false && /โควตา/.test(ls.lastLine.reason), ls.lastLine);
+
+    await lsys("LINESAVE", { mode: "off" });
+    calls.length = 0;
+    const off = await raw("PLANDIGEST", { send: true }, atok);
+    T("เลือก 'ไม่ส่ง' → ไม่ยิงเข้า LINE เลย", off.result.line === "off" && !calls.some((x) => x.url === "/v2/bot/message/push"), off.result);
+    T("รูปแบบการส่งแปลกปลอม → ปฏิเสธ", (await lsys("LINESAVE", { mode: "always" })).status === "error");
+
+    calls.length = 0;
+    const tt = await lsys("LINETEST", {});
+    T("ปุ่มทดสอบส่ง → ยิงเข้ากลุ่มที่เปิดไว้", tt.ok && tt.sent === 2 && calls.filter((x) => x.url === "/v2/bot/message/push").length === 2, tt);
+
+    await hook([{ type: "leave", source: { type: "group", groupId: "G2" }, timestamp: Date.now() }]);
+    T("บอทถูกเอาออกจากกลุ่ม → ลบกลุ่มนั้นออกเอง", !(await lsys("LINESTATUS")).groups.some((g) => g.id === "G2"));
+
+    // กติกาความถี่ (งานตามเวลาตอนเช้าใช้ฟังก์ชันเดียวกัน)
+    T("ความถี่: change ส่งเมื่อรายการเปลี่ยน / ไม่เปลี่ยนไม่ส่ง / จันทร์ส่งเสมอ",
+      lineDue("change", false, "a", "b", false) === true && lineDue("change", false, "a", "a", false) === false && lineDue("change", false, "a", "a", true) === true);
+    T("ความถี่: monday ส่งเฉพาะวันจันทร์ · off ไม่ส่งแม้กดเอง · กดเองส่งเสมอ",
+      lineDue("monday", false, "a", "b", false) === false && lineDue("monday", false, "a", "a", true) === true && lineDue("off", true, "a", "b", true) === false && lineDue("change", true, "a", "a", false) === true);
+
+    await lsys("LINESAVE", { clear: true });
+    T("ลบการตั้งค่า LINE ทั้งหมดได้", (await lsys("LINESTATUS")).tokenSet === false);
+  } finally { mock.close(); }
+}
+
 console.log(`\nสรุป: ผ่าน ${pass} · ไม่ผ่าน ${fail}`);
 process.exit(fail ? 1 : 0);

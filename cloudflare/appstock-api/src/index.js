@@ -9,6 +9,7 @@ import * as C from "./cold.js";
 import * as B from "./bom.js";
 import * as S from "./system.js";
 import * as P from "./plan.js";
+import * as LN from "./line.js";
 
 const CORS = {
   "access-control-allow-origin": "*",
@@ -44,6 +45,9 @@ const SYSTEM = {
   getMyHistory: (c, p, d) => S.getMyHistory(c, p, d),
   SYSSTATUS: (c) => S.sysStatus(c),
   MIRRORPUSH: (c, p, d) => S.mirrorPushNow(c, p, d),
+  LINESTATUS: (c) => LN.lineStatus(c),
+  LINESAVE: (c, p) => LN.lineSave(c, p),
+  LINETEST: (c, p) => LN.lineTest(c, p),
   TGFLUSH: (c) => tgFlushQueue(c),
   EXPORT: (c, p) => S.exportSheets(c, false, Number(p.maxHistory) || 5000),
   submitDelivery: (c, p) => C.submitDelivery(c, p),
@@ -93,6 +97,8 @@ export default {
         return reply(c, { status: "error", message: "GET ไม่รองรับ module นี้" });
       }
       if (request.method !== "POST") return reply(c, { ok: false, status: "error", message: "method" }, 405);
+      // LINE ส่งเหตุการณ์ (บอทเข้า/ออกกลุ่ม) มาที่นี่ — ตรวจลายเซ็นด้วย Channel secret ใน line.js
+      if (new URL(request.url).pathname === "/line-webhook") return await LN.lineWebhook(c, request);
 
       let data;
       try { data = JSON.parse(await request.text()); } catch (e) { return reply(c, { ok: false, status: "error", message: "รูปแบบคำขอไม่ถูกต้อง" }); }

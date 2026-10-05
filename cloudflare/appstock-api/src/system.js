@@ -33,6 +33,7 @@ export async function sysStatus(c) {
     lastTelegramError: await sysLast(c, "telegram-error"),
     lastCron: await kvGet(c, "cron_last"),
     lastMirror: await mirrorLast(c),
+    lastLine: await (async () => { try { const v = await kvGet(c, "line_last"); return v ? JSON.parse(v) : null; } catch (e) { return null; } })(),
     mirrorConfigured: !!(c.env.MIRROR_URL && c.env.MIRROR_KEY),
     rowCounts: counts,
     readMs: Date.now() - t0,

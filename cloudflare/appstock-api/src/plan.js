@@ -15,6 +15,7 @@
 // คิดที่หลังบ้านที่เดียว — หน้าคอม มือถือ และข้อความ Telegram ตอนเช้า ใช้ผลชุดเดียวกัน ตัวเลขจึงตรงกันเสมอ
 // หลักการ: แค่ "ชี้ให้เห็น" — ไม่สั่งซื้อเอง ไม่บล็อกการเบิก คนตัดสินใจเองทุกครั้ง
 import { all, getCfg, cfgSet, kvGet, kvPut, nowIso, fmtTH, dayTH, thaiMidnightMs, tgSendRaw, sysLog, DAY_MS, TZ_MS, FACTORY_NAME } from "./lib.js";
+import { lineConfig, lineSend, lineStatus } from "./line.js";
 
 export const PLAN_DEFAULTS = { leadDays: 7, safetyDays: 3, coverDays: 30, alert: true };
 const PLAN_MIN_TX = 5;      // เบิกอย่างน้อยกี่ครั้งใน 30 วัน ถึงจะเชื่ออัตราเบิกจริง (เกณฑ์เดียวกับจุดสั่งซื้อแนะนำ)
@@ -217,7 +218,7 @@ export async function planCompute(c, module, over) {
 /** action USAGEPLAN — หน้าจอส่ง leadDays/safetyDays/coverDays มาลองดูได้ (ไม่บันทึก) */
 export const usagePlan = (c, data, module) => planCompute(c, module, data);
 
-// ───────────── สรุปเช้าเข้า Telegram ─────────────
+// ───────────── สรุปเช้าเข้า Telegram + LINE ─────────────
 // ส่งเมื่อ "รายการที่ต้องสั่งเปลี่ยนไปจากที่เคยแจ้ง" หรือเป็นวันจันทร์ (ทวนทั้งสัปดาห์) — ไม่ส่งซ้ำข้อความเดิมทุกเช้าจนคนเลิกอ่าน
 function planMessage(module, p) {
   const urgent = p.items.filter((x) => x.status === "late" || x.status === "now");
@@ -287,7 +288,7 @@ export async function planDigest(c, opts) {
   }
   return o.dry ? { ok: true, status: "success", result: out, preview } : { ok: true, status: "success", result: out };
 }
-/** action PLANDIGEST — คนกดส่งรายการที่ต้องสั่งเข้ากลุ่มเอง (manager ขึ้นไป) · send ไม่ใช่ true = ดูตัวอย่างข้อความ */
+/** action PLANDIGEST — คนกดส่งรายการที่ต้องสั่งเข้ากลุ่มเอง (Telegram + LINE · manager ขึ้นไป) · send ไม่ใช่ true = ดูตัวอย่างข้อความ */
 export async function planDigestNow(c, data, module) {
   const mods = (module === "SQF" || module === "MLM") ? [module] : ["SQF", "MLM"];
   const r = await planDigest(c, { force: true, modules: mods, dry: data.send !== true });

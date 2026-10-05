@@ -382,7 +382,7 @@ console.log("11) LINE กลุ่ม — ตั้งค่า / webhook / ส�
     req.on("data", (d) => (b += d));
     req.on("end", () => {
       const auth = req.headers.authorization || "";
-      calls.push({ method: req.method, url: req.url, auth, body: b ? JSON.parse(b) : null });
+      calls.push({ method: req.method, url: req.url, auth, retryKey: req.headers["x-line-retry-key"] || "", body: b ? JSON.parse(b) : null });
       const send = (code, obj) => { res.writeHead(code, { "content-type": "application/json" }); res.end(JSON.stringify(obj)); };
       if (auth !== "Bearer " + GOOD) return send(401, { message: "Authentication failed" });
       if (req.url === "/v2/bot/info") return send(200, { displayName: "บอทสต๊อก", basicId: "@stocktest" });
@@ -453,7 +453,8 @@ console.log("11) LINE กลุ่ม — ตั้งค่า / webhook / ส�
     const sd = await raw("PLANDIGEST", { send: true }, atok);
     const pushes = calls.filter((x) => x.url === "/v2/bot/message/push");
     T("กดส่ง → push เข้าเฉพาะกลุ่มที่เปิด (G1) 1 ครั้ง", sd.result.line === "sent" && pushes.length === 1 && pushes[0].body.to === "G1", [sd.result, pushes.map((p) => p.body.to)]);
-    T("ข้อความ LINE = ข้อความเดียวกับ Telegram + มี retry key กันส่งซ้ำ", pushes[0] && /วัตถุดิบที่ต้องสั่งซื้อ/.test(pushes[0].body.messages[0].text) && pushes[0].body.messages.length === 1);
+    T("ข้อความ LINE = ข้อความเดียวกับ Telegram + มี retry key กันส่งซ้ำ", pushes[0] && /วัตถุดิบที่ต้องสั่งซื้อ/.test(pushes[0].body.messages[0].text) && pushes[0].body.messages.length === 1 && /^[0-9a-f-]{36}$/.test(pushes[0].retryKey), pushes[0] && pushes[0].retryKey);
+    T("ค่าเริ่มต้นหลังลบการตั้งค่า = ส่งทุกครั้งที่รายการเปลี่ยน", (await lsys("LINESTATUS")).mode === "change");
 
     await lsys("LINESAVE", { groupsOn: ["G1", "G2"] });
     calls.length = 0;

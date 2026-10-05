@@ -168,7 +168,7 @@ export async function lineStatus(c) {
 /** action LINESAVE — ช่อง token/secret เว้นว่าง = ใช้ค่าเดิม · clear: true = ลบการตั้งค่า LINE ทั้งหมด */
 export async function lineSave(c, p) {
   if (p.clear === true) {
-    for (const k of ["lineChannelToken", "lineChannelSecret", "lineBotName", "lineGroups"]) await cfgSet(c, k, "");
+    for (const k of ["lineChannelToken", "lineChannelSecret", "lineBotName", "lineGroups", "lineDigestMode"]) await cfgSet(c, k, "");
     await sysLog(c, "line-settings", "ลบการตั้งค่า LINE", p.user || c.user || "-", "ok");
     return { ok: true, status: "success" };
   }

@@ -197,6 +197,15 @@ function _watchNavHeight() {
 
 function checkAuth() {
   loadDevice();
+  // 📊 ลิงก์ผู้บริหาร (?view=exec): ไม่ต้องเข้าระบบ เปิดแล้วเห็นภาพรวมทันที (เจ้าของสั่ง 2026-10-05 "ให้ผู้บริหารใช้งานได้ง่ายที่สุด")
+  //    ดูอย่างเดียว — หน้านี้มีแค่การอ่าน ไม่มีปุ่มแก้ไขอะไร · ข้อมูลที่อ่านเป็นชุดที่หลังบ้านเปิดให้อ่านโดยไม่ใช้บัตรอยู่แล้ว
+  if (window.APP_EXEC_ONLY) {
+    currentUser = localStorage.getItem("unified_stock_user") || "";
+    document.getElementById("loginOverlay").style.display = "none";
+    document.getElementById("modePicker").style.display = "none";
+    switchModule("EXEC");
+    return;
+  }
   // ถูกส่งกลับมาเข้าสู่ระบบใหม่เพราะบัตรผ่านหมดอายุ → เติมชื่อไว้ให้เลย ไม่ต้องพิมพ์ซ้ำ
   try {
     const pre = sessionStorage.getItem("appstock_prefill_user");

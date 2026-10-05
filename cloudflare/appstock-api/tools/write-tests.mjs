@@ -461,6 +461,13 @@ console.log("11) LINE กลุ่ม — ตั้งค่า / webhook / ส�
     await post({ module: "MLM", action: "PLANDIGEST", send: true, sessionToken: atok });
     T("เปิดกลุ่มที่สอง → ส่งทั้งสองกลุ่ม", calls.filter((x) => x.url === "/v2/bot/message/push").map((x) => x.body.to).sort().join(",") === "G1,G2");
 
+    // ⏰ เตือนไม่อัปเดตเกินกำหนด ก็ส่งเข้า LINE ได้ด้วยปุ่มเดียวกัน (what: stale)
+    await raw("PLANSET", { staleDays: 7 }, atok);
+    calls.length = 0;
+    const ss = await raw("PLANDIGEST", { what: "stale", send: true }, atok);
+    const sp = calls.filter((x) => x.url === "/v2/bot/message/push");
+    T("ส่งเตือนไม่อัปเดตเข้า LINE ได้", ss.result.line === "sent" && sp.length === 2 && /ไม่มีการอัปเดตสต๊อกเกิน 7 วัน/.test(sp[0].body.messages[0].text), [ss.result, sp[0] && sp[0].body.messages[0].text.slice(0, 80)]);
+
     await lsys("LINESAVE", { token: "", secret: "", mode: "change" });
     st = await lsys("LINESTATUS");
     T("ช่อง token/secret เว้นว่าง → ใช้ค่าเดิม", st.tokenSet && st.secretSet && st.tokenTail === "••••1234");

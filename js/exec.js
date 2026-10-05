@@ -589,5 +589,107 @@ function execMobileView() {
 function execMobileTab(t) {
   _xmTab = t;
   const el = document.getElementById("execDashContent");
-  if (el) el.innerHTML = execMobileView();
+  if (el) { el.innerHTML = execMobileView(); _xmDrawCharts(); }
+}
+
+// ─── 📈 กราฟบนมือถือ ───
+// แท่งแนวนอน (ชื่ออยู่ซ้าย อ่านได้เต็มบนจอแคบ) · ตัวเลขเขียนไว้ปลายแท่ง ไม่ต้องแตะทีละแท่ง
+// ข้อมูลชุดเดียวกับการ์ด/ตารางหน้าคอม (execRawItems / ข้อมูลห้องเย็นจากหลังบ้าน)
+const _XM_COLOR = d => d <= 7 ? "220,38,38" : d <= 14 ? "234,88,12" : d <= 30 ? "245,158,11" : "5,150,105";
+const _xmShort = s => { s = String(s || "-"); return s.length > 14 ? s.slice(0, 14) + "…" : s; };
+function _xmChartRows(key) {
+  const D = _execChartData;
+  if (key === "SQF" || key === "MLM") {
+    return execRawItems(D[key] || []).filter(m => m.daily > 0).sort((a, b) => a.days - b.days).slice(0, 10)
+      .map(m => ({ label: _xmShort(m.Name), value: m.days, color: _XM_COLOR(m.days), text: m.days + " วัน" }));
+  }
+  if (key === "CR") {
+    const cr = D.CR || {};
+    const expN = new Set((cr.expired || []).map(x => x.ProductName)), nearN = new Set((cr.expiring || []).map(x => x.ProductName));
+    return (cr.products || []).slice(0, 10).map(p => ({
+      label: _xmShort(p.ProductName), value: Number(p.TotalQty) || 0,
+      color: expN.has(p.ProductName) ? "220,38,38" : nearN.has(p.ProductName) ? "234,88,12" : "14,116,144",
+      text: _xmNum(p.TotalQty) + " " + (p.Unit || "") }));
+  }
+  return [];
+}
+function _xmChartCard(key) {
+  const META = {
+    status: ["📊 สถานะวัตถุดิบแต่ละโรงงาน", "จำนวนรายการตามความเร่งด่วน (วันที่ใช้งานได้คงเหลือ)"],
+    SQF: ["🏭 SQF — วันที่ใช้งานได้คงเหลือ", "10 อันดับที่ด่วนสุด · เฉพาะรายการที่กรอกใช้ต่อวัน"],
+    MLM: ["🏭 MLM — วันที่ใช้งานได้คงเหลือ", "10 อันดับที่ด่วนสุด · เฉพาะรายการที่กรอกใช้ต่อวัน"],
+    CR:  ["❄️ ห้องเย็น — คงเหลือต่อสินค้า", "🔴 มีล็อตหมดอายุ · 🟠 มีล็อตใกล้หมดอายุ · 🔵 ปกติ"],
+  }[key];
+  const n = key === "status" ? 2 : _xmChartRows(key).length;
+  if (!n) return key === "CR" ? "" : `<div class="xm-chart"><div class="xm-chart-h">${META[0]}</div><p class="xm-sub" style="margin:6px 0 0;">ยังไม่มีรายการที่กรอกอัตราใช้ต่อวัน</p></div>`;
+  const h = key === "status" ? 150 : Math.max(120, n * 30 + 34);
+  return `<div class="xm-chart">
+    <div class="xm-chart-h">${META[0]}</div>
+    <div class="xm-sub" style="margin:2px 0 6px;">${META[1]}</div>
+    <div style="height:${h}px;position:relative;"><canvas id="xmChart_${key}" data-xm="${key}"></canvas></div>
+  </div>`;
+}
+// เขียนตัวเลขไว้ปลายแท่ง (มือถือแตะดูทีละแท่งลำบาก)
+const _xmValueLabels = {
+  id: "xmValueLabels",
+  afterDatasetsDraw(chart, args, opts) {
+    const texts = (opts && opts.texts) || [];
+    if (!texts.length) return;
+    const { ctx, chartArea } = chart;
+    ctx.save();
+    ctx.font = "700 11px Sarabun, sans-serif";
+    ctx.fillStyle = "#435349";
+    ctx.textBaseline = "middle";
+    chart.getDatasetMeta(0).data.forEach((bar, i) => {
+      const t = texts[i];
+      if (!t) return;
+      const w = ctx.measureText(t).width;
+      ctx.fillText(t, Math.min(bar.x + 5, chartArea.right - w), bar.y);
+    });
+    ctx.restore();
+  }
+};
+function _xmChartConfig(key) {
+  const font = { family: "Sarabun", weight: "bold", size: 12 };
+  if (key === "status") {
+    const bucket = items => [0, 1, 2].map(u => items.filter(m => m.urgency === u).length).concat([items.filter(m => m.urgency >= 3).length]);
+    const s = bucket(execRawItems(_execChartData.SQF || [])), m = bucket(execRawItems(_execChartData.MLM || []));
+    const ds = [["🔴 วิกฤต", "220,38,38"], ["🟠 เร่งด่วน", "234,88,12"], ["🟡 ควรวางแผน", "245,158,11"], ["✓ ปกติ", "148,163,154"]]
+      .map(([label, c], i) => ({ label, data: [s[i], m[i]], backgroundColor: `rgba(${c},0.85)`, borderRadius: 4, barThickness: 26 }));
+    return {
+      type: "bar", data: { labels: ["SQF", "MLM"], datasets: ds },
+      options: { indexAxis: "y", responsive: true, maintainAspectRatio: false, animation: { duration: 300 },
+        plugins: { legend: { position: "bottom", labels: { font: { family: "Sarabun", size: 11 }, boxWidth: 10, padding: 8 } },
+                   tooltip: { titleFont: font, bodyFont: { family: "Sarabun" } } },
+        scales: { x: { stacked: true, beginAtZero: true, ticks: { font, precision: 0 }, title: { display: true, text: "จำนวนรายการ", font } },
+                  y: { stacked: true, ticks: { font } } } }
+    };
+  }
+  const rows = _xmChartRows(key);
+  const max = Math.max(1, ...rows.map(r => r.value));
+  return {
+    type: "bar",
+    data: { labels: rows.map(r => r.label), datasets: [{ data: rows.map(r => r.value),
+      backgroundColor: rows.map(r => `rgba(${r.color},0.8)`), borderColor: rows.map(r => `rgb(${r.color})`),
+      borderWidth: 1, borderRadius: 6, barThickness: 18 }] },
+    plugins: [_xmValueLabels],
+    options: { indexAxis: "y", responsive: true, maintainAspectRatio: false, animation: { duration: 300 },
+      layout: { padding: { right: 4 } },
+      plugins: { legend: { display: false }, xmValueLabels: { texts: rows.map(r => r.text) },
+                 tooltip: { titleFont: font, bodyFont: { family: "Sarabun" }, callbacks: { label: c => rows[c.dataIndex].text } } },
+      scales: { x: { beginAtZero: true, suggestedMax: max * 1.3, ticks: { font: { family: "Sarabun", size: 10 }, maxTicksLimit: 5 },
+                     grid: { color: "rgba(0,0,0,0.05)" } },
+                y: { ticks: { font, autoSkip: false }, grid: { display: false } } } }
+  };
+}
+async function _xmDrawCharts() {
+  const canvases = [...document.querySelectorAll("canvas[data-xm]")];
+  if (!canvases.length) return;
+  try { await loadVendor("chart"); }
+  catch (e) { canvases.forEach(c => { if (c.parentNode) c.parentNode.innerHTML = '<p class="xm-sub">โหลดกราฟไม่ได้ (ไม่มีเน็ต?)</p>'; }); return; }
+  canvases.forEach(cv => {
+    if (!document.body.contains(cv)) return;   // ผู้ใช้เปลี่ยนแท็บไปแล้วระหว่างรอ
+    _execDestroy(cv.id);
+    _execCharts[cv.id] = new Chart(cv.getContext("2d"), _xmChartConfig(cv.dataset.xm));
+  });
 }

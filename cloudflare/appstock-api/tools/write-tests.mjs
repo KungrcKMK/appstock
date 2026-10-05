@@ -503,5 +503,50 @@ console.log("11) LINE กลุ่ม — ตั้งค่า / webhook / ส�
   } finally { mock.close(); }
 }
 
+console.log("12) ⏰ เตือนเมื่อไม่มีการอัปเดตสต๊อกเกินจำนวนวันที่กำหนด");
+{
+  const plan = (extra, token = tok) => post(Object.assign({ module: "SQF", action: "USAGEPLAN", sessionToken: token }, extra));
+  const s0 = (await plan({})).saved;
+  T("ผู้ใช้ทั่วไปตั้งจำนวนวันไม่ได้", (await raw("PLANSET", { staleDays: 3 })).status === "error");
+  const set = await raw("PLANSET", { staleDays: 7 }, atok);
+  T("หัวหน้า/แอดมินตั้งจำนวนวันได้ (ค่ากลางของทุกคน)", set.status === "success" && set.settings.staleDays === 7, set.settings);
+  const g = await get("SQF");
+  T("ข้อมูลคลังมีวันอัปเดตล่าสุด + จำนวนวันที่ค้าง + ค่ากลาง", g.staleDays === 7 && g.materials.every((m) => "IdleDays" in m && "LastUpdate" in m), [g.staleDays, g.materials[0]]);
+  const p = await plan({});
+  const old = p.items.find((x) => x.idleDays !== null && x.idleDays > 7);
+  T("ของที่ไม่มีใครแตะเกิน 7 วัน → ขึ้นเตือน + บอกเหตุผล", old && old.stale === true && old.reasons.some((r) => /ไม่มีการอัปเดตสต๊อก/.test(r)) && p.summary.stale > 0, old);
+  const fresh = p.items.find((x) => x.idleDays === 0);
+  T("ของที่เพิ่งแตะวันนี้ → ไม่เตือน", fresh && fresh.stale === false, fresh);
+  if (old) {
+    await raw("VERIFY", { sku: old.sku, qty: old.qty });   // นับยืนยันยอดเดิม (ยอดไม่เปลี่ยน)
+    const after = (await plan({})).items.find((x) => x.sku === old.sku);
+    T("กดนับยืนยัน (ยอดเท่าเดิม) → หายจากรายการเตือนทันที", after.stale === false && after.idleDays === 0 && after.qty === old.qty, after);
+    const gm = (await get("SQF")).materials.find((m) => m.SKU === old.sku);
+    T("หน้าคลังเห็น IdleDays = 0 หลังนับ", gm.IdleDays === 0);
+  }
+  const ed = p.items.find((x) => x.idleDays !== null && x.idleDays > 7 && (!old || x.sku !== old.sku));
+  if (ed) {
+    const m0 = await matOf("SQF", ed.sku);
+    await raw("EDIT", { sku: ed.sku, name: m0.Name, unit: m0.Unit, min: m0.Min, dailyUsage: m0.DailyUsage, expiryDate: m0.ExpiryDate || "", alertDays: m0.AlertDays });
+    T("แก้ไขข้อมูล (ไม่แตะยอด) → ยังนับว่าไม่อัปเดต", (await plan({})).items.find((x) => x.sku === ed.sku).stale === true);
+  }
+  const big = await raw("PLANSET", { staleDays: 365 }, atok);
+  const pb = await plan({});
+  T("ตั้ง 365 วัน → แทบไม่มีอะไรเตือน (ทุกตัวในเครื่องทดสอบแตะภายในปี)", big.settings.staleDays === 365 && pb.summary.stale === pb.items.filter((x) => x.idleDays === null || x.idleDays > 365).length);
+  await raw("PLANSET", { staleDays: 0 }, atok);
+  const p0 = await plan({});
+  T("ตั้ง 0 = ปิดเตือน", p0.summary.stale === 0 && !p0.items.some((x) => x.stale) && (await get("SQF")).staleDays === 0);
+  const dOff = await raw("PLANDIGEST", { what: "stale", send: false }, atok);
+  T("ปิดแล้ว → ปุ่มส่งเตือนไม่มีอะไรให้ส่ง", !dOff.preview || !dOff.preview.SQF, dOff);
+  await raw("PLANSET", { staleDays: 7 }, atok);
+  const dv = await raw("PLANDIGEST", { what: "stale", send: false }, atok);
+  T("ดูตัวอย่างข้อความเตือน → บอกจำนวนวัน + วิธีแก้ (กดนับ)", /ไม่มีการอัปเดตสต๊อกเกิน 7 วัน/.test((dv.preview || {}).SQF || "") && /📊 นับ/.test(dv.preview.SQF), dv.preview);
+  T("ผู้ใช้ทั่วไปสั่งส่งเตือนไม่ได้", (await raw("PLANDIGEST", { what: "stale", send: true })).status === "error");
+  const ds = await raw("PLANDIGEST", { what: "stale", send: true }, atok);
+  T("กดส่งเตือน → Telegram (เครื่องทดสอบปิดไว้ = disabled)", /disabled/.test(ds.result.SQF || ""), ds.result);
+  await raw("PLANSET", { staleDays: s0.staleDays }, atok);
+  T("คืนค่าเดิม", (await plan({})).saved.staleDays === s0.staleDays);
+}
+
 console.log(`\nสรุป: ผ่าน ${pass} · ไม่ผ่าน ${fail}`);
 process.exit(fail ? 1 : 0);

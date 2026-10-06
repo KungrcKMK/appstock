@@ -482,11 +482,25 @@ console.log("11) LINE กลุ่ม — ตั้งค่า / webhook / ส�
     const ls = await post({ module: "SYSTEM", action: "SYSSTATUS", sessionToken: atok });
     T("หน้าสถานะระบบเห็นผล LINE ครั้งล่าสุด", ls.lastLine && ls.lastLine.sent === false && /โควตา/.test(ls.lastLine.reason), ls.lastLine);
 
-    await lsys("LINESAVE", { mode: "off" });
+    // 🗓️ กำหนดการส่งสรุปของ LINE (แยกจาก Telegram)
+    const ng0 = await lsys("NOTIFYGET");
+    await lsys("NOTIFYSET", { line: { on: false } });
     calls.length = 0;
     const off = await raw("PLANDIGEST", { send: true }, atok);
-    T("เลือก 'ไม่ส่ง' → ไม่ยิงเข้า LINE เลย", off.result.line === "off" && !calls.some((x) => x.url === "/v2/bot/message/push"), off.result);
-    T("รูปแบบการส่งแปลกปลอม → ปฏิเสธ", (await lsys("LINESAVE", { mode: "always" })).status === "error");
+    T("ปิดส่งสรุปเข้า LINE → ไม่ยิงเข้า LINE เลย (Telegram ยังส่งตามปกติ)", off.result.line === "off" && !calls.some((x) => x.url === "/v2/bot/message/push") && "SQF" in off.result, off.result);
+    T("หน้าจอรุ่นเก่าส่งโหมดความถี่มา → ไม่ปฏิเสธ แต่ไม่ไปเปลี่ยนกำหนดการ", (await lsys("LINESAVE", { mode: "change" })).status === "success" && (await lsys("NOTIFYGET")).schedule.line.on === false);
+    await lsys("NOTIFYSET", { line: { on: true, detail: "short" } });
+    calls.length = 0;
+    await raw("PLANDIGEST", { send: true }, atok);
+    const shortPush = calls.find((x) => x.url === "/v2/bot/message/push");
+    T("LINE ตั้งแบบย่อ → ข้อความเข้า LINE เป็นแบบย่อ (ไม่มีบรรทัดวิธีดูต่อท้าย)", shortPush && /วัตถุดิบที่ต้องสั่งซื้อ/.test(shortPush.body.messages[0].text) && !/ดูรายละเอียดและจำนวนที่แนะนำ/.test(shortPush.body.messages[0].text), shortPush && shortPush.body.messages[0].text.slice(0, 200));
+    calls.length = 0;
+    const pvL = await lsys("NOTIFYPREVIEW", { channel: "line", line: { on: true, topics: { plan: true, low: true, stale: true, expiry: true }, detail: "full" } });
+    T("ดูตัวอย่างของ LINE ด้วยค่าที่ยังไม่บันทึก → บอกกลุ่มปลายทาง + ไม่เกิน 5 กล่อง + ไม่ยิงจริง",
+      pvL.status === "success" && pvL.texts.length >= 1 && pvL.texts.length <= 5 && pvL.line.target && pvL.line.target.groups.length === 2 && !calls.some((x) => x.url === "/v2/bot/message/push"),
+      [pvL.texts && pvL.texts.length, pvL.line]);
+    await lsys("NOTIFYSET", { line: ng0.schedule.line });
+    T("คืนกำหนดการ LINE เดิม", JSON.stringify((await lsys("NOTIFYGET")).schedule.line) === JSON.stringify(ng0.schedule.line));
 
     calls.length = 0;
     const tt = await lsys("LINETEST", {});

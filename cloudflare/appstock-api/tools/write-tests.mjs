@@ -372,7 +372,8 @@ console.log("11) LINE กลุ่ม — ตั้งค่า / webhook / ส�
 {
   const { createServer } = await import("node:http");
   const { createHmac } = await import("node:crypto");
-  const { lineDue } = await import("../src/plan.js");
+  const { topicDue, reminderDow, channelsDue } = await import("../src/notify.js");
+  const { packTexts } = await import("../src/plan.js");
   // ── ตัวจำลอง LINE API: จดทุกคำขอไว้ตรวจ ──
   const calls = [];
   let quotaFull = false;

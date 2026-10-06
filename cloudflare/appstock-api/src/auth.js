@@ -49,6 +49,7 @@ export const WRITE_MIN_ROLE = {
   SYSSTATUS: "manager", EXPORT: "admin",
   PLANSET: "manager", PLANDIGEST: "manager", MIRRORPUSH: "manager",
   LINESTATUS: "admin", LINESAVE: "admin", LINETEST: "admin", staleDigest: "manager",
+  NOTIFYSET: "admin", NOTIFYPREVIEW: "admin",   // กำหนดการส่งสรุปเข้ากลุ่ม (วัน/เวลา/หัวข้อ/รูปแบบ) — อยู่ในหน้า ⚙️ ตั้งค่าการแจ้งเตือน ซึ่งเห็นเฉพาะ admin
 };
 export async function authGate(c, action, data, payload) {
   const need = WRITE_MIN_ROLE[action];

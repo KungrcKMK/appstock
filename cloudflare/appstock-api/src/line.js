@@ -128,9 +128,12 @@ export async function lineWebhook(c, request) {
         await saveGroups(c, cur.groups);
         const on = exists ? exists.on : firstOn;
         await sysLog(c, "line-join", info.name + (on ? " (เปิดส่งแล้ว)" : " (รอแอดมินเปิด)"), "-", "ok");
+        const sch = (await notifySchedule(c)).line;
         await reply(c, cur.token, ev.replyToken, on
-          ? "✅ เชื่อมกลุ่มนี้กับระบบสต๊อกแล้ว\nทุกเช้า 08:00 จะส่งสรุปวัตถุดิบที่ต้องสั่งซื้อ และรายการที่ไม่มีการอัปเดตสต๊อกเกินกำหนด (เฉพาะวันที่รายการเปลี่ยน และทุกวันจันทร์)"
-          : "👋 บอทเข้ากลุ่มแล้ว แต่ยังไม่ได้เปิดส่งข้อความ\nให้แอดมินเปิดในแอป: ⚙️ ตั้งค่าการแจ้งเตือน → LINE → ติ๊กกลุ่มนี้");
+          ? "✅ เชื่อมกลุ่มนี้กับระบบสต๊อกแล้ว\n" + (sch.on && sch.days.length
+              ? "จะส่งสรุปสต๊อกเข้ากลุ่มนี้: " + describeSchedule(sch)
+              : "ตอนนี้ยังไม่ได้ตั้งวันส่งสรุปอัตโนมัติ — แอดมินตั้งได้ในแอป: ⚙️ ตั้งค่าการแจ้งเตือน → กำหนดการส่งสรุป")
+          :"👋 บอทเข้ากลุ่มแล้ว แต่ยังไม่ได้เปิดส่งข้อความ\nให้แอดมินเปิดในแอป: ⚙️ ตั้งค่าการแจ้งเตือน → LINE → ติ๊กกลุ่มนี้");
       } else if (ev.type === "leave") {
         const left = cur.groups.filter((g) => g.id !== id);
         if (left.length !== cur.groups.length) {

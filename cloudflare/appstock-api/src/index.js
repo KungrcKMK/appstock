@@ -10,6 +10,7 @@ import * as B from "./bom.js";
 import * as S from "./system.js";
 import * as P from "./plan.js";
 import * as LN from "./line.js";
+import * as N from "./notify.js";
 
 const CORS = {
   "access-control-allow-origin": "*",
@@ -48,6 +49,9 @@ const SYSTEM = {
   LINESTATUS: (c) => LN.lineStatus(c),
   LINESAVE: (c, p) => LN.lineSave(c, p),
   LINETEST: (c, p) => LN.lineTest(c, p),
+  NOTIFYGET: (c) => N.notifyGet(c),
+  NOTIFYSET: (c, p) => N.notifySet(c, p),
+  NOTIFYPREVIEW: (c, p) => P.notifyPreview(c, p),
   TGFLUSH: (c) => tgFlushQueue(c),
   EXPORT: (c, p) => S.exportSheets(c, false, Number(p.maxHistory) || 5000),
   submitDelivery: (c, p) => C.submitDelivery(c, p),

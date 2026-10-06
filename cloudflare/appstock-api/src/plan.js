@@ -12,12 +12,13 @@
 //   ไม่ได้ตั้งค่าไว้และประวัติน้อย → ใช้เบิกจริงเท่าที่มี (ติดป้ายข้อมูลน้อย)
 //   ต่างกันเกิน 30% จะบอกไว้ในข้อสังเกต ให้คนไปแก้ "ใช้ต่อวัน" ให้ตรงกับความจริง
 //
-// คิดที่หลังบ้านที่เดียว — หน้าคอม มือถือ และข้อความ Telegram ตอนเช้า ใช้ผลชุดเดียวกัน ตัวเลขจึงตรงกันเสมอ
+// คิดที่หลังบ้านที่เดียว — หน้าคอม มือถือ และข้อความสรุปเข้ากลุ่ม (Telegram / LINE) ใช้ผลชุดเดียวกัน ตัวเลขจึงตรงกันเสมอ
 // หลักการ: แค่ "ชี้ให้เห็น" — ไม่สั่งซื้อเอง ไม่บล็อกการเบิก คนตัดสินใจเองทุกครั้ง
 import { all, getCfg, cfgSet, kvGet, kvPut, nowIso, fmtTH, dayTH, thaiMidnightMs, tgSendRaw, sysLog, DAY_MS, TZ_MS, FACTORY_NAME } from "./lib.js";
 import { lineConfig, lineSend, lineStatus } from "./line.js";
 import { lastStockUpdate, idleDaysTH, staleDaysOf } from "./raw.js";
 import { crGetStartupOverview } from "./cold.js";
+import { notifySchedule, normSchedule, topicDue, describeSchedule, NOTIFY_TOPICS } from "./notify.js";
 
 export const PLAN_DEFAULTS = { leadDays: 7, safetyDays: 3, coverDays: 30, alert: true };
 const PLAN_MIN_TX = 5;      // เบิกอย่างน้อยกี่ครั้งใน 30 วัน ถึงจะเชื่ออัตราเบิกจริง (เกณฑ์เดียวกับจุดสั่งซื้อแนะนำ)
@@ -231,126 +232,229 @@ export async function planCompute(c, module, over) {
 /** action USAGEPLAN — หน้าจอส่ง leadDays/safetyDays/coverDays มาลองดูได้ (ไม่บันทึก) */
 export const usagePlan = (c, data, module) => planCompute(c, module, data);
 
-// ───────────── สรุปเช้าเข้า Telegram + LINE ─────────────
-// ส่งเมื่อ "รายการที่ต้องสั่งเปลี่ยนไปจากที่เคยแจ้ง" หรือเป็นวันจันทร์ (ทวนทั้งสัปดาห์) — ไม่ส่งซ้ำข้อความเดิมทุกเช้าจนคนเลิกอ่าน
-function planMessage(module, p) {
+// ───────────── สรุปเข้ากลุ่ม Telegram + LINE ─────────────
+// วัน / เวลา / หัวข้อ / แบบย่อ-ละเอียด / ส่งทุกครั้ง-เฉพาะตอนเปลี่ยน ตั้งแยกต่อช่องในหน้า ⚙️ ตั้งค่าการแจ้งเตือน (notify.js)
+// โหมด "เฉพาะตอนเปลี่ยน" = จำ "ลายเซ็น" ของรายการที่ส่งล่าสุด แยกต่อหัวข้อ/โรงงาน/ช่อง — ไม่ส่งข้อความเดิมซ้ำทุกเช้าจนคนเลิกอ่าน
+const LIST_MAX = { full: 20, short: 5 };   // แบบละเอียดแสดงได้ถึง 20 รายการ (ที่ต้องสั่ง 15 — บรรทัดยาวกว่า) · แบบย่อ 5 รายการแรก
+const stamp = () => fmtTH(Date.now(), "dd/MM/yyyy HH:mm");
+const more = (total, shown, unit) => total > shown ? "\n… และอีก " + (total - shown) + " " + (unit || "รายการ") : "";
+const thShort = (iso) => { const m = String(iso || "").match(/^(\d{4})-(\d{2})-(\d{2})/); return m ? m[3] + "/" + m[2] + "/" + String(Number(m[1]) + 543).slice(2) : "-"; };
+
+function planMessage(module, p, detail) {
   const urgent = p.items.filter((x) => x.status === "late" || x.status === "now");
+  const head = "📈 วัตถุดิบที่ต้องสั่งซื้อ — " + (FACTORY_NAME[module] || module) + "\n" + stamp() + "\n" +
+    "🔴 สั่งวันนี้ก็ไม่ทัน " + p.summary.late + "  •  🟠 ต้องสั่งวันนี้ " + p.summary.now + (p.summary.soon ? "  •  🟡 ใกล้ถึงเวลาสั่ง " + p.summary.soon : "");
+  if (detail === "short") {
+    const n = LIST_MAX.short;
+    return head + "\n\n" + urgent.slice(0, n).map((x) => x.icon + " " + x.name + (x.suggestQty > 0 ? " — สั่ง " + fmtN(x.suggestQty) + " " + x.unit : "")).join("\n") + more(urgent.length, n);
+  }
   const lines = urgent.slice(0, 15).map((x) => {
     const cover = x.daysCover === null ? "" : " · พอใช้ " + fmtN(x.daysCover) + " วัน";
     const sug = x.suggestQty > 0 ? "\n     → แนะนำสั่ง " + fmtN(x.suggestQty) + " " + x.unit : "";
     return x.icon + " " + x.name + " — เหลือ " + fmtN(x.qty) + " " + x.unit + cover + " (รอของ " + x.leadDays + " วัน)" + sug;
   });
-  let msg = "📈 วัตถุดิบที่ต้องสั่งซื้อ — " + (FACTORY_NAME[module] || module) + "\n" + fmtTH(Date.now(), "dd/MM/yyyy HH:mm") + "\n" +
-    "🔴 สั่งวันนี้ก็ไม่ทัน " + p.summary.late + "  •  🟠 ต้องสั่งวันนี้ " + p.summary.now + (p.summary.soon ? "  •  🟡 ใกล้ถึงเวลาสั่ง " + p.summary.soon : "") + "\n\n" + lines.join("\n");
-  if (urgent.length > 15) msg += "\n… และอีก " + (urgent.length - 15) + " รายการ";
-  msg += "\n\nดูรายละเอียดและจำนวนที่แนะนำ: เปิดแอป → 📈 วางแผนสั่งซื้อ";
-  return msg;
-}
-/**
- * LINE ถึงรอบส่งไหม — แยกจาก Telegram เพราะ LINE เสียโควตาตามจำนวนสมาชิกในกลุ่ม เจ้าของจึงเลือกความถี่ได้
- *   change = เหมือน Telegram (รายการเปลี่ยน หรือวันจันทร์) · monday = จันทร์ละครั้ง · off = ไม่ส่ง · force = คนกดส่งเอง
- */
-export function lineDue(mode, force, lastSig, sig, monday) {
-  if (mode === "off") return false;
-  if (force) return true;
-  if (mode === "monday") return monday;
-  return lastSig !== sig || monday;
+  return head + "\n\n" + lines.join("\n") + more(urgent.length, 15) + "\n\nดูรายละเอียดและจำนวนที่แนะนำ: เปิดแอป → 📈 วางแผนสั่งซื้อ";
 }
 
-function staleMessage(module, p) {
+// ต่ำกว่าจุดสั่งซื้อ (Min) ที่คนตั้งไว้เอง — เรียงจากเหลือน้อยเทียบจุดสั่งซื้อมากสุดก่อน
+function lowMessage(module, p, detail) {
+  const low = p.items.filter((x) => x.belowMin).sort((a, b) => a.qty / a.min - b.qty / b.min);
+  const n = LIST_MAX[detail] || LIST_MAX.full;
+  const lines = low.slice(0, n).map((x) => "• " + x.name + " — เหลือ " + fmtN(x.qty) + " " + x.unit + (detail === "short" ? "" : " (จุดสั่งซื้อ " + fmtN(x.min) + ")"));
+  let msg = "🟠 ต่ำกว่าจุดสั่งซื้อ — " + (FACTORY_NAME[module] || module) + "\n" + stamp() + " · " + low.length + " รายการ\n\n" + lines.join("\n") + more(low.length, n);
+  if (detail !== "short") msg += "\n\nดูทั้งหมด: เปิดแอป → คลังวัตถุดิบ → กรอง 🟠 ต่ำกว่าจุดสั่งซื้อ";
+  return msg;
+}
+
+function staleMessage(module, p, detail) {
   const list = p.items.filter((x) => x.stale).sort((a, b) => (b.idleDays === null ? 1e9 : b.idleDays) - (a.idleDays === null ? 1e9 : a.idleDays));
-  const lines = list.slice(0, 20).map((x) => "• " + x.name + " — " + (x.idleDays === null ? "ไม่เคยมีการบันทึก" : "ไม่อัปเดต " + x.idleDays + " วัน (ล่าสุด " + isoToThai(x.lastUpdate) + ")") +
-    " · ในระบบ " + fmtN(x.qty) + " " + x.unit);
+  const n = LIST_MAX[detail] || LIST_MAX.full;
+  const lines = list.slice(0, n).map((x) => "• " + x.name + " — " + (x.idleDays === null ? "ไม่เคยมีการบันทึก" :
+    detail === "short" ? x.idleDays + " วัน" : "ไม่อัปเดต " + x.idleDays + " วัน (ล่าสุด " + isoToThai(x.lastUpdate) + ")") +
+    (detail === "short" ? "" : " · ในระบบ " + fmtN(x.qty) + " " + x.unit));
   let msg = "⏰ วัตถุดิบที่ไม่มีการอัปเดตสต๊อกเกิน " + p.settings.staleDays + " วัน — " + (FACTORY_NAME[module] || module) + "\n" +
-    fmtTH(Date.now(), "dd/MM/yyyy HH:mm") + " · " + list.length + " รายการ\n\n" + lines.join("\n");
-  if (list.length > 20) msg += "\n… และอีก " + (list.length - 20) + " รายการ";
-  msg += "\n\nช่วยกันนับยืนยันยอด: เปิดแอป → เลือกรายการ → 📊 นับ (ยอดตรงอยู่แล้วก็กดบันทึกได้เลย)";
+    stamp() + " · " + list.length + " รายการ\n\n" + lines.join("\n") + more(list.length, n);
+  if (detail !== "short") msg += "\n\nช่วยกันนับยืนยันยอด: เปิดแอป → เลือกรายการ → 📊 นับ (ยอดตรงอยู่แล้วก็กดบันทึกได้เลย)";
   return msg;
 }
 
 // ห้องเย็นนับเป็นล็อต (บาร์โค้ด + วันผลิต) — แต่ละล็อตต้องมีคนนับยืนยันเป็นระยะเหมือนวัตถุดิบ
-function crStaleMessage(ov) {
+function crStaleMessage(ov, detail) {
   const list = ov.staleLots || [];
-  const d = (iso) => { const m = String(iso || "").match(/^(\d{4})-(\d{2})-(\d{2})/); return m ? m[3] + "/" + m[2] + "/" + String(Number(m[1]) + 543).slice(2) : "-"; };
-  const lines = list.slice(0, 20).map((x) => "• " + x.ProductName + " (MFG " + d(x.MFG) + ") — " +
-    (x.IdleDays === null ? "ไม่เคยมีการบันทึก" : "ไม่อัปเดต " + x.IdleDays + " วัน") + " · เหลือ " + fmtN(x.Qty) + " " + (x.Unit || ""));
+  const n = LIST_MAX[detail] || LIST_MAX.full;
+  const lines = list.slice(0, n).map((x) => "• " + x.ProductName + " (MFG " + thShort(x.MFG) + ") — " +
+    (x.IdleDays === null ? "ไม่เคยมีการบันทึก" : (detail === "short" ? "" : "ไม่อัปเดต ") + x.IdleDays + " วัน") +
+    (detail === "short" ? "" : " · เหลือ " + fmtN(x.Qty) + " " + (x.Unit || "")));
   let msg = "⏰ ล็อตที่ไม่มีการอัปเดตสต๊อกเกิน " + ov.staleDays + " วัน — " + FACTORY_NAME.COLDROOM + "\n" +
-    fmtTH(Date.now(), "dd/MM/yyyy HH:mm") + " · " + list.length + " ล็อต\n\n" + lines.join("\n");
-  if (list.length > 20) msg += "\n… และอีก " + (list.length - 20) + " ล็อต";
-  msg += "\n\nช่วยกันนับยืนยันยอด: เปิดแอป → คลังสินค้าห้องเย็น → เลือกสินค้า → 📊 นับ ที่ล็อตนั้น";
+    stamp() + " · " + list.length + " ล็อต\n\n" + lines.join("\n") + more(list.length, n, "ล็อต");
+  if (detail !== "short") msg += "\n\nช่วยกันนับยืนยันยอด: เปิดแอป → คลังสินค้าห้องเย็น → เลือกสินค้า → 📊 นับ ที่ล็อตนั้น";
+  return msg;
+}
+
+// ใกล้หมดอายุ/หมดอายุ — วัตถุดิบ (ตามวันเตือนของแต่ละตัว) + ล็อตห้องเย็น (ตามเกณฑ์ของสินค้า) · หมดเกิน 30 วันแล้วไม่เตือนต่อ
+async function expiryList(c, modules, crOv) {
+  const now = Date.now(), out = [];
+  for (const mod of modules.filter((m) => m === "SQF" || m === "MLM")) {
+    for (const m of await all(c, "SELECT sku, name, expiry_date, alert_days FROM materials WHERE module = ? AND discontinued = 0 ORDER BY seq, rowid", mod)) {
+      const expRaw = String(m.expiry_date || "").trim();
+      if (!expRaw) continue;
+      // รองรับ dd/mm/yyyy และ yyyy-mm-dd → เที่ยงคืนเวลาไทยของวันนั้น
+      let y, mo, d;
+      if (/^\d{2}\/\d{2}\/\d{4}$/.test(expRaw)) { const q = expRaw.split("/"); d = +q[0]; mo = +q[1]; y = +q[2]; }
+      else if (/^\d{4}-\d{2}-\d{2}/.test(expRaw)) { const q = expRaw.slice(0, 10).split("-"); y = +q[0]; mo = +q[1]; d = +q[2]; }
+      else continue;
+      if (y > 2400) y -= 543;                       // ปี พ.ศ. ที่พิมพ์มาตรงๆ
+      const expMs = thaiMidnightMs(y, mo, d);
+      if (isNaN(expMs)) continue;
+      const days = Math.round((expMs - now) / DAY_MS);
+      if (days > (Number(m.alert_days) || 7) || days < -30) continue;
+      const name = String(m.name || "").trim(), sku = String(m.sku || "").trim();
+      out.push({ mod, key: mod + ":" + (sku || name), name, sku, days,
+                 exp: String(d).padStart(2, "0") + "/" + String(mo).padStart(2, "0") + "/" + (y + 543) });
+    }
+  }
+  if (modules.indexOf("COLDROOM") >= 0) {
+    const ov = await crOv();
+    for (const l of (ov.expiredLots || []).concat(ov.expiringLots || [])) {
+      if (l.ExpireDays < -30) continue;
+      out.push({ mod: "COLDROOM", key: "CR:" + l.Barcode + "|" + l.MFG, name: l.ProductName + " (MFG " + thShort(l.MFG) + ")", sku: "", days: l.ExpireDays, exp: thShort(l.EXP) });
+    }
+  }
+  return out.sort((a, b) => a.days - b.days);
+}
+function expiryMessage(list, detail) {
+  const n = LIST_MAX[detail] || LIST_MAX.full;
+  const tag = { SQF: "🏭SQF", MLM: "🏭MLM", COLDROOM: "❄️" };
+  const expired = list.filter((x) => x.days < 0).length, near = list.length - expired;
+  const lines = list.slice(0, n).map((x) => (x.days < 0 ? "❌ " : "⚠️ ") + tag[x.mod] + " " + x.name +
+    (detail === "short" ? "" : (x.sku ? " (" + x.sku + ")" : "") + "  •  หมดอายุ " + x.exp) +
+    "  (" + (x.days < 0 ? "เกินมาแล้ว " + -x.days + " วัน" : x.days === 0 ? "หมดวันนี้" : "เหลือ " + x.days + " วัน") + ")");
+  let msg = "⏰ แจ้งเตือนวันหมดอายุ\n" + stamp() + "\nพบ " + list.length + " รายการ" +
+    (expired ? "  •  ❌ หมดอายุแล้ว " + expired : "") + (near ? "  •  ⚠️ ใกล้หมด " + near : "") + "\n\n" + lines.join("\n") + more(list.length, n);
+  if (detail !== "short") msg += "\n\nกรุณาตรวจสอบและจัดการโดยด่วน";
   return msg;
 }
 
 /**
+ * LINE ส่งได้ครั้งละไม่เกิน 5 กล่อง (กล่องละ ≤ 5,000 ตัวอักษร) และโควตานับ "ครั้งละ 1 ต่อสมาชิก" ไม่ว่ากี่กล่อง
+ * → ไม่เกิน 5 ข้อความ = กล่องละข้อความ (แบบเดิม) · เกิน = รวมข้อความต่อกันในกล่องเดียวกันจนเต็ม
+ */
+export function packTexts(msgs, max, limit) {
+  max = max || 5; limit = limit || 4900;
+  const cut = (t) => t.length > limit ? t.slice(0, limit - 30) + "\n… (ข้อความยาวเกิน ตัดไว้แค่นี้)" : t;
+  if (msgs.length <= max) return msgs.map(cut);
+  const SEP = "\n\n━━━━━━━━━━\n\n", out = [];
+  for (const m of msgs.map(cut)) {
+    const i = out.length - 1;
+    if (i >= 0 && out[i].length + SEP.length + m.length <= limit) out[i] += SEP + m;
+    else out.push(m);
+  }
+  if (out.length > max) out.splice(max - 1, out.length, cut(out.slice(max - 1).join(SEP)));
+  return out;
+}
+
+const SIG_PREFIX = { plan: "plan_sig_", low: "low_sig_", stale: "stale_sig_", expiry: "exp_sig_" };
+const sigKey = (topic, module, ch) => SIG_PREFIX[topic] + (ch === "line" ? "line_" : "") + module;   // คีย์ plan_/stale_ เดิมใช้ต่อได้
+
+/**
  * ส่งสรุปเข้ากลุ่ม (Telegram + LINE)
- *   what: "plan" = ที่ต้องสั่งซื้อ · "stale" = ไม่มีการอัปเดตเกินกำหนด · "both" = ทั้งสอง (งานตามเวลาตอนเช้า)
- *   force = คนกดส่งเอง (ไม่สนว่าเคยส่งรายการเดิมไปแล้ว) · dry = ดูตัวอย่างข้อความ ไม่ส่ง
- * แต่ละเรื่องต่อโรงงานจำ "ลายเซ็น" ของรายการที่ส่งล่าสุด แยก Telegram / LINE — ส่งซ้ำเฉพาะเมื่อรายการเปลี่ยน หรือวันจันทร์
+ *   งานตามเวลา: channels = ช่องที่ถึงเวลา · ส่งหัวข้อที่ตั้งไว้ของช่องนั้น ตามรูปแบบที่ตั้งไว้
+ *   ปุ่มในหน้าจอ: what = "plan" | "stale" (ส่งเรื่องเดียวทุกช่องที่เปิด) + force = ไม่สนว่าเคยส่งรายการเดิมไปแล้ว
+ *   dry = ดูตัวอย่างข้อความ ไม่ส่ง · schedule = ใช้ค่าที่หน้าตั้งค่ากำลังแก้ (ยังไม่บันทึก) มาลองดู
  */
 export async function planDigest(c, opts) {
   const o = opts || {};
-  const what = o.what || "both";
+  const manual = o.what === "plan" || o.what === "stale";
   const set = await planSettings(c);
-  const wantPlan = (what === "plan" || what === "both") && (set.saved.alert || o.force);
-  const wantStale = (what === "stale" || what === "both") && set.saved.staleDays > 0;
-  if (!wantPlan && !wantStale) return { ok: true, status: "success", skipped: "off", result: {}, preview: {} };
-  const monday = new Date(Date.now() + TZ_MS).getUTCDay() === 1;
-  const L = await lineConfig(c);
-  const lineReady = !!L.token && L.groups.some((g) => g.on);
-  const out = {}, preview = {}, lineMsgs = [], lineSigs = [];
-  // ผลของเรื่องหลักใช้คีย์ = ชื่อโรงงาน (หน้าจอเดิมอ่านแบบนี้) · ตอนส่งทั้งสองเรื่อง เรื่องไม่อัปเดตใช้คีย์ <โรงงาน>_stale
-  const keyOf = (module, kind) => (what === "both" && kind === "stale") ? module + "_stale" : module;
-  const one = async (module, kind, msg, sig, has) => {
-    const k = keyOf(module, kind);
-    const tgKey = (kind === "plan" ? "plan_sig_" : "stale_sig_") + module, lnKey = (kind === "plan" ? "plan_sig_line_" : "stale_sig_line_") + module;
-    const last = await kvGet(c, tgKey), lastLine = await kvGet(c, lnKey);
-    if (!has) {
-      if (last) await kvPut(c, tgKey, "", 60 * 86400);
-      if (lastLine) await kvPut(c, lnKey, "", 60 * 86400);
-      out[k] = "none"; return;
-    }
-    if (o.dry) { preview[k] = msg; out[k] = "preview"; return; }
-    if (lineReady && lineDue(L.mode, o.force, lastLine, sig, monday)) { lineMsgs.push(msg); lineSigs.push([lnKey, sig]); }
-    if (!o.force && last === sig && !monday) { out[k] = "same"; return; }
-    const r = await tgSendRaw(c, msg, true);
-    if (r && r.sent) await kvPut(c, tgKey, sig, 60 * 86400);
-    else if (r && r.reason !== "disabled") await sysLog(c, "telegram-error", kind + " digest: " + (r && r.reason), "-", "failed");
-    out[k] = r && r.sent ? "sent" : "not-sent: " + ((r && r.reason) || "");
-  };
-  for (const module of (o.modules || ["SQF", "MLM", "COLDROOM"])) {
-    if (module === "COLDROOM") {   // ห้องเย็นมีแค่เรื่อง "ไม่อัปเดต" (ไม่มีแผนสั่งซื้อ)
-      if (wantStale) {
-        const ov = await crGetStartupOverview(c, {});
-        const sl = ov.staleLots || [];
-        await one("COLDROOM", "stale", sl.length ? crStaleMessage(ov) : "", sl.map((x) => x.Barcode + "|" + x.MFG).sort().join("|"), sl.length > 0);
-      }
+  const sch = o.schedule || await notifySchedule(c);
+  const channels = (o.channels || ["tg", "line"]).filter((ch) => sch[ch]);
+  const dow = new Date(Date.now() + TZ_MS).getUTCDay();
+  const topicsFor = (ch) => manual ? [o.what] : NOTIFY_TOPICS.filter((t) => sch[ch].topics[t]);
+  const want = new Set();
+  for (const ch of channels) if (sch[ch].on || o.dry) topicsFor(ch).forEach((t) => want.add(t));
+  if (set.saved.staleDays <= 0) want.delete("stale");   // ตั้ง 0 วัน = ปิดเรื่องไม่อัปเดตทั้งระบบ
+  const modules = o.modules || ["SQF", "MLM", "COLDROOM"];
+
+  // คิดข้อมูลครั้งเดียวต่อโรงงาน ใช้ร่วมทุกช่อง (ข้อความสร้างตอนส่ง เพราะแต่ละช่องเลือกย่อ/ละเอียดต่างกันได้)
+  const plans = {};
+  const planOf = async (m) => plans[m] || (plans[m] = await planCompute(c, m));
+  let ov = null;
+  const crOv = async () => ov || (ov = await crGetStartupOverview(c, {}));
+  const entries = [];
+  for (const topic of NOTIFY_TOPICS) {
+    if (!want.has(topic)) continue;
+    if (topic === "expiry") {
+      const list = await expiryList(c, modules, crOv);
+      entries.push({ topic, module: "ALL", has: list.length > 0, sig: list.map((x) => x.key + ":" + x.days).sort().join("|"), msg: (d) => expiryMessage(list, d) });
       continue;
     }
-    const p = await planCompute(c, module);
-    if (wantPlan) {
-      const urgent = p.items.filter((x) => x.status === "late" || x.status === "now");
-      await one(module, "plan", urgent.length ? planMessage(module, p) : "", urgent.map((x) => x.sku + ":" + x.status).sort().join("|"), urgent.length > 0);
-    }
-    if (wantStale) {
-      const stale = p.items.filter((x) => x.stale);
-      await one(module, "stale", stale.length ? staleMessage(module, p) : "", stale.map((x) => x.sku).sort().join("|"), stale.length > 0);
+    for (const module of modules) {
+      if (module === "COLDROOM") {   // ห้องเย็นไม่มีแผนสั่งซื้อ / จุดสั่งซื้อ — มีแค่เรื่องไม่อัปเดต
+        if (topic !== "stale") continue;
+        const v = await crOv(), sl = v.staleLots || [];
+        entries.push({ topic, module, has: sl.length > 0, sig: sl.map((x) => x.Barcode + "|" + x.MFG).sort().join("|"), msg: (d) => crStaleMessage(v, d) });
+        continue;
+      }
+      const p = await planOf(module);
+      if (topic === "plan") {
+        const u = p.items.filter((x) => x.status === "late" || x.status === "now");
+        entries.push({ topic, module, has: u.length > 0, sig: u.map((x) => x.sku + ":" + x.status).sort().join("|"), msg: (d) => planMessage(module, p, d) });
+      } else if (topic === "low") {
+        const l = p.items.filter((x) => x.belowMin);
+        entries.push({ topic, module, has: l.length > 0, sig: l.map((x) => x.sku).sort().join("|"), msg: (d) => lowMessage(module, p, d) });
+      } else if (topic === "stale") {
+        const s = p.items.filter((x) => x.stale);
+        entries.push({ topic, module, has: s.length > 0, sig: s.map((x) => x.sku).sort().join("|"), msg: (d) => staleMessage(module, p, d) });
+      }
     }
   }
-  // LINE: ทุกข้อความรวมเป็นคำขอเดียว (สูงสุด 5 กล่อง) — โควตานับครั้งเดียวต่อสมาชิก ไม่ว่ากี่กล่อง
-  if (o.dry) {
-    out.line = !L.token ? "not-configured" : !lineReady ? "no-group" : L.mode === "off" ? "off" : "preview";
-    const st = lineReady && Object.keys(preview).length ? await lineStatus(c) : null;
-    preview.line = st ? { groups: st.groups.filter((g) => g.on).map((g) => ({ name: g.name, members: g.members })), quota: st.quota } : null;
-  } else if (!L.token) out.line = "not-configured";
-  else if (!lineReady) out.line = "no-group";
-  else if (L.mode === "off") out.line = "off";
-  else if (!lineMsgs.length) out.line = "same";
-  else {
-    const r = await lineSend(c, lineMsgs.slice(0, 5), { what });
-    if (r.sent) for (const [k, sg] of lineSigs) await kvPut(c, k, sg, 60 * 86400);
-    out.line = r.sent ? (r.reason ? "partial: " + r.reason : "sent") : "not-sent: " + (r.reason || "");
+
+  // ผลของ Telegram ใช้คีย์ = ชื่อโรงงาน (หน้าจอเดิมอ่านแบบนี้) · งานตามเวลาที่มีหลายหัวข้อ ใช้ <โรงงาน>_<หัวข้อ> / expiry
+  const keyOf = (e) => manual || e.topic === "plan" ? e.module : e.topic === "expiry" ? "expiry" : e.module + "_" + e.topic;
+  const L = await lineConfig(c);
+  const lineReady = !!L.token && L.groups.some((g) => g.on);
+  const out = {}, preview = {}, previewBy = {};
+  for (const ch of channels) {
+    const s = sch[ch], mine = topicsFor(ch);
+    const lineMsgs = [], lineSigs = [];
+    previewBy[ch] = [];
+    for (const e of entries) {
+      if (mine.indexOf(e.topic) < 0) continue;
+      const k = keyOf(e), sk = sigKey(e.topic, e.module, ch);
+      if (!e.has) {   // ไม่มีรายการแล้ว → ลืมลายเซ็น รอบหน้าที่มีรายการจะได้ส่งทันที
+        if (!o.dry && await kvGet(c, sk)) await kvPut(c, sk, "", 60 * 86400);
+        if (ch === "tg") out[k] = "none";
+        continue;
+      }
+      const msg = e.msg(s.detail);
+      if (o.dry) { previewBy[ch].push(msg); if (ch === "tg") { preview[k] = msg; out[k] = "preview"; } continue; }
+      if (!s.on) { if (ch === "tg") out[k] = "off"; continue; }
+      if (!topicDue(s, o.force, await kvGet(c, sk), e.sig, dow)) { if (ch === "tg") out[k] = "same"; continue; }
+      if (ch === "tg") {
+        const r = await tgSendRaw(c, msg, true);
+        if (r && r.sent) await kvPut(c, sk, e.sig, 60 * 86400);
+        else if (r && r.reason !== "disabled") await sysLog(c, "telegram-error", e.topic + " digest: " + (r && r.reason), "-", "failed");
+        out[k] = r && r.sent ? "sent" : "not-sent: " + ((r && r.reason) || "");
+      } else { lineMsgs.push(msg); lineSigs.push([sk, e.sig]); }
+    }
+    if (ch !== "line") continue;
+    // LINE: ทุกข้อความรวมเป็นคำขอเดียว — โควตานับครั้งเดียวต่อสมาชิก ไม่ว่ากี่กล่อง
+    if (o.dry) {
+      out.line = !L.token ? "not-configured" : !lineReady ? "no-group" : !s.on ? "off" : "preview";
+      previewBy.line = packTexts(previewBy.line);
+      const st = lineReady && previewBy.line.length ? await lineStatus(c) : null;
+      preview.line = st ? { groups: st.groups.filter((g) => g.on).map((g) => ({ name: g.name, members: g.members })), quota: st.quota } : null;
+    } else if (!L.token) out.line = "not-configured";
+    else if (!lineReady) out.line = "no-group";
+    else if (!s.on) out.line = "off";
+    else if (!lineMsgs.length) out.line = "same";
+    else {
+      const r = await lineSend(c, packTexts(lineMsgs), { what: manual ? o.what : "schedule" });
+      if (r.sent) for (const [k, sg] of lineSigs) await kvPut(c, k, sg, 60 * 86400);
+      out.line = r.sent ? (r.reason ? "partial: " + r.reason : "sent") : "not-sent: " + (r.reason || "");
+    }
   }
-  return o.dry ? { ok: true, status: "success", result: out, preview } : { ok: true, status: "success", result: out };
+  return o.dry ? { ok: true, status: "success", result: out, preview, previewBy } : { ok: true, status: "success", result: out };
 }
 /** action PLANDIGEST — คนกดส่งรายการที่ต้องสั่งเข้ากลุ่มเอง (Telegram + LINE · manager ขึ้นไป) · send ไม่ใช่ true = ดูตัวอย่างข้อความ */
 export async function planDigestNow(c, data, module) {
@@ -359,6 +463,16 @@ export async function planDigestNow(c, data, module) {
   const r = await planDigest(c, { force: true, modules: mods, dry: data.send !== true, what });
   if (data.send === true) await sysLog(c, what === "stale" ? "stale-digest" : "plan-digest", mods.join(",") + " → " + JSON.stringify(r.result), data.user || c.user || "-", "ok");
   return r;
+}
+/** action NOTIFYPREVIEW (admin) — ตัวอย่างข้อความของช่องเดียว ด้วยค่าที่หน้าตั้งค่ากำลังแก้ (ยังไม่บันทึก) */
+export async function notifyPreview(c, p) {
+  const ch = p && p.channel === "line" ? "line" : "tg";
+  const cur = await notifySchedule(c);
+  const sch = { tg: cur.tg, line: cur.line };
+  if (p && p[ch] && typeof p[ch] === "object") sch[ch] = normSchedule(p[ch], cur[ch]);
+  const r = await planDigest(c, { dry: true, channels: [ch], schedule: sch });
+  return { ok: true, status: "success", channel: ch, texts: r.previewBy[ch] || [], line: ch === "line" ? { state: r.result.line, target: r.preview.line } : null,
+           text: describeSchedule(sch[ch]) };
 }
 
 export { STATUS_TEXT, STATUS_ICON, isoToThai };

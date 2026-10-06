@@ -1,10 +1,11 @@
-// งานระบบ: สถานะ · ความเคลื่อนไหวข้ามคลัง · ประวัติของฉัน · แจ้งเตือนหมดอายุ · สำรองข้อมูล · ส่งออกไปชีต · งานตามเวลา
+// งานระบบ: สถานะ · ความเคลื่อนไหวข้ามคลัง · ประวัติของฉัน · สำรองข้อมูล · ส่งออกไปชีต · งานตามเวลา
 // (วิเคราะห์การเบิก/วางแผนสั่งซื้ออยู่ที่ plan.js)
-import { all, first, run, kvGet, kvPut, kvDel, claim, sysLogOnce, nowIso, fmtTH, dayTH, formatCellDate, thaiMidnightMs, superAdminName, tgSettings, tgSendRaw,
+import { all, first, run, kvGet, kvPut, kvDel, claim, sysLogOnce, nowIso, fmtTH, dayTH, formatCellDate, superAdminName,
          tgFlushQueue, tgPendingCount, sysLog, sysLast, TZ_MS, DAY_MS } from "./lib.js";
 import { getTokenData, verifyAdminToken } from "./auth.js";
 import { archiveOldStock } from "./cold.js";
 import { planDigest } from "./plan.js";
+import { notifySchedule, channelsDue } from "./notify.js";
 
 // ───────────── สถานะระบบ (manager ขึ้นไป) ─────────────
 export async function sysStatus(c) {
@@ -91,49 +92,7 @@ export async function getMyHistory(c, payload, data) {
   return { ok: true, username, rows, summary: count };
 }
 
-// ───────────── ⏰ แจ้งเตือนวันหมดอายุวัตถุดิบ (งานตามเวลา วันละครั้งช่วงเช้า) ─────────────
-export async function checkExpiryAlerts(c) {
-  const s = await tgSettings(c);
-  if (!String(s.telegramBotToken || "").trim() || !String(s.telegramChatIds || "").trim()) return { ok: true, skipped: "no telegram" };
-  const now = Date.now(), todayKey = fmtTH(now, "yyyyMMdd");
-  const expired = [], warning = [];
-  for (const mod of ["SQF", "MLM"]) {
-    for (const m of await all(c, "SELECT sku, name, expiry_date, alert_days FROM materials WHERE module = ? AND discontinued = 0 ORDER BY seq, rowid", mod)) {
-      const expRaw = String(m.expiry_date || "").trim();
-      if (!expRaw) continue;
-      const name_ = String(m.name || "").trim(), sku_ = String(m.sku || "").trim();
-      const alertDays_ = Number(m.alert_days) || 7;
-      // รองรับ dd/mm/yyyy และ yyyy-mm-dd → เที่ยงคืนเวลาไทยของวันนั้น
-      let y, mo, d;
-      if (/^\d{2}\/\d{2}\/\d{4}$/.test(expRaw)) { const p = expRaw.split("/"); d = +p[0]; mo = +p[1]; y = +p[2]; }
-      else if (/^\d{4}-\d{2}-\d{2}/.test(expRaw)) { const p2 = expRaw.slice(0, 10).split("-"); y = +p2[0]; mo = +p2[1]; d = +p2[2]; }
-      else continue;
-      if (y > 2400) y -= 543;                       // ปี พ.ศ. ที่พิมพ์มาตรงๆ
-      const expMs = thaiMidnightMs(y, mo, d);
-      if (isNaN(expMs)) continue;
-      const daysLeft = Math.round((expMs - now) / DAY_MS);
-      if (daysLeft > alertDays_ || daysLeft < -30) continue;
-      // กันแจ้งซ้ำรายวัน
-      const safeId = (sku_ || name_).replace(/[^A-Za-z0-9฀-๿]/g, "_").slice(0, 40);
-      if (!(await claim(c, "expd_" + todayKey + "_" + mod + "_" + safeId, 2 * 86400))) continue;
-      const expThai = String(d).padStart(2, "0") + "/" + String(mo).padStart(2, "0") + "/" + (y + 543);
-      const entry = (mod === "SQF" ? "🏭SQF" : "🏭MLM") + " " + name_ + (sku_ ? " (" + sku_ + ")" : "") + "  •  หมดอายุ " + expThai;
-      if (daysLeft < 0) expired.push("❌ " + entry + "  (เกินมาแล้ว " + Math.abs(daysLeft) + " วัน)");
-      else warning.push("⚠️ " + entry + "  (เหลือ " + daysLeft + " วัน)");
-    }
-  }
-  if (!expired.length && !warning.length) return { ok: true, sent: 0 };
-  const total = expired.length + warning.length;
-  let summary = "พบ " + total + " รายการ";
-  if (expired.length) summary += "  •  ❌ หมดอายุแล้ว " + expired.length + " รายการ";
-  if (warning.length) summary += "  •  ⚠️ ใกล้หมด " + warning.length + " รายการ";
-  let msg = "⏰ แจ้งเตือนวันหมดอายุวัตถุดิบ\n" + fmtTH(now, "dd/MM/yyyy HH:mm") + "\n" + summary + "\n";
-  if (expired.length) msg += "\n" + expired.join("\n");
-  if (warning.length) msg += "\n" + warning.join("\n");
-  msg += "\n\nกรุณาตรวจสอบและจัดการโดยด่วน";
-  const r = await tgSendRaw(c, msg, true);
-  return { ok: true, sent: total, telegram: r };
-}
+// ⏰ แจ้งเตือนวันหมดอายุ ย้ายไปเป็นหัวข้อ "ใกล้หมดอายุ" ในสรุปเข้ากลุ่ม (plan.js · ตั้งวัน/เวลา/ช่องได้ใน notify.js)
 
 // ───────────── ส่งออก: สำเนาไปชีต (อ่านอย่างเดียว) และสำรองข้อมูลเต็ม ─────────────
 // สำเนาในชีตใช้ "หัวคอลัมน์แบบเดิม" ทุกแท็บ — เจ้าของ/ออดิเตอร์เปิดดูได้เหมือนก่อนย้าย และถอยกลับไปหลังบ้านเดิมได้
@@ -253,12 +212,17 @@ export async function ticks(c, via) {
   const day = th.toISOString().slice(0, 10), hh = th.getUTCHours(), dow = th.getUTCDay();
   await kvPut(c, "cron_last", fmtTH(Date.now(), "dd/MM/yyyy HH:mm") + " " + via, 7 * 86400);
   try { await tgFlushQueue(c); } catch (e) {}
-  // 08:00–08:59: แจ้งเตือนวันหมดอายุ + สำรองข้อมูลประจำวัน + สรุปวัตถุดิบที่ต้องสั่ง (ครั้งเดียวต่อวัน)
+  // 08:00–08:59: สำรองข้อมูลประจำวัน (ครั้งเดียวต่อวัน)
   if (hh === 8 && await claim(c, "tick_morning_" + day, 2 * 86400)) {
-    try { await checkExpiryAlerts(c); } catch (e) { await sysLog(c, "cron-error", "checkExpiryAlerts: " + e, "-", "error"); }
     try { await backupAll(c, "daily", "ระบบ"); } catch (e) {}
-    try { await planDigest(c); } catch (e) { await sysLog(c, "cron-error", "planDigest: " + e, "-", "error"); }
   }
+  // สรุปเข้ากลุ่มตามวัน/เวลาที่ตั้งไว้ แยก Telegram / LINE (⚙️ ตั้งค่าการแจ้งเตือน → กำหนดการส่งสรุป · notify.js) — ช่องละครั้งต่อวัน
+  try {
+    for (const ch of channelsDue(await notifySchedule(c), dow, hh)) {
+      if (!(await claim(c, "tick_digest_" + ch + "_" + day, 2 * 86400))) continue;
+      try { await planDigest(c, { channels: [ch] }); } catch (e) { await sysLog(c, "cron-error", "planDigest(" + ch + "): " + e, "-", "error"); }
+    }
+  } catch (e) { await sysLogOnce(c, "cron-error", "notifySchedule: " + e, 3600); }
   // อาทิตย์ 02:00–02:59: เก็บถาวรล็อตที่หมดแล้ว
   if (dow === 0 && hh === 2 && await claim(c, "tick_archive_" + day, 2 * 86400)) {
     try { await archiveOldStock(c, {}); } catch (e) { await sysLog(c, "cron-error", "archiveOldStock: " + e, "-", "error"); }

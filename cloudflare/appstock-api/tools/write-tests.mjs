@@ -456,7 +456,8 @@ console.log("11) LINE กลุ่ม — ตั้งค่า / webhook / ส�
     const pushes = calls.filter((x) => x.url === "/v2/bot/message/push");
     T("กดส่ง → push เข้าเฉพาะกลุ่มที่เปิด (G1) 1 ครั้ง", sd.result.line === "sent" && pushes.length === 1 && pushes[0].body.to === "G1", [sd.result, pushes.map((p) => p.body.to)]);
     T("ข้อความ LINE = ข้อความเดียวกับ Telegram + มี retry key กันส่งซ้ำ", pushes[0] && /วัตถุดิบที่ต้องสั่งซื้อ/.test(pushes[0].body.messages[0].text) && pushes[0].body.messages.length === 1 && /^[0-9a-f-]{36}$/.test(pushes[0].retryKey), pushes[0] && pushes[0].retryKey);
-    T("ค่าเริ่มต้นหลังลบการตั้งค่า = ส่งทุกครั้งที่รายการเปลี่ยน", (await lsys("LINESTATUS")).mode === "change");
+    const stD = await lsys("LINESTATUS");
+    T("สถานะ LINE บอกกำหนดการส่ง (เปิดอยู่ + วัน/เวลา)", stD.mode === "on" && /\d{2}:00/.test(stD.scheduleText || ""), [stD.mode, stD.scheduleText]);
 
     await lsys("LINESAVE", { groupsOn: ["G1", "G2"] });
     calls.length = 0;

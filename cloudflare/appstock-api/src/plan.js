@@ -307,7 +307,7 @@ async function expiryList(c, modules, crOv) {
       if (y > 2400) y -= 543;                       // ปี พ.ศ. ที่พิมพ์มาตรงๆ
       const expMs = thaiMidnightMs(y, mo, d);
       if (isNaN(expMs)) continue;
-      const days = Math.round((expMs - now) / DAY_MS);
+      const days = Math.round((expMs - today) / DAY_MS);
       if (days > (Number(m.alert_days) || 7) || days < -30) continue;
       const name = String(m.name || "").trim(), sku = String(m.sku || "").trim();
       out.push({ mod, key: mod + ":" + (sku || name), name, sku, days,

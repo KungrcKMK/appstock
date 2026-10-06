@@ -641,5 +641,47 @@ console.log("13) ⏰ ห้องเย็น — ล็อตที่ไม่
   T("เก็บกวาดล็อตทดสอบ + คืนค่าเดิม", !mine(await cr("getStartupOverview", {})).length && (await post({ module: "SQF", action: "USAGEPLAN", sessionToken: tok })).saved.staleDays === s0.staleDays);
 }
 
+console.log("14) 🗓️ กำหนดการส่งสรุป — วัน / เวลา / หัวข้อ / ย่อ-ละเอียด แยก Telegram กับ LINE");
+{
+  const ns = (action, extra, token = atok) => post(Object.assign({ module: "SYSTEM", action, sessionToken: token }, extra || {}));
+  const g0 = await ns("NOTIFYGET", {}, tok);
+  T("ทุกคนอ่านกำหนดการได้ (หน้าวางแผนสั่งซื้อโชว์ให้รู้) + มีคำอธิบายภาษาคน", g0.status === "success" && g0.schedule.tg && g0.schedule.line && typeof g0.text.tg === "string", g0.text);
+  T("ผู้ใช้ทั่วไป / หัวหน้า ตั้งกำหนดการไม่ได้ (admin เท่านั้น)", (await ns("NOTIFYSET", { tg: { hour: 9 } }, tok)).status === "error" &&
+    (await ns("NOTIFYSET", { tg: { hour: 9 } }, await login("นุ่น").catch(() => tok))).status === "error" && (await ns("NOTIFYPREVIEW", { channel: "tg" }, tok)).status === "error");
+  T("ไม่ส่งค่ามาเลย → ปฏิเสธ", (await ns("NOTIFYSET", {})).status === "error");
+  const s1 = await ns("NOTIFYSET", { tg: { on: true, days: [5, "1", 1, 9, -1, "x"], hour: 7, topics: { plan: true, low: true, stale: false, expiry: true }, detail: "short", when: "always" } });
+  T("บันทึก Telegram: วันซ้ำ/ผิดถูกกรองทิ้ง + เรียงวัน · ช่อง LINE ไม่ถูกแตะ", s1.status === "success" && s1.schedule.tg.days.join() === "1,5" && s1.schedule.tg.hour === 7 &&
+    s1.schedule.tg.detail === "short" && s1.schedule.tg.when === "always" && s1.schedule.tg.topics.low === true && JSON.stringify(s1.schedule.line) === JSON.stringify(g0.schedule.line), s1.schedule);
+  T("คำอธิบายภาษาคนตรงกับที่ตั้ง", /จ ศ 07:00/.test(s1.text.tg) && /ส่งทุกครั้ง/.test(s1.text.tg) && /แบบย่อ/.test(s1.text.tg), s1.text.tg);
+  const s2 = await ns("NOTIFYSET", { tg: { hour: 30, detail: "huge", when: "sometimes", days: "จันทร์" } });
+  T("ค่าแปลกปลอม → คงค่าเดิมทุกช่อง ไม่พัง", s2.status === "success" && s2.schedule.tg.hour === 7 && s2.schedule.tg.detail === "short" && s2.schedule.tg.when === "always" && s2.schedule.tg.days.join() === "1,5", s2.schedule.tg);
+
+  // ตัวอย่างข้อความ: แบบย่อ vs ละเอียด (ใช้ค่าที่ยังไม่บันทึก)
+  const onlyPlan = { plan: true, low: false, stale: false, expiry: false };
+  const full = await ns("NOTIFYPREVIEW", { channel: "tg", tg: { topics: onlyPlan, detail: "full" } });
+  const short = await ns("NOTIFYPREVIEW", { channel: "tg", tg: { topics: onlyPlan, detail: "short" } });
+  const fP = (full.texts || []).find((t) => /วัตถุดิบที่ต้องสั่งซื้อ/.test(t)), sP = (short.texts || []).find((t) => /วัตถุดิบที่ต้องสั่งซื้อ/.test(t));
+  T("ดูตัวอย่างแบบละเอียด → มีตัวเลข + บรรทัดวิธีดูต่อ", fP && /เหลือ/.test(fP) && /เปิดแอป → 📈 วางแผนสั่งซื้อ/.test(fP), fP && fP.slice(0, 160));
+  T("ดูตัวอย่างแบบย่อ → สั้นกว่า ไม่เกิน 5 รายการ ไม่มีบรรทัดวิธีดู", sP && sP.length < fP.length && !/เปิดแอป/.test(sP) && sP.split("\n").filter((l) => /^(🔴|🟠)/u.test(l)).length <= 5, sP);
+  T("ดูตัวอย่างไม่ไปแตะค่าที่บันทึกไว้", (await ns("NOTIFYGET")).schedule.tg.detail === "short");
+  const none = await ns("NOTIFYPREVIEW", { channel: "tg", tg: { topics: { plan: false, low: false, stale: false, expiry: false } } });
+  T("ไม่เลือกหัวข้อเลย → ไม่มีอะไรจะส่ง", none.status === "success" && none.texts.length === 0, none.texts);
+
+  // หัวข้อต่ำกว่าจุดสั่งซื้อ + ใกล้หมดอายุ (สร้างของทดสอบ แล้วลบทิ้ง)
+  const skL = "NTFL" + Date.now(), skE = "NTFE" + Date.now();
+  const th = new Date(Date.now() + 7 * 3600000 + 3 * 86400000);
+  const exp3 = String(th.getUTCDate()).padStart(2, "0") + "/" + String(th.getUTCMonth() + 1).padStart(2, "0") + "/" + th.getUTCFullYear();
+  await raw("CREATE", { sku: skL, name: "ต่ำกว่าจุด " + skL, unit: "ถุง", qty: 2, min: 10, dailyUsage: 0 });
+  await raw("CREATE", { sku: skE, name: "ใกล้หมดอายุ " + skE, unit: "ขวด", qty: 5, min: 0, dailyUsage: 0, expiryDate: exp3, alertDays: 7 });
+  const lowEx = await ns("NOTIFYPREVIEW", { channel: "tg", tg: { topics: { plan: false, low: true, stale: false, expiry: true }, detail: "full" } });
+  const lowT = (lowEx.texts || []).find((t) => /ต่ำกว่าจุดสั่งซื้อ — 🏭 วัตถุดิบ SQF/.test(t)), expT = (lowEx.texts || []).find((t) => /แจ้งเตือนวันหมดอายุ/.test(t));
+  T("หัวข้อต่ำกว่าจุดสั่งซื้อ → เห็นของที่เหลือต่ำกว่า Min พร้อมจุดสั่งซื้อ", lowT && lowT.includes("ต่ำกว่าจุด " + skL) && /จุดสั่งซื้อ 10/.test(lowT), lowT && lowT.slice(0, 200));
+  T("หัวข้อใกล้หมดอายุ → เห็นของที่จะหมดใน 3 วัน (นับเวลาไทย)", expT && expT.includes("ใกล้หมดอายุ " + skE) && /เหลือ 3 วัน/.test(expT), expT && expT.slice(0, 300));
+  await raw("DELETE", { sku: skL }); await raw("DELETE", { sku: skE });
+
+  const back = await ns("NOTIFYSET", { tg: g0.schedule.tg, line: g0.schedule.line });
+  T("คืนกำหนดการเดิม", back.status === "success" && JSON.stringify(back.schedule) === JSON.stringify(g0.schedule), back.schedule);
+}
+
 console.log(`\nสรุป: ผ่าน ${pass} · ไม่ผ่าน ${fail}`);
 process.exit(fail ? 1 : 0);

@@ -439,6 +439,7 @@ console.log("11) LINE กลุ่ม — ตั้งค่า / webhook / ส�
     T("กลุ่มแรกถูกจำ + เปิดส่งให้เลย + รู้ชื่อกลุ่ม/จำนวนสมาชิก", g1 && g1.on === true && g1.name === "ฝ่ายจัดซื้อ" && g1.members === 7, st.groups);
     const rep1 = calls.find((x) => x.url === "/v2/bot/message/reply");
     T("ตอบในกลุ่มว่าเชื่อมแล้ว (ใช้ reply = ไม่เสียโควตา)", rep1 && rep1.body.replyToken === "rt-G1" && /เชื่อมกลุ่มนี้/.test(rep1.body.messages[0].text), rep1 && rep1.body);
+    T("ข้อความตอบบอกวัน/เวลาที่จะส่งตามกำหนดการจริง", rep1 && /\d{2}:00/.test(rep1.body.messages[0].text), rep1 && rep1.body.messages[0].text);
     calls.length = 0;
     await hook([joinEv("G2")]);
     st = await lsys("LINESTATUS");

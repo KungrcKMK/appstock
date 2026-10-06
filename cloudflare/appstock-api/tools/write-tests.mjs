@@ -509,11 +509,21 @@ console.log("11) LINE กลุ่ม — ตั้งค่า / webhook / ส�
     await hook([{ type: "leave", source: { type: "group", groupId: "G2" }, timestamp: Date.now() }]);
     T("บอทถูกเอาออกจากกลุ่ม → ลบกลุ่มนั้นออกเอง", !(await lsys("LINESTATUS")).groups.some((g) => g.id === "G2"));
 
-    // กติกาความถี่ (งานตามเวลาตอนเช้าใช้ฟังก์ชันเดียวกัน)
-    T("ความถี่: change ส่งเมื่อรายการเปลี่ยน / ไม่เปลี่ยนไม่ส่ง / จันทร์ส่งเสมอ",
-      lineDue("change", false, "a", "b", false) === true && lineDue("change", false, "a", "a", false) === false && lineDue("change", false, "a", "a", true) === true);
-    T("ความถี่: monday ส่งเฉพาะวันจันทร์ · off ไม่ส่งแม้กดเอง · กดเองส่งเสมอ",
-      lineDue("monday", false, "a", "b", false) === false && lineDue("monday", false, "a", "a", true) === true && lineDue("off", true, "a", "b", true) === false && lineDue("change", true, "a", "a", false) === true);
+    // กติกาความถี่ (งานตามเวลาใช้ฟังก์ชันเดียวกัน · 0 = อาทิตย์ 1 = จันทร์)
+    const every = { on: true, days: [0, 1, 2, 3, 4, 5, 6], hour: 8, when: "change" };
+    T("เฉพาะตอนเปลี่ยน: รายการเปลี่ยน → ส่ง · เดิม → ไม่ส่ง · วันจันทร์ทวนซ้ำ",
+      topicDue(every, false, "a", "b", 3) === true && topicDue(every, false, "a", "a", 3) === false && topicDue(every, false, "a", "a", 1) === true);
+    const tueThu = { on: true, days: [2, 4], hour: 8, when: "change" };
+    T("เลือก อ. พฤ. → วันทวนซ้ำ = อังคาร (วันแรกของสัปดาห์ที่เลือก)", reminderDow(tueThu) === 2 && topicDue(tueThu, false, "a", "a", 2) === true && topicDue(tueThu, false, "a", "a", 4) === false);
+    T("ส่งทุกครั้ง: รายการเดิมก็ส่ง · กดส่งเองส่งเสมอ", topicDue(Object.assign({}, every, { when: "always" }), false, "a", "a", 3) === true && topicDue(every, true, "a", "a", 3) === true);
+    const sch2 = { tg: { on: true, days: [1, 2, 3, 4, 5], hour: 7 }, line: { on: true, days: [1], hour: 8 } };
+    T("ถึงเวลาส่งของแต่ละช่อง: ตรงวัน + ตรงชั่วโมง เท่านั้น",
+      channelsDue(sch2, 1, 7).join() === "tg" && channelsDue(sch2, 1, 8).join() === "line" && channelsDue(sch2, 0, 7).length === 0 &&
+      channelsDue({ tg: Object.assign({}, sch2.tg, { on: false }), line: sch2.line }, 1, 7).length === 0);
+    const big = Array.from({ length: 8 }, (_, i) => "ข้อความ " + i + " " + "x".repeat(900));
+    const packed = packTexts(big);
+    T("LINE เกิน 5 ข้อความ → รวมให้ไม่เกิน 5 กล่อง ไม่มีข้อความหาย", packed.length <= 5 && big.every((m) => packed.some((p) => p.includes(m))) && packed.every((p) => p.length <= 4900), packed.map((p) => p.length));
+    T("ไม่เกิน 5 ข้อความ → กล่องละข้อความเหมือนเดิม · ข้อความยาวเกินถูกตัดให้พอดี", packTexts(["a", "b"]).length === 2 && packTexts(["y".repeat(9000)])[0].length <= 4900);
 
     await lsys("LINESAVE", { clear: true });
     T("ลบการตั้งค่า LINE ทั้งหมดได้", (await lsys("LINESTATUS")).tokenSet === false);

@@ -6,15 +6,16 @@
 //     → LINE ส่งเหตุการณ์ "join" มา เราจำรหัสกลุ่มไว้ให้เอง (ไม่ต้องหารหัสกลุ่มด้วยมือ) และตอบกลับในกลุ่ม (ตอบกลับไม่เสียโควตา)
 //
 // 💰 โควตา: LINE นับ "ต่อสมาชิกในกลุ่ม" — ส่ง 1 ครั้งเข้ากลุ่ม 10 คน = ใช้ 10 ข้อความ (แพ็กเกจฟรีไทย 300 ข้อความ/เดือน)
-//   จึงส่งเข้า LINE เฉพาะสรุปตอนเช้า (ที่ต้องสั่ง + ไม่อัปเดตเกินกำหนด · ไม่ส่งทุกการเบิก/รับ) และรวม SQF + MLM ไว้ในคำขอเดียว (หลายกล่องข้อความนับเป็นครั้งเดียว)
+//   จึงส่งเข้า LINE เฉพาะสรุป (ไม่ส่งทุกการเบิก/รับ) และรวมทุกหัวข้อทุกโรงงานไว้ในคำขอเดียว (หลายกล่องข้อความนับเป็นครั้งเดียว)
+//   วัน / เวลา / หัวข้อ / ย่อ-ละเอียด ของ LINE ตั้งแยกจาก Telegram ได้ (notify.js)
 //
 // ความปลอดภัย
 //   · ทุกคำขอจาก LINE ตรวจลายเซ็น (HMAC-SHA256 ด้วย Channel secret) — ปลอมไม่ได้
 //   · กลุ่มแรกที่เชิญบอทเปิดส่งให้เลย · กลุ่มถัดไปต้องให้แอดมินติ๊กเปิดในแอป (กันคนนอกที่รู้ ID บอทดึงข้อมูลสต๊อกไปกลุ่มตัวเอง)
 //   · token/secret ไม่ถูกส่งกลับไปที่หน้าจอเลย — หน้าจอเห็นแค่ "ตั้งไว้แล้ว ••••ท้าย 4 ตัว"
 import { getCfg, cfgGet, cfgSet, kvGet, kvPut, nowIso, maskNames, sysLog, uuid } from "./lib.js";
+import { notifySchedule, describeSchedule } from "./notify.js";
 
-const LINE_MODES = ["change", "monday", "off"];   // ทุกครั้งที่รายการเปลี่ยน / เฉพาะวันจันทร์ / ไม่ส่ง
 const apiBase = (c) => String(c.env.LINE_API || "https://api.line.me").replace(/\/+$/, "");
 // เครื่องทดสอบ (มี TG_DISABLED) ห้ามยิงหา LINE จริง — ต้องชี้ LINE_API ไปที่ตัวจำลองเท่านั้น
 const lineBlocked = (c) => !!(c.env.TG_DISABLED && !c.env.LINE_API);
@@ -25,9 +26,8 @@ export async function lineConfig(c) {
   let groups = [];
   try { groups = JSON.parse(m.lineGroups || "[]"); } catch (e) { groups = []; }
   if (!Array.isArray(groups)) groups = [];
-  const mode = LINE_MODES.indexOf(m.lineDigestMode) >= 0 ? m.lineDigestMode : "change";
   return { token: String(m.lineChannelToken || "").trim(), secret: String(m.lineChannelSecret || "").trim(),
-           botName: String(m.lineBotName || ""), groups, mode };
+           botName: String(m.lineBotName || ""), groups };
 }
 async function saveGroups(c, groups) { await cfgSet(c, "lineGroups", JSON.stringify(groups)); }
 
@@ -150,9 +150,9 @@ export async function lineWebhook(c, request) {
 // ───────────── หน้าตั้งค่า (admin) ─────────────
 /** action LINESTATUS — สถานะทั้งหมดสำหรับหน้าตั้งค่า (ไม่มี token/secret ตัวจริง) */
 export async function lineStatus(c) {
-  const L = await lineConfig(c);
+  const L = await lineConfig(c), sch = (await notifySchedule(c)).line;
   const out = { ok: true, status: "success", tokenSet: !!L.token, tokenTail: tail4(L.token), secretSet: !!L.secret, secretTail: tail4(L.secret),
-                botName: L.botName, mode: L.mode, groups: [], quota: null, last: null, webhookPath: "/line-webhook" };
+                botName: L.botName, mode: sch.on ? "on" : "off", scheduleText: describeSchedule(sch), groups: [], quota: null, last: null, webhookPath: "/line-webhook" };
   try { const v = await kvGet(c, "line_last"); if (v) out.last = JSON.parse(v); } catch (e) {}
   if (!L.token) { out.groups = L.groups.map((g) => ({ id: g.id, name: g.name, on: !!g.on, members: null })); return out; }
   const [q, used] = await Promise.all([
@@ -168,7 +168,8 @@ export async function lineStatus(c) {
   return out;
 }
 
-/** action LINESAVE — ช่อง token/secret เว้นว่าง = ใช้ค่าเดิม · clear: true = ลบการตั้งค่า LINE ทั้งหมด */
+/** action LINESAVE — ช่อง token/secret เว้นว่าง = ใช้ค่าเดิม · clear: true = ลบการตั้งค่า LINE ทั้งหมด
+ *  (ช่อง mode ของหน้าจอรุ่นก่อนไม่มีผลแล้ว — วัน/ความถี่ตั้งที่ NOTIFYSET · ไม่ปฏิเสธ ให้หน้าจอที่ยังค้างรุ่นเก่าบันทึก token ได้) */
 export async function lineSave(c, p) {
   if (p.clear === true) {
     for (const k of ["lineChannelToken", "lineChannelSecret", "lineBotName", "lineGroups", "lineDigestMode"]) await cfgSet(c, k, "");
@@ -189,22 +190,18 @@ export async function lineSave(c, p) {
     if (!/^[0-9a-f]{32}$/i.test(secret)) return { ok: false, status: "error", message: "Channel secret ต้องเป็นตัวอักษร 0-9 a-f ยาว 32 ตัว — คัดลอกจากแท็บ Basic settings" };
     await cfgSet(c, "lineChannelSecret", secret);
   }
-  if (p.mode !== undefined) {
-    if (LINE_MODES.indexOf(p.mode) < 0) return { ok: false, status: "error", message: "รูปแบบการส่งไม่ถูกต้อง" };
-    await cfgSet(c, "lineDigestMode", p.mode);
-  }
   if (Array.isArray(p.groupsOn)) {
     const on = p.groupsOn.map(String);
     await saveGroups(c, L.groups.map((g) => Object.assign({}, g, { on: on.indexOf(g.id) >= 0 })));
   }
-  await sysLog(c, "line-settings", [token ? "token ใหม่" : "", secret ? "secret ใหม่" : "", p.mode ? "ส่ง: " + p.mode : "",
+  await sysLog(c, "line-settings", [token ? "token ใหม่" : "", secret ? "secret ใหม่" : "",
     Array.isArray(p.groupsOn) ? "เปิด " + p.groupsOn.length + " กลุ่ม" : ""].filter(Boolean).join(" · "), p.user || c.user || "-", "ok");
   return { ok: true, status: "success", botName: await cfgGet(c, "lineBotName") };
 }
 
 /** action LINETEST — ส่งข้อความทดสอบเข้ากลุ่มที่เปิดไว้ (ใช้โควตาเท่าจำนวนสมาชิก) */
 export async function lineTest(c, p) {
-  const r = await lineSend(c, ["✅ ทดสอบส่งจากระบบสต๊อก\nถ้าเห็นข้อความนี้ = สรุปวัตถุดิบที่ต้องสั่งซื้อจะเข้ากลุ่มนี้ได้\n👤 " + (p.user || c.user || "-")], { what: "test" });
+  const r = await lineSend(c, ["✅ ทดสอบส่งจากระบบสต๊อก\nถ้าเห็นข้อความนี้ = สรุปสต๊อกจะเข้ากลุ่มนี้ได้\n👤 " + (p.user || c.user || "-")], { what: "test" });
   if (r.reason === "not-configured") return { ok: false, status: "error", message: "ยังไม่ได้ใส่ Channel access token" };
   if (r.reason === "no-group") return { ok: false, status: "error", message: "ยังไม่มีกลุ่มที่เปิดส่ง — เชิญบอทเข้ากลุ่มก่อน" };
   return r.sent ? { ok: true, status: "success", sent: r.sent, of: r.of, message: r.reason } : { ok: false, status: "error", message: r.reason || "ส่งไม่สำเร็จ" };

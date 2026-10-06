@@ -341,7 +341,8 @@ function expiryMessage(list, detail) {
  */
 export function packTexts(msgs, max, limit) {
   max = max || 5; limit = limit || 4900;
-  const cut = (t) => t.length > limit ? t.slice(0, limit - 30) + "\n… (ข้อความยาวเกิน ตัดไว้แค่นี้)" : t;
+  const NOTE = "\n… (ข้อความยาวเกิน ตัดไว้แค่นี้)";
+  const cut = (t) => t.length > limit ? t.slice(0, limit - NOTE.length) + NOTE : t;
   if (msgs.length <= max) return msgs.map(cut);
   const SEP = "\n\n━━━━━━━━━━\n\n", out = [];
   for (const m of msgs.map(cut)) {

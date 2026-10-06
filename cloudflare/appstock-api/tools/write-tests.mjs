@@ -662,7 +662,7 @@ console.log("14) 🗓️ กำหนดการส่งสรุป — ว�
   const short = await ns("NOTIFYPREVIEW", { channel: "tg", tg: { topics: onlyPlan, detail: "short" } });
   const fP = (full.texts || []).find((t) => /วัตถุดิบที่ต้องสั่งซื้อ/.test(t)), sP = (short.texts || []).find((t) => /วัตถุดิบที่ต้องสั่งซื้อ/.test(t));
   T("ดูตัวอย่างแบบละเอียด → มีตัวเลข + บรรทัดวิธีดูต่อ", fP && /เหลือ/.test(fP) && /เปิดแอป → 📈 วางแผนสั่งซื้อ/.test(fP), fP && fP.slice(0, 160));
-  T("ดูตัวอย่างแบบย่อ → สั้นกว่า ไม่เกิน 5 รายการ ไม่มีบรรทัดวิธีดู", sP && sP.length < fP.length && !/เปิดแอป/.test(sP) && sP.split("\n").filter((l) => /^(🔴|🟠)/u.test(l)).length <= 5, sP);
+  T("ดูตัวอย่างแบบย่อ → สั้นกว่า ไม่เกิน 5 รายการ ไม่มีบรรทัดวิธีดู", sP && sP.length < fP.length && !/เปิดแอป/.test(sP) && sP.split("\n").filter((l) => /^(🔴|🟠) .+ — /u.test(l)).length <= 5, sP);
   T("ดูตัวอย่างไม่ไปแตะค่าที่บันทึกไว้", (await ns("NOTIFYGET")).schedule.tg.detail === "short");
   const none = await ns("NOTIFYPREVIEW", { channel: "tg", tg: { topics: { plan: false, low: false, stale: false, expiry: false } } });
   T("ไม่เลือกหัวข้อเลย → ไม่มีอะไรจะส่ง", none.status === "success" && none.texts.length === 0, none.texts);

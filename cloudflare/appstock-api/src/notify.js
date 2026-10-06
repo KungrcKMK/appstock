@@ -96,7 +96,7 @@ export function describeSchedule(s) {
   const tp = NOTIFY_TOPICS.filter((t) => s.topics[t]).map((t) => TOPIC_TEXT[t]);
   if (!s.days.length) return "ไม่ส่งตามเวลา (กดส่งเองในหน้าวางแผนสั่งซื้อ)";
   return daysText(s.days) + " " + hourText(s.hour) + " · " + (tp.length ? tp.join(" / ") : "ยังไม่ได้เลือกหัวข้อ") + " · " +
-    (s.when === "always" ? "ส่งทุกครั้ง" : "เฉพาะเมื่อรายการเปลี่ยน (ทวนทุกวัน" + DAY_TH[reminderDow(s)] + ")") + " · " + (s.detail === "short" ? "แบบย่อ" : "แบบละเอียด");
+    (s.when === "always" ? "ส่งทุกครั้ง" : "เฉพาะเมื่อรายการเปลี่ยน (ทวนทุกวัน" + DAY_FULL[reminderDow(s)] + ")") + " · " + (s.detail === "short" ? "แบบย่อ" : "แบบละเอียด");
 }
 
 /** action NOTIFYGET — ค่าปัจจุบัน + คำอธิบาย (หน้าตั้งค่า / หน้าวางแผนสั่งซื้อ) */

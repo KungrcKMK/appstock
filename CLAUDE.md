@@ -66,7 +66,7 @@ frontend (GitHub Pages, vanilla JS) → Cloudflare Worker (`cloudflare/appstock-
 - deploy frontend: `git push` เฉยๆ → GitHub Actions (`.github/workflows/deploy.yml`) ขึ้น GitHub Pages เอง (~30 วิ) · **Netlify ปิดอยู่** (`if: false` ใน workflow)
 - deploy backend: `cd cloudflare/appstock-api && wrangler deploy` · ดู log สด: `wrangler tail`
 - หลังบ้านในเครื่อง: `wrangler dev --port 8791 --local` (ฐานข้อมูลจำลองอยู่ใน `.wrangler/` — ไม่เข้า git)
-  แล้วทดสอบการเขียน 184 เคส: `node tools/write-tests.mjs http://127.0.0.1:8791 ...` (สคริปต์ปฏิเสธ URL ที่ไม่ใช่เครื่องตัวเอง)
+  แล้วทดสอบการเขียน 206 เคส: `node tools/write-tests.mjs http://127.0.0.1:8791 ...` (สคริปต์ปฏิเสธ URL ที่ไม่ใช่เครื่องตัวเอง)
 - แก้โครงตาราง: เพิ่มใน `schema.sql` แล้วรัน `wrangler d1 execute appstock --remote --command "ALTER TABLE ..."` (D1 ไม่มี migration อัตโนมัติในโปรเจกต์นี้)
 - สำเนาลงชีต (GAS): `clasp push -f && clasp deploy -i AKfycbx72vWVvUgaOgZEnzAc8ltaV-a7Rfx_CL9DK1c-B5nAIOxtrlnbi8_b6bmfnDeAZ_xeaw`
   — แตะเฉพาะตอนแก้ตัวดึงสำเนา (`mirrorFromCloud`) · ถอยกลับไป GAS: ตั้ง `MIGRATED_TO_CLOUDFLARE = false` แล้ว deploy

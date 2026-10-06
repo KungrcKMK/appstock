@@ -1,7 +1,7 @@
 // ═════════════════════════════════════════════
 // line.js — 💚 ตั้งค่า LINE กลุ่ม (อยู่ในหน้าต่าง ⚙️ ตั้งค่าการแจ้งเตือน · admin เท่านั้น)
 //
-// ส่งเข้า LINE เฉพาะ "สรุปวัตถุดิบที่ต้องสั่งซื้อ" — LINE นับโควตาตามจำนวนสมาชิกในกลุ่ม
+// ส่งเข้า LINE เฉพาะ "สรุปสต๊อก" ตามกำหนดการส่งสรุป (js/notify.js) — LINE นับโควตาตามจำนวนสมาชิกในกลุ่ม
 // (แพ็กเกจฟรีไทย 300 ข้อความ/เดือน) จึงไม่ส่งทุกการเบิก/รับเหมือน Telegram
 // หลังบ้าน: cloudflare/appstock-api/src/line.js (LINESTATUS / LINESAVE / LINETEST + /line-webhook)
 // token / secret ไม่ถูกส่งกลับมาที่หน้าจอ — เห็นแค่ 4 ตัวท้าย · ช่องเว้นว่าง = ใช้ค่าเดิม
@@ -47,15 +47,15 @@ function lineRender() {
   if (!s || !info) return;
   document.getElementById("lineTokenIn").placeholder = s.tokenSet ? "ตั้งไว้แล้ว " + s.tokenTail + " — เว้นว่าง = ใช้ค่าเดิม" : "วางจากแท็บ Messaging API";
   document.getElementById("lineSecretIn").placeholder = s.secretSet ? "ตั้งไว้แล้ว " + s.secretTail + " — เว้นว่าง = ใช้ค่าเดิม" : "วางจากแท็บ Basic settings (32 ตัว)";
-  document.getElementById("lineModeSel").value = s.mode || "change";
 
   const groupsOn = (s.groups || []).filter(g => g.on);
   const ready = s.tokenSet && s.secretSet && groupsOn.length && s.mode !== "off" && !s.tokenProblem;
-  badge.textContent = ready ? "✅ พร้อมส่ง" : !s.tokenSet ? "ยังไม่ได้ตั้งค่า" : s.tokenProblem ? "⚠️ token มีปัญหา" : !groupsOn.length ? "รอเชิญบอทเข้ากลุ่ม" : s.mode === "off" ? "ปิดการส่ง" : "ตั้งค่าไม่ครบ";
+  badge.textContent = ready ? "✅ พร้อมส่ง" : !s.tokenSet ? "ยังไม่ได้ตั้งค่า" : s.tokenProblem ? "⚠️ token มีปัญหา" : !groupsOn.length ? "รอเชิญบอทเข้ากลุ่ม" : s.mode === "off" ? "ปิดการส่ง (ดูกำหนดการด้านล่าง)" : "ตั้งค่าไม่ครบ";
   badge.className = "text-xs font-black px-3 py-1 rounded-full " + (ready ? "bg-green-600 text-white" : "bg-amber-100 text-amber-800");
 
   const rows = [];
   if (s.botName) rows.push(`<div>🤖 บอท: <b>${escapeHtml(s.botName)}</b></div>`);
+  if (s.scheduleText) rows.push(`<div>🗓️ ส่งตามกำหนด: ${escapeHtml(s.scheduleText)}</div>`);
   if (s.tokenProblem) rows.push(`<div class="font-black" style="color:var(--sq-crit);">⚠️ ${escapeHtml(s.tokenProblem)}</div>`);
   if (s.quota) {
     const lim = s.quota.limited ? s.quota.limit.toLocaleString() : "ไม่จำกัด";
@@ -80,10 +80,11 @@ function lineRender() {
     rows.push(`<div class="text-xs mt-1">${s.last.sent ? "✅" : "⚠️"} ส่งล่าสุด ${escapeHtml(t)}${s.last.sent ? ` · ${s.last.groups}/${s.last.of} กลุ่ม` : ""}${s.last.reason ? " · " + escapeHtml(s.last.reason) : ""}</div>`);
   }
   info.innerHTML = rows.join("") + '<button type="button" onclick="lineLoadStatus()" class="text-xs font-black text-green-800 mt-2">↻ ตรวจใหม่</button>';
+  if (typeof ntfUpdateHints === "function") ntfUpdateHints();   // โควตา LINE ในกำหนดการส่งสรุปใช้จำนวนสมาชิกจากที่นี่
 }
 
 async function lineSaveSettings(btn) {
-  const payload = { action: "LINESAVE", mode: document.getElementById("lineModeSel").value };
+  const payload = { action: "LINESAVE" };
   const token = document.getElementById("lineTokenIn").value.trim();
   const secret = document.getElementById("lineSecretIn").value.trim();
   if (token) payload.token = token;

@@ -641,6 +641,25 @@
       #module-COLDROOM td:last-child { border-bottom:none; }
       #module-COLDROOM td::before { content:attr(data-label);font-weight:700;color:var(--muted);font-size:12px;text-transform:uppercase;float:left;text-align:left; }
     }
+    /* 🗓️ กำหนดการส่งสรุป (js/notify.js) — CSS ล้วน ไม่พึ่ง class Tailwind ใหม่ */
+    .ntf-card{border:2px solid;border-radius:24px;padding:16px;margin-bottom:12px;}
+    .ntf-head{display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:15px;margin-bottom:4px;}
+    .ntf-lbl{font-size:11px;font-weight:900;color:#94a3b8;text-transform:uppercase;letter-spacing:.04em;margin:12px 0 5px;}
+    .ntf-days{display:flex;gap:6px;flex-wrap:wrap;}
+    .ntf-day input{position:absolute;opacity:0;pointer-events:none;}
+    .ntf-day span{display:inline-flex;align-items:center;justify-content:center;min-width:40px;height:36px;padding:0 6px;border-radius:12px;border:2px solid #cbd5e1;background:#fff;font-weight:900;font-size:13px;color:#64748b;cursor:pointer;user-select:none;}
+    .ntf-day input:checked + span{background:#0f172a;border-color:#0f172a;color:#fff;}
+    .ntf-day input:focus-visible + span{outline:3px solid #93c5fd;}
+    .ntf-quick{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px;}
+    .ntf-quick button{font-size:11px;font-weight:900;color:#475569;background:#fff;border:1px solid #cbd5e1;border-radius:999px;padding:3px 10px;}
+    .ntf-col{display:flex;flex-direction:column;gap:5px;}
+    .ntf-opt{display:flex;align-items:center;gap:7px;font-size:13px;font-weight:700;color:#334155;cursor:pointer;}
+    .ntf-opt input{width:16px;height:16px;flex-shrink:0;}
+    .ntf-dim{font-size:11px;font-weight:700;color:#64748b;}
+    .ntf-hint{font-size:12px;color:#475569;margin-top:10px;line-height:1.55;display:flex;flex-direction:column;gap:3px;}
+    .ntf-btn{margin-top:10px;width:100%;background:#fff;border:2px solid #cbd5e1;border-radius:16px;padding:8px;font-size:13px;font-weight:900;color:#334155;}
+    .ntf-btn:hover{border-color:#64748b;}
+    .ntf-pre{white-space:pre-wrap;word-break:break-word;background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:10px;margin-top:6px;font-size:12px;line-height:1.5;max-height:260px;overflow:auto;font-family:inherit;color:#1e293b;}
   </style>
 </head>
 <body class="min-h-screen bg-slate-100">
@@ -730,7 +749,7 @@
             <h3 class="text-base font-black text-green-800 uppercase tracking-wide">💚 LINE กลุ่ม</h3>
             <span id="lineBadge" class="text-xs font-black px-3 py-1 rounded-full bg-amber-100 text-amber-800">กำลังตรวจ…</span>
           </div>
-          <p class="text-xs text-slate-500 font-bold leading-relaxed">ส่งเฉพาะ <b>สรุปวัตถุดิบที่ต้องสั่งซื้อ</b> (ทุกเช้า 08:00 + ปุ่มส่งในหน้าวางแผนสั่งซื้อ) ·
+          <p class="text-xs text-slate-500 font-bold leading-relaxed">ส่งเฉพาะ <b>สรุปสต๊อก</b> ตามวัน/เวลา/หัวข้อใน <b>🗓️ กำหนดการส่งสรุป</b> ด้านล่าง (+ ปุ่มส่งในหน้าวางแผนสั่งซื้อ) ·
             LINE นับโควตา<b>ตามจำนวนสมาชิกในกลุ่ม</b> — แพ็กเกจฟรี 300 ข้อความ/เดือน</p>
           <div id="lineInfo" class="text-sm space-y-1.5"></div>
           <div>
@@ -748,14 +767,6 @@
               <button type="button" onclick="lineCopyWebhook()" class="bg-green-100 text-green-800 px-4 rounded-2xl font-black text-sm hover:bg-green-200">คัดลอก</button>
             </div>
           </div>
-          <div>
-            <label class="text-xs font-black uppercase text-slate-400 mb-1 block">ส่งสรุปที่ต้องสั่งเข้า LINE</label>
-            <select id="lineModeSel" class="w-full bg-white border-2 border-slate-200 p-3 rounded-2xl font-bold outline-none focus:border-green-500 transition-colors text-sm">
-              <option value="change">ทุกครั้งที่รายการเปลี่ยน + ทุกวันจันทร์ (เหมือน Telegram)</option>
-              <option value="monday">สัปดาห์ละครั้ง (วันจันทร์) — ประหยัดโควตา</option>
-              <option value="off">ไม่ส่ง</option>
-            </select>
-          </div>
           <div class="grid grid-cols-2 gap-2">
             <button type="button" onclick="lineSaveSettings(this)" class="bg-green-700 text-white py-3 rounded-2xl font-black hover:bg-green-800 transition-all text-sm">💾 บันทึก LINE</button>
             <button type="button" onclick="lineTestSend(this)" class="bg-green-100 text-green-800 py-3 rounded-2xl font-black hover:bg-green-200 transition-all text-sm">📨 ทดสอบส่ง LINE</button>
@@ -772,6 +783,15 @@
               <li>เชิญบัญชีนี้เข้ากลุ่ม LINE — บอทจะตอบในกลุ่มว่า "เชื่อมแล้ว" แล้วกด <b>ทดสอบส่ง</b></li>
             </ol>
           </details>
+        </div>
+
+        <!-- ─── 🗓️ กำหนดการส่งสรุป (js/notify.js) — วัน / เวลา / หัวข้อ / รูปแบบ ตั้งแยก Telegram กับ LINE ─── -->
+        <div class="bg-white border-2 border-slate-200 rounded-3xl p-5 space-y-4">
+          <h3 class="text-base font-black text-slate-800 uppercase tracking-wide">🗓️ กำหนดการส่งสรุป</h3>
+          <p class="text-xs text-slate-500 font-bold leading-relaxed">เลือกวัน เวลา หัวข้อ และรูปแบบข้อความของแต่ละช่องแยกกัน —
+            LINE นับโควตาตามจำนวนสมาชิก จึงตั้งให้ส่งน้อยวันกว่า Telegram ได้ · กด 👁️ ดูตัวอย่างก่อนบันทึกได้ (ไม่ส่งจริง)</p>
+          <div id="ntfBox"></div>
+          <button type="button" onclick="ntfSave(this)" class="w-full bg-slate-900 text-white py-3 rounded-2xl font-black hover:bg-blue-700 transition-all text-sm">💾 บันทึกกำหนดการส่งสรุป</button>
         </div>
 
         <!-- ─── EMAIL SECTION ─── -->
@@ -1900,6 +1920,7 @@
   <script src="js/rop.js"></script>
   <script src="js/plan.js"></script>
   <script src="js/line.js"></script>
+  <script src="js/notify.js"></script>
 
   <!-- ═══ 📜 ประวัติของฉัน (ทุก role เห็นได้ — เฉพาะรายการของตัวเอง) ═══ -->
   <div id="myHistModal" class="hidden fixed inset-0 bg-black/70 backdrop-blur-sm z-[600] flex items-center justify-center p-4">

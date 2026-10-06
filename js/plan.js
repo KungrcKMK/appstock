@@ -40,6 +40,7 @@ async function openPlanModal() {
   _planFilter = "todo";
   _planData = null;   // กันแผนของอีกโรงงานค้างบนจอระหว่างรอ
   ["planLead", "planSafety", "planCover"].forEach(id => { document.getElementById(id).value = ""; });
+  if (planCanManage()) planLoadNtf();   // ไม่รอ — บรรทัดกำหนดการเติมเองเมื่อได้คำตอบ
   await planLoad(false);
 }
 function closePlanModal() { document.getElementById("planModal").classList.add("hidden"); }
@@ -100,17 +101,22 @@ async function planSaveSettings(btn) {
   finally { if (btn) btn.disabled = false; }
 }
 
-async function planToggleAlert(el) {
-  if (!planCanManage()) return;
-  const on = !!el.checked;
-  el.disabled = true;
+// 🗓️ สรุปเข้ากลุ่มส่งเมื่อไร — ตั้งที่ ⚙️ ตั้งค่าการแจ้งเตือน → กำหนดการส่งสรุป (js/notify.js) · หน้านี้แค่บอกให้รู้
+let _planNtfText = null;
+async function planLoadNtf() {
   try {
-    const r = await rawFetch({ action: "PLANSET", alert: on, user: currentUser });
-    if (r.status !== "success") throw new Error(r.message || "บันทึกไม่สำเร็จ");
-    if (_planData) _planData.saved.alert = on;
-    showToast(on ? "เปิดสรุปตอนเช้าเข้า Telegram แล้ว" : "ปิดสรุปตอนเช้าแล้ว", "success");
-  } catch (e) { el.checked = !on; showToast("บันทึกไม่สำเร็จ: " + (e.message || ""), "error"); }
-  finally { el.disabled = false; }
+    const r = await (await fetch(GAS_URL, { method: "POST", headers: { "Content-Type": "text/plain;charset=utf-8" },
+      body: JSON.stringify({ module: "SYSTEM", action: "NOTIFYGET" }) })).json();
+    if (r && r.status === "success") _planNtfText = r.text;
+  } catch (e) {}
+  const el = document.getElementById("planNtfNote");
+  if (el) el.innerHTML = _planNtfHtml();
+}
+function _planNtfHtml() {
+  if (!_planNtfText) return "🗓️ สรุปเข้ากลุ่ม Telegram / LINE: กำลังโหลดกำหนดการ…";
+  const isAdmin = (localStorage.getItem("unified_stock_role") || "").toLowerCase() === "admin";
+  return `🗓️ <b>สรุปเข้ากลุ่มอัตโนมัติ</b> · Telegram: ${escapeHtml(_planNtfText.tg)} · LINE: ${escapeHtml(_planNtfText.line)}` +
+    (isAdmin ? ` <button class="sq-btn sq-btn-sm" onclick="openUnifiedSettings()">ตั้งวัน/เวลา/รูปแบบ</button>` : " (แอดมินตั้งได้ที่ ⚙️ ตั้งค่าการแจ้งเตือน)");
 }
 
 // ── กรอง ──
@@ -227,10 +233,7 @@ function planRender() {
           <th class="n">พอใช้อีก</th><th>ต้องสั่งภายใน</th><th class="n">แนะนำสั่ง</th><th>ข้อสังเกต</th></tr></thead>
         <tbody>${body}</tbody></table>` : `<p class="sq-empty">${empty}</p>`}
     </div></div>
-    ${planCanManage() ? `<label class="sq-note" style="display:flex;align-items:center;gap:9px;cursor:pointer;">
-        <input type="checkbox" ${d.saved.alert ? "checked" : ""} onchange="planToggleAlert(this)" style="width:17px;height:17px;">
-        <span><b>สรุปเข้า Telegram / LINE ทุกเช้า 08:00</b> (ที่ต้องสั่ง + ⏰ ที่ไม่มีการอัปเดตเกินกำหนด) — ส่งเฉพาะเมื่อรายการที่ต้องสั่งเปลี่ยนไปจากที่เคยแจ้ง และทวนอีกครั้งทุกวันจันทร์ (ไม่ส่งข้อความเดิมซ้ำทุกวัน)</span>
-      </label>` : ""}
+    ${planCanManage() ? `<p class="sq-note" id="planNtfNote">${_planNtfHtml()}</p>` : ""}
     <p class="sq-note">
       <b>อ่านยังไง</b> · <b>พอใช้อีก</b> = คงเหลือ ÷ ใช้ต่อวัน · <b>ต้องสั่งภายใน</b> = วันที่ของจะหมด − วันรอของ − วันกันชน ·
       <b>แนะนำสั่ง</b> = ให้พอใช้ ${S.coverDays} วันนับจากวันที่ของมาถึง (ปัดตามขนาดบรรจุ / ไม่ต่ำกว่าสั่งขั้นต่ำ)<br>

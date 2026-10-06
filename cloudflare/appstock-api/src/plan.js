@@ -293,7 +293,8 @@ function crStaleMessage(ov, detail) {
 
 // ใกล้หมดอายุ/หมดอายุ — วัตถุดิบ (ตามวันเตือนของแต่ละตัว) + ล็อตห้องเย็น (ตามเกณฑ์ของสินค้า) · หมดเกิน 30 วันแล้วไม่เตือนต่อ
 async function expiryList(c, modules, crOv) {
-  const now = Date.now(), out = [];
+  // นับเป็นวันปฏิทินไทย (เที่ยงคืนวันนี้ → เที่ยงคืนวันหมดอายุ) — ส่งตอนเช้าหรือตอนเย็นก็ได้ตัวเลขเดียวกัน (เหมือนห้องเย็น)
+  const today = todayThaiMidnightMs(), out = [];
   for (const mod of modules.filter((m) => m === "SQF" || m === "MLM")) {
     for (const m of await all(c, "SELECT sku, name, expiry_date, alert_days FROM materials WHERE module = ? AND discontinued = 0 ORDER BY seq, rowid", mod)) {
       const expRaw = String(m.expiry_date || "").trim();

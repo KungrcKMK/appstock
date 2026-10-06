@@ -15,6 +15,7 @@ import { getCfg, cfgSet, sysLog } from "./lib.js";
 export const NOTIFY_TOPICS = ["plan", "low", "stale", "expiry"];
 export const TOPIC_TEXT = { plan: "ที่ต้องสั่งซื้อ", low: "ต่ำกว่าจุดสั่งซื้อ", stale: "ไม่อัปเดตเกินกำหนด", expiry: "ใกล้หมดอายุ" };
 const DAY_TH = ["อา", "จ", "อ", "พ", "พฤ", "ศ", "ส"];
+const DAY_FULL = ["อาทิตย์", "จันทร์", "อังคาร", "พุธ", "พฤหัสบดี", "ศุกร์", "เสาร์"];
 const WEEK_ORDER = [1, 2, 3, 4, 5, 6, 0];   // นับสัปดาห์เริ่มวันจันทร์
 const ALL_DAYS = [0, 1, 2, 3, 4, 5, 6];
 

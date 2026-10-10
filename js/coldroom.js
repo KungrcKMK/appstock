@@ -1187,6 +1187,12 @@ function crShowModal(type, title, msg) {
 }
 
 // ── Status ──
+// ผู้ใช้กดเองหลังค้นไม่เจอ → ไปแท็บขึ้นทะเบียน (เติมบาร์โค้ดให้ถ้าที่ค้นเป็นตัวเลข)
+function crGoRegister(barcode) {
+  if (barcode) $$cr("crNewBarcode").value = barcode;
+  crSwitchTab("newproduct");
+  crSetStatus("crNewProductStatus", "กรอกข้อมูลสินค้าใหม่ด้านล่าง 👇", "warn");
+}
 function crSetStatus(id, msg, type = "ok") {
   const el = $$cr(id); if (!el) return;
   const icon = type === "warn" ? "⚠️" : type === "err" ? "❌" : "✅";

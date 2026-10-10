@@ -92,6 +92,8 @@ export async function getRawMaterials(c, module) {
 export async function rmCreate(c, data, module) {
   const { sku, name, unit, qty, min, dailyUsage, expiryDate, alertDays, user } = data;
   if (!sku || !name) return { status: "error", message: "ข้อมูลไม่ครบ" };
+  // ยอดเริ่มต้นห้ามติดลบ/ไม่ใช่ตัวเลข (เดิมไม่ตรวจ สร้าง -5 ได้ · QA M13 2026-10-10) — ว่าง = 0 เหมือนเดิม
+  if (qty !== undefined && qty !== null && qty !== "" && !(Number(qty) >= 0)) return { status: "error", message: "ยอดเริ่มต้นต้องเป็นตัวเลข 0 ขึ้นไป" };
   if (Number(min) < 0) return { status: "error", message: "ขั้นต่ำต้องไม่เป็นค่าลบ" };
   if (Number(dailyUsage) < 0) return { status: "error", message: "ใช้ต่อวันต้องไม่เป็นค่าลบ" };
   if (!unit || !String(unit).trim()) return { status: "error", message: "กรุณาระบุหน่วย" };

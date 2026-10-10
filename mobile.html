@@ -1654,6 +1654,7 @@ async function planRefreshBadge() {
 async function openPlan() {
   if (mod !== "SQF" && mod !== "MLM") return;
   $("planSheet").classList.remove("hidden");
+  mArmBack();
   $("planSub").textContent = MOD_CFG[mod].title;
   planFilter = "todo";
   if (planData && planData.module === mod) renderPlan();

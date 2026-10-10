@@ -138,7 +138,11 @@ async function _rawLoadDataRun(startup, retry, opts, mod) {
     if (!quiet) hideLoading();
     window._gasLastMs = Date.now() - t0; window._gasLastAt = Date.now();
     if (mod !== rawCurrentModule) return;   // สลับไปคลังอื่นแล้ว ทิ้งคำตอบนี้
-    if (data.status && data.status !== "success") { showToast(data.message || "โหลดข้อมูลไม่สำเร็จ","error"); return; }
+    if (data.status && data.status !== "success") {
+      if (_rawShownModule !== mod) _rawShowLoadError(data.message || "โหลดข้อมูลไม่สำเร็จ");
+      else showToast(data.message || "โหลดข้อมูลไม่สำเร็จ","error");
+      return;
+    }
     if (_rawWriteSeq !== seq0) {   // มีการบันทึกระหว่างรอ → คำตอบนี้เก่ากว่ายอดบนจอ ทิ้ง แล้วดึงใหม่เงียบๆ
       setTimeout(() => rawLoadData(false, 0, { silent: true }), 300);
       return;

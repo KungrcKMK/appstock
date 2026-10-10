@@ -136,8 +136,13 @@ function showToast(msg, type = "info", timeout = 2800) {
 // ── Token Expired Handler ──
 function handleTokenExpired(res) {
   if (res && (res.needLogin || (!res.ok && typeof res.message === "string" && res.message.includes("ไม่มีสิทธิ์")))) {
-    showToast("บัตรผ่านหมดอายุ กรุณาเข้าสู่ระบบใหม่ — งานที่ค้างยังเก็บไว้ครบ", "error", 5000);
-    _forceRelogin();
+    // บอกตามจริง: รายการที่เพิ่งกดเข้าคิวแล้วหรือไม่ (offlineSend เก็บให้เมื่อบัตรหมดอายุตอนบันทึก)
+    const pending = typeof offlineCount === "function" ? offlineCount() : 0;
+    const msg = res.queued ? "บัตรผ่านหมดอายุ — รายการนี้เก็บไว้ในเครื่องแล้ว เข้าสู่ระบบใหม่แล้วจะส่งให้เอง"
+              : pending ? "บัตรผ่านหมดอายุ กรุณาเข้าสู่ระบบใหม่ — งานที่ค้าง " + pending + " รายการยังเก็บไว้ครบ"
+              : "บัตรผ่านหมดอายุ กรุณาเข้าสู่ระบบใหม่";
+    showToast(msg, "error", 5000);
+    _forceRelogin(msg);
     return true;
   }
   return false;

@@ -1134,6 +1134,7 @@ async function rawPrintQrAll() {
 
 // ── Submit actions ──
 async function rawSubmitNew() {
+  if (rawIsBusy("rawBtnCreate")) return;   // กำลังส่งอยู่ — กันกดซ้ำ (Enter/Space/คลิกรัว)
   const sku=document.getElementById("rawNewSku").value.trim(), name=document.getElementById("rawNewName").value.trim(),
         unit=document.getElementById("rawNewUnit").value.trim(), qty=Number(document.getElementById("rawNewQty").value),
         min=Number(document.getElementById("rawNewMin").value),
@@ -1158,6 +1159,7 @@ async function rawSubmitNew() {
 }
 
 async function rawSubmitEdit() {
+  if (rawIsBusy("rawBtnEdit")) return;   // กำลังส่งอยู่ — กันกดซ้ำ (Enter/Space/คลิกรัว)
   const sku=document.getElementById("rawEditSku").value.trim(), name=document.getElementById("rawEditName").value.trim(),
         unit=document.getElementById("rawEditUnit").value.trim(), min=Number(document.getElementById("rawEditMin").value),
         dailyUsage=Number(document.getElementById("rawEditDailyUsage").value||0),
@@ -1200,6 +1202,7 @@ function rawApplyLocalWrite(sku, newQty, hist) {
   setTimeout(() => rawLoadData(false, 0, { silent: true }), 800);
 }
 async function rawSubmitAction() {
+  if (rawIsBusy("rawBtnSubmit")) return;   // กำลังส่งอยู่ — กันกดซ้ำ (Enter/Space/คลิกรัว)
   const sku  = document.getElementById("rawModalSkuVal").value;
   const type = document.getElementById("rawModalType").value;
   const qty  = Number(document.getElementById("rawModalQty").value);
@@ -1292,6 +1295,7 @@ function rawRenderOfflinePanel() {
 }
 
 async function rawSubmitVerify() {
+  if (rawIsBusy("rawBtnVerify")) return;   // กำลังส่งอยู่ — กันกดซ้ำ (Enter/Space/คลิกรัว)
   const q=Number(document.getElementById("rawVerifyQty").value);
   if (!rawVerifyTarget) return showToast("ไม่พบ SKU","error");
   if (isNaN(q)||q<0)    return showToast("ระบุยอดให้ถูกต้อง","warn");

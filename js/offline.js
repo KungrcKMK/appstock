@@ -110,6 +110,14 @@ async function offlineSend(body, label) {
   if (r && r.retryable) {
     if (_offEnqueue(job)) { _offSchedule(); return { queued: true, opId: job.opId, status: "queued", retryable: true }; }
   }
+  // บัตรผ่านหมดอายุตอนกดบันทึก — ด่านตรวจตัวตนตีกลับก่อนเขียน (ยอดยังไม่ถูกแตะ) จึงเก็บเข้าคิวได้ปลอดภัย
+  // เข้าระบบใหม่แล้วคิวส่งต่อเองด้วยบัตรใหม่ (บัตรแนบตอนส่ง) · เดิมคืน needLogin เฉยๆ แล้วหน้าโหลดใหม่ = รายการหายเงียบ (QA 2026-10-10)
+  if (r && r.needLogin) {
+    job.error = "รอเข้าสู่ระบบใหม่";
+    _offLoginBlockedToken = _offTokenNow();
+    if (_offEnqueue(job)) return Object.assign({}, r, { queued: true, opId: job.opId, needLogin: true });
+    return Object.assign({}, r, { queued: false, storeFailed: true, job: job, needLogin: true });
+  }
   return r;
 }
 

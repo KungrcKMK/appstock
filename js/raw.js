@@ -289,10 +289,19 @@ function rawApplyTrends() {
 // 📈 กราฟวิเคราะห์ย้ายไปหน้าภาพรวมทั้งระบบแล้ว (js/exec.js — เจ้าของสั่งย้าย 2026-08-02)
 
 // ── Date helpers ──
+// วันที่จากหลายแหล่ง → "วว/ดด/ปปปป" (พ.ศ.)
+// ⚠️ อ่าน วว/ดด/ปปปป และ ปปปป-ดด-วว เอง ห้ามส่งให้ new Date — มันอ่านแบบอเมริกัน (เดือน/วัน):
+//    "14/10/2026" ได้ปี 1483 → ขึ้น "หมดอายุแล้ว" ผิด · "12/10/2026" ได้ 10 ธ.ค. → ไม่เตือน (พบตอนตรวจ QA 2026-10-10)
+//    ข้อมูลเก่าที่ย้ายมาจากชีตเก็บแบบ วว/ดด/ปปปป ได้ทั้ง ค.ศ. และ พ.ศ. (หลังบ้าน plan.js อ่านแบบเดียวกันนี้)
 function rawForceThaiDate(str) {
   if (!str || ["","---","ยังไม่ระบุ"].includes(str)) return "ยังไม่ระบุ";
+  const s = String(str).trim(), p2 = (n) => String(n).padStart(2, "0");
+  let m = s.match(/^(\d{1,2})[\/\-.](\d{1,2})[\/\-.](\d{4})$/);
+  if (m) { let y = +m[3]; if (y < 2400) y += 543; return `${p2(m[1])}/${p2(m[2])}/${y}`; }
+  m = s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);   // วันที่ล้วน (ช่องเลือกวันที่) — ไม่ผ่าน new Date กันเลื่อนวันตามเขตเวลา
+  if (m) { let y = +m[1]; if (y < 2400) y += 543; return `${p2(m[3])}/${p2(m[2])}/${y}`; }
   try {
-    const d = new Date(str); if (isNaN(d.getTime())) return str;
+    const d = new Date(s); if (isNaN(d.getTime())) return s;
     let y = d.getFullYear(); if (y < 2400) y+=543; while(y>2600)y-=543;
     return `${String(d.getDate()).padStart(2,"0")}/${String(d.getMonth()+1).padStart(2,"0")}/${y}`;
   } catch(e) { return str; }

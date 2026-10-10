@@ -293,6 +293,11 @@ function checkAuth() {
     }
     window._appIsViewer = isViewer;
     if (isViewer) document.querySelectorAll(".viewer-hide").forEach(el => el.style.display = "none");
+    // สำรองข้อมูลทั้งระบบ = หัวหน้าขึ้นไป (หลังบ้านตรวจ BACKUP: manager) — คนอื่นไม่ต้องเห็นปุ่มที่กดแล้วได้แค่ error (QA M24)
+    const bkBtn = document.getElementById("rawBackupBtn");
+    if (bkBtn) bkBtn.style.display = (isAdmin || isManager) ? "" : "none";
+    // viewer: บอกบนแถบเมนูว่าดูได้อย่างเดียว (เดิมปุ่มหายเฉยๆ ไม่รู้ว่าทำไม)
+    if (isViewer) { const nu = document.getElementById("navUser"); if (nu && !/ดูอย่างเดียว/.test(nu.innerText)) nu.innerText = nu.innerText + " · 👁️ ดูอย่างเดียว"; }
     _watchNavHeight();   // ปุ่มถูกซ่อน/แสดงตาม role ครบแล้ว ค่อยวัดความสูงเมนู
     // เข้าระบบแล้วเจอหน้าเลือกคลังก่อน (เหมือนมือถือ) — viewer ไปหน้าภาพรวมซึ่งเป็นหน้าหลักของเขา
     switchModule(isViewer ? "EXEC" : "HOME");

@@ -133,7 +133,7 @@ function buildAutocomplete(inputEl, getItems, onSelect) {
     if      (e.key === "ArrowDown")  { e.preventDefault(); setActive(_active + 1); }
     else if (e.key === "ArrowUp")    { e.preventDefault(); setActive(_active - 1); }
     else if (e.key === "Enter" && _active >= 0) { e.preventDefault(); onSelect(_items[_active], inputEl); close(); }
-    else if (e.key === "Escape")     { close(); }
+    else if (e.key === "Escape")     { e.preventDefault(); close(); }   // preventDefault = ปิดแค่รายการแนะนำ ไม่ปิดหน้าต่างทั้งใบ (uiTopModal)
   });
   window.addEventListener("resize", close);
   window.addEventListener("scroll", () => { if (drop.classList.contains("show")) reposition(); }, true);
@@ -291,3 +291,139 @@ function getDeviceInfo() {
     }
   }, true);
 })();
+
+// ══════════════════════════════════════════════════════════════════════
+// หน้าต่าง (modal) ทั้งหน้าคอม — ตัวช่วยกลาง (QA M7 2026-10-10)
+// เดิม: ไม่มีหน้าต่างไหนปิดด้วย Esc · คลิกพื้นหลังปิดไม่ได้ · โฟกัสไม่ย้ายเข้า/ไม่คืนกลับ ·
+//       กด Tab แล้วโฟกัสหลุดไปปุ่มข้างหลังหน้าต่าง (หลังบันทึกเบิกต้องกด Tab 48 ครั้งถึงปุ่มปิด)
+// วิธี: ดูการเปิด-ปิดจาก class "hidden" ของหน้าต่างเอง — ไม่ต้องแก้ฟังก์ชันเปิดทีละที่
+//   · เปิด → role="dialog" + aria-modal · จำปุ่มที่กดเปิด · ย้ายโฟกัสเข้าหน้าต่าง (ถ้าตัวเปิดยังไม่ได้ย้ายเอง)
+//   · Esc → ปิดหน้าต่างบนสุดด้วยฟังก์ชันปิดของมันเอง (บางตัวมีงานเก็บกวาด เช่น ปิดกล้อง)
+//   · คลิกพื้นหลัง → ปิด เฉพาะหน้าต่างดูข้อมูล (backdrop:true) — หน้าต่างกรอกข้อมูลไม่ปิด กันตัวเลขที่พิมพ์หาย
+//   · Tab วนอยู่ในหน้าต่าง · ปิดแล้วโฟกัสกลับไปปุ่มที่กดเปิด
+// หน้าต่างใหม่: เพิ่มชื่อเข้า UI_MODALS พร้อมฟังก์ชันปิด
+// ══════════════════════════════════════════════════════════════════════
+const UI_MODALS = {
+  stockAlertModal:      { close: () => closeStockAlert(false), backdrop: true },   // Esc/พื้นหลัง = ปิดชั่วคราว (ไม่นับว่ารับทราบ)
+  planModal:            { close: "closePlanModal", backdrop: true },
+  unifiedSettingsModal: { close: "closeUnifiedSettings" },
+  rawActionModal:       { close: "closeRawAction" },
+  rawVerifyModal:       { close: "closeRawVerify" },
+  rawEditModal:         { close: "closeRawEdit" },
+  rawCreateModal:       { close: "closeRawCreate" },
+  rawQrModal:           { close: "closeRawQr", backdrop: true },
+  rawSettingsModal:     { close: "closeRawSettings" },
+  rawScannerModal:      { close: "closeRawScanner" },
+  activityPanelModal:   { close: "closeActivityPanel", backdrop: true },
+  myHistModal:          { close: "closeMyHistory", backdrop: true },
+  ropModal:             { close: "closeRopModal", backdrop: true },
+  drModal:              { close: "closeDocReport", backdrop: true },
+  slipModal:            { close: "closeWithdrawSlip", backdrop: true },
+  rawHistModal:         { close: "closeRawHistory", backdrop: true },
+  impModal:             { close: "closeRawImport" },
+  criModal:             { close: "criClose" },
+  offlineModal:         { close: "closeOfflinePanel", backdrop: true },
+  crLotHistModal:       { close: "crCloseLotHistory", backdrop: true },
+  shareAppModal:        { close: "closeShareApp", backdrop: true },
+};
+const _UI_FOCUSABLE = 'a[href],button:not([disabled]),input:not([disabled]):not([type="hidden"]),select:not([disabled]),textarea:not([disabled]),[tabindex]:not([tabindex="-1"])';
+const _uiReturnTo = {};
+function _uiIsOpen(el) {
+  if (!el) return false;
+  if (el.id === "crModal") return el.classList.contains("show");
+  return !el.classList.contains("hidden") && getComputedStyle(el).display !== "none";
+}
+function _uiFocusables(el) {
+  return [...el.querySelectorAll(_UI_FOCUSABLE)].filter(x => x.offsetParent !== null || x === document.activeElement);
+}
+/** หน้าต่างที่เปิดอยู่บนสุด (z-index สูงสุด) — กล่องยืนยันห้องเย็นอยู่บนสุดเสมอ */
+function uiTopModal() {
+  const cr = document.getElementById("crModal");
+  if (_uiIsOpen(cr)) return cr;
+  let top = null, topZ = -1;
+  for (const id of Object.keys(UI_MODALS)) {
+    const el = document.getElementById(id);
+    if (!_uiIsOpen(el)) continue;
+    const z = parseInt(getComputedStyle(el).zIndex, 10) || 0;
+    if (z >= topZ) { top = el; topZ = z; }
+  }
+  return top;
+}
+function uiCloseModal(el) {
+  if (!el) return;
+  if (el.id === "crModal") {   // กล่องยืนยัน/แจ้งเตือนของห้องเย็น: Esc = ยกเลิก (ถ้ามี) ไม่งั้น = ตกลง
+    const c = document.getElementById("crModalCancel"), ok = document.getElementById("crModalConfirm");
+    (c && c.style.display !== "none" ? c : ok)?.click();
+    return;
+  }
+  const cfg = UI_MODALS[el.id];
+  const fn = cfg && (typeof cfg.close === "function" ? cfg.close : window[cfg.close]);
+  if (typeof fn === "function") fn(); else el.classList.add("hidden");
+}
+function _uiOnOpen(el) {
+  _uiReturnTo[el.id] = document.activeElement;
+  el.setAttribute("role", "dialog");
+  el.setAttribute("aria-modal", "true");
+  const h = el.querySelector("h1,h2,h3");
+  if (h) { if (!h.id) h.id = el.id + "__title"; el.setAttribute("aria-labelledby", h.id); }
+  // ให้ตัวเปิดย้ายโฟกัสเองก่อน (เช่น ช่องจำนวน) — ถ้าไม่ได้ย้าย ค่อยพาเข้าช่อง/ปุ่มแรก
+  setTimeout(() => {
+    if (!_uiIsOpen(el) || el.contains(document.activeElement)) return;
+    const f = _uiFocusables(el);
+    (f.find(x => /^(INPUT|SELECT|TEXTAREA)$/.test(x.tagName)) || f[0] || el).focus?.();
+  }, 120);
+}
+function _uiOnClose(el) {
+  const back = _uiReturnTo[el.id];
+  delete _uiReturnTo[el.id];
+  if (back && document.contains(back) && back.offsetParent !== null && !uiTopModal()) { try { back.focus(); } catch (e) {} }
+}
+(function _uiModalWatch() {
+  const start = () => {
+    const ids = [...Object.keys(UI_MODALS), "crModal"];
+    const was = {};
+    ids.forEach(id => {
+      const el = document.getElementById(id);
+      if (!el) return;
+      was[id] = _uiIsOpen(el);
+      new MutationObserver(() => {
+        const now = _uiIsOpen(el);
+        if (now === was[id]) return;
+        was[id] = now;
+        now ? _uiOnOpen(el) : _uiOnClose(el);
+      }).observe(el, { attributes: true, attributeFilter: ["class", "style"] });
+      // คลิกพื้นหลัง (กด-ปล่อยที่พื้นหลังจริง ไม่ใช่ลากจากในหน้าต่าง) — เฉพาะหน้าต่างดูข้อมูล
+      if (UI_MODALS[id] && UI_MODALS[id].backdrop) {
+        let downOnBackdrop = false;
+        el.addEventListener("mousedown", e => { downOnBackdrop = e.target === el; });
+        el.addEventListener("click", e => { if (downOnBackdrop && e.target === el) uiCloseModal(el); downOnBackdrop = false; });
+      }
+    });
+    document.addEventListener("keydown", e => {
+      const top = uiTopModal();
+      if (!top) return;
+      if (e.key === "Escape" && !e.isComposing) {
+        // dropdown/รายการแนะนำที่เปิดอยู่ปิดก่อน (ตัวช่วยเดิมจัดการเอง)
+        if (e.defaultPrevented) return;
+        e.preventDefault();
+        uiCloseModal(top);
+        return;
+      }
+      if (e.key !== "Tab") return;
+      const f = _uiFocusables(top);
+      if (!f.length) { e.preventDefault(); return; }
+      const first = f[0], last = f[f.length - 1];
+      if (!top.contains(document.activeElement)) { e.preventDefault(); (e.shiftKey ? last : first).focus(); }
+      else if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+      else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+    });
+  };
+  if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", start); else start();
+})();
+
+// Esc ปิดเมนู "⋯ เพิ่มเติม" (details) ที่เปิดค้าง — เดิมปิดได้แค่คลิกข้างนอก (QA ข้อ 14)
+document.addEventListener("keydown", e => {
+  if (e.key !== "Escape" || e.defaultPrevented || (typeof uiTopModal === "function" && uiTopModal())) return;
+  const m = document.querySelector("details[open]#rawMoreMenu, details[open].sq-more");
+  if (m) { m.removeAttribute("open"); m.querySelector("summary")?.focus(); }
+});

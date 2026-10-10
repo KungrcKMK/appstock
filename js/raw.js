@@ -451,7 +451,7 @@ function rawRenderItemRow(item) {
     </td>
     <td class="n"><span class="rm-min">${Number(item.Min||0).toLocaleString()}</span></td>
     <td class="n">
-      ${window._appIsViewer ? "" : `<div class="rm-rowacts">
+      ${window._appIsViewer ? `<span class="rm-meta" title="บัญชีนี้ดูได้อย่างเดียว — ขอสิทธิ์เพิ่มจากหัวหน้า">👁️ ดูอย่างเดียว</span>` : `<div class="rm-rowacts">
         <button onclick="openRawAction('${escapeJsAttr(item.SKU)}','${escapeJsAttr(item.Name)}','${escapeJsAttr(item.Unit)}',${Number(item.Qty)||0})" class="rm-mini solid">รับ / เบิก</button>
         <button onclick="openRawVerify('${escapeJsAttr(item.SKU)}','${escapeJsAttr(item.Name)}')" class="rm-mini">นับ</button>
         <button onclick="openRawEdit('${escapeJsAttr(item.SKU)}')" class="rm-mini">แก้ไข</button>
@@ -917,7 +917,7 @@ function openStockReport() {
 
 // ── Backup ──
 async function rawRunBackup() {
-  if (!confirm("สำรองข้อมูลลง Drive? ☁️")) return;
+  if (!confirm("สำรองข้อมูลทั้งระบบตอนนี้? ☁️\n\n(ระบบสำรองให้เองทุกเช้า 08:00 อยู่แล้ว — กดเมื่อต้องการสำรองเพิ่มก่อนแก้ข้อมูลจำนวนมาก)")) return;
   showLoading("กำลังสำรองข้อมูล...");
   const r = await rawFetch({ action:"BACKUP", user:currentUser });
   hideLoading();

@@ -2,7 +2,8 @@
 <html lang="th">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <!-- ไม่ล็อกการซูม: คนสายตาไม่ดีต้องถ่างนิ้วขยายได้ (WCAG 1.4.4 · QA M9 2026-10-10) -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>ระบบ</title>
 
   <!-- PWA -->
@@ -621,11 +622,14 @@
     .chart-wrap-small { position:relative;height:250px; }
     .qr-box canvas, .qr-box img { margin:0 auto;background:#fff;padding:10px;border-radius:1.5rem;box-shadow:0 8px 24px rgba(0,0,0,.12); }
     .btn-disabled { opacity:.65;pointer-events:none; }
+    /* ปุ่มที่กดไม่ได้ต้องดูออก (เดิมหน้าตาเหมือนเดิม ต่างแค่ข้อความ · QA M15) */
+    button:disabled, .sq-btn:disabled, .rm-mini:disabled { opacity:.55;cursor:not-allowed;filter:saturate(.6); }
     /* .filter-active — ย้ายไปนิยามใน #module-RAW .rm-chip.filter-active แล้ว (raw ใช้ที่เดียว) */
 
     /* ── WMS Custom Modal ── */
-    .cr-modal-overlay { position:fixed;inset:0;background:rgba(0,0,0,.5);backdrop-filter:blur(4px);z-index:9997;display:flex;justify-content:center;align-items:center;opacity:0;pointer-events:none;transition:.2s; }
-    .cr-modal-overlay.show { opacity:1;pointer-events:auto; }
+    .cr-modal-overlay { position:fixed;inset:0;background:rgba(0,0,0,.5);backdrop-filter:blur(4px);z-index:9997;display:flex;justify-content:center;align-items:center;opacity:0;pointer-events:none;visibility:hidden;transition:opacity .2s,visibility 0s .2s; }
+    .cr-modal-overlay.show { opacity:1;pointer-events:auto;visibility:visible;transition:opacity .2s,visibility 0s; }
+    /* ซ่อนด้วย visibility ด้วย — opacity:0 อย่างเดียวปุ่มข้างในยังรับ Tab ได้ (โฟกัสหายไปปุ่มที่มองไม่เห็น · QA M8) */
     .cr-modal-box { background:#fff;width:90%;max-width:400px;border-radius:24px;padding:24px;box-shadow:0 20px 40px rgba(0,0,0,.2);transform:scale(.95);transition:.2s; }
     .cr-modal-overlay.show .cr-modal-box { transform:scale(1); }
     .cr-modal-box h3 { margin:0 0 10px;font-size:20px; }
@@ -1098,10 +1102,10 @@
   </div>
 
   <!-- WMS Custom Modal (ต้องอยู่นอก module เพื่อให้ position:fixed ทำงานถูกต้อง) -->
-  <div id="crModal" class="cr-modal-overlay">
+  <div id="crModal" class="cr-modal-overlay" role="dialog" aria-modal="true" aria-labelledby="crModalTitle">
     <div class="cr-modal-box">
-      <h3 id="crModalTitle">Title</h3>
-      <p  id="crModalMessage">Message</p>
+      <h3 id="crModalTitle"></h3>
+      <p  id="crModalMessage"></p>
       <input type="text" id="crModalInput" style="display:none;width:100%;padding:12px;border:1px solid var(--sq-line);border-radius:12px;font-size:16px;margin-bottom:4px;" autocomplete="off">
       <div class="cr-modal-actions">
         <button class="cr-btn btn-light" id="crModalCancel">ยกเลิก</button>
@@ -1845,7 +1849,7 @@
               <button onclick="openRopModal()" class="viewer-hide">📐 จุดสั่งซื้อแนะนำ</button>
               <button onclick="openStockReport()" class="viewer-hide">📑 ใบรายงาน</button>
               <button onclick="rawPrintQrAll()" class="viewer-hide">🔲 พิมพ์ QR ทั้งหมด</button>
-              <button onclick="rawRunBackup()">☁️ สำรองข้อมูล</button>
+              <button onclick="rawRunBackup()" id="rawBackupBtn" style="display:none;">☁️ สำรองข้อมูล</button>
             </div>
           </details>
         </div>

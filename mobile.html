@@ -2,7 +2,8 @@
 <html lang="th">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no,viewport-fit=cover">
+  <!-- ไม่ล็อกการซูม (WCAG 1.4.4 · QA M9) — ช่องกรอกตั้งตัวอักษร ≥16px ไว้แล้ว iPhone จึงไม่ซูมเองตอนแตะช่อง -->
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -24,6 +25,13 @@
     input[type=number]::-webkit-outer-spin-button{-webkit-appearance:none}
     .item-card:active{opacity:.7}
     .btn-tap:active{opacity:.75;transform:scale(.97)}
+    /* สถานะกด/กดไม่ได้ให้เห็นทุกปุ่ม (เดิมปุ่มแถบล่าง/↻ ไม่มีสถานะกด · ปุ่มที่ปิดอยู่หน้าตาเหมือนเดิม — QA M15) */
+    nav button:active, .nav-tap:active{opacity:.6;transform:scale(.95)}
+    /* ช่องกรอก ≥16px — iPhone ซูมหน้าเองถ้าตัวอักษรในช่องเล็กกว่านี้ (ตอนนี้เปิดให้ถ่างนิ้วซูมได้แล้ว) */
+    input, select, textarea{font-size:max(16px,1em)}
+    button:disabled{opacity:.5;cursor:not-allowed;filter:saturate(.6)}
+    /* โฟกัสด้วยคีย์บอร์ดต้องเห็น (แท็บเล็ต/คีย์บอร์ดบลูทูธ) */
+    button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible{outline:3px solid #7fcf9d;outline-offset:2px}
   </style>
 </head>
 <body class="text-white select-none">
@@ -165,24 +173,24 @@
               flex pb-safe z-10">
     <!-- แท็บ QR Code ถูกถอดออก (เจ้าของสั่ง 2026-08-01) — มือถือไว้สแกนทำงาน
          ป้าย QR พิมพ์จากหน้าคอม: ⋯ เพิ่มเติม → พิมพ์ QR ทั้งหมด -->
-    <button id="navList"
+    <button id="navList" onclick="mGoList()" aria-current="page"
       class="flex-1 py-3 flex flex-col items-center gap-0.5 text-indigo-400">
-      <span class="text-2xl">📋</span><span class="text-[10px] font-black">สต๊อก</span>
+      <span class="text-2xl">📋</span><span class="text-xs font-black">สต๊อก</span>
     </button>
     <button onclick="openScanner()"
       class="flex-1 py-3 flex flex-col items-center gap-0.5 text-slate-400">
-      <span class="text-2xl">📷</span><span class="text-[10px] font-black">สแกน</span>
+      <span class="text-2xl">📷</span><span class="text-xs font-black">สแกน</span>
     </button>
     <!-- 📈 ต้องสั่ง — เฉพาะคลังวัตถุดิบ · ตัวเลขแดง = จำนวนที่ต้องสั่งวันนี้ -->
     <button id="navPlan" onclick="openPlan()"
       class="flex-1 py-3 flex flex-col items-center gap-0.5 text-slate-400 relative">
-      <span class="text-2xl">📈</span><span class="text-[10px] font-black">ต้องสั่ง</span>
+      <span class="text-2xl">📈</span><span class="text-xs font-black">ต้องสั่ง</span>
       <span id="navPlanBadge" class="hidden absolute top-1 bg-red-600 text-white text-[10px] font-black rounded-full px-1.5"
             style="left:calc(50% + 6px);min-width:18px;line-height:18px;">0</span>
     </button>
     <button onclick="openMyHistory()"
       class="flex-1 py-3 flex flex-col items-center gap-0.5 text-slate-400">
-      <span class="text-2xl">📜</span><span class="text-[10px] font-black">ของฉัน</span>
+      <span class="text-2xl">📜</span><span class="text-xs font-black">ของฉัน</span>
     </button>
   </nav>
 </div>
@@ -1429,6 +1437,13 @@ function closeAction() {
   // คืนเพดานเดิม ห้ามล้างเป็น "" — ล้างแล้วแผ่นที่เปิดครั้งถัดไปไม่มีเพดาน ปุ่ม ✕ หลุดขอบจอบน (QA S6 2026-10-10)
   $("actionSheet").style.maxHeight = (window.CSS && CSS.supports && CSS.supports("max-height", "85dvh")) ? "85dvh" : "85vh";
   setTimeout(() => hide("actionOverlay"), 300);
+}
+
+// ปุ่ม "📋 สต๊อก" ที่แถบล่าง — เดิมไม่มีคำสั่ง กดแล้วไม่เกิดอะไร · ตอนนี้ = ปิดแผ่นที่เปิดอยู่ + เลื่อนรายการกลับบนสุด
+function mGoList() {
+  for (const [id, fn] of [["planSheet", closePlan], ["myHistSheet", closeMyHistory], ["shareSheet", closeShareApp]]) if (_mVisible(id)) fn();
+  if (_mVisible("actionOverlay")) closeAction();
+  const el = $("mList"); if (el) el.scrollTo({ top: 0, behavior: "smooth" });
 }
 
 // ── ปุ่มย้อนกลับของเครื่อง / ปุ่ม Esc (QA S7 + M7 2026-10-10) ──

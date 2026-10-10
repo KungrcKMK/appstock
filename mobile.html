@@ -755,7 +755,7 @@ const MYHIST_STYLE = {
 };
 
 async function openMyHistory() {
-  $("myHistSheet").classList.remove("hidden");
+  $("myHistSheet").classList.remove("hidden"); mArmBack();
   $("myHistWho").textContent = user || "";
   $("myHistSummary").innerHTML = "";
   $("myHistList").innerHTML = '<p class="text-slate-500 text-center py-10 font-bold">⏳ กำลังโหลด...</p>';
@@ -837,7 +837,7 @@ async function openShareApp() {
   _shareUrl = /^https?:\/\/(localhost|127\.|192\.168\.|10\.)/.test(here)
     ? "https://kungrckmk.github.io/appstock/"
     : here;
-  $("shareSheet").classList.remove("hidden");
+  $("shareSheet").classList.remove("hidden"); mArmBack();
   const url = await qrDataUrl(_shareUrl, 260);
   if (url) $("shareQrImg").src = url;
   else toast("สร้าง QR ไม่สำเร็จ", "err");
@@ -867,7 +867,9 @@ function doLogout() {
 
 function switchToDesktop() {
   localStorage.setItem("appstock_mode_pref", "desktop");
-  window.location.href = "index.html";
+  // ต้องตั้งโหมดของรอบนี้ด้วย — index.html ดู sessionStorage ก่อน ถ้ายังเป็น "mobile" จะส่งกลับมาที่นี่ทันที (QA M3)
+  try { sessionStorage.setItem("appstock_mode_session", "desktop"); } catch (e) {}
+  window.location.replace("index.html");
 }
 
 // ─────────────────────────────────────────────
@@ -1783,7 +1785,7 @@ async function planCopy() {
 // SCANNER
 // ─────────────────────────────────────────────
 function openScanner() {
-  show("sScanner"); $("sScanner").style.display = "flex";
+  show("sScanner"); $("sScanner").style.display = "flex"; mArmBack();
   if (scanner) { try { scanner.stop().catch(()=>{}); } catch(e){} scanner = null; }
   $("scanEl").innerHTML = "";
   scanner = new Html5Qrcode("scanEl");

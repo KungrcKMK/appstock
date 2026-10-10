@@ -233,7 +233,7 @@ function checkAuth() {
       // ไม่มี session mode → แสดง mode picker ทุกครั้ง (ไม่ auto-redirect)
       showModePicker(saved); return;
     }
-    if (sessionMode === "mobile") { window.location.href = "mobile.html"; return; }
+    if (sessionMode === "mobile") { window.location.replace("mobile.html"); return; }
     currentUser = saved;
     // คืน adminToken จาก sessionStorage (ถ้ามี — ยังไม่หมดอายุใน GAS cache 30 นาที)
     if (!_adminToken) _adminToken = localStorage.getItem("appstock_session") || sessionStorage.getItem("appstock_admin_token") || null;

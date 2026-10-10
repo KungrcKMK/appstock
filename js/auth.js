@@ -239,13 +239,13 @@ function selectMode(mode, remember) {
   if (remember) localStorage.setItem("appstock_mode_pref", mode);
   sessionStorage.setItem("appstock_mode_session", mode); // จดจำสำหรับ session นี้เสมอ
   document.getElementById("modePicker").style.display = "none";
-  if (mode === "mobile") { window.location.href = "mobile.html"; }
+  if (mode === "mobile") { window.location.replace("mobile.html"); }
   else                   { checkAuth(); checkRawAlertsOnLogin(); }
 }
 
 function switchToMobile() {
   localStorage.setItem("appstock_mode_pref", "mobile");
-  window.location.href = "mobile.html";
+  window.location.replace("mobile.html");
 }
 
 function logout() {

@@ -408,7 +408,7 @@ function execRawSection(icon, title, railClass, mats, staleDays) {
     const expCell = m.expDays===null ? `<span class="sq-dim">—</span>` :
       m.expDays < 0   ? `<span class="sq-chip crit">⛔ หมดแล้ว</span>` :
       m.expDays <= 30 ? `<span class="sq-chip warn">⏳ ${m.expDays} วัน</span>` :
-                        `<span class="sq-dim" style="font-family:var(--sq-mono);font-size:11.5px;">${isoToDdmmyy(String(m.ExpiryDate))}</span>`;
+                        `<span class="sq-dim" style="font-family:var(--sq-mono);font-size:12px;">${isoToDdmmyy(String(m.ExpiryDate))}</span>`;
 
     // หลอดเทียบยอดกับจุดสั่งซื้อ
     const pct = m.min>0 ? Math.min(100, Math.round((m.qty/m.min)*100)) : null;

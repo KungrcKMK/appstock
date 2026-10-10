@@ -176,7 +176,7 @@ async function crLoadBomList() {
       return `<div style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border:2px solid var(--sq-line);border-left:4px solid ${fc};border-radius:12px;background:var(--sq-raised);flex-wrap:wrap;gap:8px;">
         <div style="flex:1;min-width:0;">
           <div style="font-weight:800;font-size:14px;color:var(--sq-ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escapeHtml(b.name)}</div>
-          <div style="font-size:11px;color:var(--sq-muted);margin-top:2px;">${escapeHtml(b.barcode)} &nbsp;·&nbsp; ${b.materials.length} วัตถุดิบ</div>
+          <div style="font-size:12px;color:var(--sq-muted);margin-top:2px;">${escapeHtml(b.barcode)} &nbsp;·&nbsp; ${b.materials.length} วัตถุดิบ</div>
         </div>
         <div style="display:flex;align-items:center;gap:8px;flex-shrink:0;">
           <span style="background:${fc};color:#fff;border-radius:999px;padding:2px 10px;font-size:11px;font-weight:800;">${escapeHtml(b.factory)}</span>
@@ -491,23 +491,23 @@ function crWoOnSelectProduct(idx) {
           <input type="number" id="crWoSets-${idx}" min="0" step="0.5" placeholder="${label}"
             oninput="crWoCalcQtyFromSets(${idx}); crWoLockButtons()"
             style="width:60px;padding:6px 8px;border:2px solid var(--sq-line);border-radius:8px;text-align:right;font-size:14px;font-weight:900;outline:none;background:var(--sq-accent-2);">
-          <span style="font-size:11px;color:var(--sq-accent);font-weight:700;white-space:nowrap;">${label}</span>
+          <span style="font-size:12px;color:var(--sq-accent);font-weight:700;white-space:nowrap;">${label}</span>
           <span style="font-size:12px;color:var(--sq-muted);">×</span>
           <span style="font-size:12px;color:var(--sq-accent);font-weight:800;white-space:nowrap;">${ups}</span>
-          <span style="font-size:11px;color:var(--sq-muted);">=</span>
+          <span style="font-size:12px;color:var(--sq-muted);">=</span>
           <input type="number" id="crWoQty-${idx}" min="0" placeholder="จำนวน"
             style="width:90px;padding:6px 8px;border:2px solid var(--sq-line);border-radius:8px;text-align:right;font-size:14px;font-weight:900;outline:none;background:var(--sq-accent-2);color:var(--sq-accent);">
         </div>
-        <div style="font-size:10px;color:var(--sq-muted);padding:0 2px;">1 ${label} = ${ups} ${unit}</div>
+        <div style="font-size:12px;color:var(--sq-muted);padding:0 2px;">1 ${label} = ${ups} ${unit}</div>
       </div>`;
   } else {
     // ⚠️ UPS = 0 หรือ 1 โดยไม่มี SetName = ยังไม่ตั้งค่า
     td.innerHTML = `
       <div style="display:flex;flex-direction:column;gap:6px;">
-        <div style="background:var(--sq-warn-bg);border:1px solid var(--sq-warn);border-radius:8px;padding:5px 9px;font-size:11px;color:var(--sq-high);display:flex;align-items:center;gap:6px;">
+        <div style="background:var(--sq-warn-bg);border:1px solid var(--sq-warn);border-radius:8px;padding:5px 9px;font-size:12px;color:var(--sq-high);display:flex;align-items:center;gap:6px;">
           <span>⚠️ ยังไม่ตั้งค่า ชุด/UPS</span>
           <button onclick="crSwitchTab('editproduct');crOpenEditProduct('${escapeJsAttr(barcode)}')"
-            style="background:var(--sq-high);color:#fff;border:none;border-radius:5px;padding:2px 7px;font-size:10px;font-weight:800;cursor:pointer;">แก้ไข</button>
+            style="background:var(--sq-high);color:#fff;border:none;border-radius:5px;padding:2px 7px;font-size:12px;font-weight:800;cursor:pointer;">แก้ไข</button>
         </div>
         <div style="display:flex;gap:4px;align-items:center;">
           <input type="number" id="crWoQty-${idx}" min="1" placeholder="จำนวน${unit ? ' ('+unit+')' : ''}"
@@ -872,7 +872,7 @@ async function crCheckBomMaterials() {
     html += `<div style="padding:14px 16px;background:#fff;">
       <div style="font-size:12px;font-weight:800;color:var(--sq-ink2);margin-bottom:10px;">🏭 ${escapeHtml(fact)}</div>
       <div style="overflow-x:auto;"><table style="width:100%;border-collapse:collapse;font-size:12px;min-width:480px;">
-        <thead><tr style="background:var(--sq-line-soft);color:var(--sq-ink2);font-size:11px;font-weight:800;">
+        <thead><tr style="background:var(--sq-line-soft);color:var(--sq-ink2);font-size:12px;font-weight:800;">
           <th style="padding:8px 10px;text-align:left;">วัตถุดิบ</th>
           <th style="padding:8px 10px;text-align:right;">ต้องใช้</th>
           <th style="padding:8px 10px;text-align:right;">มีอยู่</th>
@@ -892,8 +892,8 @@ async function crCheckBomMaterials() {
             <td style="padding:8px 10px;text-align:right;font-weight:900;color:${ok?"var(--sq-accent)":"var(--sq-crit)"};">${m.remaining.toLocaleString()} ${escapeHtml(m.unit)}</td>
             <td style="padding:8px 10px;text-align:center;">${dayBadge}</td>
             <td style="padding:8px 10px;text-align:center;">${ok
-              ? `<span style="background:var(--sq-accent-2);color:var(--sq-accent);border-radius:999px;padding:2px 9px;font-weight:800;font-size:11px;">✅ พอ</span>`
-              : `<span style="background:var(--sq-crit-bg);color:var(--sq-crit);border-radius:999px;padding:2px 9px;font-weight:800;font-size:11px;">❌ ขาด ${Math.abs(m.remaining).toLocaleString()}</span>`}
+              ? `<span style="background:var(--sq-accent-2);color:var(--sq-accent);border-radius:999px;padding:2px 9px;font-weight:800;font-size:12px;">✅ พอ</span>`
+              : `<span style="background:var(--sq-crit-bg);color:var(--sq-crit);border-radius:999px;padding:2px 9px;font-weight:800;font-size:12px;">❌ ขาด ${Math.abs(m.remaining).toLocaleString()}</span>`}
             </td>
           </tr>`;
         }).join("")}</tbody>
@@ -948,7 +948,7 @@ function crSiAddRow() {
       <button onclick="this.closest('.cr-si-row').remove()" style="position:absolute;top:10px;right:10px;background:none;border:none;font-size:18px;cursor:pointer;color:var(--sq-muted);line-height:1;">✕</button>
 
       <div style="margin-bottom:10px;">
-        <label style="font-size:11px;font-weight:700;color:var(--sq-muted);display:block;margin-bottom:4px;">📦 สินค้า</label>
+        <label style="font-size:12px;font-weight:700;color:var(--sq-muted);display:block;margin-bottom:4px;">📦 สินค้า</label>
         <select class="cr-si-product" onchange="crSiOnProductChange(this)"
           style="width:100%;padding:10px 12px;border:1.5px solid var(--sq-line);border-radius:10px;font-size:14px;background:#fff;box-sizing:border-box;">
           <option value="">— เลือกสินค้า —</option>
@@ -958,13 +958,13 @@ function crSiAddRow() {
 
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;">
         <div>
-          <label style="font-size:11px;font-weight:700;color:var(--sq-muted);display:block;margin-bottom:4px;">📅 MFG <span style="font-weight:400;opacity:.7;">(วันเดือนปี 6 หลัก)</span></label>
+          <label style="font-size:12px;font-weight:700;color:var(--sq-muted);display:block;margin-bottom:4px;">📅 MFG <span style="font-weight:400;opacity:.7;">(วันเดือนปี 6 หลัก)</span></label>
           <input class="cr-si-mfg" type="text" maxlength="6" inputmode="numeric" placeholder="เช่น 100426"
             oninput="this.value=this.value.replace(/\D/g,''); crSiAutoExp(this)"
             style="width:100%;padding:12px;border:1.5px solid var(--sq-line);border-radius:10px;font-size:20px;font-weight:900;text-align:center;letter-spacing:3px;box-sizing:border-box;">
         </div>
         <div>
-          <label style="font-size:11px;font-weight:700;color:var(--sq-high);display:block;margin-bottom:4px;">⚠️ EXP <span style="font-weight:400;opacity:.7;">(คำนวณอัตโนมัติ)</span></label>
+          <label style="font-size:12px;font-weight:700;color:var(--sq-high);display:block;margin-bottom:4px;">⚠️ EXP <span style="font-weight:400;opacity:.7;">(คำนวณอัตโนมัติ)</span></label>
           <input class="cr-si-exp" type="text" maxlength="6" inputmode="numeric" placeholder="—" readonly
             style="width:100%;padding:12px;border:1.5px solid var(--sq-high-bg);border-radius:10px;font-size:20px;font-weight:900;text-align:center;letter-spacing:3px;background:var(--sq-high-bg);color:var(--sq-high);box-sizing:border-box;">
         </div>
@@ -972,12 +972,12 @@ function crSiAddRow() {
 
       <div style="display:grid;grid-template-columns:2fr 1fr;gap:10px;">
         <div>
-          <label style="font-size:11px;font-weight:700;color:var(--sq-muted);display:block;margin-bottom:4px;">🔢 จำนวน (ประมาณ)</label>
+          <label style="font-size:12px;font-weight:700;color:var(--sq-muted);display:block;margin-bottom:4px;">🔢 จำนวน (ประมาณ)</label>
           <input class="cr-si-qty" type="number" min="0" value="" inputmode="numeric"
             style="width:100%;padding:12px;border:1.5px solid var(--sq-line);border-radius:10px;font-size:20px;font-weight:900;text-align:center;box-sizing:border-box;">
         </div>
         <div>
-          <label style="font-size:11px;font-weight:700;color:var(--sq-muted);display:block;margin-bottom:4px;">หน่วย</label>
+          <label style="font-size:12px;font-weight:700;color:var(--sq-muted);display:block;margin-bottom:4px;">หน่วย</label>
           <div class="cr-si-unit-label" style="padding:12px 8px;font-size:14px;font-weight:700;color:var(--sq-ink);text-align:center;background:#fff;border:1.5px solid var(--sq-line);border-radius:10px;">—</div>
         </div>
       </div>
@@ -1093,7 +1093,7 @@ async function crSiLoadReviewList(filterStatus) {
                  style="width:80px;padding:6px 8px;border:2px solid var(--sq-accent);border-radius:8px;font-size:16px;font-weight:900;text-align:center;">`
             : `<span style="font-weight:900;font-size:14px;">${Number(it.qty||0).toLocaleString()}</span>`
           }
-          <span style="font-size:11px;color:var(--sq-muted);margin-left:4px;">${escapeHtml(it.unit||"")}</span>
+          <span style="font-size:12px;color:var(--sq-muted);margin-left:4px;">${escapeHtml(it.unit||"")}</span>
         </td>
       </tr>`).join("");
 
@@ -1102,16 +1102,16 @@ async function crSiLoadReviewList(filterStatus) {
       <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:8px;margin-bottom:10px;">
         <div>
           <div style="font-size:15px;font-weight:900;color:var(--sq-ink);">${escapeHtml(si.StockInID)}</div>
-          <div style="font-size:11px;color:var(--sq-muted);">ส่งโดย: <b style="color:var(--sq-ink);">${escapeHtml(personName(si.SubmittedBy))}</b> &nbsp;|&nbsp; 🕐 ${si.SubmittedAtFmt||"-"}
+          <div style="font-size:12px;color:var(--sq-muted);">ส่งโดย: <b style="color:var(--sq-ink);">${escapeHtml(personName(si.SubmittedBy))}</b> &nbsp;|&nbsp; 🕐 ${si.SubmittedAtFmt||"-"}
             ${si.ReviewedBy ? `&nbsp;|&nbsp; ตรวจโดย: <b>${escapeHtml(personName(si.ReviewedBy))}</b>` : ""}
           </div>
         </div>
-        <span style="background:${statusBg[si.Status]||"var(--sq-muted)"};color:#fff;border-radius:999px;padding:3px 12px;font-size:11px;font-weight:900;">${escapeHtml(si.Status)}</span>
+        <span style="background:${statusBg[si.Status]||"var(--sq-muted)"};color:#fff;border-radius:999px;padding:3px 12px;font-size:12px;font-weight:900;">${escapeHtml(si.Status)}</span>
       </div>
       ${si.Note ? `<div style="background:var(--sq-warn-bg);padding:8px 12px;border-radius:8px;font-size:12px;margin-bottom:10px;">💬 ${escapeHtml(si.Note)}</div>` : ""}
       <div class="table-wrap" style="overflow-x:auto;margin-bottom:${isPending?"12px":"0"};">
         <table style="width:100%;border-collapse:collapse;min-width:320px;">
-          <thead><tr style="background:var(--sq-ink);color:#fff;font-size:11px;">
+          <thead><tr style="background:var(--sq-ink);color:#fff;font-size:12px;">
             <th style="padding:7px 10px;text-align:left;">สินค้า</th>
             <th style="padding:7px 10px;text-align:center;">MFG</th>
             <th style="padding:7px 10px;text-align:center;">EXP</th>
@@ -1212,7 +1212,7 @@ function crRenderLotBreakdown(rows) {
     <div style="display:flex;justify-content:space-between;align-items:center;margin-top:4px;">
       <span>🔸 MFG ${isoToDdmmyy(r.MFG)} (EXP ${isoToDdmmyy(r.EXP)})</span>
       <div><span style="margin-right:8px;"><b>${r.Qty}</b> ${unit}</span>
-        <button class="cr-btn btn-primary" style="padding:4px 8px;font-size:10px;border-radius:4px;" onclick="crSelectLot('${escapeJsAttr(String(r.MFG||""))}','${escapeJsAttr(String(r.EXP||""))}',${Number(r.Qty)||0})">เลือก</button>
+        <button class="cr-btn btn-primary" style="padding:4px 8px;font-size:12px;border-radius:4px;" onclick="crSelectLot('${escapeJsAttr(String(r.MFG||""))}','${escapeJsAttr(String(r.EXP||""))}',${Number(r.Qty)||0})">เลือก</button>
       </div>
     </div>`).join("");
   $$cr("crLotBreakdown").innerHTML = html;

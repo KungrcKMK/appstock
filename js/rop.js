@@ -125,19 +125,19 @@ function ropRender() {
     const v = starts[sku] || "";
     return `<input type="date" value="${v}" onchange="ropSetStart('${escapeJs(sku)}', this.value, this)"
       title="นับข้อมูลตั้งแต่วันนี้เป็นต้นไป — เว้นว่าง = นับทั้งช่วง"
-      style="font-family:inherit;font-size:11px;font-weight:700;padding:3px 6px;border:1px solid var(--sq-line);
+      style="font-family:inherit;font-size:12px;font-weight:700;padding:3px 6px;border:1px solid var(--sq-line);
              border-radius:7px;color:var(--sq-ink2);background:var(--sq-surface);${v ? "" : "opacity:.5;"}">`;
   };
 
   const body = rows.map(r => {
-    const name = `<b>${escapeHtml(r.mat.Name)}</b><br><span style="color:var(--sq-muted);font-size:11px;">${escapeHtml(r.mat.SKU)}</span>`;
+    const name = `<b>${escapeHtml(r.mat.Name)}</b><br><span style="color:var(--sq-muted);font-size:12px;">${escapeHtml(r.mat.SKU)}</span>`;
     if (!r.s) {
       return `<tr style="opacity:.55;"><td>${name}</td>
         <td colspan="3" style="color:var(--sq-muted);">ยังไม่เคยมีการเบิกใน ${_ropStats.windowDays} วัน</td>
         <td class="n">${fmt(r.cur)}</td><td>—</td><td style="opacity:1;">${dateCell(r.mat.SKU)}</td><td></td></tr>`;
     }
     const stat = `${fmt(r.s.avgDaily)} ${escapeHtml(r.mat.Unit||"")}/วัน
-        <br><span style="color:var(--sq-muted);font-size:11px;">±σ ${fmt(r.s.sigma)} · เบิก ${r.s.txCount} ครั้ง/${r.s.days} วัน</span>`;
+        <br><span style="color:var(--sq-muted);font-size:12px;">±σ ${fmt(r.s.sigma)} · เบิก ${r.s.txCount} ครั้ง/${r.s.days} วัน</span>`;
     if (r.sug === null) {
       return `<tr><td>${name}</td><td>${stat}</td>
         <td colspan="2"><span class="sq-chip" style="background:var(--sq-warn-bg);color:var(--sq-warn);">ข้อมูลยังน้อย — รอเบิกครบ ${ROP_MIN_TX} ครั้ง</span></td>
@@ -160,7 +160,7 @@ function ropRender() {
       <td class="n" style="font-size:16px;font-weight:800;">${fmt(r.sug)}</td>
       <td>${diffTxt}</td>
       <td class="n">${fmt(r.cur)}</td>
-      <td style="color:var(--sq-muted);font-size:11px;">ใช้ ${fmt(r.s.avgDaily)}×${ropLeadFor(r.mat)}วัน${Number(r.mat.LeadDays||0)>0?" (รายตัว)":""} + กันขาด ${fmt(Math.ceil(ropZ()*r.s.sigma*Math.sqrt(ropLeadFor(r.mat))))}${Number(r.mat.PackSize||0)>0?` · ปัดตามแพ็ค ${fmt(r.mat.PackSize)}`:""}${Number(r.mat.Moq||0)>0?` · ขั้นต่ำ ${fmt(r.mat.Moq)}`:""}</td>
+      <td style="color:var(--sq-muted);font-size:12px;">ใช้ ${fmt(r.s.avgDaily)}×${ropLeadFor(r.mat)}วัน${Number(r.mat.LeadDays||0)>0?" (รายตัว)":""} + กันขาด ${fmt(Math.ceil(ropZ()*r.s.sigma*Math.sqrt(ropLeadFor(r.mat))))}${Number(r.mat.PackSize||0)>0?` · ปัดตามแพ็ค ${fmt(r.mat.PackSize)}`:""}${Number(r.mat.Moq||0)>0?` · ขั้นต่ำ ${fmt(r.mat.Moq)}`:""}</td>
       <td>${dateCell(r.mat.SKU)}</td>
       <td>${btn}</td></tr>`;
   }).join("");

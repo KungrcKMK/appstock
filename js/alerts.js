@@ -232,8 +232,7 @@ async function saveUnifiedSettings() {
     })).json();
     hideLoading();
     if (r.ok) {
-      showToast("บันทึกการตั้งค่าสำเร็จ ✅  ใช้กับทุกโรงงานแล้ว", "success");
-      closeUnifiedSettings();
+      showToast("บันทึกการตั้งค่า Telegram แล้ว ✅  ใช้กับทุกโรงงาน", "success");
       // sync ไปที่ Cold Room tab ด้วย (ถ้ามีอยู่)
       ["crTgBotName","crTgToken","crTgChatIds","crTgEnable"].forEach((id, i) => {
         const srcIds = ["uniTgBotName","uniTgToken","uniTgChatIds","uniTgEnable"];
@@ -242,7 +241,7 @@ async function saveUnifiedSettings() {
       });
     } else { showToast("บันทึกไม่สำเร็จ","error"); }
   } catch(e) { hideLoading(); showToast("เกิดข้อผิดพลาด: "+e.message,"error"); }
-  btn.disabled = false; btn.textContent = "💾 บันทึกการตั้งค่า";
+  btn.disabled = false; btn.textContent = "💾 บันทึก Telegram";
 }
 
 async function testTelegram() {

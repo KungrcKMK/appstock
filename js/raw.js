@@ -434,8 +434,8 @@ function rawRenderItemRow(item) {
   return `<tr class="${sev}">
     <td class="rm-rail"></td>
     <td><input type="checkbox" class="raw-checkbox" data-sku="${escapeAttr(item.SKU)}" aria-label="เลือก ${escapeAttr(item.Name||item.SKU)}"></td>
-    <td><span class="badge-status ${bg}"><span>${bi}</span><span>${bt}</span></span></td>
-    <td>
+    <td data-label="สถานะ"><span class="badge-status ${bg}"><span>${bi}</span><span>${bt}</span></span></td>
+    <td data-label="วัตถุดิบ">
       <div class="rm-name" title="${escapeAttr(item.Name||"-")}">${escapeHtml(item.Name||"-")}</div>
       <div class="rm-meta">
         <span>${escapeHtml(item.SKU||"-")}</span>
@@ -445,12 +445,12 @@ function rawRenderItemRow(item) {
       </div>
       <div class="rm-trend" data-sku="${escapeAttr(item.SKU)}"></div>
     </td>
-    <td class="n">
+    <td class="n" data-label="คงเหลือ">
       <div class="rm-qty">${qty.toLocaleString()}<span class="rm-unit">${escapeHtml(item.Unit||"-")}</span></div>
       ${daysLeft !== null ? `<div class="rm-runout ${runoutCls}">พอใช้อีก ${daysLeft} วัน (ถึง ${outDate})</div>` : ""}
     </td>
-    <td class="n"><span class="rm-min">${Number(item.Min||0).toLocaleString()}</span></td>
-    <td class="n">
+    <td class="n" data-label="จุดสั่งซื้อ"><span class="rm-min">${Number(item.Min||0).toLocaleString()}</span></td>
+    <td class="n rm-actcell">
       ${window._appIsViewer ? `<span class="rm-meta" title="บัญชีนี้ดูได้อย่างเดียว — ขอสิทธิ์เพิ่มจากหัวหน้า">👁️ ดูอย่างเดียว</span>` : `<div class="rm-rowacts">
         <button onclick="openRawAction('${escapeJsAttr(item.SKU)}','${escapeJsAttr(item.Name)}','${escapeJsAttr(item.Unit)}',${Number(item.Qty)||0})" class="rm-mini solid">รับ / เบิก</button>
         <button onclick="openRawVerify('${escapeJsAttr(item.SKU)}','${escapeJsAttr(item.Name)}')" class="rm-mini">นับ</button>

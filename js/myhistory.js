@@ -53,11 +53,11 @@ async function openMyHistory() {
             <div style="background:${m.bg};color:${m.fg};width:40px;height:40px;border-radius:11px;display:flex;align-items:center;justify-content:center;font-size:19px;flex-shrink:0;">${m.icon}</div>
             <div style="flex:1;min-width:0;">
               <div style="font-weight:900;color:var(--sq-ink);font-size:14px;">${escapeHtml(x.name)}</div>
-              <div style="font-size:11px;color:var(--sq-muted);font-weight:700;">${escapeHtml(x.action)} · ${escapeHtml(x.module)}</div>
+              <div style="font-size:12px;color:var(--sq-muted);font-weight:700;">${escapeHtml(x.action)} · ${escapeHtml(x.module)}</div>
             </div>
             <div style="text-align:right;flex-shrink:0;">
               <div style="font-weight:900;color:${m.fg};font-size:16px;">${escapeHtml(x.qty)}</div>
-              <div style="font-size:10px;color:var(--sq-muted);font-weight:700;">${escapeHtml(x.when)}</div>
+              <div style="font-size:12px;color:var(--sq-muted);font-weight:700;">${escapeHtml(x.when)}</div>
             </div>
           </div>`;
         }).join("") + `</div>`

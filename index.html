@@ -81,7 +81,7 @@
     .xm-kpi { background:var(--sq-surface);border:1px solid var(--sq-line);border-radius:12px;padding:9px 8px;text-align:center;box-shadow:var(--sq-shadow); }
     .xm-kpi-n { font:800 22px/1.1 var(--sq-mono);color:var(--sq-muted); }
     .xm-kpi-n.crit { color:var(--sq-crit); } .xm-kpi-n.high { color:var(--sq-high); } .xm-kpi-n.warn { color:var(--sq-warn); }
-    .xm-kpi-l { font-size:11px;font-weight:700;color:var(--sq-ink2);margin-top:3px;line-height:1.3; }
+    .xm-kpi-l { font-size:12px;font-weight:700;color:var(--sq-ink2);margin-top:3px;line-height:1.3; }
     .xm-tabs { display:flex;gap:6px;overflow-x:auto;padding:2px 0 10px;scrollbar-width:none; }
     .xm-tabs::-webkit-scrollbar { display:none; }
     .xm-tab { flex:0 0 auto;font:inherit;font-size:14px;font-weight:800;padding:9px 14px;border-radius:999px;
@@ -95,15 +95,15 @@
     .xm-card.sev-crit { border-left-color:var(--sq-crit); } .xm-card.sev-high { border-left-color:var(--sq-high); } .xm-card.sev-warn { border-left-color:var(--sq-warn); }
     .xm-top { display:flex;align-items:flex-start;justify-content:space-between;gap:10px; }
     .xm-name { font-weight:800;font-size:15.5px;line-height:1.35;color:var(--sq-ink); }
-    .xm-fac { display:inline-block;font-size:10.5px;font-weight:800;color:var(--sq-ink2);background:var(--sq-none-bg);border-radius:5px;padding:1px 6px;vertical-align:2px; }
+    .xm-fac { display:inline-block;font-size:12px;font-weight:800;color:var(--sq-ink2);background:var(--sq-none-bg);border-radius:5px;padding:1px 6px;vertical-align:2px; }
     .xm-days { flex:none;font:800 22px/1 var(--sq-mono);color:var(--sq-muted);text-align:right;white-space:nowrap; }
-    .xm-days small { font:700 11px var(--sq-font, inherit);margin-left:2px;color:var(--sq-muted); }
+    .xm-days small { font:700 12px var(--sq-font, inherit);margin-left:2px;color:var(--sq-muted); }
     .xm-days.crit { color:var(--sq-crit); } .xm-days.high { color:var(--sq-high); } .xm-days.warn { color:var(--sq-warn); } .xm-days.ok { color:var(--sq-accent); }
     .xm-line { font-size:13px;color:var(--sq-ink2);margin-top:5px;line-height:1.5; }
     .xm-line b { color:var(--sq-ink);font-family:var(--sq-mono); }
-    .xm-sub { font-size:11.5px;color:var(--sq-muted);margin-top:3px; }
+    .xm-sub { font-size:12px;color:var(--sq-muted);margin-top:3px; }
     .xm-tags { display:flex;flex-wrap:wrap;gap:5px;margin-top:7px; }
-    .xm-foot { font-size:11.5px;color:var(--sq-muted);text-align:center;margin-top:14px;line-height:1.6; }
+    .xm-foot { font-size:12px;color:var(--sq-muted);text-align:center;margin-top:14px;line-height:1.6; }
     .xm-chart { background:var(--sq-surface);border:1px solid var(--sq-line);border-radius:12px;padding:11px 12px 8px;box-shadow:var(--sq-shadow); }
     .xm-chart-h { font-weight:800;font-size:14px;color:var(--sq-ink); }
     @media (max-width:360px) { .xm-kpis { grid-template-columns:repeat(2,minmax(0,1fr)); } }
@@ -117,6 +117,8 @@
     #main-nav { display:none; }
     /* 2 แถว: แถวบน = ผู้ใช้ + คลังที่ทำงาน · แถวล่าง = เครื่องมือ */
     .nav-row { display:flex;align-items:center;gap:6px;flex-wrap:wrap; }
+    /* จอแคบ: แถวเมนูเลื่อนซ้าย-ขวาแทนการขึ้นหลายบรรทัด — เดิมแถบเมนูกิน 22–34% ของจอ (QA L2) */
+    @media (max-width:700px) { .nav-row { flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch; } .nav-row::-webkit-scrollbar { display:none; } .nav-row > * { flex-shrink:0; } }
     .nav-sep { height:1px;background:rgba(255,255,255,.08);margin:6px 0; }
     .nav-btn { padding:8px 16px;border-radius:12px;font-weight:800;font-size:12px;text-transform:uppercase;transition:all .2s;color:rgba(255,255,255,.6);background:transparent;border:none;cursor:pointer;white-space:nowrap; }
     .nav-btn.active { background:rgba(255,255,255,.15);color:#fff;box-shadow:0 2px 8px rgba(0,0,0,.2); }
@@ -128,7 +130,7 @@
     .nav-btn.nav-tool:hover { background:rgba(255,255,255,.18); }
     .nav-btn.nav-logout { background:rgba(239,68,68,.16);color:#fecaca; }
     .nav-btn.nav-logout:hover { background:rgba(239,68,68,.32);color:#fff; }
-    .nav-badge { display:inline-flex;align-items:center;justify-content:center;min-width:18px;height:18px;padding:0 5px;border-radius:999px;font-size:10px;font-weight:900;background:#ef4444;color:#fff;margin-left:4px;animation:badgePop .3s ease; }
+    .nav-badge { display:inline-flex;align-items:center;justify-content:center;min-width:18px;height:18px;padding:0 5px;border-radius:999px;font-size:12px;font-weight:900;background:#ef4444;color:#fff;margin-left:4px;animation:badgePop .3s ease; }
     @keyframes badgePop { 0%{transform:scale(0)} 70%{transform:scale(1.3)} 100%{transform:scale(1)} }
 
     /* ── หน้าแรก: เลือกคลังหลัง login (แถบเมนูยังใช้สลับได้เหมือนเดิม) ── */
@@ -182,12 +184,12 @@
     .ac-item:last-child { border-bottom:none; }
     .ac-item:hover,.ac-item.ac-hover { background:#eff6ff; }
     .ac-main { font-weight:700;color:#1e293b;font-size:14px;line-height:1.3; }
-    .ac-sub  { font-size:11px;color:#94a3b8;margin-top:2px; }
-    .ac-badge { display:inline-block;padding:1px 7px;border-radius:6px;font-size:10px;font-weight:800;margin-left:6px;background:#e0e7ff;color:#4338ca;vertical-align:middle; }
+    .ac-sub  { font-size:12px;color:#94a3b8;margin-top:2px; }
+    .ac-badge { display:inline-block;padding:1px 7px;border-radius:6px;font-size:12px;font-weight:800;margin-left:6px;background:#e0e7ff;color:#4338ca;vertical-align:middle; }
     .ac-empty { padding:14px 16px;color:#94a3b8;font-size:13px;text-align:center; }
 
     /* ── Activity filter buttons ── */
-    .act-filter-btn { padding:5px 14px;border-radius:999px;font-size:11px;font-weight:800;background:rgba(255,255,255,0.1);color:rgba(255,255,255,0.5);border:none;cursor:pointer;white-space:nowrap;transition:all .2s; }
+    .act-filter-btn { padding:5px 14px;border-radius:999px;font-size:12px;font-weight:800;background:rgba(255,255,255,0.1);color:rgba(255,255,255,0.5);border:none;cursor:pointer;white-space:nowrap;transition:all .2s; }
     .act-filter-btn.active { background:rgba(52,211,153,0.3);color:#34d399; }
 
     /* ── หน้าคลังสินค้า ──
@@ -334,7 +336,7 @@
       padding:11px 14px;border-bottom:1px solid var(--sq-line);
     }
     #module-RAW .rm-card-title { font-size:13.5px;font-weight:800;letter-spacing:-.01em; }
-    #module-RAW .rm-card-note { font-size:11.5px;color:var(--sq-muted);font-weight:600; }
+    #module-RAW .rm-card-note { font-size:12px;color:var(--sq-muted);font-weight:600; }
 
     /* ตัวเลขสรุป */
     #module-RAW .rm-tiles {
@@ -345,13 +347,13 @@
     }
     #module-RAW .rm-tile { padding:11px 14px;border-right:1px solid var(--sq-line-soft); }
     #module-RAW .rm-tile:last-child { border-right:0; }
-    #module-RAW .rm-tile-label { font-size:11.5px;color:var(--sq-muted);font-weight:600;display:flex;align-items:center;gap:5px; }
+    #module-RAW .rm-tile-label { font-size:12px;color:var(--sq-muted);font-weight:600;display:flex;align-items:center;gap:5px; }
     #module-RAW .rm-dot { width:7px;height:7px;border-radius:50%;flex:none;background:var(--sq-muted); }
     #module-RAW .rm-tile-num {
       font:800 25px/1.15 var(--sq-mono);font-variant-numeric:tabular-nums;
       letter-spacing:-.02em;margin-top:3px;color:var(--sq-ink);
     }
-    #module-RAW .rm-tile-note { font-size:11px;color:var(--sq-muted); }
+    #module-RAW .rm-tile-note { font-size:12px;color:var(--sq-muted); }
 
     /* แถบเครื่องมือ */
     #module-RAW .rm-toolbar { display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:10px 14px; }
@@ -375,7 +377,7 @@
     #module-RAW .rm-chip:focus-visible { outline:2px solid var(--sq-accent);outline-offset:1px; }
     /* ปุ่มกรองที่เลือกอยู่ — raw.js สลับ class นี้ */
     #module-RAW .rm-chip.filter-active { background:var(--sq-ink);border-color:var(--sq-ink);color:var(--sq-surface); }
-    #module-RAW .rm-alertdays { display:flex;align-items:center;gap:7px;font-size:11.5px;color:var(--sq-muted);font-weight:600; }
+    #module-RAW .rm-alertdays { display:flex;align-items:center;gap:7px;font-size:12px;color:var(--sq-muted);font-weight:600; }
     #module-RAW .rm-alertdays input {
       width:56px;font:700 13px/1 var(--sq-mono);text-align:center;padding:6px 4px;
       border:1px solid var(--sq-line);border-radius:7px;background:var(--sq-raised);color:var(--sq-ink);outline:none;
@@ -386,7 +388,7 @@
     #module-RAW .rm-tablewrap { overflow-x:auto; }
     #module-RAW table.rm-table { width:100%;border-collapse:collapse;min-width:880px;font-size:13px; }
     #module-RAW .rm-table thead th {
-      background:var(--sq-surface);font-size:11px;font-weight:700;color:var(--sq-muted);
+      background:var(--sq-surface);font-size:12px;font-weight:700;color:var(--sq-muted);
       letter-spacing:.03em;text-align:left;padding:9px 12px;
       border-bottom:1px solid var(--sq-line);white-space:nowrap;
     }
@@ -405,16 +407,16 @@
 
     #module-RAW .rm-name { font-weight:700;font-size:13.5px;line-height:1.35;color:var(--sq-ink);
       max-width:280px;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical; }
-    #module-RAW .rm-meta { font:500 11px/1.5 var(--sq-mono);color:var(--sq-muted);margin-top:2px;
+    #module-RAW .rm-meta { font:500 12px/1.5 var(--sq-mono);color:var(--sq-muted);margin-top:2px;
       display:flex;gap:9px;flex-wrap:wrap; }
     /* เส้นเทรนด์การเบิกใต้ชื่อ — ว่างไว้จนกว่าข้อมูลเทรนด์จะตามมา (โหลดแยกไม่ถ่วงตาราง) */
     #module-RAW .rm-trend { display:flex;align-items:center;gap:7px;margin-top:3px;min-height:0; }
     #module-RAW .rm-trend svg { display:block;flex-shrink:0; }
-    #module-RAW .rm-trend .tr-avg { font:700 10.5px/1 var(--sq-mono);color:var(--sq-muted);white-space:nowrap; }
+    #module-RAW .rm-trend .tr-avg { font:700 12px/1 var(--sq-mono);color:var(--sq-muted);white-space:nowrap; }
     #module-RAW .rm-qty { font:700 17px/1.2 var(--sq-mono);font-variant-numeric:tabular-nums;letter-spacing:-.01em;color:var(--sq-ink); }
-    #module-RAW .rm-unit { font-size:11px;color:var(--sq-muted);font-weight:600;margin-left:3px;font-family:inherit; }
+    #module-RAW .rm-unit { font-size:12px;color:var(--sq-muted);font-weight:600;margin-left:3px;font-family:inherit; }
     #module-RAW .rm-min { font:600 13px/1.2 var(--sq-mono);font-variant-numeric:tabular-nums;color:var(--sq-muted); }
-    #module-RAW .rm-runout { font:600 11px/1.4 var(--sq-mono);color:var(--sq-muted);margin-top:1px;white-space:nowrap; }
+    #module-RAW .rm-runout { font:600 12px/1.4 var(--sq-mono);color:var(--sq-muted);margin-top:1px;white-space:nowrap; }
     /* ⏰ ไม่มีการอัปเดตสต๊อกเกินกำหนด — ป้ายในบรรทัดรายละเอียดของแถว */
     #module-RAW .rm-stale { color:var(--sq-high);font-weight:700;background:var(--sq-high-bg);border-radius:4px;padding:0 5px; }
     #module-RAW .rm-runout.crit { color:var(--sq-crit);font-weight:700; }
@@ -424,7 +426,7 @@
     /* ปุ่มในแถว */
     #module-RAW .rm-rowacts { display:flex;gap:4px;justify-content:flex-end;flex-wrap:wrap; }
     #module-RAW .rm-mini {
-      font:inherit;font-size:11.5px;font-weight:700;padding:4px 9px;border-radius:6px;cursor:pointer;
+      font:inherit;font-size:12px;font-weight:700;padding:4px 10px;border-radius:6px;cursor:pointer;min-height:32px;   /* QA M19 */
       border:1px solid var(--sq-line);background:var(--sq-surface);color:var(--sq-ink2);white-space:nowrap;
     }
     #module-RAW .rm-mini:hover { background:var(--sq-accent-2);border-color:var(--sq-accent);color:var(--sq-accent); }
@@ -471,7 +473,7 @@
     .sq-btn:focus-visible { outline:2px solid var(--sq-accent);outline-offset:1px; }
     .sq-btn-primary { background:var(--sq-accent);border-color:var(--sq-accent);color:var(--sq-accent-ink); }
     .sq-btn-primary:hover { filter:brightness(1.08);background:var(--sq-accent);border-color:var(--sq-accent); }
-    .sq-btn-sm { font-size:11.5px;padding:4px 9px;border-radius:6px; }
+    .sq-btn-sm { font-size:12px;padding:4px 10px;border-radius:6px;min-height:32px; }   /* QA M19: ขั้นต่ำ 12px / สูง 32px */
 
     .sq-card {
       background:var(--sq-surface);border:1px solid var(--sq-line);
@@ -482,7 +484,11 @@
       padding:11px 14px;border-bottom:1px solid var(--sq-line);
     }
     .sq-card-title { font-size:14px;font-weight:800;letter-spacing:-.01em;display:flex;align-items:center;gap:7px; }
-    .sq-card-note { font-size:11.5px;color:var(--sq-muted);font-weight:600; }
+    /* หัวข้อในห้องเย็นไม่มีสไตล์ (preflight รีเซ็ต) — ตัวเท่าเนื้อหา แยกหัวข้อไม่ออก (QA M17) */
+    #module-COLDROOM h1 { font-size:20px;font-weight:800;color:var(--sq-ink);margin:0 0 6px; }
+    #module-COLDROOM h2 { font-size:16px;font-weight:800;color:var(--sq-ink);margin:0 0 8px; }
+    #module-COLDROOM h3 { font-size:14px;font-weight:800;color:var(--sq-ink);margin:0 0 6px; }
+    .sq-card-note { font-size:12px;color:var(--sq-muted);font-weight:600; }
     .sq-card-body { padding:12px 14px; }
     /* แถบสีบอกว่าการ์ดนี้เป็นของคลังไหน */
     .sq-card.rail-cold { border-left:3px solid #0369a1; }
@@ -496,10 +502,10 @@
     }
     .sq-tile { padding:11px 14px;border-right:1px solid var(--sq-line-soft); }
     .sq-tile:last-child { border-right:0; }
-    .sq-tile-label { font-size:11.5px;color:var(--sq-muted);font-weight:600;display:flex;align-items:center;gap:5px; }
+    .sq-tile-label { font-size:12px;color:var(--sq-muted);font-weight:600;display:flex;align-items:center;gap:5px; }
     .sq-dot { width:7px;height:7px;border-radius:50%;flex:none;background:var(--sq-muted); }
     .sq-tile-num { font:800 25px/1.15 var(--sq-mono);font-variant-numeric:tabular-nums;letter-spacing:-.02em;margin-top:3px; }
-    .sq-tile-note { font-size:11px;color:var(--sq-muted); }
+    .sq-tile-note { font-size:12px;color:var(--sq-muted); }
     /* การ์ดตัวเลขที่กดกรองได้ (หน้าวางแผนสั่งซื้อ) */
     button.plan-tile { font:inherit;text-align:left;background:none;border:0;border-right:1px solid var(--sq-line-soft);cursor:pointer;color:inherit; }
     button.plan-tile:hover { background:var(--sq-raised); }
@@ -509,7 +515,7 @@
     .sq-tablewrap { overflow-x:auto; }
     table.sq-table { width:100%;border-collapse:collapse;font-size:13px; }
     .sq-table thead th {
-      background:var(--sq-surface);font-size:11px;font-weight:700;color:var(--sq-muted);
+      background:var(--sq-surface);font-size:12px;font-weight:700;color:var(--sq-muted);
       letter-spacing:.03em;text-align:left;padding:9px 12px;
       border-bottom:1px solid var(--sq-line);white-space:nowrap;
     }
@@ -525,15 +531,15 @@
     .sq-table tr.sev-warn td.rail { border-left-color:var(--sq-warn); }
 
     .sq-name { font-weight:700;font-size:13.5px;line-height:1.35;color:var(--sq-ink); }
-    .sq-meta { font:500 11px/1.5 var(--sq-mono);color:var(--sq-muted);margin-top:2px;display:flex;gap:9px;flex-wrap:wrap; }
+    .sq-meta { font:500 12px/1.5 var(--sq-mono);color:var(--sq-muted);margin-top:2px;display:flex;gap:9px;flex-wrap:wrap; }
     .sq-num  { font:700 14px/1.2 var(--sq-mono);font-variant-numeric:tabular-nums;letter-spacing:-.01em; }
     .sq-num-lg { font-size:17px; }
-    .sq-unit { font-size:11px;color:var(--sq-muted);font-weight:600;margin-left:3px;font-family:inherit; }
+    .sq-unit { font-size:12px;color:var(--sq-muted);font-weight:600;margin-left:3px;font-family:inherit; }
     .sq-dim  { color:var(--sq-muted); }
 
     /* ป้ายสถานะกลาง — สี + ไอคอน + คำ เสมอ */
     .sq-chip {
-      display:inline-flex;align-items:center;gap:4px;font-size:11.5px;font-weight:700;
+      display:inline-flex;align-items:center;gap:4px;font-size:12px;font-weight:700;
       white-space:nowrap;padding:3px 8px;border-radius:5px;
       background:var(--sq-none-bg);color:var(--sq-none);
     }
@@ -545,7 +551,7 @@
     /* หลอดเทียบยอดกับจุดสั่งซื้อ */
     .sq-meter { height:4px;background:var(--sq-line-soft);border-radius:4px;overflow:hidden;margin-top:4px; }
     .sq-meter > i { display:block;height:100%;border-radius:4px; }
-    .sq-meter-note { font:500 10px/1.4 var(--sq-mono);color:var(--sq-muted);margin-top:2px; }
+    .sq-meter-note { font:500 12px/1.4 var(--sq-mono);color:var(--sq-muted);margin-top:2px; }
 
     /* แท็บ */
     .sq-tabs { display:flex;gap:4px;border-bottom:1px solid var(--sq-line);margin-bottom:14px; }
@@ -559,7 +565,7 @@
     .sq-tab.is-on { color:var(--sq-accent);border-bottom-color:var(--sq-accent);font-weight:800; }
     .sq-tab-badge {
       display:inline-flex;align-items:center;justify-content:center;min-width:17px;height:17px;
-      padding:0 5px;border-radius:999px;font:800 10px/1 var(--sq-mono);
+      padding:0 5px;border-radius:999px;font:800 12px/1 var(--sq-mono);
       background:var(--sq-crit);color:#fff;margin-left:5px;vertical-align:middle;
     }
 
@@ -581,7 +587,7 @@
     .sq-row.is-super { background:var(--sq-warn-bg);border-color:transparent; }
     .sq-row-id { flex:1;min-width:0; }
     .sq-row-name { font-weight:800;font-size:14px;color:var(--sq-ink);margin:0; }
-    .sq-row-meta { margin:3px 0 0;font-size:11.5px;color:var(--sq-muted);font-weight:600;display:flex;gap:8px;flex-wrap:wrap;align-items:center; }
+    .sq-row-meta { margin:3px 0 0;font-size:12px;color:var(--sq-muted);font-weight:600;display:flex;gap:8px;flex-wrap:wrap;align-items:center; }
     .sq-row-acts { display:flex;align-items:center;gap:6px;flex-wrap:wrap; }
 
     /* ช่องกรอก */
@@ -615,7 +621,7 @@
     /* ── Raw Materials (SQF/MLM) custom ── */
     /* ป้ายสถานะ: มีทั้งไอคอนและคำเสมอ ไม่ได้ใช้สีอย่างเดียว */
     .badge-status {
-      display:inline-flex;align-items:center;gap:4px;font-size:11.5px;font-weight:700;
+      display:inline-flex;align-items:center;gap:4px;font-size:12px;font-weight:700;
       white-space:nowrap;padding:3px 8px;border-radius:5px;
       background:var(--sq-none-bg);color:var(--sq-none);
     }
@@ -626,7 +632,7 @@
     .history-item:hover { background:var(--sq-accent-2); }
     .history-text-main { font-weight:700;font-size:12.5px;line-height:1.35;color:var(--sq-ink); }
     .history-text-act  { font:700 13px/1.3 var(--sq-mono);margin-top:2px; }
-    .history-text-sub  { font:500 10.5px/1.4 var(--sq-mono);color:var(--sq-muted);margin-top:3px; }
+    .history-text-sub  { font:500 12px/1.4 var(--sq-mono);color:var(--sq-muted);margin-top:3px; }
     .custom-scrollbar::-webkit-scrollbar { width:5px; }
     .custom-scrollbar::-webkit-scrollbar-thumb { background:#cbd5e1;border-radius:10px; }
     .chart-wrap       { position:relative;height:280px; }
@@ -664,6 +670,26 @@
     .login-btn:hover, .login-btn:focus-visible { background:#0b5c30; }
     .login-link { font-size:12.5px;font-weight:800;color:var(--sq-ink2);background:none;border:0;padding:8px 4px;min-height:36px;cursor:pointer;font-family:inherit;text-decoration:underline;text-underline-offset:3px; }
     .login-link:hover { color:var(--sq-accent); }
+    /* หน้าคอมบนจอแคบ (<700px): ตารางวัตถุดิบเป็นการ์ด ปุ่มอยู่ในจอ กดง่าย (QA L2 2026-10-10)
+       เดิมปุ่ม รับ/เบิก · นับ · แก้ไข · ลบ อยู่นอกจอ ต้องเลื่อนตาราง และ "ลบ" ติด "แก้ไข" */
+    @media (max-width:700px) {
+      #module-RAW .rm-table thead { display:none; }
+      #module-RAW .rm-table, #module-RAW .rm-table tbody { display:block;width:100%; }
+      #module-RAW .rm-table tr { display:grid;grid-template-columns:1fr 1fr;gap:4px 10px;padding:12px;margin:0 0 10px;
+                                  border:1px solid var(--sq-line);border-radius:12px;background:var(--sq-surface); }
+      #module-RAW .rm-table td { display:block;padding:0 !important;border:0 !important;text-align:left !important; }
+      #module-RAW .rm-table td.rm-rail, #module-RAW .rm-table td:nth-child(2) { display:none; }
+      #module-RAW .rm-table td[data-label="วัตถุดิบ"] { grid-column:1 / -1;order:-1; }
+      #module-RAW .rm-table td[data-label]::before { content:attr(data-label);display:block;font-size:12px;font-weight:700;color:var(--sq-muted); }
+      #module-RAW .rm-table td[data-label="วัตถุดิบ"]::before { display:none; }
+      #module-RAW .rm-table td.rm-actcell { grid-column:1 / -1;margin-top:6px; }
+      #module-RAW .rm-table .rm-rowacts { display:flex;flex-wrap:wrap;gap:8px; }
+      #module-RAW .rm-table .rm-rowacts .rm-mini { min-height:40px;flex:1 1 auto; }
+      #module-RAW .rm-table .rm-rowacts .rm-mini.danger { flex:0 0 auto;margin-left:auto; }
+      #module-RAW .rm-tablewrap { overflow:visible !important; }
+    }
+    /* ช่องติ๊กในตารางวัตถุดิบ 13px → 18px (กดง่ายขึ้น · QA L1) */
+    #module-RAW .raw-checkbox, #rawSelectAll { width:18px;height:18px;cursor:pointer; }
     /* โฟกัสด้วยคีย์บอร์ดต้องเห็น (QA L5/M7) */
     .rm-purpose-in:focus { border-color:var(--sq-accent) !important;box-shadow:0 0 0 3px rgba(14,122,63,.2); }
     [role="button"]:focus-visible, th.s:focus-visible, .imp-drop:focus-visible { outline:3px solid var(--sq-accent);outline-offset:2px; }
@@ -673,18 +699,18 @@
     /* 🗓️ กำหนดการส่งสรุป (js/notify.js) — CSS ล้วน ไม่พึ่ง class Tailwind ใหม่ */
     .ntf-card{border:2px solid;border-radius:24px;padding:16px;margin-bottom:12px;}
     .ntf-head{display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:15px;margin-bottom:4px;}
-    .ntf-lbl{font-size:11px;font-weight:900;color:#94a3b8;text-transform:uppercase;letter-spacing:.04em;margin:12px 0 5px;}
+    .ntf-lbl{font-size:12px;font-weight:900;color:#94a3b8;text-transform:uppercase;letter-spacing:.04em;margin:12px 0 5px;}
     .ntf-days{display:flex;gap:6px;flex-wrap:wrap;}
     .ntf-day input{position:absolute;opacity:0;pointer-events:none;}
     .ntf-day span{display:inline-flex;align-items:center;justify-content:center;min-width:40px;height:36px;padding:0 6px;border-radius:12px;border:2px solid #cbd5e1;background:#fff;font-weight:900;font-size:13px;color:#64748b;cursor:pointer;user-select:none;}
     .ntf-day input:checked + span{background:#0f172a;border-color:#0f172a;color:#fff;}
     .ntf-day input:focus-visible + span{outline:3px solid #93c5fd;}
     .ntf-quick{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px;}
-    .ntf-quick button{font-size:11px;font-weight:900;color:#475569;background:#fff;border:1px solid #cbd5e1;border-radius:999px;padding:3px 10px;}
+    .ntf-quick button{font-size:12px;font-weight:900;color:#475569;background:#fff;border:1px solid #cbd5e1;border-radius:999px;padding:3px 10px;}
     .ntf-col{display:flex;flex-direction:column;gap:5px;}
     .ntf-opt{display:flex;align-items:center;gap:7px;font-size:13px;font-weight:700;color:#334155;cursor:pointer;}
     .ntf-opt input{width:16px;height:16px;flex-shrink:0;}
-    .ntf-dim{font-size:11px;font-weight:700;color:#64748b;}
+    .ntf-dim{font-size:12px;font-weight:700;color:#64748b;}
     .ntf-hint{font-size:12px;color:#475569;margin-top:10px;line-height:1.55;display:flex;flex-direction:column;gap:3px;}
     .ntf-btn{margin-top:10px;width:100%;background:#fff;border:2px solid #cbd5e1;border-radius:16px;padding:8px;font-size:13px;font-weight:900;color:#334155;}
     .ntf-btn:hover{border-color:#64748b;}
@@ -735,13 +761,13 @@
 
           <div class="grid grid-cols-2 gap-4">
             <div>
-              <label class="text-xs font-black uppercase text-slate-400 mb-1 block">🤖 ชื่อบอท</label>
+              <label class="text-xs font-black text-slate-600 mb-1 block">🤖 ชื่อบอท</label>
               <input type="text" id="uniTgBotName"
                 class="w-full bg-white border-2 border-slate-200 p-3 rounded-2xl font-bold outline-none focus:border-blue-500 transition-colors text-sm"
                 placeholder="@MyStockBot">
             </div>
             <div>
-              <label class="text-xs font-black uppercase text-slate-400 mb-1 block">สถานะ</label>
+              <label class="text-xs font-black text-slate-600 mb-1 block">สถานะ</label>
               <select id="uniTgEnable"
                 class="w-full bg-white border-2 border-slate-200 p-3 rounded-2xl font-bold outline-none focus:border-blue-500 transition-colors text-sm">
                 <option value="true">✅ เปิดใช้งาน</option>
@@ -751,14 +777,14 @@
           </div>
 
           <div>
-            <label class="text-xs font-black uppercase text-slate-400 mb-1 block">🔑 Bot Token</label>
+            <label class="text-xs font-black text-slate-600 mb-1 block">🔑 Bot Token</label>
             <input type="password" id="uniTgToken"
               class="w-full bg-white border-2 border-slate-200 p-3 rounded-2xl font-bold outline-none focus:border-blue-500 transition-colors text-sm"
               placeholder="1234567890:ABC-xxxxxxxxxxxxx">
           </div>
 
           <div>
-            <label class="text-xs font-black uppercase text-slate-400 mb-1 block">💬 Chat ID
+            <label class="text-xs font-black text-slate-600 mb-1 block">💬 Chat ID
               <span class="text-slate-300 font-normal normal-case">(คั่นหลาย ID ด้วยคอมม่า)</span>
             </label>
             <textarea id="uniTgChatIds" rows="2"
@@ -766,10 +792,10 @@
               placeholder="-100xxxxxxxxx, -100yyyyyyyyy"></textarea>
           </div>
 
-          <button onclick="testTelegram()"
-            class="w-full bg-blue-100 text-blue-800 py-3 rounded-2xl font-black hover:bg-blue-200 transition-all uppercase text-sm">
-            📨 ทดสอบ Telegram
-          </button>
+          <div class="grid grid-cols-2 gap-2">
+            <button onclick="saveUnifiedSettings()" id="uniBtnSave" class="bg-blue-700 text-white py-3 rounded-2xl font-black hover:bg-blue-800 transition-all text-sm">💾 บันทึก Telegram</button>
+            <button onclick="testTelegram()" class="bg-blue-100 text-blue-800 py-3 rounded-2xl font-black hover:bg-blue-200 transition-all text-sm">📨 ทดสอบ Telegram</button>
+          </div>
         </div>
 
         <!-- ─── LINE SECTION (js/line.js) — ส่งเฉพาะสรุปที่ต้องสั่งซื้อ เพราะ LINE นับโควตาตามจำนวนสมาชิก ─── -->
@@ -782,15 +808,15 @@
             LINE นับโควตา<b>ตามจำนวนสมาชิกในกลุ่ม</b> — แพ็กเกจฟรี 300 ข้อความ/เดือน</p>
           <div id="lineInfo" class="text-sm space-y-1.5"></div>
           <div>
-            <label class="text-xs font-black uppercase text-slate-400 mb-1 block">🔑 Channel access token (long-lived)</label>
+            <label class="text-xs font-black text-slate-600 mb-1 block">🔑 Channel access token (long-lived)</label>
             <input type="password" id="lineTokenIn" autocomplete="off" class="w-full bg-white border-2 border-slate-200 p-3 rounded-2xl font-bold outline-none focus:border-green-500 transition-colors text-sm">
           </div>
           <div>
-            <label class="text-xs font-black uppercase text-slate-400 mb-1 block">🔐 Channel secret</label>
+            <label class="text-xs font-black text-slate-600 mb-1 block">🔐 Channel secret</label>
             <input type="password" id="lineSecretIn" autocomplete="off" class="w-full bg-white border-2 border-slate-200 p-3 rounded-2xl font-bold outline-none focus:border-green-500 transition-colors text-sm">
           </div>
           <div>
-            <label class="text-xs font-black uppercase text-slate-400 mb-1 block">🔗 Webhook URL — คัดลอกไปใส่ใน LINE Developers</label>
+            <label class="text-xs font-black text-slate-600 mb-1 block">🔗 Webhook URL — คัดลอกไปใส่ใน LINE Developers</label>
             <div class="flex gap-2">
               <input type="text" id="lineWebhookUrl" readonly class="w-full bg-white border-2 border-slate-200 p-3 rounded-2xl font-bold outline-none focus:border-green-500 transition-colors text-sm text-xs" onclick="this.select()">
               <button type="button" onclick="lineCopyWebhook()" class="bg-green-100 text-green-800 px-4 rounded-2xl font-black text-sm hover:bg-green-200">คัดลอก</button>
@@ -823,12 +849,7 @@
           <button type="button" onclick="ntfSave(this)" class="w-full bg-slate-900 text-white py-3 rounded-2xl font-black hover:bg-blue-700 transition-all text-sm">💾 บันทึกกำหนดการส่งสรุป</button>
         </div>
 
-        <!-- ─── EMAIL SECTION ─── -->
-        <!-- Save Button -->
-        <button onclick="saveUnifiedSettings()" id="uniBtnSave"
-          class="w-full bg-slate-900 text-white py-6 rounded-3xl font-black text-xl shadow-xl hover:bg-blue-700 transition-all uppercase">
-          💾 บันทึกการตั้งค่า
-        </button>
+        <!-- ปุ่มบันทึกแต่ละส่วนอยู่ในส่วนของตัวเอง (เดิมมีปุ่มใหญ่ "บันทึกการตั้งค่า" ท้ายหน้าที่บันทึกแค่ Telegram · QA M17) -->
       </div>
     </div>
   </div>

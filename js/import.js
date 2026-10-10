@@ -280,7 +280,7 @@ function impBuildPreview(text) {
   const body = view.map(v => `
     <tr class="${v.ok ? "" : "sev-crit"}">
       <td class="rail"></td>
-      <td class="c sq-dim" style="font-family:var(--sq-mono);font-size:11.5px;">${v.line}</td>
+      <td class="c sq-dim" style="font-family:var(--sq-mono);font-size:12px;">${v.line}</td>
       <td>${v.ok ? '<span class="sq-chip ok">✓ พร้อม</span>'
                  : `<span class="sq-chip crit">⚠️ ${escapeHtml(v.errs[0])}</span>`}</td>
       <td><span class="sq-name">${escapeHtml(v.name || "—")}</span>
@@ -288,7 +288,7 @@ function impBuildPreview(text) {
       <td class="n">${fmt(v.qty)}<span class="sq-unit">${escapeHtml(v.unit || "")}</span></td>
       <td class="n">${fmt(v.min)}</td>
       <td class="n">${fmt(v.daily)}</td>
-      <td class="c sq-dim" style="font-family:var(--sq-mono);font-size:11.5px;">${v.exp ? escapeHtml(v.exp) : "—"}</td>
+      <td class="c sq-dim" style="font-family:var(--sq-mono);font-size:12px;">${v.exp ? escapeHtml(v.exp) : "—"}</td>
     </tr>`).join("");
 
   document.getElementById("impDropZone").style.display = "none";
@@ -384,7 +384,7 @@ function impShowServerResult(res) {
   const word = { created:"เพิ่มใหม่", updated:"อัปเดต", skipped:"ข้าม", error:"ผิดพลาด" };
   const rows = (res.results || []).map(x => `
     <tr>
-      <td class="c sq-dim" style="font-family:var(--sq-mono);font-size:11.5px;">${x.line}</td>
+      <td class="c sq-dim" style="font-family:var(--sq-mono);font-size:12px;">${x.line}</td>
       <td><span class="sq-chip ${chip[x.status] || ""}">${word[x.status] || x.status}</span></td>
       <td><span class="sq-name">${escapeHtml(x.name || "—")}</span>
           ${x.sku ? `<div class="sq-meta"><span>${escapeHtml(x.sku)}</span></div>` : ""}</td>

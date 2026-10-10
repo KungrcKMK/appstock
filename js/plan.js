@@ -116,7 +116,7 @@ function _planNtfHtml() {
   if (!_planNtfText) return "🗓️ สรุปเข้ากลุ่ม Telegram / LINE: กำลังโหลดกำหนดการ…";
   const isAdmin = (localStorage.getItem("unified_stock_role") || "").toLowerCase() === "admin";
   return `🗓️ <b>สรุปเข้ากลุ่มอัตโนมัติ</b> · Telegram: ${escapeHtml(_planNtfText.tg)} · LINE: ${escapeHtml(_planNtfText.line)}` +
-    (isAdmin ? ` <button class="sq-btn sq-btn-sm" onclick="openUnifiedSettings()">ตั้งวัน/เวลา/รูปแบบ</button>` : " (แอดมินตั้งได้ที่ ⚙️ ตั้งค่าการแจ้งเตือน)");
+    (isAdmin ? ` <button class="sq-btn sq-btn-sm" onclick="closePlanModal();openUnifiedSettings()">ตั้งวัน/เวลา/รูปแบบ</button>` : " (แอดมินตั้งได้ที่ ⚙️ ตั้งค่าการแจ้งเตือน)");
 }
 
 // ── กรอง ──

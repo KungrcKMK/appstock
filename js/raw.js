@@ -1165,8 +1165,12 @@ async function rawSubmitNew() {
         dailyUsage=Number(document.getElementById("rawNewDailyUsage").value||0),
         expiry=document.getElementById("rawNewExpiry").value;
   if (!sku)  return showToast("ไม่พบ SKU","error");
-  if (!name) return showToast("กรุณาระบุชื่อ","warn");
-  if (!unit) return showToast("กรุณาระบุหน่วยนับ","warn");
+  if (!name) { rawFieldError("rawNewName", "กรุณาระบุชื่อ"); return; }
+  if (!unit) { rawFieldError("rawNewUnit", "กรุณาระบุหน่วยนับ"); return; }
+  // ยอด/จุดสั่งซื้อ/ใช้ต่อวัน ห้ามติดลบ (เดิมสร้างยอดเริ่มต้น -5 ได้ · QA M13) — หลังบ้านตรวจซ้ำอีกชั้น
+  if (isNaN(qty) || qty < 0) { rawFieldError("rawNewQty", "ยอดเริ่มต้นต้องเป็นตัวเลข 0 ขึ้นไป"); return; }
+  if (isNaN(min) || min < 0) { rawFieldError("rawNewMin", "จุดสั่งซื้อต้องเป็นตัวเลข 0 ขึ้นไป"); return; }
+  if (isNaN(dailyUsage) || dailyUsage < 0) { rawFieldError("rawNewDailyUsage", "ใช้ต่อวันต้องเป็นตัวเลข 0 ขึ้นไป"); return; }
   setRawBusy("rawBtnCreate",true,"กำลังสร้าง...");
   showLoading("กำลังสร้างรายการ...");
   const alertDaysNew = Math.max(1, parseInt(document.getElementById("rawNewAlertDays").value||rawAlertDays));

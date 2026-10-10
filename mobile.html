@@ -892,6 +892,7 @@ async function selectModule(m) {
   $("mTitle").textContent = cfg.title;
   $("mSub").textContent   = user + " · " + cfg.sub;
   showScreens("sMain");
+  mArmBack();          // ปุ่มย้อนกลับของเครื่อง = กลับหน้าเลือกคลัง
   mUpdateOfflineBar();
   await loadData();
 }

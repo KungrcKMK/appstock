@@ -1407,6 +1407,35 @@ function closeAction() {
   setTimeout(() => hide("actionOverlay"), 300);
 }
 
+// ── ปุ่มย้อนกลับของเครื่อง / ปุ่ม Esc (QA S7 + M7 2026-10-10) ──
+// เดิมกด back แล้วไป "/" ซึ่งเด้งกลับมาที่นี่ (วนไม่จบ) และตัวเลขที่กรอกค้างหาย
+// วิธี: ตอนอยู่ในคลังหรือเปิดแผ่นอยู่ มีประวัติกันไว้ 1 ชั้น → back = ปิดแผ่นบนสุด หรือกลับหน้าเลือกคลัง
+let _mTrap = false;
+function mArmBack() {
+  if (_mTrap) return;
+  try { history.pushState({ mTrap: 1 }, ""); _mTrap = true; } catch (e) {}
+}
+const _mVisible = (id) => { const el = $(id); return !!el && !el.classList.contains("hidden") && el.style.display !== "none"; };
+function _mTopLayerClose() {
+  if (_mVisible("sScanner")) { closeScanner(); return true; }
+  if (_mVisible("actionOverlay")) { closeAction(); return true; }
+  for (const [id, fn] of [["planSheet", closePlan], ["myHistSheet", closeMyHistory], ["shareSheet", closeShareApp]])
+    if (_mVisible(id)) { fn(); return true; }
+  if (_mVisible("sMain")) { goModuleSelect(); return true; }
+  return false;
+}
+const _mInsideApp = () => ["sScanner", "actionOverlay", "planSheet", "myHistSheet", "shareSheet", "sMain"].some(_mVisible);
+window.addEventListener("popstate", () => {
+  _mTrap = false;
+  _mTopLayerClose();
+  if (_mInsideApp()) mArmBack();   // ยังมีชั้นให้ถอยต่อ
+});
+// คีย์บอร์ด (แท็บเล็ต/คอมที่เปิดหน้ามือถือ): Esc = ปิดแผ่นบนสุด (ไม่ถอยออกจากคลัง)
+document.addEventListener("keydown", (e) => {
+  if (e.key !== "Escape" || e.isComposing) return;
+  if (_mVisible("sScanner") || _mVisible("actionOverlay") || ["planSheet", "myHistSheet", "shareSheet"].some(_mVisible)) { e.preventDefault(); _mTopLayerClose(); }
+});
+
 // ── ปรับความสูง action sheet เมื่อ keyboard เปิด/ปิด ──
 function _adjustSheet() {
   if ($("actionOverlay").classList.contains("hidden")) return;

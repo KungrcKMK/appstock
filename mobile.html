@@ -589,6 +589,13 @@ function tgFlushSoon() {
 function mCacheSet(k, d) { try { localStorage.setItem("m_cache_" + k, JSON.stringify({ t: Date.now(), d })); } catch (e) {} }
 function mCacheGet(k) { try { const o = JSON.parse(localStorage.getItem("m_cache_" + k) || "null"); return o && Array.isArray(o.d) ? o : null; } catch (e) { return null; } }
 let _mShownMod = "";   // คลังที่มีรายการอยู่บนจอแล้ว
+// ข้อความผิดพลาดเป็นภาษาคน — "Failed to fetch" ไม่บอกว่าต้องทำอะไรต่อ (QA M16 · คู่กับ netErrorText ใน js/utils.js)
+function mNetErr(e) {
+  const m = String((e && e.message) || e || "");
+  if (/failed to fetch|networkerror|load failed|network request failed/i.test(m)) return "เชื่อมต่อไม่ได้ — ตรวจสัญญาณเน็ตแล้วกดลองใหม่";
+  if (/abort|timeout/i.test(m)) return "รอนานเกินไป — กดลองใหม่อีกครั้ง";
+  return m || "เกิดข้อผิดพลาด — กดลองใหม่อีกครั้ง";
+}
 async function gasPost(body) {
   const r = await fetch(GAS_URL, {
     method: "POST",

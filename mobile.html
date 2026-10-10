@@ -603,11 +603,16 @@ async function gasPost(body) {
 }
 // บัตรผ่านหมดอายุ → กลับไปเข้าระบบใหม่ที่หน้าคอม (งานค้างยังอยู่ ส่งต่อได้หลัง login)
 let _mReloginShown = false;
-function mNeedLogin() {
+function mNeedLogin(res) {
   if (_mReloginShown) return;
   _mReloginShown = true;
-  toast("บัตรผ่านหมดอายุ กรุณาเข้าสู่ระบบใหม่ — งานที่ค้างยังเก็บไว้ครบ", "err");
-  try { sessionStorage.setItem("appstock_prefill_user", user || ""); } catch (e) {}
+  // บอกตามจริงว่ารายการที่เพิ่งกดเข้าคิวแล้วหรือไม่ (offlineSend เก็บให้เมื่อบัตรหมดอายุตอนบันทึก)
+  const pending = typeof offlineCount === "function" ? offlineCount() : 0;
+  const msg = res && res.queued ? "บัตรผ่านหมดอายุ — รายการนี้เก็บไว้ในเครื่องแล้ว เข้าสู่ระบบใหม่แล้วจะส่งให้เอง"
+            : pending ? "บัตรผ่านหมดอายุ กรุณาเข้าสู่ระบบใหม่ — งานที่ค้าง " + pending + " รายการยังเก็บไว้ครบ"
+            : "บัตรผ่านหมดอายุ กรุณาเข้าสู่ระบบใหม่";
+  toast(msg, "err");
+  try { sessionStorage.setItem("appstock_prefill_user", user || ""); sessionStorage.setItem("appstock_relogin_reason", msg); } catch (e) {}
   ["unified_stock_user","unified_stock_role","appstock_session"].forEach(k => localStorage.removeItem(k));
   setTimeout(() => { window.location.href = "index.html"; }, 1800);
 }

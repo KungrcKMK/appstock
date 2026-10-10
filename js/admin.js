@@ -104,7 +104,7 @@ async function loadPendingUsers() {
       </div>`;
     }).join("");
   } catch(e) {
-    listEl.innerHTML = `<p class="sq-empty" style="color:var(--sq-crit);font-weight:700;">เกิดข้อผิดพลาด: ${escapeHtml(e.message||"")}</p>`;
+    listEl.innerHTML = `<p class="sq-empty" style="color:var(--sq-crit);font-weight:700;">เกิดข้อผิดพลาด: ${escapeHtml(netErrorText(e))}</p>`;
   }
 }
 
@@ -121,7 +121,7 @@ async function adminApprove(username, evt) {
       }).then(r => r.json());
       if (res.ok) { showToast("✅ อนุมัติ " + username + " แล้ว"); loadPendingUsers(); }
       else alert("❌ " + res.message);
-    } catch(e) { alert("เกิดข้อผิดพลาด: " + e.message); }
+    } catch(e) { alert("เกิดข้อผิดพลาด: " + netErrorText(e)); }
   });
 }
 
@@ -138,7 +138,7 @@ async function adminReject(username, evt) {
       }).then(r => r.json());
       if (res.ok) { showToast("🚫 ปฏิเสธ " + username + " แล้ว"); loadPendingUsers(); }
       else alert("❌ " + res.message);
-    } catch(e) { alert("เกิดข้อผิดพลาด: " + e.message); }
+    } catch(e) { alert("เกิดข้อผิดพลาด: " + netErrorText(e)); }
   });
 }
 
@@ -170,7 +170,7 @@ async function adminMirrorNow(btn) {
     if (handleTokenExpired(r)) return;
     if (r && r.ok) showToast(r.last && r.last.busy ? "กำลังอัปเดตอยู่แล้ว รอสักครู่" : "อัปเดตสำเนาใน Google Sheets แล้ว ✅", "success");
     else showToast("อัปเดตสำเนาไม่สำเร็จ: " + ((r && r.message) || "ไม่ได้รับคำตอบ"), "error", 6000);
-  } catch (e) { showToast("อัปเดตสำเนาไม่สำเร็จ: " + (e.message || ""), "error", 6000); }
+  } catch (e) { showToast("อัปเดตสำเนาไม่สำเร็จ: " + netErrorText(e), "error", 6000); }
   adminLoadStatus();
 }
 
@@ -275,7 +275,7 @@ async function loadUsers() {
       </div>`;
     }).join("");
   } catch(e) {
-    listEl.innerHTML = `<p class="text-red-500 text-center text-sm font-bold py-4">เกิดข้อผิดพลาด: ${escapeHtml(e.message||"")}</p>`;
+    listEl.innerHTML = `<p class="text-red-500 text-center text-sm font-bold py-4">เกิดข้อผิดพลาด: ${escapeHtml(netErrorText(e))}</p>`;
   }
 }
 
@@ -374,7 +374,7 @@ async function loadRolesPage() {
         </div>`;
       }).join("") + `</div>`;
   } catch(e) {
-    listEl.innerHTML = `<p class="sq-empty" style="color:var(--sq-crit);font-weight:700;">เกิดข้อผิดพลาด: ${escapeHtml(e.message||"")}</p>`;
+    listEl.innerHTML = `<p class="sq-empty" style="color:var(--sq-crit);font-weight:700;">เกิดข้อผิดพลาด: ${escapeHtml(netErrorText(e))}</p>`;
   }
 }
 
@@ -398,7 +398,7 @@ async function createNewUser(evt) {
       }).then(r => r.json());
       if (res.ok) { showToast(`➕ เพิ่ม "${username}" แล้ว`, "success"); loadRolesPage(); }
       else showToast(res.message || "เพิ่มไม่สำเร็จ", "error");
-    } catch (e) { showToast("เชื่อมต่อไม่สำเร็จ: " + e.message, "error"); }
+    } catch (e) { showToast("เชื่อมต่อไม่สำเร็จ: " + netErrorText(e), "error"); }
   });
 }
 
@@ -414,7 +414,7 @@ async function deleteUserRow(username, evt) {
       }).then(r => r.json());
       if (res.ok) { showToast(`🗑️ ลบ "${username}" แล้ว`, "warn"); loadRolesPage(); }
       else showToast(res.message || "ลบไม่สำเร็จ", "error");
-    } catch (e) { showToast("เชื่อมต่อไม่สำเร็จ: " + e.message, "error"); }
+    } catch (e) { showToast("เชื่อมต่อไม่สำเร็จ: " + netErrorText(e), "error"); }
   });
 }
 
@@ -434,7 +434,7 @@ async function demoteOtherAdmins(evt) {
       } else {
         showToast(res.message || "ไม่สำเร็จ", "error");
       }
-    } catch (e) { showToast("เชื่อมต่อไม่สำเร็จ: " + e.message, "error"); }
+    } catch (e) { showToast("เชื่อมต่อไม่สำเร็จ: " + netErrorText(e), "error"); }
   });
 }
 
@@ -451,7 +451,7 @@ async function saveRolePageUser(username) {
     }).then(r => r.json());
     if (res.ok) { showToast(`✅ ${username} → ${newRole}`); loadRolesPage(); }
     else alert("❌ " + res.message);
-  } catch(e) { alert("เกิดข้อผิดพลาด: " + e.message); }
+  } catch(e) { alert("เกิดข้อผิดพลาด: " + netErrorText(e)); }
 }
 
 async function saveUserRole(username) {
@@ -470,7 +470,7 @@ async function saveUserRole(username) {
     }).then(r => r.json());
     if (res.ok) { showToast(`✅ บันทึก ${username} → ${newRole}${newPwd?" + รหัสผ่านใหม่":""}`); if(pwdEl) pwdEl.value=""; }
     else alert("❌ " + res.message);
-  } catch(e) { alert("เกิดข้อผิดพลาด: " + e.message); }
+  } catch(e) { alert("เกิดข้อผิดพลาด: " + netErrorText(e)); }
 }
 
 // ─────────────────────────────────────────────
@@ -538,6 +538,6 @@ async function loadActivityLog() {
     _activityData = res.list || [];
     renderActivityList();
   } catch(e) {
-    listEl.innerHTML = `<p class="text-red-500 text-center text-sm font-bold py-8">เกิดข้อผิดพลาด: ${e.message}</p>`;
+    listEl.innerHTML = `<p class="text-red-500 text-center text-sm font-bold py-8">เกิดข้อผิดพลาด: ${escapeHtml(netErrorText(e))}</p>`;
   }
 }

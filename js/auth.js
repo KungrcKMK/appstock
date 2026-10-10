@@ -40,7 +40,7 @@ async function submitRegister() {
       alert("❌ " + (res.message || "เกิดข้อผิดพลาด"));
     }
   } catch(e) {
-    alert("เกิดข้อผิดพลาด: " + e.message);
+    alert("เกิดข้อผิดพลาด: " + netErrorText(e));
   } finally {
     if (btn) { btn.disabled = false; btn.textContent = "ส่งคำขอ 📨"; }
   }
@@ -95,7 +95,7 @@ async function login() {
     _hideAccessBox();
     _loginSuccess(res.username || user, res.role, res.sessionToken || res.adminToken);
   } catch(e) {
-    alert("เกิดข้อผิดพลาด: " + e.message);
+    alert("เกิดข้อผิดพลาด: " + netErrorText(e));
   } finally {
     if (!_loginNeedsPassword) _setLoginBtn("เข้าสู่ระบบ 🚀", false);
   }
@@ -169,7 +169,7 @@ async function submitAccessRequest() {
         _showAccessBox("notfound", res.message || "ส่งคำขอไม่สำเร็จ", user);
       }
     } catch (e) {
-      alert("เชื่อมต่อไม่สำเร็จ: " + e.message);
+      alert("เชื่อมต่อไม่สำเร็จ: " + netErrorText(e));
     }
   });
 }
@@ -194,7 +194,7 @@ async function loginWithPassword() {
     }
     _loginSuccess(res.username || user, res.role, res.sessionToken || res.adminToken);
   } catch(e) {
-    alert("เกิดข้อผิดพลาด: " + e.message);
+    alert("เกิดข้อผิดพลาด: " + netErrorText(e));
     _setLoginBtn("เข้าสู่ระบบ 🔑", false);
   }
 }

@@ -67,7 +67,7 @@ async function planLoad(useInputs) {
     planUpdateTile(r);
   } catch (e) {
     if (seq !== _planReqSeq) return;
-    body.innerHTML = '<p class="sq-empty" style="color:var(--sq-crit);">โหลดไม่สำเร็จ: ' + escapeHtml(e.message || "") +
+    body.innerHTML = '<p class="sq-empty" style="color:var(--sq-crit);">โหลดไม่สำเร็จ: ' + escapeHtml(netErrorText(e)) +
       ' <button class="sq-btn sq-btn-sm" onclick="planLoad(false)">ลองใหม่</button></p>';
   }
 }
@@ -97,7 +97,7 @@ async function planSaveSettings(btn) {
     if (r.status !== "success") throw new Error(r.message || "บันทึกไม่สำเร็จ");
     showToast("บันทึกค่ากลางแล้ว — ทุกคนเห็นค่าเดียวกัน ✅", "success");
     await planLoad(false);
-  } catch (e) { showToast("บันทึกไม่สำเร็จ: " + (e.message || ""), "error"); }
+  } catch (e) { showToast("บันทึกไม่สำเร็จ: " + netErrorText(e), "error"); }
   finally { if (btn) btn.disabled = false; }
 }
 
@@ -288,7 +288,7 @@ async function planSendTelegram(btn, what) {
     const parts = [tgOk ? "Telegram ✅" : "Telegram ❌ " + (TH[String(res || "").replace(/^not-sent:\s*/, "")] || String(res || (r && r.message) || "").replace(/^not-sent:\s*/, ""))];
     if (lineOn) parts.push(lineOk ? "LINE ✅" : "LINE ❌ " + String(lres || "").replace(/^(not-sent|partial):\s*/, ""));
     showToast(parts.join(" · "), (tgOk || lineOk) ? (tgOk && (!lineOn || lineOk) ? "success" : "warn") : "error", 6000);
-  } catch (e) { showToast("ส่งไม่สำเร็จ: " + (e.message || ""), "error"); }
+  } catch (e) { showToast("ส่งไม่สำเร็จ: " + netErrorText(e), "error"); }
   finally { if (btn) btn.disabled = false; }
 }
 

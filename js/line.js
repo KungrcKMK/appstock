@@ -34,7 +34,7 @@ async function lineLoadStatus() {
     lineRender();
   } catch (e) {
     _lineSt = null;
-    info.innerHTML = '<p class="text-xs font-black" style="color:var(--sq-crit);">ตรวจสถานะ LINE ไม่ได้: ' + escapeHtml(e.message || "") + "</p>";
+    info.innerHTML = '<p class="text-xs font-black" style="color:var(--sq-crit);">ตรวจสถานะ LINE ไม่ได้: ' + escapeHtml(netErrorText(e)) + "</p>";
   }
 }
 
@@ -97,7 +97,7 @@ async function lineSaveSettings(btn) {
     if (!r || r.status !== "success") throw new Error((r && r.message) || "บันทึกไม่สำเร็จ");
     showToast("บันทึกการตั้งค่า LINE แล้ว ✅" + (r.botName ? " · " + r.botName : ""), "success");
     await lineLoadStatus();
-  } catch (e) { showToast(e.message || "บันทึกไม่สำเร็จ", "error", 6000); }
+  } catch (e) { showToast(netErrorText(e), "error", 6000); }
   finally { if (btn) { btn.disabled = false; btn.textContent = "💾 บันทึก LINE"; } }
 }
 
@@ -111,7 +111,7 @@ async function lineTestSend(btn) {
     if (r && r.status === "success") showToast(`ส่งทดสอบเข้า LINE แล้ว ${r.sent}/${r.of} กลุ่ม ✅`, "success");
     else showToast("ส่งไม่สำเร็จ: " + ((r && r.message) || ""), "error", 6000);
     lineLoadStatus();
-  } catch (e) { showToast("ส่งไม่สำเร็จ: " + (e.message || ""), "error"); }
+  } catch (e) { showToast("ส่งไม่สำเร็จ: " + netErrorText(e), "error"); }
   finally { if (btn) btn.disabled = false; }
 }
 

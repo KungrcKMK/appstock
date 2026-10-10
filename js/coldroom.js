@@ -256,7 +256,7 @@ async function crCallServer(action, payload = {}, opts = {}) {
     if (json && (json.ok || json.status === "success") && CR_TG_ACTIONS[action] && typeof tgFlushSoon === "function") tgFlushSoon();
     return json;
   } catch (e) {
-    if (!opts.silent) showToast("พบข้อผิดพลาด: " + e.message, "err");
+    if (!opts.silent) showToast("พบข้อผิดพลาด: " + netErrorText(e), "err");
     throw e;
   } finally {
     if (!opts.silent) hideLoading();
@@ -282,7 +282,7 @@ async function crSendStale(btn) {
     const parts = [tg === "sent" ? "Telegram ✅" : "Telegram ❌ " + (TH[why] || why)];
     if (lineOn) parts.push(lr === "sent" ? "LINE ✅" : "LINE ❌ " + String(lr || "").replace(/^(not-sent|partial):\s*/, ""));
     showToast(parts.join(" · "), tg === "sent" ? "success" : "warn", 6000);
-  } catch (e) { showToast("ส่งไม่สำเร็จ: " + (e.message || ""), "error"); }
+  } catch (e) { showToast("ส่งไม่สำเร็จ: " + netErrorText(e), "error"); }
   finally { if (btn) btn.disabled = false; }
 }
 
@@ -1494,7 +1494,7 @@ async function crAskClearGlobal(i) {
       }
     }
   } catch(e) {
-    alert("เกิดข้อผิดพลาด: " + e.message);
+    alert("เกิดข้อผิดพลาด: " + netErrorText(e));
     console.error("crAskClearGlobal error:", e);
   }
 }
@@ -1650,7 +1650,7 @@ function crSelectEditProduct() {
   fields.style.display = "block";
   crClearStatus("crEditProductStatus");
   } catch(e) {
-    crSetStatus("crEditProductStatus","❌ เกิดข้อผิดพลาด: " + e.message,"err");
+    crSetStatus("crEditProductStatus","❌ เกิดข้อผิดพลาด: " + netErrorText(e),"err");
   }
 }
 

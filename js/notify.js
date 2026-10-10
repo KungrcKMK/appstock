@@ -37,7 +37,7 @@ async function ntfLoad() {
     ntfUpdateHints();
   } catch (e) {
     _ntf = null;
-    box.innerHTML = '<p class="text-xs font-black" style="color:var(--sq-crit);">โหลดกำหนดการไม่ได้: ' + escapeHtml(e.message || "") + "</p>";
+    box.innerHTML = '<p class="text-xs font-black" style="color:var(--sq-crit);">โหลดกำหนดการไม่ได้: ' + escapeHtml(netErrorText(e)) + "</p>";
   }
 }
 
@@ -144,7 +144,7 @@ async function ntfSave(btn) {
     _ntf = r.schedule;
     showToast("บันทึกกำหนดการส่งสรุปแล้ว ✅", "success");
     if (typeof lineLoadStatus === "function") lineLoadStatus();   // ป้ายสถานะ LINE อ่านค่าเปิด/ปิดจากกำหนดการ
-  } catch (e) { showToast("บันทึกไม่สำเร็จ: " + (e.message || ""), "error", 6000); }
+  } catch (e) { showToast("บันทึกไม่สำเร็จ: " + netErrorText(e), "error", 6000); }
   finally { if (btn) { btn.disabled = false; btn.textContent = "💾 บันทึกกำหนดการส่งสรุป"; } }
 }
 
@@ -166,6 +166,6 @@ async function ntfPreview(ch, btn) {
     const texts = r.texts || [];
     out.innerHTML = `<div class="ntf-dim" style="margin-top:8px;">${head.join(" · ")}${head.length ? "<br>" : ""}ถ้าส่งตอนนี้: ${texts.length ? texts.length + (ch === "line" ? " กล่องข้อความ (นับโควตาครั้งเดียว)" : " ข้อความ") : "ไม่มีรายการให้ส่งในหัวข้อที่เลือก"}</div>` +
       texts.map((t, i) => `<pre class="ntf-pre">${texts.length > 1 ? `<b>— ${ch === "line" ? "กล่อง" : "ข้อความ"}ที่ ${i + 1} —</b>\n` : ""}${escapeHtml(t)}</pre>`).join("");
-  } catch (e) { out.innerHTML = '<p class="text-xs font-black" style="color:var(--sq-crit);margin-top:8px;">ดูตัวอย่างไม่ได้: ' + escapeHtml(e.message || "") + "</p>"; }
+  } catch (e) { out.innerHTML = '<p class="text-xs font-black" style="color:var(--sq-crit);margin-top:8px;">ดูตัวอย่างไม่ได้: ' + escapeHtml(netErrorText(e)) + "</p>"; }
   finally { if (btn) btn.disabled = false; }
 }

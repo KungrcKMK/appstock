@@ -1400,7 +1400,8 @@ async function confirmCrCount() {
 
 function closeAction() {
   $("actionSheet").classList.remove("open");
-  $("actionSheet").style.maxHeight = "";   // reset
+  // คืนเพดานเดิม ห้ามล้างเป็น "" — ล้างแล้วแผ่นที่เปิดครั้งถัดไปไม่มีเพดาน ปุ่ม ✕ หลุดขอบจอบน (QA S6 2026-10-10)
+  $("actionSheet").style.maxHeight = (window.CSS && CSS.supports && CSS.supports("max-height", "85dvh")) ? "85dvh" : "85vh";
   setTimeout(() => hide("actionOverlay"), 300);
 }
 

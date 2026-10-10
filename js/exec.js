@@ -62,19 +62,19 @@ async function loadExecDashboard() {
         if (crRes.ok && crRes.staleDays !== undefined) _execChartData.staleDays = Number(crRes.staleDays) || 0;
         if (slot("execSlotCR")) slot("execSlotCR").innerHTML = execStockSection("❄️", "คลังสินค้า", "rail-cold", topProds, expiring, expired,
           crRes.ok ? (crRes.staleLots || []) : [], crRes.ok ? Number(crRes.staleDays) || 0 : 0);
-      }).catch(e => { if (slot("execSlotCR")) slot("execSlotCR").innerHTML = failBox("คลังสินค้าโหลดไม่สำเร็จ: " + e.message); throw e; }),
+      }).catch(e => { if (slot("execSlotCR")) slot("execSlotCR").innerHTML = failBox("คลังสินค้าโหลดไม่สำเร็จ: " + netErrorText(e)); throw e; }),
     fetch(GAS_URL + "?module=SQF").then(r=>r.json()).then(res => {
         const m = res.status === "success" ? res.materials : [];
         _execChartData.SQF = m;
         if (res.staleDays !== undefined) _execChartData.staleDays = Number(res.staleDays) || 0;
         if (slot("execSlotSQF")) slot("execSlotSQF").innerHTML = execRawSection("🏭", "วัตถุดิบ SQF — สุพรรณคิวฟู้ดส์", "rail-sqf", m, Number(res.staleDays) || 0);
-      }).catch(e => { if (slot("execSlotSQF")) slot("execSlotSQF").innerHTML = failBox("วัตถุดิบ SQF โหลดไม่สำเร็จ: " + e.message); throw e; }),
+      }).catch(e => { if (slot("execSlotSQF")) slot("execSlotSQF").innerHTML = failBox("วัตถุดิบ SQF โหลดไม่สำเร็จ: " + netErrorText(e)); throw e; }),
     fetch(GAS_URL + "?module=MLM").then(r=>r.json()).then(res => {
         const m = res.status === "success" ? res.materials : [];
         _execChartData.MLM = m;
         if (res.staleDays !== undefined) _execChartData.staleDays = Number(res.staleDays) || 0;
         if (slot("execSlotMLM")) slot("execSlotMLM").innerHTML = execRawSection("🏭", "วัตถุดิบ MLM — แม่ละมาย", "rail-mlm", m, Number(res.staleDays) || 0);
-      }).catch(e => { if (slot("execSlotMLM")) slot("execSlotMLM").innerHTML = failBox("วัตถุดิบ MLM โหลดไม่สำเร็จ: " + e.message); throw e; })
+      }).catch(e => { if (slot("execSlotMLM")) slot("execSlotMLM").innerHTML = failBox("วัตถุดิบ MLM โหลดไม่สำเร็จ: " + netErrorText(e)); throw e; })
   ];
   const results = await Promise.allSettled(tasks);
   const failed = results.filter(r => r.status === "rejected");

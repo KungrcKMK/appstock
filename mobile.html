@@ -621,7 +621,7 @@ function mNeedLogin(res) {
   toast(msg, "err");
   try { sessionStorage.setItem("appstock_prefill_user", user || ""); sessionStorage.setItem("appstock_relogin_reason", msg); } catch (e) {}
   ["unified_stock_user","unified_stock_role","appstock_session"].forEach(k => localStorage.removeItem(k));
-  setTimeout(() => { window.location.href = "index.html"; }, 1800);
+  setTimeout(() => { window.location.replace("index.html"); }, 1800);
 }
 
 function daysColor(d) {
@@ -862,7 +862,7 @@ function doLogout() {
       !confirm("มีงานที่บันทึกไว้ตอนเน็ตล่ม " + offlineCount() + " รายการ ยังไม่ได้ส่ง\nออกจากระบบตอนนี้ งานยังเก็บไว้ ส่งได้เมื่อเข้าระบบใหม่\nต้องการออกเลยหรือไม่?")) return;
   ["unified_stock_user","unified_stock_role","appstock_mode_pref","appstock_session"].forEach(k => localStorage.removeItem(k));
   user = null; role = null; mod = null; data = [];
-  window.location.href = "index.html";
+  window.location.replace("index.html");
 }
 
 function switchToDesktop() {

@@ -245,6 +245,7 @@ function selectMode(mode, remember) {
 
 function switchToMobile() {
   localStorage.setItem("appstock_mode_pref", "mobile");
+  try { sessionStorage.setItem("appstock_mode_session", "mobile"); } catch (e) {}   // คู่กับ switchToDesktop ใน mobile.html
   window.location.replace("mobile.html");
 }
 

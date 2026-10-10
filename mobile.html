@@ -1023,7 +1023,17 @@ async function loadData(opts) {
       return;
     }
     if (quiet) { const sF = $("mSub"); if (sF) sF.textContent = sF.textContent.replace("⏳ กำลังตรวจ...", "⚠️ ตรวจล่าสุดไม่ได้ (ของเดิม)"); }
-    toast("โหลดไม่สำเร็จ: " + e.message, "err");
+    else if (m0 === mod && _mShownMod !== mod) {
+      // ไม่มีข้อมูลของคลังนี้เลย → ล้างรายการของคลังก่อนหน้าออก (เดิมหัวเป็นคลังใหม่ แต่รายการเป็นของคลังเก่า → เบิกผิดโรงงาน · QA 2026-10-10)
+      data = []; filt = [];
+      const el = $("mList");
+      if (el) el.innerHTML = `<div class="text-center py-14 px-6" role="alert">
+          <p class="text-amber-300 font-black">⚠️ โหลดรายการของคลังนี้ไม่สำเร็จ</p>
+          <p class="text-slate-400 text-sm mt-1">${escH(mNetErr(e))}</p>
+          <button onclick="loadData._retried=false;loadData()" class="btn-tap mt-4 bg-emerald-700 text-white font-black px-6 py-3 rounded-xl">↻ ลองใหม่</button></div>`;
+      const sF = $("mSub"); if (sF) sF.textContent = user + " · " + MOD_CFG[mod].sub + " · ⚠️ ยังไม่มีข้อมูล";
+    }
+    toast("โหลดไม่สำเร็จ: " + mNetErr(e), "err");
   }
 }
 

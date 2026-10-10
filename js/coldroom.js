@@ -157,7 +157,7 @@ async function crDeleteBom() {
     const badge = document.getElementById("crBomStatusBadge");
     badge.textContent = "ยังไม่มี BOM"; badge.style.background = "var(--sq-warn-bg)"; badge.style.color = "var(--sq-high)";
     crLoadBomList();
-  }
+  } else showToast(res.message || "ลบไม่สำเร็จ", "error");
 }
 
 // รายการ BOM ทั้งหมด (card ล่าง)
@@ -1532,8 +1532,17 @@ async function crSaveCount() {
     newQty:       $$cr("crNewQty").value.trim(),
     note:         $$cr("crNote").value.trim()
   };
-  if (!pl.employeeName || !pl.mfg || !pl.exp || pl.newQty === "" || isNaN(pl.newQty)) {
-    await crShowModal("alert","ข้อมูลไม่ครบ","กรุณาระบุ: ชื่อพนักงาน, วันผลิต, วันหมดอายุ, จำนวน"); return;
+  const missing = [];
+  if (!pl.employeeName) missing.push(["ชื่อพนักงาน", "crEmployee"]);
+  if (!pl.mfg) missing.push(["วันผลิต", "crMfg"]);
+  if (!pl.exp) missing.push(["วันหมดอายุ", "crExp"]);
+  if (pl.newQty === "" || isNaN(pl.newQty)) missing.push(["จำนวน", "crNewQty"]);
+  if (missing.length) {
+    await crShowModal("alert", "ข้อมูลไม่ครบ", "ยังขาด: " + missing.map(x => x[0]).join(", "));
+    $cr(missing[0][1])?.focus(); return;
+  }
+  if (Number(pl.newQty) < 0) {
+    await crShowModal("alert", "จำนวนไม่ถูกต้อง", "จำนวนต้องไม่ติดลบ — ถ้าของหมดให้ใส่ 0"); $cr("crNewQty")?.focus(); return;
   }
   // Poka-Yoke: ตรวจรูปแบบและความสมเหตุผลของวันที่
   if (!/^\d{6}$/.test(pl.mfg) || !/^\d{6}$/.test(pl.exp)) {
@@ -1567,6 +1576,9 @@ async function crSaveCount() {
     showToast(qty === 0 ? "ปรับยอดเป็น 0 เรียบร้อย" : "บันทึกเข้าสต๊อกเรียบร้อย!");
     const bc = $cr("crBarcode").value.trim();
     crClearAll(); $cr("crBarcode").value = bc; crLookupBarcode(); crLoadOverview({ silent: true });
+  } else if (!res.needLogin) {
+    // crShowModal ใส่ข้อความเป็น HTML → escape ข้อความจากหลังบ้าน (อาจมีชื่อสินค้าที่ผู้ใช้พิมพ์)
+    await crShowModal("alert", "บันทึกไม่สำเร็จ ❌", escapeHtml(res.message || "ระบบไม่รับรายการนี้") + "\n\nยอดในระบบยังไม่เปลี่ยน — แก้แล้วกดบันทึกอีกครั้ง");
   }
 }
 
@@ -1710,6 +1722,7 @@ async function crSaveSettings() {
   const pl = { telegramBotName:$$cr("crTgBotName").value, telegramBotToken:$$cr("crTgToken").value, telegramChatIds:$$cr("crTgChatIds").value, enableTelegramStockUpdate:$$cr("crTgEnable").value };
   const res = await crCallServer("saveAlertSettings", pl);
   if (res.ok) showToast("บันทึกการตั้งค่าสำเร็จ");
+  else showToast(res.message || "บันทึกไม่สำเร็จ", "error");
 }
 
 // ── Clear ──

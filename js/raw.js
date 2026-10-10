@@ -1235,7 +1235,7 @@ async function rawSubmitAction() {
     alert("❌ เน็ตล่ม และเก็บรายการไว้ในเครื่องไม่ได้\n(พื้นที่เต็มหรือเบราว์เซอร์ไม่อนุญาต)\n\nกรุณาจดไว้: " + `${LBL[type]||type} ${name} ${qty}` + "\nแล้วบันทึกใหม่เมื่อเน็ตกลับมา");
     return;
   }
-  if (r.needLogin) { handleTokenExpired(r); return; }
+  if (r.needLogin) { if (r.queued) { closeRawAction(); closeRawVerify(); } handleTokenExpired(r); return; }
   if (r.queued) {
     closeRawAction();
     showToast("📴 เน็ตล่ม — บันทึกไว้ในเครื่องแล้ว จะส่งขึ้นระบบให้เองเมื่อเน็ตกลับมา", "warn", 6000);
@@ -1316,7 +1316,7 @@ async function rawSubmitVerify() {
     alert("❌ เน็ตล่ม และเก็บรายการไว้ในเครื่องไม่ได้\n\nกรุณาจดไว้: นับ " + vName + " → " + q + "\nแล้วบันทึกใหม่เมื่อเน็ตกลับมา");
     return;
   }
-  if (r.needLogin) { handleTokenExpired(r); return; }
+  if (r.needLogin) { if (r.queued) { closeRawAction(); closeRawVerify(); } handleTokenExpired(r); return; }
   if (r.queued) {
     closeRawVerify();
     showToast("📴 เน็ตล่ม — บันทึกไว้ในเครื่องแล้ว จะส่งขึ้นระบบให้เองเมื่อเน็ตกลับมา", "warn", 6000);

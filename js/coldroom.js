@@ -1226,9 +1226,11 @@ async function crLookupBarcode() {
   if (!term) return;
   const res = await crCallServer("getProductAndBalances", { barcode: term });
   if (!res.found) {
-    if (/^\d+$/.test(term.replace(/\s+/g,""))) $$cr("crNewBarcode").value = term.replace(/\s+/g,"");
-    crSwitchTab("newproduct");
-    crSetStatus("crNewProductStatus","ไม่พบสินค้าในระบบ กรุณาขึ้นทะเบียนใหม่ 👇","warn");
+    // อยู่หน้าเดิม ให้ผู้ใช้เลือกเองว่าจะขึ้นทะเบียนใหม่ไหม — เดิมพาไปแท็บจัดการสินค้าทันที
+    // พิมพ์ชื่อผิดนิดเดียวก็ถูกพาไปสร้างสินค้าใหม่ เสี่ยงขึ้นทะเบียนซ้ำ (QA M12 2026-10-10)
+    const bc = term.replace(/\s+/g, "");
+    crSetStatus("crMainStatus", `ไม่พบ "${escapeHtml(term)}" ในระบบ — ตรวจตัวสะกด หรือเลือกจากรายการสินค้า
+      <div style="margin-top:8px;"><button type="button" class="sq-btn sq-btn-sm" onclick="crGoRegister('${escapeJsAttr(/^\d+$/.test(bc) ? bc : "")}')">➕ ขึ้นทะเบียนสินค้าใหม่</button></div>`, "warn");
     return;
   }
   crCurrentProduct = res.product;

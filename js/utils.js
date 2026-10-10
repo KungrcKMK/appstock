@@ -376,12 +376,17 @@ function _uiOnOpen(el) {
 function _uiOnClose(el) {
   const back = _uiReturnTo[el.id];
   delete _uiReturnTo[el.id];
-  if (uiTopModal()) return;   // ยังมีหน้าต่างอื่นเปิดอยู่ — ปล่อยให้หน้าต่างนั้นถือโฟกัส
-  if (back && document.contains(back) && back.offsetParent !== null) { try { back.focus(); return; } catch (e) {} }
-  // ปุ่มที่กดเปิดถูกวาดใหม่ไปแล้ว (เช่น ตารางรีเฟรชหลังบันทึก) → พาโฟกัสกลับเข้าหน้าที่เปิดอยู่ ไม่ปล่อยตกไปที่ BODY
-  const sec = document.querySelector(".module-section:not(.hide)");
-  const f = sec && [...sec.querySelectorAll(_UI_FOCUSABLE)].find(x => x.offsetParent !== null);
-  if (f) { try { f.focus({ preventScroll: true }); } catch (e) {} }
+  // รอให้โค้ดที่ปิดหน้าต่างทำงานจบก่อน (เช่น แจ้งช่องที่ขาดแล้วโฟกัสช่องนั้น) — ถ้ามันย้ายโฟกัสเองแล้ว ไม่ไปทับ
+  setTimeout(() => {
+    if (uiTopModal()) return;   // ยังมีหน้าต่างอื่นเปิดอยู่ — ปล่อยให้หน้าต่างนั้นถือโฟกัส
+    const a = document.activeElement;
+    if (a && a !== document.body && !el.contains(a)) return;
+    if (back && document.contains(back) && back.offsetParent !== null) { try { back.focus(); return; } catch (e) {} }
+    // ปุ่มที่กดเปิดถูกวาดใหม่ไปแล้ว (เช่น ตารางรีเฟรชหลังบันทึก) → พาโฟกัสกลับเข้าหน้าที่เปิดอยู่ ไม่ปล่อยตกไปที่ BODY
+    const sec = document.querySelector(".module-section:not(.hide)");
+    const f = sec && [...sec.querySelectorAll(_UI_FOCUSABLE)].find(x => x.offsetParent !== null);
+    if (f) { try { f.focus({ preventScroll: true }); } catch (e) {} }
+  }, 0);
 }
 (function _uiModalWatch() {
   const start = () => {

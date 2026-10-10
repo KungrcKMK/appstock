@@ -979,6 +979,16 @@ async function loadData(opts) {
           idle: lot.IdleDays, stale: !!lot.Stale   // ⏰ หลังบ้านตัดสินให้แล้ว
         });
       });
+      // ⛔ FEFO: ล็อตที่หมดอายุก่อนอยู่บนสุด (เดิมเรียงตามลำดับที่บันทึก พนักงานกดเบิกล็อตแรก ของเก่าค้างคลัง — QA M2)
+      //    สถานะหมดอายุระดับสินค้า = ล็อตที่แย่ที่สุด (หมดแล้ว > ใกล้หมด) ใช้ทำป้าย/ตัวกรองในรายการ
+      const _crSt = t => t === "หมดอายุ" ? "expired" : t === "ใกล้หมดอายุ" ? "near" : "";
+      Object.values(byBc).forEach(p => {
+        p.lots.sort((a, b) => String(a.exp || "9999").localeCompare(String(b.exp || "9999")) || String(a.mfg).localeCompare(String(b.mfg)));
+        const worst = p.lots.map(l => _crSt(l.expStatus)).sort((a, b) => (a === "expired" ? 0 : a === "near" ? 1 : 2) - (b === "expired" ? 0 : b === "near" ? 1 : 2))[0] || "";
+        p.expStatus = worst;
+        const ds = p.lots.map(l => Number(l.expDays)).filter(n => isFinite(n));
+        p.expDays = ds.length ? Math.min(...ds) : null;
+      });
       // ⏰ ระดับสินค้า = ล็อตที่ค้างนานที่สุด (มีล็อตที่ไม่เคยบันทึก = null) — ใช้กรอง/ป้ายในรายการ
       Object.values(byBc).forEach(p => {
         if (!p.lots.some(l => l.idle !== undefined)) return;
@@ -1008,6 +1018,8 @@ async function loadData(opts) {
           min:   Number(m.Min   || 0),
           daily: Number(m.DailyUsage || 0),
           idle:  m.IdleDays === undefined ? undefined : m.IdleDays,   // ⏰ วันที่ไม่มีการอัปเดต (หลังบ้านนับให้)
+          expDays: m.ExpDays === undefined ? null : m.ExpDays,        // ⛔ อีกกี่วันหมดอายุ (หลังบ้านคิดให้ · ติดลบ = เลยแล้ว)
+          expStatus: m.ExpStatus || "",                              //    "expired" | "near" | ""
           cr:    false
         }))
         .sort((a, b) => a.name.localeCompare(b.name, "th"));
@@ -1057,7 +1069,12 @@ function filterList() {
   _mFilterTimer = setTimeout(_filterListNow, 180);
 }
 let mListFilter = "all";   // all | low | stale | freq
-const isLowItem = d => d.min > 0 && d.qty <= d.min;
+const isLowItem = d => d.min > 0 && d.qty <= d.min;   // นิยามเดียวกับหลังบ้าน (plan.js belowMin) และ rawIsLow ในหน้าคอม
+const isExpItem = d => d.expStatus === "expired" || d.expStatus === "near";
+// ป้ายหมดอายุบนการ์ด/แผ่นเบิก — คำเดียวกับหน้าคอม
+const expTagHtml = d => d.expStatus === "expired"
+  ? '<span class="text-red-400 font-black">⛔ หมดอายุ' + (d.expDays !== null && d.expDays < 0 ? "แล้ว " + Math.abs(d.expDays) + " วัน" : "") + "</span>"
+  : d.expStatus === "near" ? '<span class="text-amber-300 font-black">⏳ หมดอายุใน ' + (d.expDays === 0 ? "วันนี้" : d.expDays + " วัน") + "</span>" : "";
 // ⏰ ไม่มีการอัปเดตสต๊อกเกินกำหนด — ค่ากลางมากับข้อมูลคลัง (หัวหน้าตั้งที่หน้าคอม)
 const mStaleDays = () => Number(mStoreGet("m_staledays_" + mod, 0)) || 0;
 const isStaleItem = d => { const n = mStaleDays(); return !!n && d.idle !== undefined && (d.idle === null || d.idle > n); };
@@ -1065,6 +1082,7 @@ function _filterListNow() {
   const q = $("mSearch").value.trim().toLowerCase();
   let list = q ? data.filter(d => d.name.toLowerCase().includes(q) || d.sku.toLowerCase().includes(q)) : [...data];
   if (mListFilter === "low") list = list.filter(isLowItem);
+  else if (mListFilter === "exp") list = list.filter(isExpItem).sort((a, b) => (a.expDays ?? 9e9) - (b.expDays ?? 9e9));
   else if (mListFilter === "stale") list = list.filter(isStaleItem);
   else if (mListFilter === "freq") {
     const f = mStoreGet("m_freq_" + mod, {});
@@ -1090,9 +1108,10 @@ function renderChips() {
       : warn ? "bg-slate-800 text-red-400 border-red-500/60" : "bg-slate-800 text-slate-300 border-slate-700";
     return `<button onclick="setListFilter('${key}')" class="btn-tap flex-shrink-0 border ${cls} px-4 py-2 rounded-full text-xs font-black">${label}</button>`;
   };
-  const stale = data.filter(isStaleItem).length;
+  const stale = data.filter(isStaleItem).length, exp = data.filter(isExpItem).length;
   el.innerHTML = chip("all", "ทั้งหมด " + data.length)
-    + (mod === "COLDROOM" ? "" : chip("low", "⚠️ ใกล้หมด " + low, low > 0))
+    + (mod === "COLDROOM" ? "" : chip("low", "🟠 ต่ำกว่าจุดสั่งซื้อ " + low, low > 0))
+    + (exp ? chip("exp", "⛔ หมดอายุ/ใกล้หมด " + exp, true) : "")
     + (!mStaleDays() ? "" : chip("stale", "⏰ ไม่อัปเดต " + stale, stale > 0))
     + chip("freq", "⭐ ใช้บ่อย" + (freq ? " " + freq : ""));
 }
@@ -1122,7 +1141,8 @@ let _mShown = M_PAGE;
 function renderList(more) {
   const el = $("mList");
   if (!filt.length) {
-    const why = mListFilter === "low" ? "✅ ไม่มีรายการที่ต่ำกว่าขั้นต่ำ"
+    const why = mListFilter === "low" ? "✅ ไม่มีรายการที่ต่ำกว่าจุดสั่งซื้อ"
+      : mListFilter === "exp" ? "✅ ไม่มีรายการที่หมดอายุหรือใกล้หมดอายุ"
       : mListFilter === "stale" ? "✅ ทุกรายการมีการอัปเดตภายใน " + mStaleDays() + " วัน"
       : mListFilter === "freq" ? "ยังไม่มีรายการที่ใช้บ่อย<br><span class=\"text-xs\">ทำรายการแล้วจะขึ้นที่นี่เอง</span>" : "ไม่พบรายการ";
     el.innerHTML = `<p class="text-slate-400 text-center py-16 font-bold">${why}</p>`;
@@ -1141,7 +1161,7 @@ function renderList(more) {
       <div class="flex items-center justify-between gap-3">
         <div class="flex-1 min-w-0">
           <div class="font-black text-white text-base leading-snug">${escH(item.name)}</div>
-          <div class="text-slate-400 text-xs mt-0.5">${escH(item.sku)}${isLow ? ' · <span class="text-red-400">⚠️ ต่ำกว่าขั้นต่ำ</span>' : ""}${isStaleItem(item) ? ' · <span class="text-amber-400">⏰ ' + (item.idle === null ? "ไม่เคยบันทึกยอด" : "ไม่อัปเดต " + item.idle + " วัน") + '</span>' : ""}</div>
+          <div class="text-slate-400 text-xs mt-0.5">${escH(item.sku)}${isLow ? ' · <span class="text-red-400">🟠 ต่ำกว่าจุดสั่งซื้อ</span>' : ""}${isExpItem(item) ? " · " + expTagHtml(item) : ""}${isStaleItem(item) ? ' · <span class="text-amber-400">⏰ ' + (item.idle === null ? "ไม่เคยบันทึกยอด" : "ไม่อัปเดต " + item.idle + " วัน") + '</span>' : ""}</div>
         </div>
         <div class="text-right flex-shrink-0">
           <div class="font-black ${isLow ? "text-red-400" : "text-indigo-300"} text-xl leading-none">${fmtNum(item.qty)}</div>
@@ -1163,7 +1183,8 @@ function pickItem(sku) {
   const cfg = MOD_CFG[mod];
 
   $("aName").textContent = sel.name;
-  $("aSku").textContent  = sel.sku + (cfg ? " · " + cfg.sub : "");
+  // ⛔ ของหมดอายุ/ใกล้หมดอายุ — เห็นก่อนกดเบิก (QA M2)
+  $("aSku").innerHTML  = escH(sel.sku + (cfg ? " · " + cfg.sub : "")) + (isExpItem(sel) ? "<br>" + expTagHtml(sel) : "");
   $("aQty").textContent  = fmtNum(sel.qty);
   $("aUnit").textContent = "คงเหลือ (" + sel.unit + ")";
   $("aQtyIn").value = 1;
@@ -1254,8 +1275,9 @@ function renderCrLots() {
   el.innerHTML = sel.lots.map((lot, i) => {
     const col = expColor(lot.expStatus);
     const daysLabel = lot.expDays < 0
-      ? `<span style="color:${col}">หมดอายุ ${Math.abs(lot.expDays)} วันแล้ว</span>`
-      : `<span style="color:${col}">เหลือ ${lot.expDays} วัน</span>`;
+      ? `<span style="color:${col}">⛔ หมดอายุ ${Math.abs(lot.expDays)} วันแล้ว</span>`
+      : `<span style="color:${col}">${lot.expStatus === "ใกล้หมดอายุ" ? "⏳ ใกล้หมดอายุ · " : ""}เหลือ ${lot.expDays} วัน</span>`
+        + (i === 0 && sel.lots.length > 1 ? ' <span class="text-emerald-300 font-black">· เบิกล็อตนี้ก่อน</span>' : "");
     return `
     <div class="bg-slate-900 rounded-2xl p-3">
       <div class="flex items-start gap-2">
@@ -1266,11 +1288,11 @@ function renderCrLots() {
           ${lot.stale ? '<div class="mt-0.5 font-black text-amber-400">⏰ ' + (lot.idle === null ? "ไม่เคยบันทึกยอด" : "ไม่อัปเดต " + lot.idle + " วัน") + ' — ช่วยนับยืนยัน</div>' : ""}
           <div class="text-cyan-400 font-black text-base mt-1">${lot.qty} <span class="text-slate-400 text-xs font-normal">${lot.unit}</span></div>
         </div>
-        ${(role||"").toLowerCase() === "viewer" ? "" : `<div class="flex flex-col gap-1.5 flex-shrink-0">
+        ${(role||"").toLowerCase() === "viewer" ? "" : `<div class="flex flex-col gap-2 flex-shrink-0">
           <button onclick="crSelectLot(${i},'out')"
-            class="btn-tap bg-orange-700 text-white px-3 py-1.5 rounded-xl font-black text-xs">📤 เบิก</button>
+            class="btn-tap bg-orange-700 text-white px-4 py-3 rounded-xl font-black text-sm" style="min-width:88px;min-height:44px;">📤 เบิก</button>
           <button onclick="crSelectLot(${i},'count')"
-            class="btn-tap bg-cyan-700 text-white px-3 py-1.5 rounded-xl font-black text-xs">📊 นับ</button>
+            class="btn-tap bg-cyan-700 text-white px-4 py-3 rounded-xl font-black text-sm" style="min-width:88px;min-height:44px;">📊 นับ</button>
         </div>`}
       </div>
     </div>`;

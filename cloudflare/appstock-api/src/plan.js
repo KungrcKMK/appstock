@@ -14,7 +14,7 @@
 //
 // คิดที่หลังบ้านที่เดียว — หน้าคอม มือถือ และข้อความสรุปเข้ากลุ่ม (Telegram / LINE) ใช้ผลชุดเดียวกัน ตัวเลขจึงตรงกันเสมอ
 // หลักการ: แค่ "ชี้ให้เห็น" — ไม่สั่งซื้อเอง ไม่บล็อกการเบิก คนตัดสินใจเองทุกครั้ง
-import { all, getCfg, cfgSet, kvGet, kvPut, nowIso, fmtTH, dayTH, thaiMidnightMs, todayThaiMidnightMs, tgSendRaw, sysLog, DAY_MS, TZ_MS, FACTORY_NAME } from "./lib.js";
+import { all, getCfg, cfgSet, kvGet, kvPut, nowIso, fmtTH, dayTH, thaiMidnightMs, expiryInfoTH, tgSendRaw, sysLog, DAY_MS, TZ_MS, FACTORY_NAME } from "./lib.js";
 import { lineConfig, lineSend, lineStatus } from "./line.js";
 import { lastStockUpdate, idleDaysTH, staleDaysOf } from "./raw.js";
 import { crGetStartupOverview } from "./cold.js";

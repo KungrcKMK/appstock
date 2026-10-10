@@ -1393,6 +1393,30 @@ async function closeRawScanner(forceHide=false) {
   catch(e) {} finally { rawHtml5QrCode=null; document.getElementById("rawScannerModal").classList.add("hidden"); }
 }
 
+// ── ข้อผิดพลาดของฟอร์ม: บอกใต้ช่องนั้น + ไฮไลต์ + ย้ายโฟกัสไปที่ช่อง ──
+// (เดิมเป็น toast มุมขวาบนที่หายใน 2.8 วิ อยู่ไกลจากช่อง ไม่บอกว่าผิดที่ไหน · QA M12 2026-10-10)
+function rawFieldError(id, msg) {
+  const el = document.getElementById(id);
+  if (!el) { showToast(msg, "warn"); return; }
+  let tip = document.getElementById(id + "__err");
+  if (!tip) {
+    tip = document.createElement("div");
+    tip.id = id + "__err"; tip.className = "rm-field-err"; tip.setAttribute("role", "alert");
+    el.insertAdjacentElement("afterend", tip);
+  }
+  tip.textContent = "⚠️ " + msg; tip.style.display = "";
+  el.classList.add("rm-input-err"); el.setAttribute("aria-invalid", "true");
+  try { el.focus(); if (el.select && el.type !== "date") el.select(); } catch (e) {}
+  const clear = () => { tip.style.display = "none"; el.classList.remove("rm-input-err"); el.removeAttribute("aria-invalid"); el.removeEventListener("input", clear); };
+  el.addEventListener("input", clear);
+}
+function rawFieldErrorsClear(...ids) {
+  ids.forEach(id => {
+    const tip = document.getElementById(id + "__err"); if (tip) tip.style.display = "none";
+    const el = document.getElementById(id); if (el) { el.classList.remove("rm-input-err"); el.removeAttribute("aria-invalid"); }
+  });
+}
+
 // ── Button busy ──
 // ⚠️ ต้องปิดปุ่มจริง (disabled) + จำสถานะไว้ — แค่ใส่ class กันเมาส์ได้ แต่ Enter/Space ยังกดซ้ำได้
 //    เคยส่ง 3 คำขอจากการบันทึกครั้งเดียว (คนละ opId → รับ/เบิกซ้ำจริง · พบตอนตรวจ QA 2026-10-10)

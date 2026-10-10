@@ -221,6 +221,9 @@ function checkAuth() {
       const inp = document.getElementById("usernameInput");
       if (inp) { inp.value = pre; setTimeout(() => inp.focus(), 100); }
     }
+    const why = sessionStorage.getItem("appstock_relogin_reason");
+    const note = document.getElementById("loginNotice");
+    if (why && note) { sessionStorage.removeItem("appstock_relogin_reason"); note.textContent = "⚠️ " + why; note.style.display = ""; }
   } catch (e) {}
   const saved = localStorage.getItem("unified_stock_user");
   if (saved) {

@@ -3,7 +3,7 @@
 // Cache static assets สำหรับใช้งาน offline บางส่วน
 // =====================================================
 
-const CACHE_NAME = "appstock-v86";
+const CACHE_NAME = "appstock-v87";
 
 // ไฟล์ที่ cache ไว้ใช้ offline
 // ⚠️ addAll เป็น all-or-nothing — ไฟล์เดียวโหลดไม่ได้ = ติดตั้งไม่สำเร็จทั้งชุด
@@ -23,6 +23,8 @@ const STATIC_ASSETS = [
   "./icons/exec-512.png",
   "./icons/icon-192.png",
   "./icons/icon-512.png",
+  "./icons/maskable-192.png",
+  "./icons/maskable-512.png",
   "./js/offline.js",
   "./js/utils.js",
   "./js/app.js",

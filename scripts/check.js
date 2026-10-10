@@ -129,6 +129,12 @@ console.log("4) ตรรกะคิวออฟไลน์ (js/offline.js)");
   await O.offlineSync();
   T("บัตรผ่านหมดอายุ → งานยังอยู่ในคิว + แจ้ง login", O.offlineCount() === 1 && toasts.includes("needLogin"));
 
+  // QA S4 (2026-10-10): บัตรผ่านหมดอายุ "ตอนกดบันทึก" (ไม่มีงานค้างมาก่อน) — เดิมคืน needLogin เฉยๆ รายการหายเงียบ
+  store["appstock_queue_v1"] = "[]";
+  global.fetch = async () => ({ json: async () => ({ needLogin: true, status: "error" }) });
+  const rn = await O.offlineSend({ action: "UPDATE", sku: "H" }, "เบิก H");
+  T("บัตรหมดอายุตอนกดบันทึก → รายการเข้าคิว ไม่หาย (queued + needLogin)", rn.queued === true && rn.needLogin === true && O.offlineCount() === 1 && O.offlineQueue()[0].body.sku === "H");
+
   // ── 5. CSS ที่ build แล้ว ──
   console.log("5) CSS ที่ build แล้ว");
   for (const f of ["css/tw-desktop.css", "css/tw-mobile.css"]) {

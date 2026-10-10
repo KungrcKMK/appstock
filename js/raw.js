@@ -1362,10 +1362,16 @@ async function closeRawScanner(forceHide=false) {
 }
 
 // ── Button busy ──
+// ⚠️ ต้องปิดปุ่มจริง (disabled) + จำสถานะไว้ — แค่ใส่ class กันเมาส์ได้ แต่ Enter/Space ยังกดซ้ำได้
+//    เคยส่ง 3 คำขอจากการบันทึกครั้งเดียว (คนละ opId → รับ/เบิกซ้ำจริง · พบตอนตรวจ QA 2026-10-10)
+const _rawBusyIds = {};
+function rawIsBusy(id) { return !!_rawBusyIds[id]; }
 function setRawBusy(id, busy, txt="กำลังบันทึก...") {
+  _rawBusyIds[id] = !!busy;
   const btn=document.getElementById(id); if (!btn) return;
   if (!btn.dataset.orig) btn.dataset.orig = btn.innerHTML;
   btn.classList.toggle("btn-disabled", busy);
+  btn.disabled = !!busy;
   btn.innerHTML = busy ? txt : btn.dataset.orig;
 }
 

@@ -28,13 +28,17 @@
       document.getElementById("appAppleIcon").setAttribute("href", "icons/exec-192.png");
     }
   </script>
-  <link rel="icon" type="image/svg+xml" href="icons/icon.svg">
+  <!-- ไอคอนแท็บ = โลโก้เดียวกับไอคอนแอป (icons/icon.svg เดิมเป็นแบบเก่าสีม่วง ❄️ ไม่ตรงโลโก้ · QA M21) -->
+  <link rel="icon" type="image/png" sizes="192x192" href="icons/icon-192.png">
 
-  <!-- SEO / Share -->
-  <meta name="description" content="ระบบจัดการสต๊อก Cold Room, SQF และ MLM — สุพรรณคิวฟู้ดส์">
-  <meta property="og:title" content="ระบบ">
-  <meta property="og:description" content="Cold Room | SQF | MLM Stock Management">
+  <!-- SEO / ตัวอย่างลิงก์ตอนแชร์เข้า LINE (ปุ่ม 🔗 แชร์แอป) — ภาษาไทย + รูป (รูปต้องเป็น URL เต็ม) -->
+  <meta name="description" content="ระบบสต๊อกสำหรับพนักงาน สุพรรณคิวฟู้ดส์ และ แม่ละมาย — เบิก รับเข้า นับสต๊อก วัตถุดิบ SQF / MLM และคลังห้องเย็น">
+  <meta property="og:title" content="ระบบสต๊อก — สุพรรณคิวฟู้ดส์ | แม่ละมาย">
+  <meta property="og:description" content="เบิก · รับเข้า · นับสต๊อก วัตถุดิบ SQF / MLM และคลังห้องเย็น — สำหรับพนักงาน">
   <meta property="og:type" content="website">
+  <meta property="og:url" content="https://kungrckmk.github.io/appstock/">
+  <meta property="og:image" content="https://kungrckmk.github.io/appstock/icons/icon-512.png">
+  <meta property="og:locale" content="th_TH">
 
   <!-- ข้อ 12 รายงานปรับปรุง: ทุก library เก็บในแอป ไม่พึ่ง CDN — ปิดแอปแล้วเปิดใหม่ตอนไม่มีเน็ตก็ยังใช้ได้ครบ
        CSS สร้างจาก Tailwind ด้วย `npm run build:css` (อ่าน class จาก index.html + js/) — แก้ class ใหม่ต้อง build ใหม่ -->

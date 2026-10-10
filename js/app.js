@@ -307,9 +307,14 @@ function checkAuth() {
 // ─────────────────────────────────────────────
 // MODULE SWITCHER
 // ─────────────────────────────────────────────
+// ชื่อแท็บตามหน้าที่เปิด — เปิดหลายแท็บแล้วแยกออก (เดิม "ระบบ" ทุกหน้า · QA M21)
+// ชื่อแอปบนหน้าจอโฮม (manifest / apple-mobile-web-app-title) ยังเป็น "ระบบ" ตามเดิม
+const MODULE_TITLE = { HOME: "เลือกคลัง", COLDROOM: "คลังห้องเย็น", SQF: "วัตถุดิบ SQF", MLM: "วัตถุดิบ MLM",
+                       EXEC: "ภาพรวมทั้งระบบ", ROLES: "Admin", BOMHEALTH: "ตรวจข้อมูล" };
 function switchModule(mod) {
   if (window.APP_EXEC_ONLY) mod = "EXEC";   // ลิงก์ผู้บริหาร: มีหน้าเดียว
   activeModule = mod;
+  document.title = window.APP_EXEC_ONLY ? "ภาพรวมผู้บริหาร" : (MODULE_TITLE[mod] ? MODULE_TITLE[mod] + " · ระบบสต๊อก" : "ระบบ");
 
   // หน้าแรกไม่โชว์แถบเมนู (เจ้าของสั่ง 2026-07-31) — กลับมาเมื่อเข้าคลัง
   // กดชื่อตัวเองบนแถบเมนูเพื่อกลับหน้าแรกได้

@@ -683,5 +683,28 @@ console.log("14) 🗓️ กำหนดการส่งสรุป — ว�
   T("คืนกำหนดการเดิม", back.status === "success" && JSON.stringify(back.schedule) === JSON.stringify(g0.schedule), back.schedule);
 }
 
+console.log("15) QA 2026-10-10 — ยอดติดลบตอนสร้าง (M13) · สถานะหมดอายุคิดที่หลังบ้าน (M2)");
+{
+  const neg = await raw("CREATE", { sku: "QANEG" + Date.now(), name: "ติดลบ", unit: "ชิ้น", qty: -5 });
+  T("สร้างวัตถุดิบด้วยยอดเริ่มต้นติดลบ → ปฏิเสธ", neg.status === "error" && /0 ขึ้นไป/.test(neg.message || ""), neg);
+  const bad = await raw("CREATE", { sku: "QANAN" + Date.now(), name: "ไม่ใช่ตัวเลข", unit: "ชิ้น", qty: "abc" });
+  T("ยอดเริ่มต้นไม่ใช่ตัวเลข → ปฏิเสธ", bad.status === "error", bad);
+  // วันหมดอายุ 3 รูปแบบที่มีในข้อมูลจริง: ปปปป-ดด-วว (ช่องเลือกวันที่) · วว/ดด/ปปปป ค.ศ. และ พ.ศ. (ข้อมูลเก่าจากชีต)
+  const th = (d) => { const t = new Date(Date.now() + 7 * 3600000 + d * 86400000); return { y: t.getUTCFullYear(), m: String(t.getUTCMonth() + 1).padStart(2, "0"), d: String(t.getUTCDate()).padStart(2, "0") }; };
+  const a = th(3), b = th(12), c = th(-2), stamp = Date.now();
+  const cases = [
+    ["QAEX1" + stamp, `${a.y}-${a.m}-${a.d}`, 3, "near"],
+    ["QAEX2" + stamp, `${b.d}/${b.m}/${b.y}`, 12, ""],
+    ["QAEX3" + stamp, `${c.d}/${c.m}/${c.y + 543}`, -2, "expired"],
+  ];
+  for (const [sku, exp] of cases) await raw("CREATE", { sku, name: "หมดอายุ " + sku, unit: "ชิ้น", qty: 1, expiryDate: exp, alertDays: 7 });
+  const g = await get("SQF");
+  const got = cases.map(([sku]) => g.materials.find((m) => m.SKU === sku));
+  T("ทุกรายการมี ExpDays / ExpStatus จากหลังบ้าน", g.materials.every((m) => "ExpDays" in m && "ExpStatus" in m), g.materials[0]);
+  cases.forEach(([sku, exp, days, st], i) =>
+    T(`วันหมดอายุ "${exp}" → อีก ${days} วัน · สถานะ "${st || "ปกติ"}" (นับวันปฏิทินไทย)`, got[i] && got[i].ExpDays === days && got[i].ExpStatus === st, got[i] && [got[i].ExpDays, got[i].ExpStatus]));
+  for (const [sku] of cases) await raw("DELETE", { sku });
+}
+
 console.log(`\nสรุป: ผ่าน ${pass} · ไม่ผ่าน ${fail}`);
 process.exit(fail ? 1 : 0);

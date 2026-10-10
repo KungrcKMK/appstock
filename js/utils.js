@@ -6,6 +6,15 @@ function escapeAttr(v) { return escapeHtml(v); }
 // ต้อง escape สองชั้น: JS ก่อน แล้ว HTML attribute — escapeJs อย่างเดียว ชื่ออย่าง ถ้วย 8" จะทำ attribute ขาด
 function escapeJsAttr(v) { return escapeAttr(escapeJs(v)); }
 
+// ข้อความผิดพลาดเป็นภาษาคน — "Failed to fetch" ไม่บอกผู้ใช้ว่าต้องทำอะไรต่อ (QA M16 · คู่กับ mNetErr ใน mobile.html)
+// ข้อความที่หลังบ้านตอบมาเอง (ภาษาไทยอยู่แล้ว) ผ่านไปตามเดิม
+function netErrorText(e) {
+  const m = String((e && e.message) || e || "");
+  if (/failed to fetch|networkerror|load failed|network request failed/i.test(m)) return "เชื่อมต่อไม่ได้ — ตรวจสัญญาณเน็ตแล้วลองใหม่";
+  if (/abort|timeout/i.test(m)) return "รอนานเกินไป — ลองใหม่อีกครั้ง";
+  return m || "เกิดข้อผิดพลาด — ลองใหม่อีกครั้ง";
+}
+
 // ── อ่านคำตอบจาก GAS ให้ปลอดภัย ──
 // บางจังหวะ Google ตอบเป็นหน้า HTML ("ไม่พบเพจ" 404 ที่ชั้น redirect / หน้าจำกัดการเรียก) แทน JSON
 // ไม่ใช่ข้อมูลพัง มักหายเองในไม่กี่วินาที — แปลงเป็นข้อความที่คนอ่านรู้เรื่องแทน "Unexpected token '<'"

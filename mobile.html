@@ -1660,7 +1660,8 @@ async function openPlan() {
   try { if (await planFetch()) renderPlan(); }
   catch (e) {
     if (!planData || planData.module !== mod)
-      $("planList").innerHTML = '<p class="text-red-400 text-center py-10 font-bold">โหลดไม่สำเร็จ<br><span class="text-xs text-slate-500">' + escH(e.message || "") + "</span></p>";
+      $("planList").innerHTML = '<div class="text-center py-10" role="alert"><p class="text-red-400 font-bold">โหลดไม่สำเร็จ</p><p class="text-sm text-slate-400 mt-1">' + escH(mNetErr(e)) + '</p>' +
+        '<button onclick="openPlan()" class="btn-tap mt-4 bg-emerald-700 text-white font-black px-6 py-3 rounded-xl">↻ ลองใหม่</button></div>';
     else toast("ตรวจข้อมูลล่าสุดไม่ได้ — แสดงของเดิม", "warn");
   }
 }

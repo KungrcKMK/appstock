@@ -171,10 +171,26 @@ async function _rawLoadDataRun(startup, retry, opts, mod) {
     if (cachedRaw && cachedRaw.d) {
       _rawApplyData(cachedRaw.d, startup, "cache", cachedRaw.t);
       showToast(err.gasHtml ? "⏳ แสดงข้อมูลเก่า — เซิร์ฟเวอร์ตอบไม่ปกติ ลองรีเฟรชอีกสักครู่" : "⏳ แสดงข้อมูลเก่า (เชื่อมต่อไม่ได้)", "warn", 5000);
+    } else if (_rawShownModule !== mod) {
+      _rawShowLoadError(err.gasHtml ? err.message : "เชื่อมต่อไม่ได้ — ตรวจสัญญาณเน็ตแล้วกดลองใหม่");
     } else {
       showToast(err.gasHtml ? err.message : "เชื่อมต่อฐานข้อมูลล้มเหลว ❌", "error", 6000);
     }
   }
+}
+
+// เปิดคลังไม่สำเร็จและไม่มีข้อมูลของคลังนี้ในเครื่อง → ต้องล้างรายการของคลังก่อนหน้าออกจากจอ
+// (เดิมหัวข้อเป็นคลังใหม่ แต่รายการยังเป็นของคลังเก่า → เบิกผิดโรงงานได้ · พบตอนตรวจ QA 2026-10-10)
+function _rawShowLoadError(msg) {
+  rawLastData = []; window._rawDiscontinued = []; window._rawFiltered = [];
+  _rawShownModule = "";
+  try { renderRawStats([], []); } catch (e) {}
+  const list = document.getElementById("rawInventoryList");
+  if (list) list.innerHTML = `<tr><td colspan="${RAW_TABLE_COLS}"><div class="rm-empty" role="alert">
+      <b>⚠️ โหลดรายการของคลังนี้ไม่สำเร็จ</b><br>${escapeHtml(msg || "")}<br>
+      <button class="rm-mini solid" style="margin-top:10px;" onclick="rawLoadData()">↻ ลองใหม่</button></div></td></tr>`;
+  const age = document.getElementById("rawDataAge");
+  if (age) age.innerHTML = `<span style="color:var(--sq-crit);font-weight:800;">⚠️ ยังไม่มีข้อมูลของคลังนี้ — กดลองใหม่</span>`;
 }
 
 // ข้อ 18: บอกอายุข้อมูลค้างไว้บนหน้า ไม่พึ่ง toast ที่หายใน 4 วิ

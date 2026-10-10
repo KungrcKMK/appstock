@@ -1567,7 +1567,7 @@ async function confirmAction() {
       alert("❌ เน็ตล่ม และเก็บรายการไว้ในเครื่องไม่ได้\n(พื้นที่เต็มหรือเบราว์เซอร์ไม่อนุญาต)\n\nกรุณาจดไว้: " + label + "\nแล้วบันทึกใหม่เมื่อเน็ตกลับมา");
       return;
     }
-    if (r.needLogin) { mNeedLogin(); return; }
+    if (r.needLogin) { if (r.queued) closeAction(); mNeedLogin(r); return; }
     // เน็ตล่ม → เก็บไว้ในเครื่องแล้ว ถือว่างานของพนักงานเสร็จ ปิดแผงได้เลย
     if (r.queued) {
       toast("📴 เน็ตล่ม — บันทึกไว้ในเครื่องแล้ว ส่งให้เองเมื่อเน็ตกลับมา", "warn");

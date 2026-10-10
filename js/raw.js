@@ -1027,7 +1027,7 @@ async function rawFillWorkOrders() {
 
 function setRawType(t) {
   document.getElementById("rawModalType").value = t;
-  const base = "flex-1 py-4 rounded-[2.5rem] font-black text-base uppercase";
+  const base = "flex-1 py-3 rounded-xl font-black text-base";
   const on   = c => `${base} bg-white shadow-xl ${c}`;
   const off  = `${base} text-slate-400`;
   document.getElementById("rawBtnOut").className = t==="OUT"    ? on("text-orange-600")  : off;

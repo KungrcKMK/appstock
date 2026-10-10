@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ไม่พบหน้านี้ · ระบบสต๊อก</title>
+  <meta name="robots" content="noindex">
+  <meta name="theme-color" content="#0e7a3f">
+  <link rel="icon" type="image/png" href="/appstock/icons/icon-192.png">
+  <!-- หน้า 404 ของ GitHub Pages (ลิงก์ผิด/หน้าที่ถูกลบ) — เดิมเป็นหน้าภาษาอังกฤษของ GitHub · QA 2026-10-10
+       ไม่โหลดอะไรจากภายนอก (ใช้ฟอนต์ของเครื่อง) · ลิงก์กลับคำนวณจากที่อยู่จริง (เว็บจริงอยู่ใต้ /appstock/) -->
+  <style>
+    :root { --ink:#16241b; --ink2:#435349; --muted:#5b6e63; --accent:#0e7a3f; --ground:#f4f7f4; }
+    * { box-sizing:border-box; }
+    body { margin:0; min-height:100vh; display:flex; align-items:center; justify-content:center; padding:16px;
+           background:var(--ground); color:var(--ink); font-family:"Sarabun","Segoe UI",system-ui,sans-serif; }
+    .card { background:#fff; max-width:420px; width:100%; border-radius:20px; padding:32px 24px; text-align:center;
+            border-top:10px solid var(--accent); box-shadow:0 10px 30px rgba(22,36,27,.12); }
+    .ic { font-size:56px; line-height:1; }
+    h1 { font-size:22px; margin:14px 0 6px; }
+    p { color:var(--ink2); font-size:15px; line-height:1.6; margin:0 0 20px; }
+    a.btn { display:inline-flex; align-items:center; justify-content:center; min-height:48px; padding:12px 22px; border-radius:14px;
+            background:var(--accent); color:#fff; font-weight:800; font-size:16px; text-decoration:none; }
+    a.btn:hover, a.btn:focus-visible { background:#0b5c30; outline:3px solid #7fcf9d; outline-offset:2px; }
+    .small { margin-top:14px; font-size:13px; color:var(--muted); }
+    .small a { color:var(--ink2); font-weight:700; }
+  </style>
+</head>
+<body>
+  <main class="card">
+    <div class="ic">🔍</div>
+    <h1>ไม่พบหน้านี้</h1>
+    <p>ลิงก์อาจพิมพ์ผิดหรือหน้าถูกย้ายแล้ว<br>กดปุ่มด้านล่างเพื่อกลับเข้าระบบสต๊อก</p>
+    <a class="btn" id="homeLink" href="/appstock/">← กลับเข้าระบบ</a>
+    <div class="small"><a id="manualLink" href="/appstock/manual.html">📖 คู่มือการใช้งาน</a></div>
+  </main>
+  <script>
+    // เว็บจริงอยู่ใต้ /appstock/ · เปิดในเครื่อง (localhost) อยู่ที่ราก "/"
+    (function () {
+      var base = location.pathname.indexOf("/appstock/") === 0 ? "/appstock/" : "/";
+      document.getElementById("homeLink").setAttribute("href", base);
+      document.getElementById("manualLink").setAttribute("href", base + "manual.html");
+    })();
+  </script>
+</body>
+</html>

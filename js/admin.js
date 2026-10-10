@@ -227,7 +227,7 @@ async function adminLoadStatus() {
         ${row("บัญชีเจ้าของระบบใน Config", chip(srv.superAdminConfigured, "ตั้งไว้แล้ว", "⚠️ ไม่มี — เกราะ super admin ปิดอยู่"))}
         ${row("สำรองข้อมูลล่าสุด", srv.lastBackup ? `${t(srv.lastBackup.at)} · ${escapeHtml(String(srv.lastBackup.result))}<div class="sq-meter-note">${escapeHtml(String(srv.lastBackup.detail || "").split(" | ")[0])}</div>` : '<span class="sq-chip warn">ยังไม่มีบันทึก</span>')}
         ${row("สำเนาลง Google Sheets", mirrorCell)}
-        ${row("LINE ครั้งล่าสุด", srv.lastLine ? `${t(srv.lastLine.at)} · ${srv.lastLine.sent ? chip(true, "ส่งสำเร็จ " + srv.lastLine.groups + "/" + srv.lastLine.of + " กลุ่ม", "") : `<span class="sq-chip warn">ไม่ได้ส่ง: ${escapeHtml(srv.lastLine.reason || "")}</span>`}` : "ยังไม่มีการส่ง (ตั้งค่าที่ปุ่ม ⚙️ Telegram)")}
+        ${row("LINE ครั้งล่าสุด", srv.lastLine ? `${t(srv.lastLine.at)} · ${srv.lastLine.sent ? chip(true, "ส่งสำเร็จ " + srv.lastLine.groups + "/" + srv.lastLine.of + " กลุ่ม", "") : `<span class="sq-chip warn">ไม่ได้ส่ง: ${escapeHtml(srv.lastLine.reason || "")}</span>`}` : "ยังไม่มีการส่ง (ตั้งค่าที่ปุ่ม ⚙️ แจ้งเตือน)")}
         ${row("Telegram ครั้งล่าสุด", tg ? `${t(tg.at)} · ${tg.sent ? chip(true, "ส่งสำเร็จ", "") : `<span class="sq-chip warn">ไม่ได้ส่ง: ${escapeHtml(tg.reason || "")}</span>`}` : "ยังไม่มีการส่งในรอบนี้")}
         ${row("Telegram ผิดพลาดล่าสุด", srv.lastTelegramError ? `${t(srv.lastTelegramError.at)} · ${escapeHtml(String(srv.lastTelegramError.detail))}` : chip(true, "ไม่มี", ""))}
         ${row("จำนวนแถวข้อมูล", Object.keys(srv.rowCounts || {}).map(k => `${escapeHtml(k)}: <b>${srv.rowCounts[k] == null ? "—" : srv.rowCounts[k].toLocaleString()}</b>`).join(" · "))}
@@ -239,45 +239,7 @@ async function adminLoadStatus() {
     <p class="sq-note" style="margin-top:10px;">อ่านผล: "ตอบใน" มากแต่ "เซิร์ฟเวอร์ใช้" น้อย = ช้าที่เน็ตของเครื่องนี้ ไม่ใช่โปรแกรม · เซิร์ฟเวอร์ไม่ตอบ = เน็ตหลุดหรือเซิร์ฟเวอร์มีปัญหา · รุ่นแอปไม่ตรงกับที่ deploy ล่าสุด = เครื่องนี้ยังไม่ได้อัปเดต (กด 🔄 อัปเดต) · งานค้างในเครื่องอื่นจะไม่เห็นจากที่นี่</p>`;
 }
 
-async function loadUsers() {
-  const listEl = document.getElementById("adminUserList");
-  listEl.innerHTML = '<p class="text-slate-400 text-center text-sm font-bold py-4">กำลังโหลด...</p>';
-  try {
-    const res = await fetch(GAS_URL, {
-      method: "POST",
-      headers: { "Content-Type": "text/plain;charset=utf-8" },
-      body: JSON.stringify({ module: "SYSTEM", action: "getUsers", payload: { adminToken: _adminToken } })
-    }).then(r => r.json());
-    if (!res.ok) { listEl.innerHTML = `<p class="text-red-500 text-center text-sm font-bold py-4">❌ ${escapeHtml(res.message||"")}</p>`; return; }
-    const roleColors = { admin: "#f59e0b", manager: "#8b5cf6", user: "#64748b" };
-    listEl.innerHTML = res.users.map(u => {
-      const safeU = escapeJs(u.username||""); // ป้องกัน onclick injection
-      const safeId = escapeAttr(u.username||""); // ป้องกัน HTML injection ใน id attribute
-      return `
-      <div class="flex items-center justify-between bg-slate-50 rounded-2xl p-3 border border-slate-200 gap-3 flex-wrap">
-        <div>
-          <p class="font-black text-slate-800 text-sm">👤 ${escapeHtml(u.username||"")}</p>
-          <p class="text-xs text-slate-400 font-bold">
-            <span style="color:${roleColors[u.role]||"#64748b"};font-weight:900;">${escapeHtml(u.role||"")}</span>
-            ${u.hasPassword ? " &nbsp;🔒 มีรหัสผ่าน" : " &nbsp;🔓 ไม่มีรหัสผ่าน"}
-          </p>
-        </div>
-        <div class="flex gap-2 items-center flex-wrap">
-          <select id="roleSelect-${safeId}" style="padding:5px 8px;border-radius:8px;border:2px solid #e2e8f0;font-size:12px;font-weight:800;">
-            <option value="user"     ${u.role==="user"    ?"selected":""}>👤 user — พนักงานทั่วไป</option>
-            <option value="viewer"   ${u.role==="viewer"  ?"selected":""}>👁️ viewer — ดูข้อมูล + ภาพรวม</option>
-            <option value="manager"  ${u.role==="manager" ?"selected":""}>📋 manager — ผู้จัดการ</option>
-            <option value="admin"    ${u.role==="admin"   ?"selected":""}>🔧 admin — ผู้ดูแลระบบ</option>
-          </select>
-          <input type="password" id="pwdInput-${safeId}" placeholder="รหัสผ่านใหม่ (ถ้าต้องการตั้ง)" style="padding:5px 8px;border-radius:8px;border:2px solid #e2e8f0;font-size:12px;width:130px;">
-          <button onclick="saveUserRole('${safeU}')" class="bg-indigo-500 text-white px-3 py-1.5 rounded-xl font-black text-xs hover:bg-indigo-600 transition-all">💾 บันทึก</button>
-        </div>
-      </div>`;
-    }).join("");
-  } catch(e) {
-    listEl.innerHTML = `<p class="text-red-500 text-center text-sm font-bold py-4">เกิดข้อผิดพลาด: ${escapeHtml(netErrorText(e))}</p>`;
-  }
-}
+// (loadUsers เดิมอ้าง #adminUserList ที่ไม่มีในหน้าแล้ว และไม่มีใครเรียก — ลบ 2026-10-10 · QA L7 · หน้าผู้ใช้อยู่ที่ loadRolesPage)
 
 async function loadRolesPage() {
   const listEl = document.getElementById("rolesPageList");

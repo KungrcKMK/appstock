@@ -425,7 +425,7 @@ function crWoAddRow() {
       </select>
     </td>
     <td style="padding:8px;">
-      <input type="text" id="crWoMfg-${idx}" maxlength="6" inputmode="numeric" placeholder="DDMMYY"
+      <input type="text" id="crWoMfg-${idx}" maxlength="6" inputmode="numeric" placeholder="วันเดือนปี เช่น 100426"
         oninput="crWoCalcExpRow(${idx})"
         style="width:100%;padding:8px;border:2px solid var(--sq-line);border-radius:8px;text-align:center;font-size:14px;font-weight:900;font-family:monospace;outline:none;">
     </td>
@@ -958,8 +958,8 @@ function crSiAddRow() {
 
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;">
         <div>
-          <label style="font-size:11px;font-weight:700;color:var(--sq-muted);display:block;margin-bottom:4px;">📅 MFG <span style="font-weight:400;opacity:.7;">(DDMMYY)</span></label>
-          <input class="cr-si-mfg" type="text" maxlength="6" inputmode="numeric" placeholder="100426"
+          <label style="font-size:11px;font-weight:700;color:var(--sq-muted);display:block;margin-bottom:4px;">📅 MFG <span style="font-weight:400;opacity:.7;">(วันเดือนปี 6 หลัก)</span></label>
+          <input class="cr-si-mfg" type="text" maxlength="6" inputmode="numeric" placeholder="เช่น 100426"
             oninput="this.value=this.value.replace(/\D/g,''); crSiAutoExp(this)"
             style="width:100%;padding:12px;border:1.5px solid var(--sq-line);border-radius:10px;font-size:20px;font-weight:900;text-align:center;letter-spacing:3px;box-sizing:border-box;">
         </div>
@@ -1554,7 +1554,7 @@ async function crSaveCount() {
   }
   // Poka-Yoke: ตรวจรูปแบบและความสมเหตุผลของวันที่
   if (!/^\d{6}$/.test(pl.mfg) || !/^\d{6}$/.test(pl.exp)) {
-    await crShowModal("alert","รูปแบบวันที่ผิด","วันผลิต/หมดอายุต้องเป็นตัวเลข 6 หลัก (DDMMYY)"); return;
+    await crShowModal("alert","รูปแบบวันที่ผิด","วันผลิต/หมดอายุต้องเป็นตัวเลข 6 หลัก (วันเดือนปี เช่น 100426 = 10 เม.ย. 2026)"); return;
   }
   const mfgIso = ddmmyyToIsoWo(pl.mfg);
   const expIso = ddmmyyToIsoWo(pl.exp);

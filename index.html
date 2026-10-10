@@ -121,6 +121,13 @@
     .nav-btn { padding:8px 16px;border-radius:12px;font-weight:800;font-size:12px;text-transform:uppercase;transition:all .2s;color:rgba(255,255,255,.6);background:transparent;border:none;cursor:pointer;white-space:nowrap; }
     .nav-btn.active { background:rgba(255,255,255,.15);color:#fff;box-shadow:0 2px 8px rgba(0,0,0,.2); }
     .nav-btn:hover:not(.active) { color:#fff; }
+    /* QA L3: หน้าที่เปิดอยู่ต้องเด่นเสมอ (!important ชนะ style ในปุ่ม) · ปุ่มเครื่องมือสีเดียวกัน · ปุ่มออกเป็นแดงจริง */
+    .nav-btn { text-transform:none !important; }
+    .nav-btn.active { background:#fff !important;color:var(--sq-ink) !important;box-shadow:0 2px 10px rgba(0,0,0,.25); }
+    .nav-btn.nav-tool { background:rgba(255,255,255,.09);color:#e2e8f0; }
+    .nav-btn.nav-tool:hover { background:rgba(255,255,255,.18); }
+    .nav-btn.nav-logout { background:rgba(239,68,68,.16);color:#fecaca; }
+    .nav-btn.nav-logout:hover { background:rgba(239,68,68,.32);color:#fff; }
     .nav-badge { display:inline-flex;align-items:center;justify-content:center;min-width:18px;height:18px;padding:0 5px;border-radius:999px;font-size:10px;font-weight:900;background:#ef4444;color:#fff;margin-left:4px;animation:badgePop .3s ease; }
     @keyframes badgePop { 0%{transform:scale(0)} 70%{transform:scale(1.3)} 100%{transform:scale(1)} }
 
@@ -657,6 +664,9 @@
     .login-btn:hover, .login-btn:focus-visible { background:#0b5c30; }
     .login-link { font-size:12.5px;font-weight:800;color:var(--sq-ink2);background:none;border:0;padding:8px 4px;min-height:36px;cursor:pointer;font-family:inherit;text-decoration:underline;text-underline-offset:3px; }
     .login-link:hover { color:var(--sq-accent); }
+    /* โฟกัสด้วยคีย์บอร์ดต้องเห็น (QA L5/M7) */
+    .rm-purpose-in:focus { border-color:var(--sq-accent) !important;box-shadow:0 0 0 3px rgba(14,122,63,.2); }
+    [role="button"]:focus-visible, th.s:focus-visible, .imp-drop:focus-visible { outline:3px solid var(--sq-accent);outline-offset:2px; }
     /* ข้อผิดพลาดใต้ช่องกรอก (rawFieldError ใน js/raw.js · QA M12) */
     .rm-field-err { color:var(--sq-crit);font-size:13px;font-weight:800;margin:6px 4px 0;text-align:left;line-height:1.4; }
     .rm-input-err { border-color:var(--sq-crit) !important;box-shadow:0 0 0 3px rgba(192,54,44,.18) !important; }
@@ -932,7 +942,7 @@
 
       <!-- แถวที่ 1 — ผู้ใช้ + เลือกคลังที่กำลังทำงาน -->
       <div class="nav-row">
-        <span class="text-white font-black text-sm shrink-0 mr-2" onclick="switchModule('HOME')"
+        <span class="text-white font-black text-sm shrink-0 mr-2" onclick="switchModule('HOME')" role="button" tabindex="0" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();this.click();}"
               style="cursor:pointer;" title="กลับหน้าแรก">
           👤 <span id="navUser" style="color:#5cc98a;"></span>
           <span id="navDevice" style="display:none;"></span>
@@ -940,26 +950,26 @@
         <button id="navBtn-COLDROOM" class="nav-btn" onclick="switchModule('COLDROOM')">❄️ คลังสินค้า<span id="badge-COLDROOM" class="nav-badge" style="display:none"></span></button>
         <button id="navBtn-SQF"      class="nav-btn" onclick="switchModule('SQF')">🏭 วัตถุดิบ SQF<span id="badge-SQF" class="nav-badge" style="display:none"></span></button>
         <button id="navBtn-MLM"      class="nav-btn" onclick="switchModule('MLM')">🏭 วัตถุดิบ MLM<span id="badge-MLM" class="nav-badge" style="display:none"></span></button>
-        <button onclick="logout()" class="text-red-400 font-black text-xs hover:text-red-300 shrink-0 nav-btn ml-auto">🔴 ออก</button>
+        <button onclick="logout()" class="nav-btn nav-logout shrink-0 ml-auto" title="ออกจากระบบ">🔴 ออกจากระบบ</button>
       </div>
 
       <div class="nav-sep"></div>
 
       <!-- แถวที่ 2 — เครื่องมือ -->
       <div class="nav-row">
-        <button id="navBtn-EXEC"  onclick="switchModule('EXEC')"  class="nav-btn" style="display:none;background:rgba(99,102,241,0.18);color:#a5b4fc;">📊 ภาพรวมทั้งระบบ</button>
+        <button id="navBtn-EXEC"  onclick="switchModule('EXEC')"  class="nav-btn nav-tool" style="display:none;">📊 ภาพรวมทั้งระบบ</button>
         <!-- ชื่อปุ่มตั้งใจให้จืด ไม่บอกว่าข้างในคือสูตรการผลิต (เจ้าของสั่ง 2026-08-01 กลัวหลุด) -->
-        <button id="navBtn-BOMHEALTH" onclick="switchModule('BOMHEALTH')" class="nav-btn" style="display:none;background:rgba(14,165,233,0.18);color:#7dd3fc;">🔍 ตรวจข้อมูล</button>
-        <button id="navBtn-ROLES" onclick="switchModule('ROLES')" class="nav-btn" style="display:none;background:rgba(234,179,8,0.18);color:#fbbf24;">👑 Admin<span id="adminNavBadge" class="nav-badge" style="display:none;background:#f59e0b;"></span></button>
-        <button id="telegramNavBtn" onclick="openUnifiedSettings()" class="nav-btn" style="display:none;background:rgba(255,255,255,0.1);color:#fff;">⚙️ Telegram</button>
-        <button onclick="openMyHistory()" class="nav-btn" style="background:rgba(99,102,241,0.2);color:#a5b4fc;" title="ดูรายการที่ตัวเองทำ">📜 ของฉัน</button>
-        <button onclick="openShareApp()" class="nav-btn" style="background:rgba(14,165,233,0.15);color:#7dd3fc;" title="แชร์แอปให้พนักงาน (ลิงก์ + QR)">🔗 แชร์แอป</button>
-        <a href="manual.html" target="_blank" rel="noopener" class="nav-btn" style="background:rgba(255,255,255,0.08);color:#cbd5e1;text-decoration:none;" title="คู่มือการใช้งาน">📖 คู่มือ</a>
+        <button id="navBtn-BOMHEALTH" onclick="switchModule('BOMHEALTH')" class="nav-btn nav-tool" style="display:none;">🔍 ตรวจข้อมูล</button>
+        <button id="navBtn-ROLES" onclick="switchModule('ROLES')" class="nav-btn nav-tool" style="display:none;">👑 Admin<span id="adminNavBadge" class="nav-badge" style="display:none;background:#f59e0b;"></span></button>
+        <button id="telegramNavBtn" onclick="openUnifiedSettings()" class="nav-btn nav-tool" style="display:none;" title="ตั้งค่าการแจ้งเตือน Telegram / LINE / กำหนดการส่งสรุป">⚙️ แจ้งเตือน</button>
+        <button onclick="openMyHistory()" class="nav-btn nav-tool" title="ดูรายการที่ตัวเองทำ">📜 ของฉัน</button>
+        <button onclick="openShareApp()" class="nav-btn nav-tool" title="แชร์แอปให้พนักงาน (ลิงก์ + QR)">🔗 แชร์แอป</button>
+        <a href="manual.html" target="_blank" rel="noopener" class="nav-btn nav-tool" style="text-decoration:none;" title="คู่มือการใช้งาน">📖 คู่มือ</a>
         <!-- งานที่บันทึกไว้ตอนเน็ตล่ม ยังไม่ได้ส่งขึ้นระบบ — โผล่เฉพาะตอนมีของค้าง -->
         <button id="offlineQueueBtn" onclick="rawShowOfflineDetail()" class="nav-btn"
                 style="display:none;background:rgba(234,88,12,.22);color:#fdba74;" title="กดเพื่อดูรายละเอียด / ลองส่งใหม่"></button>
-        <button onclick="switchToMobile()" class="nav-btn" style="background:rgba(99,102,241,0.15);color:#a5b4fc;" title="เปลี่ยนเป็นโหมดมือถือ">📱</button>
-        <button onclick="forceRefresh()" title="อัปเดตแอปล่าสุด (ล้าง cache)" class="nav-btn" style="background:rgba(99,102,241,0.15);color:#a5b4fc;">🔄 อัปเดต</button>
+        <button onclick="switchToMobile()" class="nav-btn nav-tool" title="เปลี่ยนเป็นโหมดมือถือ" aria-label="เปลี่ยนเป็นโหมดมือถือ">📱 มือถือ</button>
+        <button onclick="forceRefresh()" title="อัปเดตแอปล่าสุด (ล้าง cache)" class="nav-btn nav-tool">🔄 อัปเดต</button>
       </div>
 
     </div>
@@ -1164,9 +1174,9 @@
       <div class="cr-tabbar">
         <button class="cr-tab-btn active" id="crTabBtn-report"      onclick="crSwitchTab('report')">📈 แดชบอร์ด</button>
         <button class="cr-tab-btn"        id="crTabBtn-balance"    onclick="crSwitchTab('balance')">📊 คงเหลือ</button>
-        <button class="cr-tab-btn"        id="crTabBtn-stock"      onclick="crSwitchTab('stock')">📦 นับสต๊อก</button>
+        <button class="cr-tab-btn"        id="crTabBtn-stock"      onclick="crSwitchTab('stock')">📱 นับสต๊อก</button>
         <button class="cr-tab-btn"        id="crTabBtn-workorder"  onclick="crSwitchTab('workorder')">📋 ใบสั่งผลิต</button>
-        <button class="cr-tab-btn"        id="crTabBtn-submit"     onclick="crSwitchTab('submit')">📦 ส่งยอดผลิต</button>
+        <button class="cr-tab-btn"        id="crTabBtn-submit"     onclick="crSwitchTab('submit')">📤 ส่งยอดผลิต</button>
         <button class="cr-tab-btn"        id="crTabBtn-receive"    onclick="crSwitchTab('receive')">📥 รับยอดผลิต</button>
         <button class="cr-tab-btn"        id="crTabBtn-manage"     onclick="crSwitchTab('manage')">⚙️ จัดการสินค้า</button>
       </div>
@@ -1690,6 +1700,7 @@
             </label>
             <input type="text" id="rawModalPurpose" list="rawPurposeList" maxlength="120"
                    placeholder="เช่น ผลิตวุ้นมะพร้าว ล็อต 3"
+                   class="rm-purpose-in"
                    style="width:100%;padding:14px 16px;border:2px solid var(--sq-line);border-radius:14px;
                           font-family:inherit;font-size:16px;font-weight:700;outline:none;box-sizing:border-box;
                           background:var(--sq-surface);color:var(--sq-ink);">
@@ -1892,9 +1903,9 @@
                 <tr>
                   <th class="rm-rail" aria-hidden="true"></th>
                   <th><input type="checkbox" id="rawSelectAll" onclick="rawToggleAll()" aria-label="เลือกทั้งหมด"></th>
-                  <th class="s" onclick="rawSetSort('status')">สถานะ <span id="rawSortIcon-status" style="opacity:.4">↕</span></th>
-                  <th class="s" onclick="rawSetSort('name')">วัตถุดิบ <span id="rawSortIcon-name" style="opacity:.4">↕</span></th>
-                  <th class="s n" onclick="rawSetSort('qty')">คงเหลือ <span id="rawSortIcon-qty" style="opacity:.4">↕</span></th>
+                  <th class="s" onclick="rawSetSort('status')" tabindex="0" role="button" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();this.click();}">สถานะ <span id="rawSortIcon-status" style="opacity:.4">↕</span></th>
+                  <th class="s" onclick="rawSetSort('name')" tabindex="0" role="button" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();this.click();}">วัตถุดิบ <span id="rawSortIcon-name" style="opacity:.4">↕</span></th>
+                  <th class="s n" onclick="rawSetSort('qty')" tabindex="0" role="button" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();this.click();}">คงเหลือ <span id="rawSortIcon-qty" style="opacity:.4">↕</span></th>
                   <th class="n">จุดสั่งซื้อ</th>
                   <th class="n">จัดการ</th>
                 </tr>
@@ -2116,7 +2127,7 @@
 
         <div id="impResult"></div>
 
-        <div id="impDropZone" class="imp-drop"
+        <div id="impDropZone" class="imp-drop" tabindex="0" role="button" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();this.click();}"
              onclick="document.getElementById('impFileInput').click()"
              ondrop="impOnDrop(event)" ondragover="impOnDragOver(event)" ondragleave="impOnDragLeave()">
           <div class="imp-drop-icon">📄</div>
@@ -2163,7 +2174,7 @@
           </label>
         </div>
 
-        <div class="imp-drop" onclick="document.getElementById('criFile').click()">
+        <div class="imp-drop" tabindex="0" role="button" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();this.click();}" onclick="document.getElementById('criFile').click()">
           <div class="imp-drop-icon">📄</div>
           <div class="imp-drop-main">คลิกเพื่อเลือกไฟล์ .csv</div>
           <div class="imp-drop-sub">นำเข้าได้ครั้งละไม่เกิน 500 ล็อต</div>

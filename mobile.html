@@ -95,7 +95,7 @@
   </button>
 
   <!-- Quick-access bar: last used module -->
-  <div id="mLastBar" onclick="selectModule(localStorage.getItem('appstock_last_mod'))"
+  <div id="mLastBar" onclick="selectModule(localStorage.getItem('appstock_last_mod'))" role="button" tabindex="0" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();this.click();}"
     class="hidden btn-tap mt-1 bg-slate-800/80 border border-slate-700 rounded-2xl px-4 py-3 flex items-center justify-between gap-3">
     <div class="flex items-center gap-3 min-w-0">
       <span id="mLastIcon" class="text-xl flex-shrink-0"></span>

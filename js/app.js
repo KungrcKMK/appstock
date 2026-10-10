@@ -475,3 +475,18 @@ if ("serviceWorker" in navigator) {
       .catch(err => console.warn("SW register failed:", err));
   });
 }
+
+// รุ่นของแอปในหน้าเข้าระบบ = เลขชุดไฟล์ของ service worker (เดิม "v.1020" ตายตัว ตอบไม่ได้ว่าใช้รุ่นไหนอยู่ · QA L4)
+// อ่านจากชุด cache ที่ติดตั้งอยู่ก่อน (ใช้ได้ตอนออฟไลน์) ไม่มีค่อยอ่านจาก sw.js
+(function showAppVersion() {
+  const el = document.getElementById("appVersion");
+  if (!el) return;
+  const put = v => { if (v) el.textContent = "รุ่น " + v; };
+  const fromFile = () => fetch("sw.js", { cache: "no-cache" }).then(r => r.text())
+    .then(t => { const m = t.match(/CACHE_NAME\s*=\s*"appstock-(v\d+)"/); put(m && m[1]); }).catch(() => {});
+  if (!window.caches) { fromFile(); return; }
+  caches.keys().then(keys => {
+    const v = keys.map(k => (k.match(/^appstock-v(\d+)$/) || [])[1]).filter(Boolean).map(Number).sort((a, b) => b - a)[0];
+    v ? put("v" + v) : fromFile();
+  }).catch(fromFile);
+})();

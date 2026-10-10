@@ -87,7 +87,7 @@ let rawCurrentQrName  = "";
 const MODULE_META = {
   // subtitleClass = จุดสีหน้าชื่อโรงงาน (ส้ม = Suphan Q Foods, เขียว = แม่ละมาย ตามโลโก้)
   SQF: { title:"วัตถุดิบ SQF", subtitle:"สุพรรณคิวฟู้ดส์", subtitleClass:"is-sqf", headerBorder:"border-orange-500", skuPrefix:"SQF-" },
-  MLM: { title:"วัตถุดิบ MLM",   subtitle:"แม่ละมาย",        subtitleClass:"is-mlm", headerBorder:"border-blue-500",   skuPrefix:"MLM-" }
+  MLM: { title:"วัตถุดิบ MLM",   subtitle:"แม่ละมาย",        subtitleClass:"is-mlm", headerBorder:"border-emerald-600", skuPrefix:"MLM-" }
 };
 
 function updateRawHeader(mod) {

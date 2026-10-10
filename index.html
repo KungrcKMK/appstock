@@ -644,6 +644,9 @@
       #module-COLDROOM td:last-child { border-bottom:none; }
       #module-COLDROOM td::before { content:attr(data-label);font-weight:700;color:var(--muted);font-size:12px;text-transform:uppercase;float:left;text-align:left; }
     }
+    /* ข้อผิดพลาดใต้ช่องกรอก (rawFieldError ใน js/raw.js · QA M12) */
+    .rm-field-err { color:var(--sq-crit);font-size:13px;font-weight:800;margin:6px 4px 0;text-align:left;line-height:1.4; }
+    .rm-input-err { border-color:var(--sq-crit) !important;box-shadow:0 0 0 3px rgba(192,54,44,.18) !important; }
     /* 🗓️ กำหนดการส่งสรุป (js/notify.js) — CSS ล้วน ไม่พึ่ง class Tailwind ใหม่ */
     .ntf-card{border:2px solid;border-radius:24px;padding:16px;margin-bottom:12px;}
     .ntf-head{display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:15px;margin-bottom:4px;}

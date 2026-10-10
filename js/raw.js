@@ -51,7 +51,14 @@ function rawUpdateStaleUi() {
   }
 }
 async function rawSetStaleDays(v) {
-  const n = Math.max(0, Math.min(365, parseInt(v, 10) || 0));
+  // ค่าว่าง/พิมพ์ผิด → คืนค่าเดิม (เดิม parseInt||0 = บันทึก 0 = ปิดการเตือนของทุกคนทันทีโดยไม่ถาม · QA M14)
+  const cur = Number(window._rawStaleDays) || 0;
+  const inp = document.getElementById("rawStaleDaysInput");
+  const raw = String(v == null ? "" : v).trim();
+  const n = /^\d+$/.test(raw) ? Math.min(365, parseInt(raw, 10)) : NaN;
+  if (isNaN(n)) { if (inp) inp.value = cur || ""; showToast("ใส่จำนวนวันเป็นตัวเลข (0 = ปิดการเตือน) — ยังใช้ค่าเดิม " + (cur || "ปิด"), "warn"); return; }
+  if (n === cur) return;
+  if (n === 0 && !confirm("ปิดการเตือน \"ไม่อัปเดตสต๊อก\" ของทุกคน?\n\nรายการที่ไม่มีใครนับนานจะไม่ถูกเตือนอีก จนกว่าจะตั้งจำนวนวันใหม่")) { if (inp) inp.value = cur || ""; return; }
   try {
     const r = await rawFetch({ action: "PLANSET", staleDays: n, user: currentUser });
     if (r.status !== "success") throw new Error(r.message || "บันทึกไม่สำเร็จ");
@@ -927,7 +934,9 @@ function openRawCreate() {
   document.getElementById("rawNewMin").value        = "0";
   document.getElementById("rawNewDailyUsage").value = "0";
   document.getElementById("rawNewExpiry").value     = "";
+  rawFieldErrorsClear("rawNewName", "rawNewUnit", "rawNewQty", "rawNewMin", "rawNewDailyUsage");
   document.getElementById("rawCreateModal").classList.remove("hidden");
+  setTimeout(() => document.getElementById("rawNewName")?.focus(), 60);   // เริ่มพิมพ์ชื่อได้ทันที
 }
 function closeRawCreate() { document.getElementById("rawCreateModal").classList.add("hidden"); }
 
@@ -946,7 +955,9 @@ function openRawEdit(sku) {
   if (_e("rawEditLeadDays")) _e("rawEditLeadDays").value = Number(item.LeadDays || 0) || "";
   if (_e("rawEditMoq"))      _e("rawEditMoq").value      = Number(item.Moq || 0) || "";
   if (_e("rawEditPackSize")) _e("rawEditPackSize").value = Number(item.PackSize || 0) || "";
+  rawFieldErrorsClear("rawEditName", "rawEditUnit", "rawEditMin", "rawEditDailyUsage");
   document.getElementById("rawEditModal").classList.remove("hidden");
+  setTimeout(() => document.getElementById("rawEditName")?.focus(), 60);
 }
 function closeRawEdit() { document.getElementById("rawEditModal").classList.add("hidden"); }
 
@@ -954,7 +965,9 @@ function openRawVerify(sku, name) {
   rawVerifyTarget = sku;
   document.getElementById("rawVerifyTitle").innerText = `${name} (${sku})`;
   document.getElementById("rawVerifyQty").value = "";
+  rawFieldErrorsClear("rawVerifyQty");
   document.getElementById("rawVerifyModal").classList.remove("hidden");
+  setTimeout(() => document.getElementById("rawVerifyQty")?.focus(), 60);
 }
 function closeRawVerify() { document.getElementById("rawVerifyModal").classList.add("hidden"); }
 
@@ -970,6 +983,7 @@ function openRawAction(sku, name, unit, currentQty) {
     // ล้างช่อง "ใช้กับงาน" ทุกครั้ง กันเผลอใช้ค่าเดิมของรายการก่อน
   const _pp = document.getElementById("rawModalPurpose");
   if (_pp) _pp.value = "";
+  rawFieldErrorsClear("rawModalQty", "rawModalPurpose");
   rawFillPurposeList();
   rawFillWorkOrders();
   document.getElementById("rawModalStock").style.color =
@@ -1193,8 +1207,10 @@ async function rawSubmitEdit() {
         dailyUsage=Number(document.getElementById("rawEditDailyUsage").value||0),
         expiry=document.getElementById("rawEditExpiry").value;
   if (!sku)  return showToast("ไม่พบ SKU","error");
-  if (!name) return showToast("กรุณาระบุชื่อ","warn");
-  if (!unit) return showToast("กรุณาระบุหน่วย","warn");
+  if (!name) { rawFieldError("rawEditName", "กรุณาระบุชื่อ"); return; }
+  if (!unit) { rawFieldError("rawEditUnit", "กรุณาระบุหน่วย"); return; }
+  if (isNaN(min) || min < 0) { rawFieldError("rawEditMin", "จุดสั่งซื้อต้องเป็นตัวเลข 0 ขึ้นไป"); return; }
+  if (isNaN(dailyUsage) || dailyUsage < 0) { rawFieldError("rawEditDailyUsage", "ใช้ต่อวันต้องเป็นตัวเลข 0 ขึ้นไป"); return; }
   setRawBusy("rawBtnEdit",true,"กำลังบันทึก...");
   showLoading("กำลังบันทึกการแก้ไข...");
   const alertDaysEdit = Math.max(1, parseInt(document.getElementById("rawEditAlertDays").value||rawAlertDays));
@@ -1236,18 +1252,12 @@ async function rawSubmitAction() {
   const qty  = Number(document.getElementById("rawModalQty").value);
   const curQty = Number(document.getElementById("rawModalCurrentQty").value) || 0;
   if (!sku)               return showToast("ไม่พบ SKU","error");
-  if (isNaN(qty)||qty<=0) return showToast("ระบุจำนวนให้ถูกต้อง","warn");
+  if (isNaN(qty)||qty<=0) { rawFieldError("rawModalQty", "ระบุจำนวนเป็นตัวเลขมากกว่า 0"); return; }
   // ✅ เช็คสต๊อกก่อนส่ง (เฉพาะ OUT)
-  if (type === "OUT" && qty > curQty) {
-    return showToast(`⚠️ สต๊อกไม่เพียงพอ — มีอยู่ ${curQty} ไม่สามารถเบิก ${qty} ได้`, "error");
-  }
+  if (type === "OUT" && qty > curQty) { rawFieldError("rawModalQty", `สต๊อกไม่พอ — มีอยู่ ${curQty} เบิก ${qty} ไม่ได้`); return; }
   // ใช้กับงานอะไร — บังคับกรอกเฉพาะตอนเบิก เพราะเป็นข้อมูลที่ต้องขึ้นใบเบิกให้ออดิเตอร์ตรวจ
   const purpose = (document.getElementById("rawModalPurpose")?.value || "").trim();
-  if (type === "OUT" && !purpose) {
-    showToast("กรุณาระบุว่าเบิกไปใช้กับงานอะไร", "warn");
-    document.getElementById("rawModalPurpose")?.focus();
-    return;
-  }
+  if (type === "OUT" && !purpose) { rawFieldError("rawModalPurpose", "กรุณาระบุว่าเบิกไปใช้กับงานอะไร"); return; }
   setRawBusy("rawBtnSubmit",true,"กำลังบันทึก...");
   const _busyText = { IN:"กำลังบันทึกรับเข้า...", RETURN:"กำลังบันทึกการคืน...", OUT:"กำลังบันทึกการเบิก..." };
   showLoading(_busyText[type] || "กำลังบันทึก...");
@@ -1326,7 +1336,7 @@ async function rawSubmitVerify() {
   if (rawIsBusy("rawBtnVerify")) return;   // กำลังส่งอยู่ — กันกดซ้ำ (Enter/Space/คลิกรัว)
   const q=Number(document.getElementById("rawVerifyQty").value);
   if (!rawVerifyTarget) return showToast("ไม่พบ SKU","error");
-  if (isNaN(q)||q<0)    return showToast("ระบุยอดให้ถูกต้อง","warn");
+  if (isNaN(q)||q<0)    { rawFieldError("rawVerifyQty", "ระบุยอดที่นับได้ เป็นตัวเลข 0 ขึ้นไป"); return; }
   // Poka-Yoke: เตือนถ้าค่าใหม่ต่างจากค่าปัจจุบัน > 5 เท่า
   const curItem = (rawLastData || []).find(it => String(it.SKU) === String(rawVerifyTarget));
   const curQty = curItem ? Number(curItem.Qty || 0) : 0;

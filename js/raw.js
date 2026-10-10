@@ -308,6 +308,10 @@ function rawApplyTrends() {
 
 // 📈 กราฟวิเคราะห์ย้ายไปหน้าภาพรวมทั้งระบบแล้ว (js/exec.js — เจ้าของสั่งย้าย 2026-08-02)
 
+// ต่ำกว่าจุดสั่งซื้อ — นิยามเดียวทั้งระบบ = หลังบ้าน plan.js (belowMin) และ isLowItem ในมือถือ: ตั้งจุดสั่งซื้อไว้ (>0) และคงเหลือ ≤ จุดนั้น
+// (เดิมตัวกรอง / การ์ดสรุป / ป๊อปอัป ใช้เงื่อนไขต่างกัน ตัวเลขไม่ตรงกัน — QA M11 2026-10-10)
+function rawIsLow(i) { const min = Number(i.Min); return min > 0 && Number(i.Qty) <= min; }
+
 // ── Date helpers ──
 // วันที่จากหลายแหล่ง → "วว/ดด/ปปปป" (พ.ศ.)
 // ⚠️ อ่าน วว/ดด/ปปปป และ ปปปป-ดด-วว เอง ห้ามส่งให้ new Date — มันอ่านแบบอเมริกัน (เดือน/วัน):
@@ -359,7 +363,7 @@ function renderRawInventory(items) {
   const filtered = items.filter(item => {
     const name = (item.Name||"").toLowerCase(); const sku = (item.SKU||"").toLowerCase();
     if (!name.includes(search) && !sku.includes(search)) return false;
-    const isLow = Number(item.Qty)<=Number(item.Min);
+    const isLow = rawIsLow(item);
     const ed=rawParseDate(item.ExpiryDate); const isExp=ed&&ed<today;
     if (rawCurrentFilter==="low"   && !isLow)            return false;
     if (rawCurrentFilter==="exp"   && !isExp)            return false;
@@ -369,7 +373,7 @@ function renderRawInventory(items) {
   });
 
   const _statusPri = item => {
-    const isLow = Number(item.Qty) <= Number(item.Min);
+    const isLow = rawIsLow(item);
     const ed = rawParseDate(item.ExpiryDate); const isExp = ed && ed < today;
     const d = Number(item.DailyUsage||0); const q = Number(item.Qty||0);
     const days = d > 0 ? Math.floor(q/d) : null;
@@ -401,7 +405,7 @@ const RAW_ITEMS_PER_PAGE = 50;
 
 function rawRenderItemRow(item) {
   const today = new Date(); today.setHours(0,0,0,0);
-  const isLow=Number(item.Qty)<=Number(item.Min);
+  const isLow=rawIsLow(item);
   const ed=rawParseDate(item.ExpiryDate); const isExp=ed&&ed<today;
   const itemAlertDays = Number(item.AlertDays) || rawAlertDays;
   const nearAlert=rawNearExpiry(item, itemAlertDays);
@@ -545,7 +549,7 @@ function renderRawHistory(h) {
 // ── Render stats ──
 function renderRawStats(items, discontinued) {
   const today=new Date(); today.setHours(0,0,0,0);
-  const low = items.filter(i=>Number(i.Qty)<=Number(i.Min)&&Number(i.Qty)>0).length;
+  const low = items.filter(i=>rawIsLow(i)).length;
   const exp = items.filter(i=>{ const d=rawParseDate(i.ExpiryDate); return d&&d<today; }).length;
   const stop = Array.isArray(discontinued) ? discontinued.length : 0;
   const tile = (dot, label, num, note, color) => `
@@ -593,7 +597,7 @@ function rawExportPdf() {
   const factoryName = rawCurrentModule === "SQF" ? "สุพรรณคิวฟู้ดส์ (SQF)" : "แม่ละมาย (MLM)";
   const dateStr = new Date().toLocaleDateString("th-TH",{year:"numeric",month:"long",day:"numeric"});
   const rows = rawLastData.map(item => {
-    const isLow = Number(item.Qty) <= Number(item.Min);
+    const isLow = rawIsLow(item);
     const ed = rawParseDate(item.ExpiryDate); const isExp = ed && ed < today;
     const nearAlert2 = rawNearExpiry(item, rawAlertDays);
     let rowStyle = "", statusText = "ปลอดภัย", statusColor = "#059669";
@@ -650,7 +654,7 @@ function openPurchaseRequest() {
   const lowItems = checkedSkus.length > 0
     ? rawLastData.filter(i => checkedSkus.includes(String(i.SKU)))
     : rawLastData.filter(item => {
-        const isLow = Number(item.Qty) <= Number(item.Min);
+        const isLow = rawIsLow(item);
         const ed = rawParseDate(item.ExpiryDate); const isExp = ed && ed < today;
         return isLow || isExp;
       });
@@ -659,7 +663,7 @@ function openPurchaseRequest() {
   const factoryName = rawCurrentModule === "SQF" ? "สุพรรณคิวฟู้ดส์ (SQF)" : "แม่ละมาย (MLM)";
   const dateStr = new Date().toLocaleDateString("th-TH",{year:"numeric",month:"long",day:"numeric"});
   const rows = lowItems.map((item,idx) => {
-    const isLow = Number(item.Qty) <= Number(item.Min);
+    const isLow = rawIsLow(item);
     const ed = rawParseDate(item.ExpiryDate); const isExp = ed && ed < today;
     let reason = [];
     if(isExp) reason.push("หมดอายุ");
@@ -804,7 +808,7 @@ function openStockReport() {
 
   // แยกกลุ่มจาก sourceData
   const expItems   = sourceData.filter(i => { const d=rawParseDate(i.ExpiryDate); return d&&d<today; });
-  const lowItems   = sourceData.filter(i => !expItems.includes(i) && Number(i.Qty)<=Number(i.Min));
+  const lowItems   = sourceData.filter(i => !expItems.includes(i) && rawIsLow(i));
   const near7      = sourceData.filter(i => !expItems.includes(i) && rawNearExpiry(i, rawAlertDays));
   const near30     = [];
   const okItems    = sourceData.filter(i => !expItems.includes(i) && !lowItems.includes(i) && !near7.includes(i));

@@ -1,7 +1,7 @@
 // วัตถุดิบ (SQF / MLM): อ่านคลัง · เบิก/รับ/คืน · ตรวจนับ · แก้ไข · นำเข้า · รายงานใบเบิก · จุดสั่งซื้อ · เทรนด์
 // คำตอบทุกตัวคงรูปแบบเดิมของหลังบ้าน Apps Script — หน้าจอทั้งสองไม่ต้องแก้
 import { all, first, run, stmt, changed, kvGet, kvPut, uuid, getCfg, nowIso, fmtTH, dayTH, thaiMidnightMs, eventTime, qtyStrict,
-         numOrBlank, userWithDevice, deviceTag, sendAlert, stockSummaryLines, sysLog, TZ_MS, DAY_MS } from "./lib.js";
+         numOrBlank, userWithDevice, deviceTag, sendAlert, stockSummaryLines, sysLog, expiryInfoTH, TZ_MS, DAY_MS } from "./lib.js";
 
 // ประเภทรายการ — IN รับเข้าจากซัพพลายเออร์ / OUT เบิกไปใช้ / RETURN คืนของที่เบิกเกิน
 // แยก RETURN ออกจาก IN เพื่อให้คำนวณยอดใช้จริงได้ถูก: ใช้จริง = เบิกออก − คืน
@@ -74,6 +74,10 @@ export async function getRawMaterials(c, module) {
     const o = matOut(r);
     o.LastUpdate = last[r.sku] ? new Date(last[r.sku]).toISOString() : "";
     o.IdleDays = idleDaysTH(last[r.sku], now);
+    // ⛔ หมดอายุ — คิดที่นี่ที่เดียว (มือถือเดิมไม่มีเลย · หน้าคอมเคยอ่าน วว/ดด/ปปปป ผิด) · QA M2 2026-10-10
+    const ex = expiryInfoTH(r.expiry_date);
+    o.ExpDays = ex ? ex.days : null;
+    o.ExpStatus = !ex ? "" : ex.days < 0 ? "expired" : ex.days <= (Number(r.alert_days) || 7) ? "near" : "";
     (Number(r.discontinued) !== 0 ? discontinued : materials).push(o);
   });
   const hist = await all(c, "SELECT ts, name, action, qty, user, doc_no, sku, unit, purpose FROM history WHERE module = ? ORDER BY id DESC LIMIT 30", module);

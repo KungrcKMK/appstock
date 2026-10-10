@@ -293,21 +293,13 @@ function crStaleMessage(ov, detail) {
 
 // ใกล้หมดอายุ/หมดอายุ — วัตถุดิบ (ตามวันเตือนของแต่ละตัว) + ล็อตห้องเย็น (ตามเกณฑ์ของสินค้า) · หมดเกิน 30 วันแล้วไม่เตือนต่อ
 async function expiryList(c, modules, crOv) {
-  // นับเป็นวันปฏิทินไทย (เที่ยงคืนวันนี้ → เที่ยงคืนวันหมดอายุ) — ส่งตอนเช้าหรือตอนเย็นก็ได้ตัวเลขเดียวกัน (เหมือนห้องเย็น)
-  const today = todayThaiMidnightMs(), out = [];
+  // นับเป็นวันปฏิทินไทย (expiryInfoTH ใน lib.js — ตัวเดียวกับสถานะที่ส่งให้หน้าจอ) ส่งตอนเช้าหรือตอนเย็นก็ได้ตัวเลขเดียวกัน
+  const out = [];
   for (const mod of modules.filter((m) => m === "SQF" || m === "MLM")) {
     for (const m of await all(c, "SELECT sku, name, expiry_date, alert_days FROM materials WHERE module = ? AND discontinued = 0 ORDER BY seq, rowid", mod)) {
-      const expRaw = String(m.expiry_date || "").trim();
-      if (!expRaw) continue;
-      // รองรับ dd/mm/yyyy และ yyyy-mm-dd → เที่ยงคืนเวลาไทยของวันนั้น
-      let y, mo, d;
-      if (/^\d{2}\/\d{2}\/\d{4}$/.test(expRaw)) { const q = expRaw.split("/"); d = +q[0]; mo = +q[1]; y = +q[2]; }
-      else if (/^\d{4}-\d{2}-\d{2}/.test(expRaw)) { const q = expRaw.slice(0, 10).split("-"); y = +q[0]; mo = +q[1]; d = +q[2]; }
-      else continue;
-      if (y > 2400) y -= 543;                       // ปี พ.ศ. ที่พิมพ์มาตรงๆ
-      const expMs = thaiMidnightMs(y, mo, d);
-      if (isNaN(expMs)) continue;
-      const days = Math.round((expMs - today) / DAY_MS);
+      const ex = expiryInfoTH(m.expiry_date);
+      if (!ex) continue;
+      const { days, y, mo, d } = ex;
       if (days > (Number(m.alert_days) || 7) || days < -30) continue;
       const name = String(m.name || "").trim(), sku = String(m.sku || "").trim();
       out.push({ mod, key: mod + ":" + (sku || name), name, sku, days,

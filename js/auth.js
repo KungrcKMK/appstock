@@ -1,50 +1,5 @@
-// ─────────────────────────────────────────────
-// REGISTER VIEW TOGGLE
-// ─────────────────────────────────────────────
-function showRegisterView() {
-  document.getElementById("loginPanel").style.display    = "none";
-  document.getElementById("registerPanel").style.display = "";
-  document.getElementById("registerNameInput").value     = "";
-  document.getElementById("registerNameInput").focus();
-}
-function showLoginView() {
-  document.getElementById("registerPanel").style.display = "none";
-  document.getElementById("loginPanel").style.display    = "";
-  // reset two-step login state
-  _loginNeedsPassword = false;
-  document.getElementById("passwordSection").style.display = "none";
-  document.getElementById("usernameInput").readOnly = false;
-  _setLoginBtn("เข้าสู่ระบบ 🚀", false);
-}
-
-async function submitRegister() {
-  const name = (document.getElementById("registerNameInput")?.value || "").trim();
-  if (!name) { alert("กรุณาระบุชื่อของคุณ"); return; }
-
-  const btn = document.querySelector("#registerPanel button");
-  if (btn) { btn.disabled = true; btn.textContent = "กำลังส่ง..."; }
-
-  try {
-    const res = await fetch(GAS_URL, {
-      method: "POST",
-      headers: { "Content-Type": "text/plain;charset=utf-8" },
-      body: JSON.stringify({ module: "SYSTEM", action: "registerUser",
-        payload: { username: name, requestedRole: document.getElementById("registerRoleSelect")?.value || "user" }, deviceName: getDeviceInfo() })
-    }).then(r => r.json());
-
-    if (res.ok) {
-      alert("✅ " + res.message + "\n\nชื่อ: " + name + "\nกรุณารอผู้ควบคุมระบบอนุมัติ แล้วกลับมาเข้าสู่ระบบใหม่");
-      showLoginView();
-      document.getElementById("usernameInput").value = name;
-    } else {
-      alert("❌ " + (res.message || "เกิดข้อผิดพลาด"));
-    }
-  } catch(e) {
-    alert("เกิดข้อผิดพลาด: " + netErrorText(e));
-  } finally {
-    if (btn) { btn.disabled = false; btn.textContent = "ส่งคำขอ 📨"; }
-  }
-}
+// (แผงสมัครใช้งานแบบเก่า showRegisterView/submitRegister ถูกลบ 2026-10-10 — ไม่มีที่ไหนเรียกแล้ว
+//  คนใหม่ขอสิทธิ์ผ่านกล่อง "ยังไม่มีชื่อ" หลังพิมพ์ชื่อในหน้าเข้าระบบ · QA M20)
 
 // ─────────────────────────────────────────────
 // LOGIN / LOGOUT

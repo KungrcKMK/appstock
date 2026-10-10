@@ -129,6 +129,18 @@ async function main() {
     fs.writeFileSync(out, c.toBuffer("image/png"));
     console.log("✅ " + out + "  (" + (fs.statSync(out).size / 1024).toFixed(0) + " KB)");
 
+    // 🟢 ไอคอน maskable (manifest purpose "maskable") — Android ตัดขอบเป็นวงกลม/หยดน้ำ
+    //    ต้องเต็มพื้นถึงขอบ และเนื้อหาอยู่ในวงกลม 80% กลางภาพ → ย่อไอคอนปกติเหลือ 70% วางกลางพื้นขาว
+    //    (เดิมใช้ไฟล์เดียวกับ "any" ซึ่งโลโก้ชิดขอบ — ถูกตัดหัวท้าย · QA 2026-10-10)
+    const mk = createCanvas(size, size);
+    const mctx = mk.getContext("2d");
+    mctx.fillStyle = BG; mctx.fillRect(0, 0, size, size);
+    const ms = size * 0.70, mo = (size - ms) / 2;
+    mctx.drawImage(c, mo, mo, ms, ms);
+    const outM = path.join(OUT_DIR, "maskable-" + size + ".png");
+    fs.writeFileSync(outM, mk.toBuffer("image/png"));
+    console.log("✅ " + outM + "  (" + (fs.statSync(outM).size / 1024).toFixed(0) + " KB)");
+
     // 📊 ไอคอนแอป "ผู้บริหาร" (manifest-exec.json · ?view=exec) — ไอคอนเดียวกัน + ป้ายกราฟแท่ง
     //    ให้แยกออกจากแอปหลักบนหน้าจอโฮม · ป้ายอยู่ในวงกลม 80% กลางไอคอน (เขตปลอดภัยของ maskable)
     //    Android ตัดขอบเป็นวงกลม/หยดน้ำแล้วยังเห็นครบ

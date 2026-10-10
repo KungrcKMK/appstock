@@ -29,6 +29,13 @@
     nav button:active, .nav-tap:active{opacity:.6;transform:scale(.95)}
     /* ช่องกรอก ≥16px — iPhone ซูมหน้าเองถ้าตัวอักษรในช่องเล็กกว่านี้ (ตอนนี้เปิดให้ถ่างนิ้วซูมได้แล้ว) */
     input, select, textarea{font-size:max(16px,1em)}
+    /* เป้ากดด้วยนิ้ว: ปุ่มที่กดบ่อยสูงอย่างน้อย 44px · ชิปตัวกรอง/ทางลัด 40px (เดิม 32–40px · QA L1) */
+    #mChips button, #aPurposeChips button{min-height:40px}
+    #aQuick button{min-height:44px}
+    .tap44{min-height:44px;min-width:44px}
+    /* ตัวอักษรใหญ่: ส่วนหัวสูงเกินครึ่งจอ → เลื่อนทั้งหน้าจอรวมกัน แทนการบีบรายการจนมองไม่เห็น (mFitHeader · QA M9) */
+    #sMain.m-scroll-all{overflow-y:auto}
+    #sMain.m-scroll-all #mList{flex:none;overflow:visible}
     button:disabled{opacity:.5;cursor:not-allowed;filter:saturate(.6)}
     /* โฟกัสด้วยคีย์บอร์ดต้องเห็น (แท็บเล็ต/คีย์บอร์ดบลูทูธ) */
     button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible{outline:3px solid #7fcf9d;outline-offset:2px}
@@ -97,29 +104,29 @@
   </div>
 
   <!-- เม็ดลิงก์เสริมท้ายจอ — ชุดเดียวกับลิงก์ลัดหน้าแรกฝั่งคอม -->
-  <div class="mt-3 flex flex-wrap justify-center gap-2">
+  <div class="mt-3 flex flex-wrap justify-center gap-3">
     <button onclick="openMyHistory()"
-      class="btn-tap bg-slate-800 border border-slate-700 text-slate-300 px-4 py-2 rounded-full text-xs font-black">
+      class="tap44 btn-tap bg-slate-800 border border-slate-700 text-slate-300 px-4 py-2 rounded-full text-xs font-black inline-flex items-center">
       📜 ของฉัน
     </button>
     <button onclick="openShareApp()"
-      class="btn-tap bg-slate-800 border border-slate-700 text-slate-300 px-4 py-2 rounded-full text-xs font-black">
+      class="tap44 btn-tap bg-slate-800 border border-slate-700 text-slate-300 px-4 py-2 rounded-full text-xs font-black inline-flex items-center">
       🔗 แชร์แอป
     </button>
     <a href="manual.html" target="_blank" rel="noopener"
-      class="btn-tap bg-slate-800 border border-slate-700 text-slate-300 px-4 py-2 rounded-full text-xs font-black">
+      class="tap44 btn-tap bg-slate-800 border border-slate-700 text-slate-300 px-4 py-2 rounded-full text-xs font-black inline-flex items-center">
       📖 คู่มือ
     </a>
     <button onclick="switchToDesktop()"
-      class="btn-tap bg-slate-800 border border-slate-700 text-slate-300 px-4 py-2 rounded-full text-xs font-black">
+      class="tap44 btn-tap bg-slate-800 border border-slate-700 text-slate-300 px-4 py-2 rounded-full text-xs font-black inline-flex items-center">
       💻 คอมพิวเตอร์
     </button>
     <button onclick="location.reload()"
-      class="btn-tap bg-slate-800 border border-slate-700 text-slate-300 px-4 py-2 rounded-full text-xs font-black" title="รีเฟรชแอป">
+      class="tap44 btn-tap bg-slate-800 border border-slate-700 text-slate-300 px-4 py-2 rounded-full text-xs font-black inline-flex items-center" title="รีเฟรชแอป">
       ↻ รีเฟรช
     </button>
     <button onclick="doLogout()"
-      class="btn-tap bg-slate-800 border border-slate-700 text-red-400 px-4 py-2 rounded-full text-xs font-black">
+      class="tap44 btn-tap bg-slate-800 border border-slate-700 text-red-400 px-4 py-2 rounded-full text-xs font-black inline-flex items-center">
       ออกจากระบบ
     </button>
   </div>
@@ -142,7 +149,7 @@
       <div id="mTitle" class="font-black text-lg leading-tight truncate"></div>
       <div id="mSub"   class="text-slate-400 text-xs"></div>
     </div>
-    <button onclick="loadData()" class="text-slate-400 text-xl px-2 py-2">↻</button>
+    <button onclick="loadData()" class="tap44 btn-tap text-slate-400 text-xl px-2 py-2 rounded-xl" aria-label="โหลดข้อมูลใหม่" title="โหลดข้อมูลใหม่">↻</button>
   </div>
 
   <!-- Scan button + Dropdown + Search -->
@@ -282,22 +289,22 @@
     <div id="aInputRow" class="px-5 pt-2">
       <div class="flex items-center gap-2 bg-slate-900 rounded-2xl px-2 py-1 overflow-hidden">
         <button onclick="adjQty(-1)"
-          class="btn-tap flex-shrink-0 w-12 h-12 text-3xl text-slate-400 font-black flex items-center justify-center">−</button>
+          class="btn-tap flex-shrink-0 text-3xl text-slate-400 font-black flex items-center justify-center" style="width:48px;height:48px;">−</button>
         <!-- inputmode=decimal: ของที่ชั่งเป็น กก. ต้องพิมพ์จุดทศนิยมได้ (แป้นตัวเลขล้วนของ iPhone ไม่มีจุด) -->
         <input id="aQtyIn" type="text" inputmode="decimal" autocomplete="off" value="1"
           oninput="this.dataset.touched='1';updateAfter()" onfocus="this.select()"
-          class="flex-1 min-w-0 w-0 bg-transparent text-white text-4xl font-black text-center outline-none py-1">
+          class="flex-1 min-w-0 w-0 bg-transparent text-white text-4xl font-black text-center outline-none py-1" style="min-width:5ch;">
         <button onclick="adjQty(1)"
-          class="btn-tap flex-shrink-0 w-12 h-12 text-3xl text-slate-400 font-black flex items-center justify-center">+</button>
+          class="btn-tap flex-shrink-0 text-3xl text-slate-400 font-black flex items-center justify-center" style="width:48px;height:48px;">+</button>
       </div>
       <!-- ปุ่มบวกเร็ว — ขนาดก้าวปรับตามยอดของตัวนั้น (ของหลักแสนไม่ต้องกด + ทีละ 1) -->
       <div id="aQuick" class="flex gap-1.5 mt-2"></div>
       <!-- ยอดหลังบันทึก — เห็นก่อนกดยืนยัน กันพิมพ์เกินหลัก/เลือกผิดประเภท -->
       <div class="flex items-center gap-2 mt-2">
-        <button onclick="setQty('')" class="btn-tap flex-shrink-0 bg-slate-900 border border-slate-700 text-slate-400 px-3 py-2 rounded-lg text-xs font-black">ล้าง</button>
+        <button onclick="setQty('')" class="tap44 btn-tap flex-shrink-0 bg-slate-900 border border-slate-700 text-slate-400 px-3 py-2 rounded-lg text-xs font-black">ล้าง</button>
         <div id="aAfter" class="flex-1 text-center text-sm font-black text-slate-400" style="min-height:20px"></div>
         <!-- 🧮 เปิดแป้นพิมพ์เต็มเพื่อพิมพ์โจทย์ เช่น 16*48+5 (แป้นตัวเลขไม่มีเครื่องหมายคูณ) -->
-        <button onclick="calcMode()" class="btn-tap flex-shrink-0 bg-slate-900 border border-slate-700 text-slate-400 px-3 py-2 rounded-lg text-xs font-black">🧮 คิดเลข</button>
+        <button onclick="calcMode()" class="tap44 btn-tap flex-shrink-0 bg-slate-900 border border-slate-700 text-slate-400 px-3 py-2 rounded-lg text-xs font-black">🧮 คิดเลข</button>
       </div>
 
       <!-- ใช้กับงานอะไร — บังคับกรอกตอนเบิก ข้อมูลนี้ขึ้นบนใบเบิกให้ออดิเตอร์ตรวจ -->
@@ -351,11 +358,11 @@
           <p id="aCrLotLabel" class="text-cyan-400 text-xs text-center font-black mb-2"></p>
           <div class="flex items-center gap-2">
             <button onclick="adjCrQty(-1)"
-              class="btn-tap flex-shrink-0 w-12 h-12 text-3xl text-slate-400 font-black flex items-center justify-center">−</button>
+              class="btn-tap flex-shrink-0 text-3xl text-slate-400 font-black flex items-center justify-center" style="width:48px;height:48px;">−</button>
             <input id="aCrQtyIn" type="text" inputmode="numeric" pattern="[0-9]*" value="0"
-              class="flex-1 min-w-0 w-0 bg-transparent text-white text-4xl font-black text-center outline-none py-1">
+              class="flex-1 min-w-0 w-0 bg-transparent text-white text-4xl font-black text-center outline-none py-1" style="min-width:5ch;">
             <button onclick="adjCrQty(1)"
-              class="btn-tap flex-shrink-0 w-12 h-12 text-3xl text-slate-400 font-black flex items-center justify-center">+</button>
+              class="btn-tap flex-shrink-0 text-3xl text-slate-400 font-black flex items-center justify-center" style="width:48px;height:48px;">+</button>
           </div>
           <textarea id="aCrNote" rows="2" placeholder="💬 หมายเหตุ (จำเป็น) เช่น เบิกส่งขาย, นับรอบเช้า..."
             class="w-full mt-3 bg-slate-800 border-2 border-amber-500 text-white text-sm font-bold rounded-xl px-3 py-2 outline-none resize-none placeholder-slate-500"></textarea>
@@ -426,7 +433,7 @@
       <div class="text-lg font-black text-indigo-300">📜 ประวัติของฉัน</div>
       <div id="myHistWho" class="text-xs text-slate-400 font-bold"></div>
     </div>
-    <button onclick="closeMyHistory()" class="bg-slate-800 text-slate-300 px-4 py-2 rounded-xl text-sm font-black active:brightness-75">ปิด</button>
+    <button onclick="closeMyHistory()" class="tap44 bg-slate-800 text-slate-300 px-4 py-2 rounded-xl text-sm font-black active:brightness-75">ปิด</button>
   </div>
   <div id="myHistSummary" class="flex gap-2 px-4 py-3 overflow-x-auto"></div>
   <div id="myHistList" class="flex-1 overflow-y-auto px-4 pb-6 space-y-2"></div>
@@ -441,7 +448,7 @@
        style="padding-top:calc(env(safe-area-inset-top,0px) + 12px)">
     <div class="min-w-0">
       <div class="text-lg font-black text-indigo-300">📈 ต้องสั่ง</div>
-      <div id="planSub" class="text-xs text-slate-400 font-bold truncate"></div>
+      <div id="planSub" class="text-xs text-slate-400 font-bold"></div>
     </div>
     <button onclick="closePlan()" class="btn-tap flex-shrink-0 bg-slate-800 text-slate-300 px-5 py-3 rounded-2xl text-sm font-black">✕ ปิด</button>
   </div>
@@ -903,6 +910,7 @@ async function selectModule(m) {
   $("mSub").textContent   = user + " · " + cfg.sub;
   showScreens("sMain");
   mArmBack();          // ปุ่มย้อนกลับของเครื่อง = กลับหน้าเลือกคลัง
+  setTimeout(mFitHeader, 0);
   mUpdateOfflineBar();
   await loadData();
 }
@@ -1438,6 +1446,17 @@ function closeAction() {
   $("actionSheet").style.maxHeight = (window.CSS && CSS.supports && CSS.supports("max-height", "85dvh")) ? "85dvh" : "85vh";
   setTimeout(() => hide("actionOverlay"), 300);
 }
+
+// ตัวอักษรใหญ่ (ตั้งขนาดตัวอักษรในเครื่อง/ซูม) — ส่วนหัว + ช่องค้นหา + ตัวกรอง สูงเกินครึ่งจอ ให้ทั้งหน้าเลื่อนรวมกัน
+// (เดิมขยาย 200% แล้วรายการเริ่มใต้แถบเมนูล่าง มองไม่เห็นเลย · QA M9 2026-10-10)
+function mFitHeader() {
+  const main = $("sMain"), list = $("mList");
+  if (!main || !list || !_mVisible("sMain")) return;
+  main.classList.remove("m-scroll-all");
+  const headH = list.getBoundingClientRect().top - main.getBoundingClientRect().top;
+  main.classList.toggle("m-scroll-all", headH > window.innerHeight * 0.45);
+}
+window.addEventListener("resize", () => { clearTimeout(mFitHeader._t); mFitHeader._t = setTimeout(mFitHeader, 150); });
 
 // ปุ่ม "📋 สต๊อก" ที่แถบล่าง — เดิมไม่มีคำสั่ง กดแล้วไม่เกิดอะไร · ตอนนี้ = ปิดแผ่นที่เปิดอยู่ + เลื่อนรายการกลับบนสุด
 function mGoList() {

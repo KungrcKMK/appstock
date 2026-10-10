@@ -8,7 +8,7 @@
 
   <!-- PWA -->
   <link rel="manifest" id="appManifest" href="manifest.json">
-  <meta name="theme-color" id="appThemeColor" content="#4f46e5">
+  <meta name="theme-color" id="appThemeColor" content="#0e7a3f">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -648,6 +648,11 @@
       #module-COLDROOM td:last-child { border-bottom:none; }
       #module-COLDROOM td::before { content:attr(data-label);font-weight:700;color:var(--muted);font-size:12px;text-transform:uppercase;float:left;text-align:left; }
     }
+    /* หน้าเข้าระบบ: สีแบรนด์ (เดิมม่วงคราม ไม่เหมือนแอป) · ลิงก์ท้ายการ์ดอ่านออกและกดได้ (เดิม #cbd5e1 = 1.48:1, สูง 17px) · QA M20/M5/L1 */
+    .login-btn { background:var(--sq-accent); }
+    .login-btn:hover, .login-btn:focus-visible { background:#0b5c30; }
+    .login-link { font-size:12.5px;font-weight:800;color:var(--sq-ink2);background:none;border:0;padding:8px 4px;min-height:36px;cursor:pointer;font-family:inherit;text-decoration:underline;text-underline-offset:3px; }
+    .login-link:hover { color:var(--sq-accent); }
     /* ข้อผิดพลาดใต้ช่องกรอก (rawFieldError ใน js/raw.js · QA M12) */
     .rm-field-err { color:var(--sq-crit);font-size:13px;font-weight:800;margin:6px 4px 0;text-align:left;line-height:1.4; }
     .rm-input-err { border-color:var(--sq-crit) !important;box-shadow:0 0 0 3px rgba(192,54,44,.18) !important; }
@@ -700,10 +705,10 @@
           <button onclick="closeUnifiedSettings()" class="text-3xl hover:text-red-400 transition-colors">✕</button>
         </div>
         <div class="flex gap-2 flex-wrap mt-3">
-          <span class="bg-indigo-600 text-white text-xs font-black px-3 py-1 rounded-full">❄️ Cold Room</span>
-          <span class="bg-orange-500 text-white text-xs font-black px-3 py-1 rounded-full">🏭 SQF</span>
-          <span class="bg-blue-600  text-white text-xs font-black px-3 py-1 rounded-full">🏭 MLM</span>
-          <span class="bg-emerald-600 text-white text-xs font-black px-3 py-1 rounded-full">✅ ใช้ร่วมกัน</span>
+          <span class="text-white text-xs font-black px-3 py-1 rounded-full" style="background:var(--sq-fac-cr);">❄️ ห้องเย็น</span>
+          <span class="text-white text-xs font-black px-3 py-1 rounded-full" style="background:var(--sq-fac-sqf);">🏭 SQF</span>
+          <span class="text-white text-xs font-black px-3 py-1 rounded-full" style="background:var(--sq-fac-mlm);">🏭 MLM</span>
+          <span class="text-white text-xs font-black px-3 py-1 rounded-full" style="background:var(--sq-accent);">✅ ใช้ร่วมกัน</span>
         </div>
       </div>
 
@@ -819,13 +824,13 @@
     <div class="w-full max-w-sm">
       <div class="text-center mb-8">
         <div class="text-5xl mb-3">👋</div>
-        <h2 class="text-2xl font-black text-white">สวัสดี, <span id="modePickerUser" class="text-indigo-400"></span></h2>
+        <h2 class="text-2xl font-black text-white">สวัสดี, <span id="modePickerUser" class="text-emerald-300"></span></h2>
         <p class="text-slate-400 text-sm mt-2">เลือกประเภทอุปกรณ์ที่ใช้งาน</p>
       </div>
 
       <!-- Mobile button -->
       <div id="modeRecommendEl" style="display:none" class="text-center mb-1">
-        <span id="modeRecommend" class="bg-indigo-600 text-white text-xs font-black px-3 py-1 rounded-full">แนะนำสำหรับอุปกรณ์นี้</span>
+        <span id="modeRecommend" class="bg-emerald-700 text-white text-xs font-black px-3 py-1 rounded-full">แนะนำสำหรับอุปกรณ์นี้</span>
       </div>
       <button id="modeBtnMobile" onclick="selectMode('mobile', document.getElementById('modeRemember').checked)"
         class="w-full bg-slate-800 border-2 border-slate-700 text-white rounded-3xl p-6 text-left mb-3 active:brightness-75 transition-all">
@@ -851,16 +856,17 @@
       </button>
 
       <!-- Remember -->
-      <label class="flex items-center justify-center gap-2 cursor-pointer text-slate-400 text-sm font-bold">
-        <input type="checkbox" id="modeRemember" class="w-4 h-4 accent-indigo-600">
-        จดจำการเลือกนี้ (สามารถเปลี่ยนได้ใน ⚙️ ตั้งค่า)
+      <label class="flex items-center justify-center gap-3 cursor-pointer text-slate-300 text-sm font-bold py-2" style="min-height:44px;">
+        <input type="checkbox" id="modeRemember" class="w-5 h-5 accent-emerald-600">
+        <!-- เดิมบอก "เปลี่ยนได้ใน ⚙️ ตั้งค่า" แต่ผู้ใช้ทั่วไปไม่มีเมนูนั้น (QA L4) -->
+        จดจำการเลือกนี้ (เปลี่ยนภายหลังได้ที่ปุ่ม 📱 มือถือ / 💻 คอมพิวเตอร์)
       </label>
     </div>
   </div>
 
   <!-- ═══ LOGIN ═══ -->
-  <div id="loginOverlay" class="fixed inset-0 bg-slate-900/95 z-[200] flex items-center justify-center p-6 text-center backdrop-blur-md">
-    <div class="bg-white p-10 rounded-[4rem] shadow-2xl w-full max-w-sm border-t-[12px] border-indigo-600">
+  <div id="loginOverlay" class="fixed inset-0 bg-slate-900/95 z-[200] flex justify-center p-6 text-center backdrop-blur-md overflow-y-auto">
+    <div class="my-auto bg-white p-8 sm:p-10 rounded-3xl shadow-2xl w-full max-w-sm" style="border-top:12px solid var(--sq-accent);">
 
       <!-- ── แผง Login ── -->
       <div id="loginPanel">
@@ -871,21 +877,28 @@
         <div id="loginFallbackIcon" class="text-6xl mb-4" style="display:none;">🏭</div>
         <h2 class="text-2xl font-black mb-1" style="color:var(--sq-ink);">SQF &amp; MLM</h2>
         <p class="font-black mb-2 text-xs tracking-widest" style="color:var(--sq-accent);">ระบบจัดการสต๊อกรวม</p>
-        <p class="font-bold mb-6 text-xs" style="color:var(--sq-muted);">สุพรรณคิวฟู้ดส์ | แม่ละมาย</p>
+        <p class="font-bold mb-2 text-xs" style="color:var(--sq-muted);">สุพรรณคิวฟู้ดส์ | แม่ละมาย</p>
+        <!-- บอกให้ชัดว่าใช้ทำอะไร ใครใช้ (QA M20 — เดิมคนได้ลิงก์มาใหม่ไม่รู้ว่าเว็บนี้คืออะไร) -->
+        <p class="font-bold mb-5 text-sm" style="color:var(--sq-ink2);line-height:1.5;">สำหรับพนักงาน: เบิก · รับเข้า · นับสต๊อก<br>วัตถุดิบ SQF / MLM และคลังห้องเย็น</p>
+        <!-- เหตุผลที่ถูกพากลับมาหน้านี้ (บัตรผ่านหมดอายุ) — js/app.js เติมให้ -->
+        <p id="loginNotice" role="alert" style="display:none;font-size:13px;font-weight:800;line-height:1.5;color:var(--sq-high);background:var(--sq-high-bg);border-radius:12px;padding:10px 12px;margin:0 0 12px;text-align:left;"></p>
         <!-- ชื่อผู้ใช้ -->
         <input type="text" id="usernameInput" placeholder="👤 ระบุชื่อพนักงาน"
-          class="w-full bg-slate-50 border-2 border-slate-200 p-5 rounded-3xl mb-3 text-center outline-none focus:border-indigo-600 font-black text-base"
-          onkeydown="if(event.key==='Enter') login()" autocomplete="username">
+          class="w-full bg-slate-50 border-2 border-slate-200 p-5 rounded-2xl mb-3 text-center outline-none focus:border-emerald-600 font-black text-base"
+          onkeydown="if(event.key==='Enter') login()" autocomplete="username" aria-label="ชื่อพนักงาน">
         <!-- ช่องรหัสผ่าน (ซ่อนไว้ แสดงเมื่อ GAS บอกว่าต้องใส่) -->
         <div id="passwordSection" style="display:none;margin-bottom:12px;">
           <input type="password" id="passwordInput" placeholder="🔑 รหัสผ่าน"
-            class="w-full bg-slate-50 border-2 border-indigo-300 p-5 rounded-3xl text-center outline-none focus:border-indigo-600 font-black text-xl"
+            class="w-full bg-slate-50 border-2 border-slate-300 p-5 rounded-2xl text-center outline-none focus:border-emerald-600 font-black text-xl"
             onkeydown="if(event.key==='Enter') loginWithPassword()" autocomplete="current-password">
-          <p style="font-size:11px;color:#94a3b8;margin-top:6px;">🔒 บัญชีนี้มีการตั้งรหัสผ่าน</p>
+          <p style="font-size:12px;color:var(--sq-muted);margin-top:6px;">🔒 บัญชีนี้มีการตั้งรหัสผ่าน</p>
         </div>
-        <button id="loginBtn" onclick="login()" class="w-full bg-indigo-600 text-white py-5 rounded-3xl font-black hover:bg-slate-900 transition-all shadow-xl text-lg uppercase">
+        <button id="loginBtn" onclick="login()" class="login-btn w-full text-white py-5 rounded-2xl font-black transition-all shadow-xl text-lg">
           เข้าสู่ระบบ 🚀
         </button>
+        <!-- คนใหม่ต้องรู้ก่อนลองผิด (QA M20) -->
+        <p style="font-size:12px;font-weight:600;color:var(--sq-ink2);margin:12px 2px 0;line-height:1.55;">
+          พนักงานใหม่: พิมพ์ชื่อแล้วกด <b>เข้าสู่ระบบ</b> — ถ้ายังไม่มีชื่อในระบบ จะมีปุ่ม <b>ขอสิทธิ์จากแอดมิน</b> ให้กด</p>
 
         <!-- ── กล่องขอสิทธิ์ (แสดงเมื่อไม่พบชื่อ / รออนุมัติ / ถูกปฏิเสธ) ── -->
         <div id="accessBox" style="display:none;margin-top:14px;border-radius:20px;padding:14px 16px;text-align:left;">
@@ -897,32 +910,14 @@
           <p id="accessHint" style="font-size:11px;font-weight:600;margin:9px 0 0;opacity:.8;"></p>
         </div>
 
-        <p style="font-size:10px;color:#94a3b8;margin-top:16px;font-weight:600;">v.1020</p>
-        <p onclick="forceRefresh()" style="font-size:11px;color:#cbd5e1;margin-top:10px;font-weight:700;cursor:pointer;" title="ล้าง cache และโหลดแอปใหม่">🔄 อัปเดตแอป / แก้หน้าค้าง</p>
+        <div style="display:flex;justify-content:center;flex-wrap:wrap;gap:6px 14px;margin-top:16px;">
+          <a href="manual.html" target="_blank" rel="noopener" class="login-link">📖 คู่มือการใช้งาน</a>
+          <button type="button" onclick="forceRefresh()" class="login-link" title="ล้าง cache และโหลดแอปใหม่">🔄 อัปเดตแอป / แก้หน้าค้าง</button>
+        </div>
+        <!-- รุ่นของแอป = เลขชุดไฟล์ใน sw.js (เดิม v.1020 ตายตัวไม่เคยเปลี่ยน ใช้ตอบว่า "ใช้รุ่นไหนอยู่" ไม่ได้ · QA L4) -->
+        <p id="appVersion" style="font-size:11px;color:var(--sq-muted);margin-top:10px;font-weight:600;"></p>
       </div>
 
-      <!-- ── แผง Register ── -->
-      <div id="registerPanel" style="display:none">
-        <div class="text-5xl mb-4">📝</div>
-        <h2 class="text-2xl font-black mb-1 text-slate-800">สมัครใช้งาน</h2>
-        <p class="text-slate-500 font-bold mb-1 text-sm">ระบุชื่อของคุณ (ภาษาไทยได้)</p>
-        <p class="text-slate-400 font-bold mb-6 text-xs">ผู้ควบคุมระบบจะตรวจสอบและอนุมัติ</p>
-        <input type="text" id="registerNameInput" placeholder="👤 ชื่อ-นามสกุล หรือชื่อเล่น"
-          class="w-full bg-slate-50 border-2 border-slate-200 p-5 rounded-3xl mb-3 text-center outline-none focus:border-emerald-500 font-black text-xl"
-          onkeydown="if(event.key==='Enter') submitRegister()">
-        <select id="registerRoleSelect"
-          class="w-full bg-slate-50 border-2 border-slate-200 p-4 rounded-3xl mb-4 text-center outline-none focus:border-emerald-500 font-black text-base appearance-none cursor-pointer">
-          <option value="user">👤 user — พนักงานทั่วไป</option>
-          <option value="viewer">👁️ viewer — ดูข้อมูล + ภาพรวมผู้บริหาร</option>
-          <option value="manager">📋 manager — ผู้จัดการ</option>
-        </select>
-        <button onclick="submitRegister()" class="w-full bg-emerald-600 text-white py-5 rounded-3xl font-black hover:bg-emerald-700 transition-all shadow-xl text-lg uppercase">
-          ส่งคำขอ 📨
-        </button>
-        <p onclick="showLoginView()" style="font-size:13px;color:#94a3b8;margin-top:14px;font-weight:700;cursor:pointer;">
-          ← กลับเข้าสู่ระบบ
-        </p>
-      </div>
 
     </div>
   </div>
@@ -2232,7 +2227,7 @@
         </div>
 
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:18px;">
-          <button onclick="shareCopyLink()"    style="background:#4f46e5;color:#fff;border:none;padding:11px;border-radius:12px;font-weight:800;font-size:13px;cursor:pointer;font-family:inherit;">📋 คัดลอกลิงก์</button>
+          <button onclick="shareCopyLink()"    style="background:#0e7a3f;color:#fff;border:none;padding:11px;border-radius:12px;font-weight:800;font-size:13px;cursor:pointer;font-family:inherit;">📋 คัดลอกลิงก์</button>
           <button onclick="shareNative()"      style="background:#0ea5e9;color:#fff;border:none;padding:11px;border-radius:12px;font-weight:800;font-size:13px;cursor:pointer;font-family:inherit;">📤 ส่งต่อ</button>
           <button onclick="shareDownloadQr()"  style="background:#059669;color:#fff;border:none;padding:11px;border-radius:12px;font-weight:800;font-size:13px;cursor:pointer;font-family:inherit;">⬇️ บันทึก QR</button>
           <button onclick="sharePrintQr()"     style="background:#0f172a;color:#fff;border:none;padding:11px;border-radius:12px;font-weight:800;font-size:13px;cursor:pointer;font-family:inherit;">🖨️ พิมพ์ติดบอร์ด</button>

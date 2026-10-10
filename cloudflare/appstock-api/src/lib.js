@@ -30,6 +30,24 @@ export function todayThaiMidnightMs() {
   const t = new Date(Date.now() + TZ_MS);
   return thaiMidnightMs(t.getUTCFullYear(), t.getUTCMonth() + 1, t.getUTCDate());
 }
+/**
+ * วันหมดอายุวัตถุดิบ (ข้อความในช่อง expiry_date) → { days: อีกกี่วัน (วันปฏิทินไทย · ติดลบ = เลยมาแล้ว), y, mo, d } · อ่านไม่ออก/ว่าง = null
+ * รองรับ วว/ดด/ปปปป (ค.ศ. หรือ พ.ศ. — ข้อมูลเก่าจากชีต) และ ปปปป-ดด-วว (ช่องเลือกวันที่/นำเข้าไฟล์)
+ * ใช้ร่วม: สถานะหมดอายุที่ส่งให้หน้าจอ (raw.js) + สรุปเข้ากลุ่ม (plan.js) — ตัวเลขจะได้ตรงกันทุกที่
+ */
+export function expiryInfoTH(raw) {
+  const s = String(raw || "").trim();
+  if (!s) return null;
+  let y, mo, d, m;
+  if ((m = s.match(/^(\d{1,2})[\/\-.](\d{1,2})[\/\-.](\d{4})$/))) { d = +m[1]; mo = +m[2]; y = +m[3]; }
+  else if ((m = s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})/))) { y = +m[1]; mo = +m[2]; d = +m[3]; }
+  else return null;
+  if (y > 2400) y -= 543;                        // ปี พ.ศ. ที่พิมพ์มาตรงๆ
+  if (mo < 1 || mo > 12 || d < 1 || d > 31) return null;
+  const ms = thaiMidnightMs(y, mo, d);
+  if (isNaN(ms)) return null;
+  return { days: Math.round((ms - todayThaiMidnightMs()) / DAY_MS), y, mo, d };
+}
 /** "yyyy-MM-dd" → ms เที่ยงคืนไทย (ห้าม new Date("yyyy-MM-dd") ตรงๆ — ได้เที่ยงคืน UTC วันจะเพี้ยน) */
 export function parseLocalDateMs(isoStr) {
   if (!isoStr) return NaN;

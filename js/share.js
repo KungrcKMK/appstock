@@ -130,7 +130,7 @@ function sharePrintQr() {
       .steps{margin:32px auto 0;max-width:520px;text-align:left;background:#fafbfa;border:1px solid #dfe6e0;border-radius:16px;padding:20px 24px;}
       .steps h2{font-size:18px;margin:0 0 12px;color:#16241b;}
       .steps ol{margin:0;padding-left:22px;font-size:15px;line-height:1.9;color:#16241b;}
-      .note{margin-top:18px;font-size:13px;color:#6c8074;}
+      .note{margin-top:18px;font-size:13px;color:#5b6e63;}
       @media print{ body{padding:20px;} .noprint{display:none;} }
     </style></head><body>
     <img src="${logoUrl()}" alt="" onerror="this.style.display='none'"

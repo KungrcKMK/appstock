@@ -297,13 +297,13 @@ function planPrint() {
   if (!_planData) return;
   const rows = _planFiltered();
   const S = _planData.settings;
-  const COL = { late: "#c0362c", now: "#a8560a", soon: "#7d6407", ok: "#0e7a3f", nodata: "#6c8074" };
+  const COL = { late: "#c0362c", now: "#a8560a", soon: "#7d6407", ok: "#0e7a3f", nodata: "#5b6e63" };
   const BG  = { late: "#fbeceb", now: "#fdf0e2", soon: "#faf3d9", ok: "#ffffff", nodata: "#ffffff" };
   const td = "padding:6px 9px;border:1px solid #dfe6e0;vertical-align:top;";
   const body = rows.map((x, i) => `<tr style="background:${BG[x.status]};">
       <td style="${td}text-align:center;">${i + 1}</td>
       <td style="${td}color:${COL[x.status]};font-weight:700;white-space:nowrap;">${escapeHtml(x.statusText)}</td>
-      <td style="${td}"><b>${escapeHtml(x.name)}</b><br><span style="color:#6c8074;font-size:10px;">${escapeHtml(x.sku)}</span></td>
+      <td style="${td}"><b>${escapeHtml(x.name)}</b><br><span style="color:#5b6e63;font-size:10px;">${escapeHtml(x.sku)}</span></td>
       <td style="${td}text-align:right;">${planFmt(x.qty)} ${escapeHtml(x.unit)}</td>
       <td style="${td}text-align:right;">${x.rate > 0 ? planFmt(x.rate) : "—"}</td>
       <td style="${td}text-align:right;">${x.daysCover === null ? "—" : planFmt(x.daysCover) + " วัน"}</td>
@@ -327,7 +327,7 @@ function planPrint() {
     </div>
     <table><thead><tr><th>#</th><th>สถานะ</th><th>วัตถุดิบ</th><th>คงเหลือ</th><th>ใช้/วัน</th><th>พอใช้อีก</th><th>รอของ (วัน)</th><th>ต้องสั่งภายใน</th><th>แนะนำสั่ง</th><th>สั่งจริง</th></tr></thead>
     <tbody>${body || '<tr><td colspan="10" style="padding:20px;text-align:center;">ไม่มีรายการ</td></tr>'}</tbody></table>
-    <p style="color:#6c8074;margin-top:10px;">ตัวเลขเป็นคำแนะนำจากประวัติการเบิก — ผู้สั่งซื้อปรับจำนวนได้ตามจริง</p>
+    <p style="color:#5b6e63;margin-top:10px;">ตัวเลขเป็นคำแนะนำจากประวัติการเบิก — ผู้สั่งซื้อปรับจำนวนได้ตามจริง</p>
     </body></html>`);
   w.document.close();
 }

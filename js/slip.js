@@ -46,7 +46,7 @@ async function slipDraw(s) {
   const x = c.getContext("2d");
   const F = '"Leelawadee UI","Noto Sans Thai","Sarabun",system-ui,sans-serif';
   const M = 90;                       // ระยะขอบกระดาษ
-  const INK = "#16241b", MUTED = "#6c8074", LINE = "#c9d4cc", GREEN = "#0e7a3f";
+  const INK = "#16241b", MUTED = "#5b6e63", LINE = "#c9d4cc", GREEN = "#0e7a3f";
 
   x.fillStyle = "#ffffff"; x.fillRect(0, 0, SLIP_W, SLIP_H);
 

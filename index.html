@@ -135,9 +135,9 @@
       border-top:5px solid var(--sq-line);
     }
     .home-card:hover { transform:translateY(-3px);box-shadow:0 6px 18px rgba(22,36,27,.13);border-color:var(--sq-accent); }
-    .home-card.is-cr  { border-top-color:#0e7490; }
+    .home-card.is-cr  { border-top-color:var(--sq-fac-cr); }
     .home-card.is-sqf { border-top-color:var(--sq-orange); }
-    .home-card.is-mlm { border-top-color:var(--sq-green); }
+    .home-card.is-mlm { border-top-color:var(--sq-fac-mlm); }
     .home-ic   { font-size:44px;line-height:1; }
     .home-name { font-size:18px;font-weight:800;color:var(--sq-ink);margin-top:6px; }
     .home-desc { font-size:12.5px;font-weight:600;color:var(--sq-muted); }
@@ -261,7 +261,7 @@
       --sq-crit:#c0362c;   --sq-crit-bg:#fbeceb;
       --sq-high:#a8560a;   --sq-high-bg:#fdf0e2;
       --sq-warn:#7d6407;   --sq-warn-bg:#faf3d9;
-      --sq-none:#6c8074;   --sq-none-bg:#eef1ef;
+      --sq-none:#5b6e63;   --sq-none-bg:#eef1ef;
       --sq-shadow:0 1px 2px rgba(22,36,27,.06),0 4px 12px rgba(22,36,27,.05);
       --sq-mono:ui-monospace,"Cascadia Mono","SF Mono",Consolas,"Liberation Mono",monospace;
     }
@@ -283,7 +283,7 @@
       content:"";width:7px;height:7px;border-radius:50%;background:var(--sq-muted);flex:none;
     }
     #module-RAW .rm-factory.is-sqf::before { background:var(--sq-orange); }
-    #module-RAW .rm-factory.is-mlm::before { background:var(--sq-green); }
+    #module-RAW .rm-factory.is-mlm::before { background:var(--sq-fac-mlm); }
     #module-RAW .rm-head-actions { margin-left:auto;display:flex;gap:6px;flex-wrap:wrap;align-items:center; }
 
     /* ปุ่ม */

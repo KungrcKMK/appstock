@@ -213,13 +213,13 @@ function drPrint() {
     body{font-family:'Leelawadee UI','Sarabun',sans-serif;font-size:12px;color:#16241b;padding:26px;}
     .hd{display:flex;align-items:center;gap:14px;border-bottom:2px solid #16241b;padding-bottom:10px;margin-bottom:14px;}
     h1{font-size:19px;margin:0;}
-    .sub{font-size:12px;color:#6c8074;margin-top:3px;}
+    .sub{font-size:12px;color:#5b6e63;margin-top:3px;}
     table{width:100%;border-collapse:collapse;margin-top:10px;}
     th{background:#eef3ef;padding:7px 8px;border:1px solid #c9d4cc;font-size:11px;text-align:left;}
     td{padding:6px 8px;border:1px solid #dfe6e0;font-size:11.5px;}
-    .foot{margin-top:22px;font-size:11px;color:#6c8074;display:flex;justify-content:space-between;}
+    .foot{margin-top:22px;font-size:11px;color:#5b6e63;display:flex;justify-content:space-between;}
     .sign{margin-top:40px;display:flex;gap:50px;}
-    .sign div{flex:1;text-align:center;border-top:1px solid #16241b;padding-top:7px;font-size:11px;color:#6c8074;}
+    .sign div{flex:1;text-align:center;border-top:1px solid #16241b;padding-top:7px;font-size:11px;color:#5b6e63;}
     @media print{body{padding:12px;} .noprint{display:none;}}
   </style></head><body>
   <div class="noprint" style="margin-bottom:12px;">

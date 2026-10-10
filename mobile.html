@@ -85,7 +85,7 @@
         <div id="mLastSub"   class="text-xs text-slate-400 truncate"></div>
       </div>
     </div>
-    <span class="text-slate-500 text-lg flex-shrink-0">›</span>
+    <span class="text-slate-400 text-lg flex-shrink-0">›</span>
   </div>
 
   <!-- เม็ดลิงก์เสริมท้ายจอ — ชุดเดียวกับลิงก์ลัดหน้าแรกฝั่งคอม -->
@@ -132,9 +132,9 @@
     </button>
     <div class="flex-1 min-w-0">
       <div id="mTitle" class="font-black text-lg leading-tight truncate"></div>
-      <div id="mSub"   class="text-slate-500 text-xs"></div>
+      <div id="mSub"   class="text-slate-400 text-xs"></div>
     </div>
-    <button onclick="loadData()" class="text-slate-500 text-xl px-2 py-2">↻</button>
+    <button onclick="loadData()" class="text-slate-400 text-xl px-2 py-2">↻</button>
   </div>
 
   <!-- Scan button + Dropdown + Search -->
@@ -170,18 +170,18 @@
       <span class="text-2xl">📋</span><span class="text-[10px] font-black">สต๊อก</span>
     </button>
     <button onclick="openScanner()"
-      class="flex-1 py-3 flex flex-col items-center gap-0.5 text-slate-500">
+      class="flex-1 py-3 flex flex-col items-center gap-0.5 text-slate-400">
       <span class="text-2xl">📷</span><span class="text-[10px] font-black">สแกน</span>
     </button>
     <!-- 📈 ต้องสั่ง — เฉพาะคลังวัตถุดิบ · ตัวเลขแดง = จำนวนที่ต้องสั่งวันนี้ -->
     <button id="navPlan" onclick="openPlan()"
-      class="flex-1 py-3 flex flex-col items-center gap-0.5 text-slate-500 relative">
+      class="flex-1 py-3 flex flex-col items-center gap-0.5 text-slate-400 relative">
       <span class="text-2xl">📈</span><span class="text-[10px] font-black">ต้องสั่ง</span>
       <span id="navPlanBadge" class="hidden absolute top-1 bg-red-600 text-white text-[10px] font-black rounded-full px-1.5"
             style="left:calc(50% + 6px);min-width:18px;line-height:18px;">0</span>
     </button>
     <button onclick="openMyHistory()"
-      class="flex-1 py-3 flex flex-col items-center gap-0.5 text-slate-500">
+      class="flex-1 py-3 flex flex-col items-center gap-0.5 text-slate-400">
       <span class="text-2xl">📜</span><span class="text-[10px] font-black">ของฉัน</span>
     </button>
   </nav>
@@ -242,7 +242,7 @@
     <!-- Product Info -->
     <div class="px-5 pt-1 pb-3 text-center border-b border-slate-700">
       <h3 id="aName" class="text-lg font-black leading-tight"></h3>
-      <p  id="aSku"  class="text-slate-500 text-xs mt-0.5"></p>
+      <p  id="aSku"  class="text-slate-400 text-xs mt-0.5"></p>
       <div class="flex justify-center items-end gap-6 mt-3">
         <div class="text-center">
           <div id="aQty"  class="text-4xl font-black text-indigo-400 leading-none"></div>
@@ -261,7 +261,7 @@
     <!-- IN/OUT/COUNT Toggle -->
     <div id="aTypeRow" class="flex gap-1.5 px-5 pt-3">
       <button onclick="setType('OUT')"    id="aBtnOut"
-        class="flex-1 py-3.5 rounded-2xl font-black text-xs bg-orange-600 text-white">📤 เบิก</button>
+        class="flex-1 py-3.5 rounded-2xl font-black text-xs bg-orange-700 text-white">📤 เบิก</button>
       <button onclick="setType('RETURN')" id="aBtnReturn"
         class="flex-1 py-3.5 rounded-2xl font-black text-xs bg-slate-700 text-slate-400">↩️ คืน</button>
       <button onclick="setType('IN')"     id="aBtnIn"
@@ -323,7 +323,7 @@
 
     <!-- Cold Room lot list + update section -->
     <div id="aCrSection" class="hidden">
-      <p class="text-slate-500 text-xs font-black uppercase tracking-widest px-5 pt-3">รายการ Lot</p>
+      <p class="text-slate-400 text-xs font-black uppercase tracking-widest px-5 pt-3">รายการ Lot</p>
       <div id="aCrLots" class="px-4 pt-2 space-y-2"></div>
 
       <!-- ปุ่มรับเข้า Lot ใหม่ -->
@@ -363,12 +363,12 @@
           <p class="text-emerald-400 text-xs font-black text-center">📥 รับเข้า Lot ใหม่</p>
           <div class="grid grid-cols-2 gap-2">
             <div>
-              <label class="text-slate-500 text-xs font-black block mb-1">📅 MFG</label>
+              <label class="text-slate-400 text-xs font-black block mb-1">📅 MFG</label>
               <input id="aCrMfg" type="date" onchange="crCalcExp()"
                 class="w-full bg-slate-800 text-white text-sm font-bold p-2 rounded-xl border border-slate-700 outline-none focus:border-emerald-500">
             </div>
             <div>
-              <label class="text-slate-500 text-xs font-black block mb-1">📅 EXP</label>
+              <label class="text-slate-400 text-xs font-black block mb-1">📅 EXP</label>
               <input id="aCrExp" type="date"
                 class="w-full bg-slate-800 text-white text-sm font-bold p-2 rounded-xl border border-slate-700 outline-none focus:border-emerald-500">
             </div>
@@ -389,7 +389,7 @@
       <div id="aCrConfirmRow" class="hidden px-4 pb-5 pt-2 sticky bottom-0 bg-slate-800"
            style="padding-bottom:max(20px,env(safe-area-inset-bottom))">
         <button onclick="confirmCrCount()" id="aCrConfirm"
-          class="btn-tap w-full py-4 rounded-2xl font-black text-lg bg-cyan-600 text-white shadow-lg">
+          class="btn-tap w-full py-4 rounded-2xl font-black text-lg bg-cyan-700 text-white shadow-lg">
           📊 บันทึก
         </button>
       </div>
@@ -416,7 +416,7 @@
   <div class="flex items-center justify-between px-4 py-3 border-b border-slate-800">
     <div>
       <div class="text-lg font-black text-indigo-300">📜 ประวัติของฉัน</div>
-      <div id="myHistWho" class="text-xs text-slate-500 font-bold"></div>
+      <div id="myHistWho" class="text-xs text-slate-400 font-bold"></div>
     </div>
     <button onclick="closeMyHistory()" class="bg-slate-800 text-slate-300 px-4 py-2 rounded-xl text-sm font-black active:brightness-75">ปิด</button>
   </div>
@@ -433,7 +433,7 @@
        style="padding-top:calc(env(safe-area-inset-top,0px) + 12px)">
     <div class="min-w-0">
       <div class="text-lg font-black text-indigo-300">📈 ต้องสั่ง</div>
-      <div id="planSub" class="text-xs text-slate-500 font-bold truncate"></div>
+      <div id="planSub" class="text-xs text-slate-400 font-bold truncate"></div>
     </div>
     <button onclick="closePlan()" class="btn-tap flex-shrink-0 bg-slate-800 text-slate-300 px-5 py-3 rounded-2xl text-sm font-black">✕ ปิด</button>
   </div>
@@ -459,7 +459,7 @@
       <img id="shareQrImg" alt="QR" class="w-56 h-56 rounded-2xl bg-white p-2">
     </div>
     <div class="grid grid-cols-2 gap-2 mt-4">
-      <button onclick="shareNative()" class="bg-sky-600 text-white py-3 rounded-2xl font-black text-sm active:brightness-75">📤 ส่งต่อ</button>
+      <button onclick="shareNative()" class="bg-sky-700 text-white py-3 rounded-2xl font-black text-sm active:brightness-75">📤 ส่งต่อ</button>
       <button onclick="shareCopyLink()" class="bg-indigo-600 text-white py-3 rounded-2xl font-black text-sm active:brightness-75">📋 คัดลอก</button>
     </div>
     <button onclick="closeShareApp()" class="w-full mt-2 bg-slate-800 text-slate-300 py-3 rounded-2xl font-black text-sm active:brightness-75">ปิด</button>
@@ -522,7 +522,7 @@ function toast(msg, type = "ok") {
   const el = $("toast");
   el.textContent = msg;
   el.className = "fixed top-4 left-4 right-4 z-[999] p-4 rounded-2xl font-black text-center text-white text-sm shadow-2xl";
-  el.classList.add(type === "err" ? "bg-red-600" : type === "warn" ? "bg-amber-500" : "bg-emerald-600");
+  el.classList.add(type === "err" ? "bg-red-700" : type === "warn" ? "bg-amber-700" : "bg-emerald-700");
   show("toast");
   clearTimeout(_toastT);
   _toastT = setTimeout(() => hide("toast"), 3000);
@@ -758,7 +758,7 @@ async function openMyHistory() {
   $("myHistSheet").classList.remove("hidden"); mArmBack();
   $("myHistWho").textContent = user || "";
   $("myHistSummary").innerHTML = "";
-  $("myHistList").innerHTML = '<p class="text-slate-500 text-center py-10 font-bold">⏳ กำลังโหลด...</p>';
+  $("myHistList").innerHTML = '<p class="text-slate-400 text-center py-10 font-bold">⏳ กำลังโหลด...</p>';
   try {
     const r = await gasPost({ module: "SYSTEM", action: "getMyHistory", username: user });
     if (!r.ok) { $("myHistList").innerHTML = `<p class="text-red-400 text-center py-10 font-bold">${r.message || "โหลดไม่สำเร็จ"}</p>`; return; }
@@ -783,15 +783,15 @@ async function openMyHistory() {
             <div class="${st.bg} ${st.cls} w-11 h-11 rounded-xl flex items-center justify-center text-xl flex-shrink-0">${st.icon}</div>
             <div class="flex-1 min-w-0">
               <div class="font-black text-white text-sm truncate">${x.name}</div>
-              <div class="text-[11px] text-slate-500 font-bold">${x.action} · ${x.module}</div>
+              <div class="text-[11px] text-slate-400 font-bold">${x.action} · ${x.module}</div>
             </div>
             <div class="text-right flex-shrink-0">
               <div class="font-black ${st.cls} text-lg">${x.qty}</div>
-              <div class="text-[10px] text-slate-600 font-bold">${x.when}</div>
+              <div class="text-[10px] text-slate-400 font-bold">${x.when}</div>
             </div>
           </div>`;
         }).join("")
-      : '<p class="text-slate-500 text-center py-10 font-bold">ยังไม่มีรายการของคุณ</p>';
+      : '<p class="text-slate-400 text-center py-10 font-bold">ยังไม่มีรายการของคุณ</p>';
   } catch (e) {
     $("myHistList").innerHTML = '<p class="text-red-400 text-center py-10 font-bold">เชื่อมต่อไม่สำเร็จ</p>';
   }
@@ -1125,7 +1125,7 @@ function renderList(more) {
     const why = mListFilter === "low" ? "✅ ไม่มีรายการที่ต่ำกว่าขั้นต่ำ"
       : mListFilter === "stale" ? "✅ ทุกรายการมีการอัปเดตภายใน " + mStaleDays() + " วัน"
       : mListFilter === "freq" ? "ยังไม่มีรายการที่ใช้บ่อย<br><span class=\"text-xs\">ทำรายการแล้วจะขึ้นที่นี่เอง</span>" : "ไม่พบรายการ";
-    el.innerHTML = `<p class="text-slate-600 text-center py-16 font-bold">${why}</p>`;
+    el.innerHTML = `<p class="text-slate-400 text-center py-16 font-bold">${why}</p>`;
     return;
   }
   _mShown = more ? _mShown + M_PAGE : M_PAGE;
@@ -1141,11 +1141,11 @@ function renderList(more) {
       <div class="flex items-center justify-between gap-3">
         <div class="flex-1 min-w-0">
           <div class="font-black text-white text-base leading-snug">${escH(item.name)}</div>
-          <div class="text-slate-500 text-xs mt-0.5">${escH(item.sku)}${isLow ? ' · <span class="text-red-400">⚠️ ต่ำกว่าขั้นต่ำ</span>' : ""}${isStaleItem(item) ? ' · <span class="text-amber-400">⏰ ' + (item.idle === null ? "ไม่เคยบันทึกยอด" : "ไม่อัปเดต " + item.idle + " วัน") + '</span>' : ""}</div>
+          <div class="text-slate-400 text-xs mt-0.5">${escH(item.sku)}${isLow ? ' · <span class="text-red-400">⚠️ ต่ำกว่าขั้นต่ำ</span>' : ""}${isStaleItem(item) ? ' · <span class="text-amber-400">⏰ ' + (item.idle === null ? "ไม่เคยบันทึกยอด" : "ไม่อัปเดต " + item.idle + " วัน") + '</span>' : ""}</div>
         </div>
         <div class="text-right flex-shrink-0">
           <div class="font-black ${isLow ? "text-red-400" : "text-indigo-300"} text-xl leading-none">${fmtNum(item.qty)}</div>
-          <div class="text-slate-500 text-xs mt-0.5">${escH(item.unit)}${dayStr ? ' · '+dayStr : ""}</div>
+          <div class="text-slate-400 text-xs mt-0.5">${escH(item.unit)}${dayStr ? ' · '+dayStr : ""}</div>
         </div>
       </div>
     </button>`;
@@ -1248,7 +1248,7 @@ function renderCrLots() {
   if (!sel || !sel.lots) return;
   const el = $("aCrLots");
   if (!sel.lots.length) {
-    el.innerHTML = '<p class="text-slate-600 text-sm text-center py-4">ไม่มี Lot ที่มียอดคงเหลือ</p>';
+    el.innerHTML = '<p class="text-slate-400 text-sm text-center py-4">ไม่มี Lot ที่มียอดคงเหลือ</p>';
     return;
   }
   el.innerHTML = sel.lots.map((lot, i) => {
@@ -1264,11 +1264,11 @@ function renderCrLots() {
             · EXP <span class="text-white font-black">${fmtDate(lot.exp)}</span></div>
           <div class="mt-0.5 font-bold">${daysLabel}</div>
           ${lot.stale ? '<div class="mt-0.5 font-black text-amber-400">⏰ ' + (lot.idle === null ? "ไม่เคยบันทึกยอด" : "ไม่อัปเดต " + lot.idle + " วัน") + ' — ช่วยนับยืนยัน</div>' : ""}
-          <div class="text-cyan-400 font-black text-base mt-1">${lot.qty} <span class="text-slate-500 text-xs font-normal">${lot.unit}</span></div>
+          <div class="text-cyan-400 font-black text-base mt-1">${lot.qty} <span class="text-slate-400 text-xs font-normal">${lot.unit}</span></div>
         </div>
         ${(role||"").toLowerCase() === "viewer" ? "" : `<div class="flex flex-col gap-1.5 flex-shrink-0">
           <button onclick="crSelectLot(${i},'out')"
-            class="btn-tap bg-orange-600 text-white px-3 py-1.5 rounded-xl font-black text-xs">📤 เบิก</button>
+            class="btn-tap bg-orange-700 text-white px-3 py-1.5 rounded-xl font-black text-xs">📤 เบิก</button>
           <button onclick="crSelectLot(${i},'count')"
             class="btn-tap bg-cyan-700 text-white px-3 py-1.5 rounded-xl font-black text-xs">📊 นับ</button>
         </div>`}
@@ -1293,7 +1293,7 @@ function crSelectLot(i, action) {
   $("aCrQtyIn").value = isOut ? 1 : crLotSel.qty;
 
   const confirmBtn = $("aCrConfirm");
-  confirmBtn.className = `btn-tap w-full py-4 rounded-2xl font-black text-lg text-white shadow-lg ${isOut ? "bg-orange-600" : "bg-cyan-600"}`;
+  confirmBtn.className = `btn-tap w-full py-4 rounded-2xl font-black text-lg text-white shadow-lg ${isOut ? "bg-orange-700" : "bg-cyan-700"}`;
   confirmBtn.textContent = isOut ? "📤 ยืนยันการเบิก" : "📊 บันทึกการนับ";
 
   if ($("aCrNote")) $("aCrNote").value = "";
@@ -1335,7 +1335,7 @@ function crOpenNewLot() {
   }
 
   const confirmBtn = $("aCrConfirm");
-  confirmBtn.className = "btn-tap w-full py-4 rounded-2xl font-black text-lg bg-emerald-600 text-white shadow-lg";
+  confirmBtn.className = "btn-tap w-full py-4 rounded-2xl font-black text-lg bg-emerald-700 text-white shadow-lg";
   confirmBtn.textContent = "📥 บันทึกรับเข้า";
 
   show("aCrInRow"); show("aCrConfirmRow");
@@ -1452,10 +1452,10 @@ function setType(t) {
   aType = t;
   const base = "flex-1 py-3.5 rounded-2xl font-black text-xs";
   const off  = `${base} bg-slate-700 text-slate-400`;
-  $("aBtnOut").className    = t === "OUT"    ? `${base} bg-orange-600 text-white`  : off;
-  $("aBtnReturn").className = t === "RETURN" ? `${base} bg-sky-600 text-white`     : off;
-  $("aBtnIn").className     = t === "IN"     ? `${base} bg-emerald-600 text-white` : off;
-  $("aBtnCount").className  = t === "COUNT"  ? `${base} bg-cyan-600 text-white`    : off;
+  $("aBtnOut").className    = t === "OUT"    ? `${base} bg-orange-700 text-white`  : off;
+  $("aBtnReturn").className = t === "RETURN" ? `${base} bg-sky-700 text-white`     : off;
+  $("aBtnIn").className     = t === "IN"     ? `${base} bg-emerald-700 text-white` : off;
+  $("aBtnCount").className  = t === "COUNT"  ? `${base} bg-cyan-700 text-white`    : off;
 
   // ช่อง "ใช้กับงาน" — บังคับเฉพาะเบิกออก / ตอนนับสต๊อกไม่ต้องใช้เลย
   const _pw = $("aPurposeWrap"), _pr = $("aPurposeReq"), _pi = $("aPurposeIn");
@@ -1467,7 +1467,7 @@ function setType(t) {
 
   // ปุ่มยืนยันสีเดียวกับประเภทที่เลือก — มองปุ่มก็รู้ว่ากำลังจะเบิกหรือรับ
   const confirmBtn = $("aConfirm");
-  const COLOR = { OUT: "bg-orange-600", RETURN: "bg-sky-600", IN: "bg-emerald-600", COUNT: "bg-cyan-600" };
+  const COLOR = { OUT: "bg-orange-700", RETURN: "bg-sky-700", IN: "bg-emerald-700", COUNT: "bg-cyan-700" };
   confirmBtn.className = confirmBtn.className.replace(/bg-\w+-\d+/, COLOR[t] || "bg-indigo-600");
   // pre-fill: นับ = ยอดปัจจุบัน · อื่นๆ = 1
   $("aQtyIn").value = (t === "COUNT") ? (sel ? sel.qty : 0) : 1;
@@ -1492,7 +1492,7 @@ function updateAfter() {
   const q = numVal($("aQtyIn").value), u = sel.unit || "";
   const btn = $("aConfirm");
   if (btn && !btn.disabled) btn.textContent = confirmLabel();
-  if (isNaN(q) || q < 0) { el.className = "flex-1 text-center text-sm font-black text-slate-500"; el.textContent = ""; return; }
+  if (isNaN(q) || q < 0) { el.className = "flex-1 text-center text-sm font-black text-slate-400"; el.textContent = ""; return; }
   const expr = /[-+*\/x×÷()]/i.test(String($("aQtyIn").value)) ? "= " + fmtNum(q) + " " + u + " · " : "";
   let txt, cls = "text-slate-400";
   if (aType === "COUNT") {
@@ -1690,7 +1690,7 @@ async function openPlan() {
   $("planSub").textContent = MOD_CFG[mod].title;
   planFilter = "todo";
   if (planData && planData.module === mod) renderPlan();
-  else { $("planTiles").innerHTML = ""; $("planList").innerHTML = '<p class="text-slate-500 text-center py-10 font-bold">⏳ กำลังอ่านประวัติการเบิก...</p>'; }
+  else { $("planTiles").innerHTML = ""; $("planList").innerHTML = '<p class="text-slate-400 text-center py-10 font-bold">⏳ กำลังอ่านประวัติการเบิก...</p>'; }
   try { if (await planFetch()) renderPlan(); }
   catch (e) {
     if (!planData || planData.module !== mod)
@@ -1722,11 +1722,11 @@ function renderPlan() {
       <div class="text-[10px] font-bold text-slate-400 mt-0.5">${label}</div></button>`;
   };
   $("planTiles").innerHTML =
-      tile("todo", "ต้องลงมือ", todo, todo ? "text-white" : "text-slate-500")
-    + tile("late", "🔴 สั่งไม่ทันแล้ว", sum.late, sum.late ? "text-red-400" : "text-slate-500")
-    + tile("now",  "🟠 สั่งวันนี้", sum.now, sum.now ? "text-orange-400" : "text-slate-500")
-    + tile("soon", "🟡 ใกล้ถึงเวลา", sum.soon, sum.soon ? "text-amber-400" : "text-slate-500")
-    + (S.staleDays ? tile("stale", "⏰ ไม่อัปเดต", sum.stale || 0, sum.stale ? "text-amber-400" : "text-slate-500") : "")
+      tile("todo", "ต้องลงมือ", todo, todo ? "text-white" : "text-slate-400")
+    + tile("late", "🔴 สั่งไม่ทันแล้ว", sum.late, sum.late ? "text-red-400" : "text-slate-400")
+    + tile("now",  "🟠 สั่งวันนี้", sum.now, sum.now ? "text-orange-400" : "text-slate-400")
+    + tile("soon", "🟡 ใกล้ถึงเวลา", sum.soon, sum.soon ? "text-amber-400" : "text-slate-400")
+    + (S.staleDays ? tile("stale", "⏰ ไม่อัปเดต", sum.stale || 0, sum.stale ? "text-amber-400" : "text-slate-400") : "")
     + tile("ok",   "🟢 ยังพอ", sum.ok, "text-emerald-400")
     + tile("all",  "ทั้งหมด", sum.total, "text-slate-300");
 
@@ -1738,8 +1738,8 @@ function renderPlan() {
       : x.status === "late" ? "เลยกำหนดแล้ว" : x.orderInDays <= 0 ? "วันนี้" : thDate(x.orderByDate) + " (อีก " + x.orderInDays + " วัน)";
     const src = { actual: "เบิกจริง", plan: "ค่าที่ตั้งไว้", thin: "เบิกจริง (ข้อมูลน้อย)" }[x.rateSource] || "";
     const boxes = (x.status === "ok" || x.status === "nodata" || planFilter === "stale") ? "" : `<div class="grid grid-cols-2 gap-2 mt-2.5">
-        <div class="bg-slate-900 rounded-xl px-3 py-2"><div class="text-[10px] font-bold text-slate-500">ต้องสั่งภายใน</div><div class="text-sm font-black ${T.text}">${when}</div></div>
-        <div class="bg-slate-900 rounded-xl px-3 py-2"><div class="text-[10px] font-bold text-slate-500">แนะนำสั่ง</div><div class="text-sm font-black text-white">${x.suggestQty > 0 ? fmtNum(x.suggestQty) + " " + escH(x.unit) : "—"}</div></div>
+        <div class="bg-slate-900 rounded-xl px-3 py-2"><div class="text-[10px] font-bold text-slate-400">ต้องสั่งภายใน</div><div class="text-sm font-black ${T.text}">${when}</div></div>
+        <div class="bg-slate-900 rounded-xl px-3 py-2"><div class="text-[10px] font-bold text-slate-400">แนะนำสั่ง</div><div class="text-sm font-black text-white">${x.suggestQty > 0 ? fmtNum(x.suggestQty) + " " + escH(x.unit) : "—"}</div></div>
       </div>`;
     const why = (x.reasons || []).length
       ? `<div class="text-slate-400 text-xs mt-2 leading-relaxed">${x.reasons.map(t => "• " + escH(t)).join("<br>")}</div>` : "";
@@ -1748,17 +1748,17 @@ function renderPlan() {
         <div class="flex-1 min-w-0">
           <div class="text-xs font-black ${T.text}">${x.icon} ${escH(x.statusText)}</div>
           <div class="font-black text-white text-base leading-snug mt-0.5">${escH(x.name)}</div>
-          <div class="text-slate-500 text-xs mt-0.5">เหลือ ${fmtNum(x.qty)} ${escH(x.unit)}${x.rate > 0 ? " · ใช้ " + fmtNum(x.rate) + "/วัน" + (src ? " (" + src + ")" : "") : ""}</div>
+          <div class="text-slate-400 text-xs mt-0.5">เหลือ ${fmtNum(x.qty)} ${escH(x.unit)}${x.rate > 0 ? " · ใช้ " + fmtNum(x.rate) + "/วัน" + (src ? " (" + src + ")" : "") : ""}</div>
         </div>
         <div class="text-right flex-shrink-0">
           <div class="text-2xl font-black leading-none ${T.text}">${cover}</div>
-          <div class="text-slate-500 text-[10px] font-bold mt-1">วันที่พอใช้</div>
+          <div class="text-slate-400 text-[10px] font-bold mt-1">วันที่พอใช้</div>
         </div>
       </div>
       ${boxes}${why}
     </button>`;
-  }).join("") + '<p class="text-slate-600 text-[11px] text-center font-bold pt-2 pb-1 leading-relaxed">แตะรายการเพื่อรับเข้า / เบิก / นับ<br>ตัวเลขเป็นคำแนะนำจากการเบิกจริง — ระบบไม่สั่งซื้อเอง</p>'
-  : `<p class="text-slate-500 text-center py-14 font-bold">${planFilter === "todo" ? "✅ ไม่มีรายการที่ต้องสั่งในตอนนี้" : planFilter === "stale" ? "✅ ทุกรายการมีการอัปเดตตามกำหนด" : "ไม่มีรายการในกลุ่มนี้"}</p>`;
+  }).join("") + '<p class="text-slate-400 text-[11px] text-center font-bold pt-2 pb-1 leading-relaxed">แตะรายการเพื่อรับเข้า / เบิก / นับ<br>ตัวเลขเป็นคำแนะนำจากการเบิกจริง — ระบบไม่สั่งซื้อเอง</p>'
+  : `<p class="text-slate-400 text-center py-14 font-bold">${planFilter === "todo" ? "✅ ไม่มีรายการที่ต้องสั่งในตอนนี้" : planFilter === "stale" ? "✅ ทุกรายการมีการอัปเดตตามกำหนด" : "ไม่มีรายการในกลุ่มนี้"}</p>`;
 
   const n = planOrderList().length, btn = $("planCopyBtn");
   btn.textContent = n ? "📋 คัดลอกรายการสั่ง (" + n + " รายการ)" : "ไม่มีรายการที่ต้องสั่งวันนี้";

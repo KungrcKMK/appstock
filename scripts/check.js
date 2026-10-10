@@ -7,7 +7,8 @@
 //   1. ไวยากรณ์ JS ทุกไฟล์ (รวมสคริปต์ที่ฝังใน mobile.html และ gas_code.js)
 //   2. ไฟล์ทุกตัวใน sw.js STATIC_ASSETS มีจริง — cache.addAll เป็น all-or-nothing ไฟล์เดียวหาย = ติดตั้งไม่ได้
 //   3. GAS_URL ใน js/app.js กับ mobile.html ต้องตรงกัน
-//   4. ตรรกะคิวออฟไลน์ (js/offline.js) 7 เคส — จำลอง localStorage/fetch ไม่แตะระบบจริง
+//   4. ตรรกะคิวออฟไลน์ (js/offline.js) 8 เคส — จำลอง localStorage/fetch ไม่แตะระบบจริง
+//      + ออกจากระบบล้างข้อมูลสต๊อกในเครื่อง แต่ห้ามลบคิวงานออฟไลน์ (หน้าคอม + มือถือ)
 //   5. ไฟล์ CSS ที่ build แล้วต้องมีอยู่และไม่ว่าง
 // ═══════════════════════════════════════════════════════════
 const fs = require("fs");
@@ -134,6 +135,32 @@ console.log("4) ตรรกะคิวออฟไลน์ (js/offline.js)");
   global.fetch = async () => ({ json: async () => ({ needLogin: true, status: "error" }) });
   const rn = await O.offlineSend({ action: "UPDATE", sku: "H" }, "เบิก H");
   T("บัตรหมดอายุตอนกดบันทึก → รายการเข้าคิว ไม่หาย (queued + needLogin)", rn.queued === true && rn.needLogin === true && O.offlineCount() === 1 && O.offlineQueue()[0].body.sku === "H");
+
+  // ── ออกจากระบบล้างข้อมูลในเครื่อง (2026-10-10) — ต้องล้างข้อมูลสต๊อก แต่ห้ามแตะคิวงานออฟไลน์ ──
+  {
+    const pick = (file, name) => {
+      const src = fs.readFileSync(path.join(root, file), "utf8");
+      const m = src.match(new RegExp("function " + name + "\\(\\)\\s*\\{[\\s\\S]*?\\n\\}"));
+      return m ? m[0] : null;
+    };
+    for (const [file, name] of [["js/auth.js", "authClearUserCache"], ["mobile.html", "mClearUserCache"]]) {
+      const code = pick(file, name);
+      if (!code) { bad(file + ": หา " + name + "() ไม่เจอ"); continue; }
+      const ls = {
+        "appstock_queue_v1": "[1]", "appstock_queue_failed_v1": "[2]", "appstock_queue_lock": "{}",
+        "appstock_device_id": "d", "rawAlertDays": "7", "appstock_rop_lead": "5", "m_staledays_SQF": "7",
+        "cache_raw_SQF": "x", "cache_cr_overview": "x", "m_cache_SQF": "x", "m_freq_MLM": "x",
+        "m_purposes_SQF": "x", "m_purposes_srv_SQF": "x", "appstock_last_mod": "SQF"
+      };
+      const ss = { appstock_alert_ack: "x", appstock_prefill_user: "x", appstock_mode_session: "mobile" };
+      const mk = o => ({ get length() { return Object.keys(o).length; }, key: i => Object.keys(o)[i] ?? null, removeItem: k => { delete o[k]; } });
+      new Function("localStorage", "sessionStorage", code + "\n" + name + "();")(mk(ls), mk(ss));
+      const kept = ["appstock_queue_v1", "appstock_queue_failed_v1", "appstock_queue_lock", "appstock_device_id", "rawAlertDays", "appstock_rop_lead", "m_staledays_SQF"];
+      const gone = ["cache_raw_SQF", "cache_cr_overview", "m_cache_SQF", "m_freq_MLM", "m_purposes_SQF", "m_purposes_srv_SQF", "appstock_last_mod"];
+      T(file + ": ออกจากระบบล้างข้อมูลสต๊อก แต่คิวงานออฟไลน์ + ค่าตั้งเครื่องยังอยู่",
+        kept.every(k => k in ls) && gone.every(k => !(k in ls)) && !("appstock_alert_ack" in ss) && ss.appstock_mode_session === "mobile");
+    }
+  }
 
   // ── 5. CSS ที่ build แล้ว ──
   console.log("5) CSS ที่ build แล้ว");

@@ -1334,8 +1334,10 @@ function rawRenderOfflinePanel() {
 
 async function rawSubmitVerify() {
   if (rawIsBusy("rawBtnVerify")) return;   // กำลังส่งอยู่ — กันกดซ้ำ (Enter/Space/คลิกรัว)
-  const q=Number(document.getElementById("rawVerifyQty").value);
+  const qRaw = String(document.getElementById("rawVerifyQty").value || "").trim();
+  const q=Number(qRaw);   // Number("") = 0 — ต้องเช็คช่องว่างก่อน ไม่งั้นกดบันทึกโดยไม่พิมพ์ = นับได้ 0
   if (!rawVerifyTarget) return showToast("ไม่พบ SKU","error");
+  if (qRaw === "")      { rawFieldError("rawVerifyQty", "พิมพ์ยอดที่นับได้จริงก่อนบันทึก (ของหมดให้ใส่ 0)"); return; }
   if (isNaN(q)||q<0)    { rawFieldError("rawVerifyQty", "ระบุยอดที่นับได้ เป็นตัวเลข 0 ขึ้นไป"); return; }
   // Poka-Yoke: เตือนถ้าค่าใหม่ต่างจากค่าปัจจุบัน > 5 เท่า
   const curItem = (rawLastData || []).find(it => String(it.SKU) === String(rawVerifyTarget));

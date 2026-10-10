@@ -204,6 +204,20 @@ function switchToMobile() {
   window.location.replace("mobile.html");
 }
 
+// ออกจากระบบ = ล้างข้อมูลสต๊อกที่จำไว้ในเครื่อง (มือถือ/คอมใช้ร่วมกันหลายคน)
+// ใช้ร่วมกับ mClearUserCache ใน mobile.html (localStorage ตัวเดียวกัน) — แก้ที่หนึ่งต้องแก้อีกที่ · npm test ตรวจ
+// ⚠️ ห้ามแตะคิวงานออฟไลน์ (appstock_queue_*) — งานที่เน็ตล่มต้องรอส่งหลังเข้าระบบใหม่ · เก็บค่าตั้งเครื่องไว้ (device_id, rawAlertDays, rop)
+function authClearUserCache() {
+  const PREFIX = ["cache_", "m_cache_", "m_freq_", "m_purposes_"];
+  const KEYS = ["appstock_last_mod"];
+  try {
+    const all = [];
+    for (let i = 0; i < localStorage.length; i++) all.push(localStorage.key(i));
+    all.forEach(k => { if (k && (KEYS.includes(k) || PREFIX.some(p => k.startsWith(p)))) localStorage.removeItem(k); });
+  } catch (e) {}
+  try { ["appstock_alert_ack", "appstock_prefill_user"].forEach(k => sessionStorage.removeItem(k)); } catch (e) {}
+}
+
 function logout() {
   // ข้อ 17: มีงานค้างที่ยังไม่ได้ส่ง → เตือนก่อน (ออกไปแล้วงานยังอยู่ แต่จะส่งได้ต่อเมื่อเข้าระบบใหม่)
   if (typeof offlineCount === "function" && offlineCount() > 0 &&
@@ -211,7 +225,7 @@ function logout() {
   localStorage.removeItem("appstock_session");
   // Revoke admin token ฝั่ง server
   if (_adminToken) {
-    fetch(GAS_URL, { method: "POST", headers: { "Content-Type": "text/plain;charset=utf-8" },
+    fetch(GAS_URL, { method: "POST", keepalive: true, headers: { "Content-Type": "text/plain;charset=utf-8" },   // keepalive: หน้ารีโหลดทันทีหลังนี้
       body: JSON.stringify({ module: "SYSTEM", action: "logoutAdmin", payload: { adminToken: _adminToken } })
     }).catch(() => {});
   }
@@ -221,6 +235,7 @@ function logout() {
   _loginNeedsPassword = false;
   // ล้าง localStorage ทุก key
   ["unified_stock_user","unified_stock_role","appstock_device_name"].forEach(k => localStorage.removeItem(k));
+  authClearUserCache();
   // ล้าง sensitive input fields
   ["passwordInput","usernameInput","uniTgToken"].forEach(id => {
     const el = document.getElementById(id); if (el) el.value = "";

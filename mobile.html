@@ -877,10 +877,29 @@ async function shareCopyLink() {
   catch (e) { toast("คัดลอกไม่สำเร็จ กดค้างที่ลิงก์เพื่อคัดลอก", "warn"); }
 }
 
+// ออกจากระบบ = ล้างข้อมูลสต๊อกที่จำไว้ในเครื่อง (มือถือใช้ร่วมกันหลายคน) — คู่กับ authClearUserCache ใน js/auth.js
+// ⚠️ ห้ามแตะคิวงานออฟไลน์ (appstock_queue_*) — งานที่เน็ตล่มต้องรอส่งหลังเข้าระบบใหม่ · npm test ตรวจ
+function mClearUserCache() {
+  const PREFIX = ["cache_", "m_cache_", "m_freq_", "m_purposes_"];
+  const KEYS = ["appstock_last_mod"];
+  try {
+    const all = [];
+    for (let i = 0; i < localStorage.length; i++) all.push(localStorage.key(i));
+    all.forEach(k => { if (k && (KEYS.includes(k) || PREFIX.some(p => k.startsWith(p)))) localStorage.removeItem(k); });
+  } catch (e) {}
+  try { ["appstock_alert_ack", "appstock_prefill_user"].forEach(k => sessionStorage.removeItem(k)); } catch (e) {}
+}
+
 function doLogout() {
   if (typeof offlineCount === "function" && offlineCount() > 0 &&
       !confirm("มีงานที่บันทึกไว้ตอนเน็ตล่ม " + offlineCount() + " รายการ ยังไม่ได้ส่ง\nออกจากระบบตอนนี้ งานยังเก็บไว้ ส่งได้เมื่อเข้าระบบใหม่\nต้องการออกเลยหรือไม่?")) return;
+  // ยกเลิกบัตรผ่านที่หลังบ้านด้วย (เหมือนหน้าคอม) — เดิมกดออกแล้วบัตรยังใช้ได้ถึง 30 วัน · keepalive = ส่งต่อได้แม้เปลี่ยนหน้าทันที
+  let tok = null;
+  try { tok = localStorage.getItem("appstock_session") || sessionStorage.getItem("appstock_admin_token"); sessionStorage.removeItem("appstock_admin_token"); } catch (e) {}
+  if (tok) fetch(GAS_URL, { method: "POST", keepalive: true, headers: { "Content-Type": "text/plain;charset=utf-8" },
+    body: JSON.stringify({ module: "SYSTEM", action: "logoutAdmin", payload: { adminToken: tok } }) }).catch(() => {});
   ["unified_stock_user","unified_stock_role","appstock_mode_pref","appstock_session"].forEach(k => localStorage.removeItem(k));
+  mClearUserCache();
   user = null; role = null; mod = null; data = [];
   window.location.replace("index.html");
 }
@@ -1333,7 +1352,9 @@ function crSelectLot(i, action) {
   $("aCrLotLabel").className = `${labelColor} text-xs text-center font-black mb-2`;
   $("aCrLotLabel").textContent =
     `${prefix} · MFG ${fmtDate(crLotSel.mfg)} · ปัจจุบัน ${crLotSel.qty} ${crLotSel.unit}`;
-  $("aCrQtyIn").value = isOut ? 1 : crLotSel.qty;
+  // นับ = เว้นว่างให้พิมพ์ยอดที่นับได้จริง (ไม่เติมยอดในระบบไว้ล่วงหน้า)
+  $("aCrQtyIn").value = isOut ? 1 : "";
+  $("aCrQtyIn").placeholder = isOut ? "" : "ยอดที่นับได้";
 
   const confirmBtn = $("aCrConfirm");
   confirmBtn.className = `btn-tap w-full py-4 rounded-2xl font-black text-lg text-white shadow-lg ${isOut ? "bg-orange-700" : "bg-cyan-700"}`;
@@ -1387,7 +1408,8 @@ function crOpenNewLot() {
 function adjCrQty(d) {
   const el = crAction === "in" ? $("aCrQtyIn2") : $("aCrQtyIn");
   const min = crAction === "count" ? 0 : 1;
-  el.value = Math.max(min, (Number(el.value) || min) + d);
+  const cur = numVal(el.value);
+  el.value = Math.max(min, (isNaN(cur) ? (crAction === "count" ? 0 : min) : cur) + d);
 }
 
 async function confirmCrCount() {
@@ -1411,7 +1433,9 @@ async function confirmCrCount() {
 
   } else {
     if (!crLotSel) return;
-    let newQty = Number($("aCrQtyIn").value);
+    // numVal: ช่องว่างได้ NaN (Number("") ได้ 0 → เคยกดบันทึกเปล่าแล้วกลายเป็นนับได้ 0)
+    let newQty = numVal($("aCrQtyIn").value);
+    if (String($("aCrQtyIn").value).trim() === "") { toast(crAction === "out" ? "ระบุจำนวนที่เบิก" : "พิมพ์ยอดที่นับได้จริงก่อนบันทึก (ของหมดให้ใส่ 0)", "warn"); $("aCrQtyIn").focus(); return; }
     if (isNaN(newQty) || newQty < 0) { toast("ระบุจำนวนให้ถูกต้อง", "warn"); return; }
     const crNote = ($("aCrNote")?.value || "").trim();
     if (!crNote) { toast("กรุณาระบุหมายเหตุก่อนบันทึก", "warn"); $("aCrNote")?.focus(); return; }
@@ -1530,11 +1554,11 @@ function setType(t) {
   const confirmBtn = $("aConfirm");
   const COLOR = { OUT: "bg-orange-700", RETURN: "bg-sky-700", IN: "bg-emerald-700", COUNT: "bg-cyan-700" };
   confirmBtn.className = confirmBtn.className.replace(/bg-\w+-\d+/, COLOR[t] || "bg-indigo-600");
-  // pre-fill: นับ = ยอดปัจจุบัน · อื่นๆ = 1
-  $("aQtyIn").value = (t === "COUNT") ? (sel ? sel.qty : 0) : 1;
+  // นับ = เว้นว่างให้พิมพ์ยอดที่นับได้จริง (เดิมเติมยอดในระบบไว้ → กดบันทึกได้ทั้งที่ไม่ได้นับ) · อื่นๆ = 1
+  $("aQtyIn").value = (t === "COUNT") ? "" : 1;
   $("aQtyIn").dataset.touched = "";
   $("aQtyIn").inputMode = "decimal";
-  $("aQtyIn").placeholder = "";
+  $("aQtyIn").placeholder = (t === "COUNT") ? "ยอดที่นับได้" : "";
   renderQuick();
   updateAfter();
 }
@@ -1553,7 +1577,11 @@ function updateAfter() {
   const q = numVal($("aQtyIn").value), u = sel.unit || "";
   const btn = $("aConfirm");
   if (btn && !btn.disabled) btn.textContent = confirmLabel();
-  if (isNaN(q) || q < 0) { el.className = "flex-1 text-center text-sm font-black text-slate-400"; el.textContent = ""; return; }
+  if (isNaN(q) || q < 0) {
+    el.className = "flex-1 text-center text-sm font-black text-slate-400";
+    el.textContent = (aType === "COUNT" && String($("aQtyIn").value).trim() === "") ? "พิมพ์ยอดที่นับได้จริง" : "";
+    return;
+  }
   const expr = /[-+*\/x×÷()]/i.test(String($("aQtyIn").value)) ? "= " + fmtNum(q) + " " + u + " · " : "";
   let txt, cls = "text-slate-400";
   if (aType === "COUNT") {
@@ -1587,6 +1615,8 @@ function renderQuick() {
   const b = "btn-tap flex-1 py-2.5 rounded-xl font-black text-sm";
   let html = quickSteps().map(n => `<button onclick="addQty(${n})" class="${b} bg-slate-700 text-slate-200">+${fmtNum(n)}</button>`).join("");
   if (aType === "OUT" && sel && sel.qty > 0) html += `<button onclick="setQty(${Number(sel.qty)})" class="${b} bg-slate-700 text-orange-300">ทั้งหมด</button>`;
+  // นับแล้วตรงกับในระบบ — ต้องแตะเองทุกครั้ง (ไม่เติมให้ล่วงหน้า) ไม่ต้องพิมพ์ตัวเลขยาวๆ ซ้ำ
+  if (aType === "COUNT" && sel) html += `<button onclick="setQty(${Number(sel.qty) || 0})" class="${b} bg-slate-700 text-cyan-300">✓ ตรงกับระบบ</button>`;
   el.innerHTML = html;
 }
 function calcMode() {
@@ -1607,7 +1637,7 @@ function setQty(v) {
 // กดบวกครั้งแรกขณะยังเป็นค่าตั้งต้น 1 → แทนที่ (ตั้งใจจะได้ 100 ไม่ใช่ 101)
 function addQty(n) {
   const el = $("aQtyIn"), cur = numVal(el.value);
-  const fresh = aType !== "COUNT" && (isNaN(cur) || (cur === 1 && !el.dataset.touched));
+  const fresh = isNaN(cur) || (aType !== "COUNT" && cur === 1 && !el.dataset.touched);   // ช่องนับว่าง = เริ่มจาก 0
   el.value = Math.round(((fresh ? 0 : cur) + n) * 1000) / 1000;
   el.dataset.touched = "1";
   updateAfter();
@@ -1638,6 +1668,7 @@ function pickPurpose(btn) { $("aPurposeIn").value = btn.getAttribute("data-p") |
 async function confirmAction() {
   if (!sel) return;
   const qty = numVal($("aQtyIn").value);
+  if (aType === "COUNT" && String($("aQtyIn").value).trim() === "") { toast("พิมพ์ยอดที่นับได้จริงก่อนบันทึก (ของหมดให้ใส่ 0)", "warn"); $("aQtyIn").focus(); return; }
   if (isNaN(qty) || qty < 0) { toast("ระบุจำนวนให้ถูกต้อง", "warn"); $("aQtyIn").focus(); return; }
   if (aType !== "COUNT" && qty <= 0) { toast("ระบุจำนวนมากกว่า 0", "warn"); return; }
   if (aType === "OUT" && qty > sel.qty) {

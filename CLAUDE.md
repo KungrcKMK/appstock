@@ -60,7 +60,7 @@ frontend (GitHub Pages, vanilla JS) → Cloudflare Worker (`cloudflare/appstock-
 - ดูตัวอย่างในเครื่อง: preview server ที่ port 3000 (`.claude/launch.json` ชื่อ `appstock`) — เปิดที่ `http://localhost:3000/` และ `/mobile`
   (ไม่ใช่ `/index.html` — server ตอบ 301) · **หน้าจอในเครื่องชี้ไปหลังบ้านตัวจริง** → ดูได้ อย่ากดบันทึกทดสอบ
 - `npm test` = `scripts/check.js` ตรวจก่อนเผยแพร่ (ไวยากรณ์ทุกไฟล์รวมสคริปต์ใน mobile.html และโค้ด Worker, STATIC_ASSETS มีจริง,
-  GAS_URL ตรงกัน, คิวออฟไลน์ 8 เคส, CSS มี) — **GitHub Actions รันให้ก่อน deploy ไม่ผ่าน = ไม่ขึ้น Pages** รันเองก่อน push เสมอ
+  GAS_URL ตรงกัน, คิวออฟไลน์ 8 เคส, ออกจากระบบล้างข้อมูลแต่คิวยังอยู่ (`authClearUserCache` / `mClearUserCache` ต้องแก้คู่กัน), CSS มี) — **GitHub Actions รันให้ก่อน deploy ไม่ผ่าน = ไม่ขึ้น Pages** รันเองก่อน push เสมอ
 - `npm run build:css` build Tailwind → `css/tw-desktop.css` + `css/tw-mobile.css` (ต้อง `npm install` ครั้งแรก) —
   **เพิ่ม class Tailwind ใหม่ใน index.html / mobile.html / js แล้วต้องรัน** ไม่งั้น class ไม่ติด (ไม่ใช้ CDN แล้ว)
 - deploy frontend: `git push` เฉยๆ → GitHub Actions (`.github/workflows/deploy.yml`) ขึ้น GitHub Pages เอง (~30 วิ) · **Netlify ปิดอยู่** (`if: false` ใน workflow)

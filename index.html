@@ -674,8 +674,8 @@
        เดิมปุ่ม รับ/เบิก · นับ · แก้ไข · ลบ อยู่นอกจอ ต้องเลื่อนตาราง และ "ลบ" ติด "แก้ไข" */
     @media (max-width:700px) {
       #module-RAW .rm-table thead { display:none; }
-      #module-RAW .rm-table, #module-RAW .rm-table tbody { display:block;width:100%; }
-      #module-RAW .rm-table tr { display:grid;grid-template-columns:1fr 1fr;gap:4px 10px;padding:12px;margin:0 0 10px;
+      #module-RAW .rm-table, #module-RAW .rm-table tbody { display:block;width:100%;min-width:0 !important; }
+      #module-RAW .rm-table tr { display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:4px 10px;padding:12px;margin:0 0 10px;
                                   border:1px solid var(--sq-line);border-radius:12px;background:var(--sq-surface); }
       #module-RAW .rm-table td { display:block;padding:0 !important;border:0 !important;text-align:left !important; }
       #module-RAW .rm-table td.rm-rail, #module-RAW .rm-table td:nth-child(2) { display:none; }

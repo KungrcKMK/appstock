@@ -60,13 +60,13 @@ frontend (GitHub Pages, vanilla JS) → Cloudflare Worker (`cloudflare/appstock-
 - ดูตัวอย่างในเครื่อง: preview server ที่ port 3000 (`.claude/launch.json` ชื่อ `appstock`) — เปิดที่ `http://localhost:3000/` และ `/mobile`
   (ไม่ใช่ `/index.html` — server ตอบ 301) · **หน้าจอในเครื่องชี้ไปหลังบ้านตัวจริง** → ดูได้ อย่ากดบันทึกทดสอบ
 - `npm test` = `scripts/check.js` ตรวจก่อนเผยแพร่ (ไวยากรณ์ทุกไฟล์รวมสคริปต์ใน mobile.html และโค้ด Worker, STATIC_ASSETS มีจริง,
-  GAS_URL ตรงกัน, คิวออฟไลน์ 7 เคส, CSS มี) — **GitHub Actions รันให้ก่อน deploy ไม่ผ่าน = ไม่ขึ้น Pages** รันเองก่อน push เสมอ
+  GAS_URL ตรงกัน, คิวออฟไลน์ 8 เคส, CSS มี) — **GitHub Actions รันให้ก่อน deploy ไม่ผ่าน = ไม่ขึ้น Pages** รันเองก่อน push เสมอ
 - `npm run build:css` build Tailwind → `css/tw-desktop.css` + `css/tw-mobile.css` (ต้อง `npm install` ครั้งแรก) —
   **เพิ่ม class Tailwind ใหม่ใน index.html / mobile.html / js แล้วต้องรัน** ไม่งั้น class ไม่ติด (ไม่ใช้ CDN แล้ว)
 - deploy frontend: `git push` เฉยๆ → GitHub Actions (`.github/workflows/deploy.yml`) ขึ้น GitHub Pages เอง (~30 วิ) · **Netlify ปิดอยู่** (`if: false` ใน workflow)
 - deploy backend: `cd cloudflare/appstock-api && wrangler deploy` · ดู log สด: `wrangler tail`
 - หลังบ้านในเครื่อง: `wrangler dev --port 8791 --local` (ฐานข้อมูลจำลองอยู่ใน `.wrangler/` — ไม่เข้า git)
-  แล้วทดสอบการเขียน 206 เคส: `node tools/write-tests.mjs http://127.0.0.1:8791 ...` (สคริปต์ปฏิเสธ URL ที่ไม่ใช่เครื่องตัวเอง)
+  แล้วทดสอบการเขียน 212 เคส: `node tools/write-tests.mjs http://127.0.0.1:8791 ...` (สคริปต์ปฏิเสธ URL ที่ไม่ใช่เครื่องตัวเอง)
 - แก้โครงตาราง: เพิ่มใน `schema.sql` แล้วรัน `wrangler d1 execute appstock --remote --command "ALTER TABLE ..."` (D1 ไม่มี migration อัตโนมัติในโปรเจกต์นี้)
 - สำเนาลงชีต (GAS): `clasp push -f && clasp deploy -i AKfycbx72vWVvUgaOgZEnzAc8ltaV-a7Rfx_CL9DK1c-B5nAIOxtrlnbi8_b6bmfnDeAZ_xeaw`
   — แตะเฉพาะตอนแก้ตัวดึงสำเนา (`mirrorFromCloud`) · ถอยกลับไป GAS: ตั้ง `MIGRATED_TO_CLOUDFLARE = false` แล้ว deploy
@@ -82,7 +82,11 @@ frontend (GitHub Pages, vanilla JS) → Cloudflare Worker (`cloudflare/appstock-
 - **คำตอบต้องใช้ชื่อ key แบบเดิม** (หัวคอลัมน์ชีต: `SKU`, `Name`, `Qty`, ...) — หน้าจอทั้งสองอ่านชื่อพวกนี้อยู่
 - การเขียนที่อ่านก่อนเขียน (read-then-write) ต้องทำใน `env.DB.batch([...])` เดียว และ **ตรวจเงื่อนไขซ้ำใน SQL**
   (เช่น `WHERE qty >= ?`) ไม่ใช่เชื่อค่าที่อ่านมาก่อน — ดูตัวอย่าง `rmUpdate` ใน `src/raw.js`
-- สีใช้ token `--sq-*` ที่ประกาศใน `index.html` (มี `--sq-crit/high/warn` สำหรับสถานะ) · mobile ใช้ Tailwind ที่ build ไว้ (`tailwind.mobile.config.js` remap สี slate/indigo เป็นโทนเขียว)
+- สีใช้ token `--sq-*` ที่ประกาศใน `index.html` (มี `--sq-crit/high/warn` สำหรับสถานะ, `--sq-fac-sqf/mlm/cr` สีโรงงาน) · mobile ใช้ Tailwind ที่ build ไว้ (`tailwind.mobile.config.js` remap สี slate/indigo เป็นโทนเขียว)
+  · **แนวทางหน้าตาทั้งหมดอยู่ใน `DESIGN.md`** (สี contrast ขนาดตัวอักษร/ปุ่ม คำที่ใช้) — เขียนจากตรวจ QA 2026-10-10
+- หน้าต่าง (modal) ใหม่บนหน้าคอม: ลงชื่อ + ฟังก์ชันปิดใน `UI_MODALS` (`js/utils.js`) → ได้ Esc ปิด / Tab วนในหน้าต่าง / คืนโฟกัสเอง ·
+  ตัวห่อใช้ `overflow-y-auto` + การ์ด `my-auto` (สูงเกินจอแล้วเลื่อนได้) · ข้อผิดพลาดของฟอร์มใช้ `rawFieldError` (ใต้ช่อง) ไม่ใช้ toast
+- สคริปต์แก้ไฟล์ด้วย node: `String.replace(a, b)` แปลง `$$`/`$&` ในข้อความ b — ใช้ `split(a).join(b)` หรือเครื่องมือ Edit แทน
 - id ของ DOM ผูกกับโค้ดเยอะมาก (285 id ใน index.html) — **เปลี่ยนชื่อ id/ฟังก์ชันเดิม = พังเงียบ** เช็คให้ทั่วก่อน
 - escape ทุกอย่างที่มาจากผู้ใช้ด้วย `escapeHtml`/`escapeAttr`/`escapeJs` (`js/utils.js`)
   · ค่าที่ไปอยู่ใน `onclick="fn('...')"` ต้องใช้ `escapeJsAttr` (escapeJs แล้ว escapeAttr ซ้อน) ไม่ใช่ escapeJs อย่างเดียว

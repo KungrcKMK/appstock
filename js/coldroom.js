@@ -1547,10 +1547,10 @@ async function crSaveCount() {
   if (pl.newQty === "" || isNaN(pl.newQty)) missing.push(["จำนวน", "crNewQty"]);
   if (missing.length) {
     await crShowModal("alert", "ข้อมูลไม่ครบ", "ยังขาด: " + missing.map(x => x[0]).join(", "));
-    $cr(missing[0][1])?.focus(); return;
+    $$cr(missing[0][1])?.focus(); return;
   }
   if (Number(pl.newQty) < 0) {
-    await crShowModal("alert", "จำนวนไม่ถูกต้อง", "จำนวนต้องไม่ติดลบ — ถ้าของหมดให้ใส่ 0"); $cr("crNewQty")?.focus(); return;
+    await crShowModal("alert", "จำนวนไม่ถูกต้อง", "จำนวนต้องไม่ติดลบ — ถ้าของหมดให้ใส่ 0"); $$cr("crNewQty")?.focus(); return;
   }
   // Poka-Yoke: ตรวจรูปแบบและความสมเหตุผลของวันที่
   if (!/^\d{6}$/.test(pl.mfg) || !/^\d{6}$/.test(pl.exp)) {
@@ -1582,8 +1582,8 @@ async function crSaveCount() {
   if (res.ok) {
     if (navigator.vibrate) navigator.vibrate([100,50,100]);
     showToast(qty === 0 ? "ปรับยอดเป็น 0 เรียบร้อย" : "บันทึกเข้าสต๊อกเรียบร้อย!");
-    const bc = $cr("crBarcode").value.trim();
-    crClearAll(); $cr("crBarcode").value = bc; crLookupBarcode(); crLoadOverview({ silent: true });
+    const bc = $$cr("crBarcode").value.trim();
+    crClearAll(); $$cr("crBarcode").value = bc; crLookupBarcode(); crLoadOverview({ silent: true });
   } else if (!res.needLogin) {
     // crShowModal ใส่ข้อความเป็น HTML → escape ข้อความจากหลังบ้าน (อาจมีชื่อสินค้าที่ผู้ใช้พิมพ์)
     await crShowModal("alert", "บันทึกไม่สำเร็จ ❌", escapeHtml(res.message || "ระบบไม่รับรายการนี้") + "\n\nยอดในระบบยังไม่เปลี่ยน — แก้แล้วกดบันทึกอีกครั้ง");

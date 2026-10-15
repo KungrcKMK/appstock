@@ -121,7 +121,7 @@ function sharePrintQr() {
   if (!w) { showToast("เบราว์เซอร์บล็อกหน้าต่างใหม่", "warn"); return; }
   w.document.write(`<!DOCTYPE html><html><head><meta charset="utf-8"><title>QR เข้าใช้ระบบสต๊อก</title>
     <style>
-      @import url('https://fonts.googleapis.com/css2?family=Sarabun:wght@400;700;800&display=swap');
+      @import url('${fontCssUrl()}');
       body{font-family:Sarabun,sans-serif;text-align:center;padding:40px 30px;margin:0;}
       h1{font-size:34px;font-weight:800;margin:0 0 6px;color:#16241b;}
       .sub{font-size:17px;color:#435349;font-weight:700;margin-bottom:26px;}

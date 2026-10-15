@@ -6,6 +6,7 @@
 //   ตรวจ 5 อย่างที่เคยทำระบบพังหรือยอดผิดมาแล้ว:
 //   1. ไวยากรณ์ JS ทุกไฟล์ (รวมสคริปต์ที่ฝังใน mobile.html และ gas_code.js)
 //   2. ไฟล์ทุกตัวใน sw.js STATIC_ASSETS มีจริง — cache.addAll เป็น all-or-nothing ไฟล์เดียวหาย = ติดตั้งไม่ได้
+//      + ฟอนต์ Sarabun ในแอปอยู่ในชุด offline ครบ และไม่มีลิงก์ฟอนต์ Google กลับมา
 //   3. GAS_URL ใน js/app.js กับ mobile.html ต้องตรงกัน
 //   4. ตรรกะคิวออฟไลน์ (js/offline.js) 8 เคส — จำลอง localStorage/fetch ไม่แตะระบบจริง
 //      + ออกจากระบบล้างข้อมูลสต๊อกในเครื่อง แต่ห้ามลบคิวงานออฟไลน์ (หน้าคอม + มือถือ)
@@ -66,6 +67,16 @@ console.log("2) ไฟล์ใน sw.js STATIC_ASSETS");
   // ตอนติดตั้งต้องดึงไฟล์ใหม่จากเซิร์ฟเวอร์จริง — เคยเอาไฟล์รุ่นเก่าจาก cache ของเบราว์เซอร์มาใส่ชุดรุ่นใหม่ (2026-10-05)
   if (/cache\.addAll\(\s*STATIC_ASSETS\.map\([^)]*cache:\s*"reload"/.test(sw)) ok("ติดตั้งด้วย cache: \"reload\" (ไม่หยิบไฟล์เก่าจาก cache ของเบราว์เซอร์)");
   else bad("sw.js install ต้องใช้ cache.addAll(STATIC_ASSETS.map(u => new Request(u, { cache: \"reload\" })))");
+
+  // ฟอนต์ Sarabun เก็บในแอป (2026-10-10) — ไฟล์ฟอนต์ทุกตัวต้องอยู่ในชุด offline และห้ามมีลิงก์ฟอนต์ Google กลับมา
+  const fontCss = path.join(root, "fonts/sarabun.css");
+  const fontFiles = fs.existsSync(fontCss) ? [...fs.readFileSync(fontCss, "utf8").matchAll(/url\(([^)]+)\)/g)].map(m => "./fonts/" + m[1].replace(/['"]/g, "")) : [];
+  if (fontFiles.length && fontFiles.every(f => list.includes(f)) && list.includes("./fonts/sarabun.css")) ok("ฟอนต์ Sarabun " + fontFiles.length + " ไฟล์อยู่ในชุด offline");
+  else bad("fonts/sarabun.css หรือไฟล์ฟอนต์ที่อ้างถึงไม่อยู่ใน STATIC_ASSETS");
+  const shipped = ["index.html", "mobile.html", "manual.html", "404.html", "sw.js", ...fs.readdirSync(path.join(root, "js")).filter(f => f.endsWith(".js")).map(f => "js/" + f)];
+  const cdnFont = shipped.filter(f => fs.existsSync(path.join(root, f)) && /https?:\/\/fonts\.(googleapis|gstatic)\.com/.test(fs.readFileSync(path.join(root, f), "utf8")));
+  if (!cdnFont.length) ok("ไม่มีลิงก์ฟอนต์ Google (ใช้ fonts/sarabun.css · หน้าต่างพิมพ์ใช้ fontCssUrl())");
+  else bad("ยังมีลิงก์ฟอนต์ Google ใน: " + cdnFont.join(", "));
 }
 
 // ── 3. GAS_URL ตรงกัน ──

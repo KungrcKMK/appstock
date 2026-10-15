@@ -31,7 +31,8 @@ D1 "appstock" (SQLite, 16 ตาราง — โครงใน cloudflare/apps
 - **`npm test` = `scripts/check.js`** ตรวจก่อนเผยแพร่ (ไวยากรณ์ทุกไฟล์, STATIC_ASSETS มีจริง, GAS_URL ตรงกัน, คิวออฟไลน์ 7 เคส, CSS มี)
   GitHub Actions รันให้ก่อน deploy ทุกครั้ง — ไม่ผ่าน = ไม่ขึ้น Pages
 
-ไลบรารีเก็บในแอปทั้งหมด (`js/vendor/`: chart.umd.min.js, html5-qrcode.min.js, qrcode.min.js) — เหลือแค่ฟอนต์ที่ยังมาจาก Google
+ไลบรารีเก็บในแอปทั้งหมด (`js/vendor/`: chart.umd.min.js, html5-qrcode.min.js, qrcode.min.js) และฟอนต์ Sarabun (`fonts/`: sarabun.css + woff2 thai/latin 400/600/800, สัญญาอนุญาต `fonts/OFL.txt`)
+— ไม่โหลดอะไรจาก CDN แล้ว (ฟอนต์ย้ายจาก Google มา 2026-10-10) · หน้าต่างพิมพ์ใช้ `fontCssUrl()` (`js/utils.js`) · `npm test` กันลิงก์ฟอนต์ Google กลับมา
 
 ## โมดูลฝั่งผู้ใช้ (หน้าคอม)
 

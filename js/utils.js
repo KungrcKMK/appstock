@@ -184,6 +184,12 @@ function logoUrl() {
   try { return new URL("assets/logo.png", location.href).href; }
   catch (e) { return "assets/logo.png"; }
 }
+/** ที่อยู่เต็มของฟอนต์ Sarabun ที่เก็บในแอป — หน้าต่างพิมพ์ (window.open("")) อ่านที่อยู่สั้นไม่ได้ เหตุผลเดียวกับ logoUrl()
+ *  ใช้: <style>@import url('${fontCssUrl()}'); ...</style> · ห้ามกลับไปใช้ fonts.googleapis */
+function fontCssUrl() {
+  try { return new URL("fonts/sarabun.css", location.href).href; }
+  catch (e) { return "fonts/sarabun.css"; }
+}
 
 /**
  * แท็กรูปโลโก้สำหรับใส่หัวใบพิมพ์

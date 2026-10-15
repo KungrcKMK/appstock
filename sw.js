@@ -3,7 +3,7 @@
 // Cache static assets สำหรับใช้งาน offline บางส่วน
 // =====================================================
 
-const CACHE_NAME = "appstock-v88";
+const CACHE_NAME = "appstock-v89";
 
 // ไฟล์ที่ cache ไว้ใช้ offline
 // ⚠️ addAll เป็น all-or-nothing — ไฟล์เดียวโหลดไม่ได้ = ติดตั้งไม่สำเร็จทั้งชุด
@@ -17,6 +17,13 @@ const STATIC_ASSETS = [
   "./js/vendor/chart.umd.min.js",
   "./css/tw-desktop.css",
   "./css/tw-mobile.css",
+  "./fonts/sarabun.css",
+  "./fonts/sarabun-thai-400.woff2",
+  "./fonts/sarabun-thai-600.woff2",
+  "./fonts/sarabun-thai-800.woff2",
+  "./fonts/sarabun-latin-400.woff2",
+  "./fonts/sarabun-latin-600.woff2",
+  "./fonts/sarabun-latin-800.woff2",
   "./manifest.json",
   "./manifest-exec.json",
   "./icons/exec-192.png",
@@ -47,13 +54,8 @@ const STATIC_ASSETS = [
   "./js/notify.js"
 ];
 
-// CDN ที่ยังใช้: เหลือแค่ฟอนต์ (ข้อ 12 — library ทั้งหมดย้ายมาเก็บในแอปแล้ว)
-// ฟอนต์ตอบแบบ opaque (res.ok=false) จึงไม่ถูกเก็บ ออฟไลน์จะใช้ฟอนต์สำรองของเครื่อง — ยอมรับได้
-const CDN_CACHE = "appstock-cdn-v2";
-const CDN_URLS = [
-  "https://fonts.googleapis.com",
-  "https://fonts.gstatic.com"
-];
+// ไม่มี CDN แล้ว — library (js/vendor/) และฟอนต์ Sarabun (fonts/) เก็บในแอปทั้งหมด (ฟอนต์ย้ายมา 2026-10-10)
+// cache เก่าของฟอนต์ Google ("appstock-cdn-v2") ถูกลบตอน activate เหมือน cache รุ่นเก่าอื่นๆ
 
 // ──────────────────────────────────────────────────
 // Install: cache static files
@@ -77,7 +79,7 @@ self.addEventListener("activate", e => {
     caches.keys().then(keys =>
       Promise.all(
         keys
-          .filter(k => k !== CACHE_NAME && k !== CDN_CACHE)
+          .filter(k => k !== CACHE_NAME)
           .map(k => caches.delete(k))
       )
     ).then(() => self.clients.claim())
@@ -86,34 +88,17 @@ self.addEventListener("activate", e => {
 
 // ──────────────────────────────────────────────────
 // Fetch: Strategy
-//   - GAS API → Network only (ต้องการข้อมูลจริงเสมอ)
-//   - CDN fonts/libs → Cache first, fallback network
+//   - ข้ามโดเมน (หลังบ้าน ฯลฯ) → Network only (ต้องการข้อมูลจริงเสมอ)
 //   - Static files → Cache first, fallback network
 // ──────────────────────────────────────────────────
 self.addEventListener("fetch", e => {
   const url = e.request.url;
 
-  // หลังบ้าน (Cloudflare Worker) และทุกคำขอข้ามโดเมนที่ไม่ใช่ฟอนต์ — ไม่ cache เด็ดขาด ต้องได้ข้อมูลจริงเสมอ
+  // หลังบ้าน (Cloudflare Worker) และทุกคำขอข้ามโดเมน — ไม่ cache เด็ดขาด ต้องได้ข้อมูลจริงเสมอ
   // ⚠️ ถ้าปล่อยให้ตกไปถึงกิ่ง "Static files" คำตอบ GET ของหลังบ้านจะถูกเก็บแล้วเสิร์ฟของเก่าตลอดไป
   const sameOrigin = url.startsWith(self.location.origin);
-  if (!sameOrigin && !CDN_URLS.some(cdn => url.startsWith(cdn))) {
+  if (!sameOrigin) {
     return; // ให้ browser จัดการเอง (network only)
-  }
-
-  // CDN assets — Cache first
-  if (CDN_URLS.some(cdn => url.startsWith(cdn))) {
-    e.respondWith(
-      caches.open(CDN_CACHE).then(cache =>
-        cache.match(e.request).then(cached => {
-          if (cached) return cached;
-          return fetch(e.request).then(res => {
-            if (res.ok) cache.put(e.request, res.clone());
-            return res;
-          });
-        })
-      )
-    );
-    return;
   }
 
   // Static files — Cache first, fallback network

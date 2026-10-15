@@ -44,9 +44,10 @@
        CSS สร้างจาก Tailwind ด้วย `npm run build:css` (อ่าน class จาก index.html + js/) — แก้ class ใหม่ต้อง build ใหม่ -->
   <link rel="stylesheet" href="css/tw-desktop.css">
   <!-- ข้อ 11 PERFORMANCE_REVIEW: Chart.js / html5-qrcode / qrcode โหลดตอนจะใช้ผ่าน loadVendor() ใน js/utils.js (ยัง precache ใน sw.js) -->
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&family=Sarabun:wght@400;600;800&display=swap" rel="stylesheet">
+  <!-- ฟอนต์ Sarabun เก็บในแอป (fonts/) — เดิมโหลดจาก Google: เน็ตล่ม = ฟอนต์เพี้ยน และเน็ตช้าหน้าจอรอ · ห้ามกลับไปใช้ fonts.googleapis (npm test ตรวจ) -->
+  <link rel="stylesheet" href="fonts/sarabun.css">
   <style>
-    body { font-family: 'Sarabun', 'Inter', sans-serif; }
+    body { font-family: 'Sarabun', sans-serif; }
     .hide { display: none !important; }
 
     /* ── Loading ── */

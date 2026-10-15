@@ -17,7 +17,8 @@ frontend (GitHub Pages, vanilla JS) → Cloudflare Worker (`cloudflare/appstock-
 2. **แก้ไฟล์ที่แอปโหลดแล้ว ต้องเลื่อนเลข `CACHE_NAME` ใน `sw.js:6`** (เช่น v44 → v45)
    ไม่งั้นผู้ใช้เห็นของเก่า และไฟล์ใหม่ต้องเพิ่มเข้า `STATIC_ASSETS` ด้วย —
    `cache.addAll` เป็น all-or-nothing ไฟล์เดียว 404 = ทั้งชุดไม่ติดตั้ง
-   ไลบรารีอยู่ `js/vendor/` (chart, html5-qrcode, qrcode) — **ห้ามเพิ่ม `<script src="https://cdn...">` กลับมา**
+   ไลบรารีอยู่ `js/vendor/` (chart, html5-qrcode, qrcode) ฟอนต์อยู่ `fonts/` — **ห้ามเพิ่ม `<script src="https://cdn...">` หรือลิงก์ฟอนต์ Google กลับมา**
+   (หน้าต่างพิมพ์ใช้ `@import url('${fontCssUrl()}')`)
    เน็ตโรงงานล่มแล้วแอปต้องเปิดได้ · `npm test` เช็ค STATIC_ASSETS ให้
    · sw.js ไม่ cache คำขอข้ามโดเมน (หลังบ้าน) เด็ดขาด — อย่าแก้กิ่งนั้นให้ cache
 

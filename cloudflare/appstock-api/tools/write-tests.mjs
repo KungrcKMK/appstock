@@ -663,6 +663,11 @@ console.log("14) 🗓️ กำหนดการส่งสรุป — ว�
   const fP = (full.texts || []).find((t) => /วัตถุดิบที่ต้องสั่งซื้อ/.test(t)), sP = (short.texts || []).find((t) => /วัตถุดิบที่ต้องสั่งซื้อ/.test(t));
   T("ดูตัวอย่างแบบละเอียด → มีตัวเลข + บรรทัดวิธีดูต่อ", fP && /เหลือ/.test(fP) && /เปิดแอป → 📈 วางแผนสั่งซื้อ/.test(fP), fP && fP.slice(0, 160));
   T("ดูตัวอย่างแบบย่อ → สั้นกว่า ไม่เกิน 5 รายการ ไม่มีบรรทัดวิธีดู", sP && sP.length < fP.length && !/เปิดแอป/.test(sP) && sP.split("\n").filter((l) => /^(🔴|🟠) .+ — /u.test(l)).length <= 5, sP);
+  // เจ้าของสั่งปิดจำนวน "แนะนำสั่ง" ในข้อความกลุ่มไว้ก่อน (2026-10-15) — ทั้ง Telegram และ LINE ทั้งแบบย่อ/ละเอียด
+  const fL = await ns("NOTIFYPREVIEW", { channel: "line", line: { on: true, topics: onlyPlan, detail: "full" } });
+  const sL = await ns("NOTIFYPREVIEW", { channel: "line", line: { on: true, topics: onlyPlan, detail: "short" } });
+  const planTexts = [fP, sP, ...(fL.texts || []), ...(sL.texts || [])].filter((t) => t && /วัตถุดิบที่ต้องสั่งซื้อ/.test(t));
+  T("ข้อความ TG + LINE (ย่อ/ละเอียด) ไม่มีจำนวนแนะนำสั่ง", planTexts.length >= 4 && (fL.texts || []).length > 0 && (sL.texts || []).length > 0 && planTexts.every((t) => !/แนะนำสั่ง|— สั่ง /.test(t)), { n: planTexts.length, line: [fL.status, (fL.texts || []).length, sL.status, (sL.texts || []).length], hit: planTexts.map((t) => (t.match(/.*(แนะนำสั่ง|— สั่ง ).*/) || [""])[0]) });
   T("ดูตัวอย่างไม่ไปแตะค่าที่บันทึกไว้", (await ns("NOTIFYGET")).schedule.tg.detail === "short");
   const none = await ns("NOTIFYPREVIEW", { channel: "tg", tg: { topics: { plan: false, low: false, stale: false, expiry: false } } });
   T("ไม่เลือกหัวข้อเลย → ไม่มีอะไรจะส่ง", none.status === "success" && none.texts.length === 0, none.texts);

@@ -240,17 +240,21 @@ const stamp = () => fmtTH(Date.now(), "dd/MM/yyyy HH:mm");
 const more = (total, shown, unit) => total > shown ? "\n… และอีก " + (total - shown) + " " + (unit || "รายการ") : "";
 const thShort = (iso) => { const m = String(iso || "").match(/^(\d{4})-(\d{2})-(\d{2})/); return m ? m[3] + "/" + m[2] + "/" + String(Number(m[1]) + 543).slice(2) : "-"; };
 
+// จำนวน "แนะนำสั่ง" ในข้อความกลุ่ม — เจ้าของสั่งปิดไว้ก่อน (2026-10-15) ดูจำนวนในแอปหน้า 📈 วางแผนสั่งซื้อแทน · เปิดกลับ = true
+const DIGEST_SHOW_SUGGEST = false;
+
 function planMessage(module, p, detail) {
   const urgent = p.items.filter((x) => x.status === "late" || x.status === "now");
+  const showSug = (x) => DIGEST_SHOW_SUGGEST && x.suggestQty > 0;
   const head = "📈 วัตถุดิบที่ต้องสั่งซื้อ — " + (FACTORY_NAME[module] || module) + "\n" + stamp() + "\n" +
     "🔴 สั่งวันนี้ก็ไม่ทัน " + p.summary.late + "  •  🟠 ต้องสั่งวันนี้ " + p.summary.now + (p.summary.soon ? "  •  🟡 ใกล้ถึงเวลาสั่ง " + p.summary.soon : "");
   if (detail === "short") {
     const n = LIST_MAX.short;
-    return head + "\n\n" + urgent.slice(0, n).map((x) => x.icon + " " + x.name + (x.suggestQty > 0 ? " — สั่ง " + fmtN(x.suggestQty) + " " + x.unit : "")).join("\n") + more(urgent.length, n);
+    return head + "\n\n" + urgent.slice(0, n).map((x) => x.icon + " " + x.name + (showSug(x) ? " — สั่ง " + fmtN(x.suggestQty) + " " + x.unit : "")).join("\n") + more(urgent.length, n);
   }
   const lines = urgent.slice(0, 15).map((x) => {
     const cover = x.daysCover === null ? "" : " · พอใช้ " + fmtN(x.daysCover) + " วัน";
-    const sug = x.suggestQty > 0 ? "\n     → แนะนำสั่ง " + fmtN(x.suggestQty) + " " + x.unit : "";
+    const sug = showSug(x) ? "\n     → แนะนำสั่ง " + fmtN(x.suggestQty) + " " + x.unit : "";
     return x.icon + " " + x.name + " — เหลือ " + fmtN(x.qty) + " " + x.unit + cover + " (รอของ " + x.leadDays + " วัน)" + sug;
   });
   return head + "\n\n" + lines.join("\n") + more(urgent.length, 15) + "\n\nดูรายละเอียดและจำนวนที่แนะนำ: เปิดแอป → 📈 วางแผนสั่งซื้อ";

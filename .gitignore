@@ -17,6 +17,13 @@ desktop.ini
 # ไม่ต้องขึ้นเว็บ เพราะรวมกัน 2.6 MB และแอปไม่ได้ใช้
 assets/*.pdf
 
+# Impeccable (เครื่องมือออกแบบ) — ไฟล์ทำงาน/ภาพร่าง/ภาพตรวจ ไม่ขึ้น git (เก็บแค่ config.json, design.json, briefs)
+.impeccable/review/
+.impeccable/mocks/
+.impeccable/build/
+.impeccable/live/
+.impeccable/*.local.json
+
 # Cloudflare Worker — ฐานข้อมูลทดสอบในเครื่อง (มีข้อมูลจริง) และความลับ ห้ามขึ้น git
 .wrangler/
 .dev.vars

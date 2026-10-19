@@ -68,15 +68,30 @@ console.log("2) ไฟล์ใน sw.js STATIC_ASSETS");
   if (/cache\.addAll\(\s*STATIC_ASSETS\.map\([^)]*cache:\s*"reload"/.test(sw)) ok("ติดตั้งด้วย cache: \"reload\" (ไม่หยิบไฟล์เก่าจาก cache ของเบราว์เซอร์)");
   else bad("sw.js install ต้องใช้ cache.addAll(STATIC_ASSETS.map(u => new Request(u, { cache: \"reload\" })))");
 
-  // ฟอนต์ Sarabun เก็บในแอป (2026-10-10) — ไฟล์ฟอนต์ทุกตัวต้องอยู่ในชุด offline และห้ามมีลิงก์ฟอนต์ Google กลับมา
-  const fontCss = path.join(root, "fonts/sarabun.css");
-  const fontFiles = fs.existsSync(fontCss) ? [...fs.readFileSync(fontCss, "utf8").matchAll(/url\(([^)]+)\)/g)].map(m => "./fonts/" + m[1].replace(/['"]/g, "")) : [];
-  if (fontFiles.length && fontFiles.every(f => list.includes(f)) && list.includes("./fonts/sarabun.css")) ok("ฟอนต์ Sarabun " + fontFiles.length + " ไฟล์อยู่ในชุด offline");
-  else bad("fonts/sarabun.css หรือไฟล์ฟอนต์ที่อ้างถึงไม่อยู่ใน STATIC_ASSETS");
+  // ฟอนต์เก็บในแอป (Sarabun 2026-10-10 · Kanit หน้ามือถือ 2026-10-19) — ไฟล์ฟอนต์ทุกตัวต้องอยู่ในชุด offline และห้ามมีลิงก์ฟอนต์ Google กลับมา
+  for (const css of ["sarabun.css", "kanit.css"]) {
+    const fontCss = path.join(root, "fonts", css);
+    const fontFiles = fs.existsSync(fontCss) ? [...fs.readFileSync(fontCss, "utf8").matchAll(/url\(([^)]+)\)/g)].map(m => "./fonts/" + m[1].replace(/['"]/g, "")) : [];
+    if (fontFiles.length && fontFiles.every(f => list.includes(f) && fs.existsSync(path.join(root, f))) && list.includes("./fonts/" + css)) ok("ฟอนต์ " + css + " " + fontFiles.length + " ไฟล์อยู่ในชุด offline");
+    else bad("fonts/" + css + " หรือไฟล์ฟอนต์ที่อ้างถึงไม่อยู่ใน STATIC_ASSETS");
+  }
   const shipped = ["index.html", "mobile.html", "manual.html", "404.html", "sw.js", ...fs.readdirSync(path.join(root, "js")).filter(f => f.endsWith(".js")).map(f => "js/" + f)];
   const cdnFont = shipped.filter(f => fs.existsSync(path.join(root, f)) && /https?:\/\/fonts\.(googleapis|gstatic)\.com/.test(fs.readFileSync(path.join(root, f), "utf8")));
   if (!cdnFont.length) ok("ไม่มีลิงก์ฟอนต์ Google (ใช้ fonts/sarabun.css · หน้าต่างพิมพ์ใช้ fontCssUrl())");
   else bad("ยังมีลิงก์ฟอนต์ Google ใน: " + cdnFont.join(", "));
+
+  // เจ้าของห้ามคำว่า "สูตร" ในหน้าจอ (กลัวข้อมูลการผลิตหลุด · 2026-08-01 · ย้ำ 2026-10-19) — ใช้ "ข้อมูลอ้างอิง" · คอมเมนต์ไม่นับ
+  const wdir = path.join(root, "cloudflare/appstock-api/src");
+  const uiFiles = [...shipped.filter((f) => f !== "sw.js"), ...(fs.existsSync(wdir) ? fs.readdirSync(wdir).filter((f) => f.endsWith(".js")).map((f) => "cloudflare/appstock-api/src/" + f) : [])];
+  const sutra = [];
+  for (const f of uiFiles) {
+    if (!fs.existsSync(path.join(root, f))) continue;
+    fs.readFileSync(path.join(root, f), "utf8").split("\n").forEach((l, i) => {
+      if (l.includes("สูตร") && !/^\s*(\/\/|\*|<!--|\/\*)/.test(l) && !/(\/\/|<!--|\/\*)[^"'`]*สูตร/.test(l)) sutra.push(f + ":" + (i + 1));
+    });
+  }
+  if (!sutra.length) ok("ไม่มีคำว่า \"สูตร\" ในข้อความที่ผู้ใช้เห็น");
+  else bad("มีคำว่า \"สูตร\" ในหน้าจอ (เจ้าของห้าม — ใช้ \"ข้อมูลอ้างอิง\"): " + sutra.join(", "));
 }
 
 // ── 3. GAS_URL ตรงกัน ──

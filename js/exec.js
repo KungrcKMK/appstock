@@ -319,7 +319,7 @@ function execStockSection(icon, title, railClass, products, expiring, expired, s
       <div class="sq-list">
         ${staleLots.slice(0,8).map(x => `
           <div class="sq-list-row">
-            <span class="sq-list-name">${escapeHtml(x.ProductName)} <span class="sq-dim" style="font-size:11px;">MFG ${isoToDdmmyy(String(x.MFG))}</span></span>
+            <span class="sq-list-name">${escapeHtml(x.ProductName)} <span class="sq-dim" style="font-size:12px;">MFG ${isoToDdmmyy(String(x.MFG))}</span></span>
             <span class="sq-chip high">${x.IdleDays == null ? "ไม่เคยบันทึก" : x.IdleDays + " วัน"}</span>
           </div>`).join("")}
       </div>

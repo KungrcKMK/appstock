@@ -280,15 +280,15 @@ async function loadRolesPage() {
         <div class="sq-card-head"><span class="sq-card-title">➕ เพิ่มผู้ใช้ใหม่</span>
           <span class="sq-card-note">ใช้ได้ทันที ไม่ต้องรอเขาส่งคำขอ</span></div>
         <div class="sq-card-body" style="display:flex;gap:7px;flex-wrap:wrap;align-items:center;">
-          <input id="newUserName" type="text" placeholder="ชื่อพนักงาน" class="sq-input"
+          <input id="newUserName" type="text" aria-label="ชื่อพนักงานใหม่" placeholder="ชื่อพนักงาน" class="sq-input"
             onkeydown="if(event.key==='Enter') createNewUser(event)" style="flex:1;min-width:150px;">
-          <select id="newUserRole" class="sq-select">
+          <select id="newUserRole" class="sq-select" aria-label="สิทธิ์">
             <option value="user">👤 user</option>
             <option value="viewer">👁️ viewer</option>
             <option value="manager">📋 manager</option>
             ${isSuperViewer ? '<option value="admin">🔧 admin</option>' : ''}
           </select>
-          <input id="newUserPwd" type="password" placeholder="รหัสผ่าน (ไม่ใส่ก็ได้)" class="sq-input" style="width:180px;">
+          <input id="newUserPwd" type="password" aria-label="รหัสผ่าน (ไม่ใส่ก็ได้)" placeholder="รหัสผ่าน (ไม่ใส่ก็ได้)" class="sq-input" style="width:180px;">
           <button onclick="createNewUser(event)" class="sq-btn sq-btn-primary">➕ เพิ่ม</button>
         </div>
       </div>`;
@@ -324,7 +324,7 @@ async function loadRolesPage() {
             </p>
           </div>
           <div class="sq-row-acts">
-            <select id="rpRoleSelect-${safeId}" class="sq-select">
+            <select id="rpRoleSelect-${safeId}" class="sq-select" aria-label="สิทธิ์">
               <option value="user"     ${u.role==="user"    ?"selected":""}>👤 user</option>
               <option value="viewer"   ${u.role==="viewer"  ?"selected":""}>👁️ viewer</option>
               <option value="manager"  ${u.role==="manager" ?"selected":""}>📋 manager</option>
@@ -461,7 +461,7 @@ function renderActivityList() {
   const listEl = document.getElementById("activityList");
   const items = _activityFilter === "ALL" ? _activityData : _activityData.filter(a => a.module === _activityFilter);
   if (!items.length) {
-    listEl.innerHTML = '<p class="text-slate-400 text-center text-sm font-bold py-8">ไม่มีข้อมูลในช่วงนี้</p>';
+    listEl.innerHTML = '<p class="text-slate-600 text-center text-sm font-bold py-8">ไม่มีข้อมูลในช่วงนี้</p>';
     return;
   }
   const moduleColor = { COLDROOM: "bg-indigo-100 text-indigo-700", SQF: "bg-orange-100 text-orange-700", MLM: "bg-blue-100 text-blue-700" };
@@ -477,18 +477,18 @@ function renderActivityList() {
           ${a.qty !== undefined && a.qty !== "" ? `<span class="text-xs font-black text-emerald-600">× ${escapeHtml(String(a.qty))}</span>` : ""}
         </div>
         <div class="flex gap-3 mt-1 flex-wrap">
-          <span class="text-xs text-slate-400">👤 ${escapeHtml(a.user||"-")}</span>
-          ${a.device ? `<span class="text-xs text-slate-300">🖥️ ${escapeHtml(a.device)}</span>` : ""}
-          <span class="text-xs text-slate-400 ml-auto shrink-0">🕐 ${escapeHtml(a.timestamp||"")}</span>
+          <span class="text-xs text-slate-600">👤 ${escapeHtml(a.user||"-")}</span>
+          ${a.device ? `<span class="text-xs text-slate-500">🖥️ ${escapeHtml(a.device)}</span>` : ""}
+          <span class="text-xs text-slate-600 ml-auto shrink-0">🕐 ${escapeHtml(a.timestamp||"")}</span>
         </div>
-        ${a.note ? `<p class="text-xs text-slate-400 mt-0.5 italic">💬 ${escapeHtml(a.note)}</p>` : ""}
+        ${a.note ? `<p class="text-xs text-slate-600 mt-0.5">💬 ${escapeHtml(a.note)}</p>` : ""}
       </div>
     </div>`).join("");
 }
 
 async function loadActivityLog() {
   const listEl = document.getElementById("activityList");
-  listEl.innerHTML = '<p class="text-slate-400 text-center text-sm font-bold py-8">กำลังโหลด...</p>';
+  listEl.innerHTML = '<p class="text-slate-600 text-center text-sm font-bold py-8">กำลังโหลด...</p>';
   try {
     const res = await fetch(GAS_URL, {
       method: "POST",

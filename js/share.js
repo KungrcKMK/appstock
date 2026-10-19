@@ -65,7 +65,8 @@ async function shareRenderQr() {
 function _shareQrDataUrl() {
   const img = document.querySelector("#shareQrBox img");
   const cv  = document.querySelector("#shareQrBox canvas");
-  return img ? img.src : (cv ? cv.toDataURL("image/png") : null);
+  // qrcodejs ใส่ img.src ทีหลังในบางเบราว์เซอร์ — ว่างอยู่ให้ใช้ canvas (คู่กับ qrDataUrl ใน mobile.html)
+  return (img && img.src) || (cv ? cv.toDataURL("image/png") : null);
 }
 
 async function shareCopyLink() {

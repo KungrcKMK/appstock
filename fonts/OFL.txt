@@ -1,4 +1,5 @@
 Copyright 2018 The Sarabun Project Authors (https://github.com/cadsondemak/Sarabun)
+Copyright 2020 The Kanit Project Authors (https://github.com/cadsondemak/kanit)
 
 This Font Software is licensed under the SIL Open Font License, Version 1.1.
 This license is copied below, and is also available with a FAQ at:

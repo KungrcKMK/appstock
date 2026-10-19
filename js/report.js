@@ -100,12 +100,12 @@ function renderBomHealth(res) {
     <div class="sq-card">
       <div class="sq-card-head">
         <span class="sq-card-title">${tone.icon} ${escapeHtml(s.readiness)}</span>
-        <span class="sq-chip ${tone.chip}">${s.coveragePct}% ของที่ผลิตจริงมีสูตรแล้ว</span>
+        <span class="sq-chip ${tone.chip}">${s.coveragePct}% ของที่ผลิตจริงมีข้อมูลอ้างอิงแล้ว</span>
       </div>
       <div class="sq-card-body">
         <p style="margin:0 0 12px;font-size:13px;color:var(--sq-ink2);">${escapeHtml(s.readinessNote)}</p>
-        <div style="display:flex;justify-content:space-between;font-size:11.5px;font-weight:700;color:var(--sq-muted);margin-bottom:4px;">
-          <span>สินค้าที่ผลิตจริงและมีสูตรแล้ว</span>
+        <div style="display:flex;justify-content:space-between;font-size:12px;font-weight:700;color:var(--sq-muted);margin-bottom:4px;">
+          <span>สินค้าที่ผลิตจริงและมีข้อมูลอ้างอิงแล้ว</span>
           <span style="font-family:var(--sq-mono);">${s.producedWithBom} / ${s.producedTotal}</span>
         </div>
         <div class="sq-meter" style="height:7px;"><i style="width:${s.coveragePct}%;background:${tone.bar};"></i></div>
@@ -122,56 +122,56 @@ function renderBomHealth(res) {
 
   const stats = `
     <div class="sq-tiles">
-      ${tile("สินค้ามีสูตร", s.bomProductCount, `จากทะเบียน ${s.registeredTotal} ชนิด`)}
-      ${tile("วัตถุดิบในสูตร", s.bomMaterialCount, "ชนิดที่ถูกอ้างถึง")}
+      ${tile("สินค้ามีข้อมูลอ้างอิง", s.bomProductCount, `จากทะเบียน ${s.registeredTotal} ชนิด`)}
+      ${tile("วัตถุดิบในข้อมูลอ้างอิง", s.bomMaterialCount, "ชนิดที่ถูกอ้างถึง")}
       ${tile("จุดที่ต้องแก้", s.issueCount, s.issueCount ? "ดูรายละเอียดด้านล่าง" : "ไม่มี")}
     </div>`;
 
   const esc = v => escapeHtml(String(v ?? ""));
 
   const sections =
-    _bhSection("🔴", "สินค้าที่ผลิตแล้ว แต่ยังไม่มีสูตร",
-      "สำคัญที่สุด — ถ้าไม่มีสูตร ระบบไม่รู้ว่าควรใช้วัตถุดิบเท่าไร จึงเทียบไม่ได้เลย",
+    _bhSection("🔴", "สินค้าที่ผลิตแล้ว แต่ยังไม่มีข้อมูลอ้างอิง",
+      "สำคัญที่สุด — ถ้าไม่มีข้อมูลอ้างอิง ระบบไม่รู้ว่าควรใช้วัตถุดิบเท่าไร จึงเทียบไม่ได้เลย",
       res.missingBom,
       [ { label:"สินค้า", render:r => `<span class="sq-name">${esc(r.productName)}</span>` },
         { label:"บาร์โค้ด", render:r => `<span class="sq-meta">${esc(r.barcode)}</span>` },
         { label:"พบในใบสั่งผลิต", align:"right", render:r => `<span class="sq-num" style="color:var(--sq-crit)">${r.orderCount}</span> ครั้ง` } ],
-      "สินค้าที่ผลิตทุกตัวมีสูตรครบแล้ว") +
+      "สินค้าที่ผลิตทุกตัวมีข้อมูลอ้างอิงครบแล้ว") +
 
-    _bhSection("📏", "หน่วยในสูตรไม่ตรงกับหน่วยในคลัง",
-      "ทำให้ตัวเลขผิดแบบเงียบๆ เช่น สูตรเขียน กก. แต่คลังนับเป็น กระสอบ",
+    _bhSection("📏", "หน่วยในข้อมูลอ้างอิงไม่ตรงกับหน่วยในคลัง",
+      "ทำให้ตัวเลขผิดแบบเงียบๆ เช่น ข้อมูลอ้างอิงเขียน กก. แต่คลังนับเป็น กระสอบ",
       res.unitMismatch,
       [ { label:"วัตถุดิบ", render:r => `<span class="sq-name">${esc(r.materialName || r.materialSku)}</span>` },
-        { label:"ในสูตรของ", render:r => esc(r.productName) },
-        { label:"หน่วยในสูตร", align:"center", render:r => `<span class="sq-chip crit">${esc(r.bomUnit)}</span>` },
+        { label:"อยู่ในข้อมูลของ", render:r => esc(r.productName) },
+        { label:"หน่วยในข้อมูลอ้างอิง", align:"center", render:r => `<span class="sq-chip crit">${esc(r.bomUnit)}</span>` },
         { label:"หน่วยในคลัง", align:"center", render:r => `<span class="sq-chip ok">${esc(r.stockUnit)}</span>` } ],
       "หน่วยตรงกันทั้งหมด") +
 
-    _bhSection("❓", "สูตรอ้างวัตถุดิบที่ไม่มีในคลัง",
-      "อาจลบวัตถุดิบไปแล้ว หรือพิมพ์ SKU ผิด — บรรทัดสูตรนี้จะคำนวณไม่ได้",
+    _bhSection("❓", "ข้อมูลอ้างอิงมีวัตถุดิบที่ไม่มีในคลัง",
+      "อาจลบวัตถุดิบไปแล้ว หรือพิมพ์ SKU ผิด — บรรทัดนี้จะคำนวณไม่ได้",
       res.orphanMaterial,
-      [ { label:"SKU ในสูตร", render:r => `<span class="sq-meta">${esc(r.materialSku)}</span>` },
-        { label:"ชื่อในสูตร", render:r => esc(r.materialName) },
-        { label:"ใช้ในสูตร", align:"right", render:r => `${r.usedIn} สินค้า` } ],
-      "ทุก SKU ในสูตรมีอยู่จริงในคลัง") +
+      [ { label:"SKU ในข้อมูลอ้างอิง", render:r => `<span class="sq-meta">${esc(r.materialSku)}</span>` },
+        { label:"ชื่อในข้อมูลอ้างอิง", render:r => esc(r.materialName) },
+        { label:"ใช้ใน", align:"right", render:r => `${r.usedIn} สินค้า` } ],
+      "ทุก SKU ในข้อมูลอ้างอิงมีอยู่จริงในคลัง") +
 
-    _bhSection("⚠️", "บรรทัดสูตรที่จำนวนต่อหน่วยเป็น 0",
+    _bhSection("⚠️", "บรรทัดที่จำนวนต่อหน่วยเป็น 0",
       "ตั้งค่าไว้ 0 = ระบบคิดว่าไม่ใช้วัตถุดิบตัวนี้เลย",
       res.badQtyPerUnit,
       [ { label:"สินค้า", render:r => esc(r.productName) },
         { label:"วัตถุดิบ", render:r => esc(r.materialName || r.materialSku) },
         { label:"ต่อหน่วย", align:"right", render:r => `<span class="sq-num" style="color:var(--sq-crit)">${r.qtyPerUnit}</span>` } ],
-      "ทุกบรรทัดสูตรมีจำนวนต่อหน่วยแล้ว") +
+      "ทุกบรรทัดมีจำนวนต่อหน่วยแล้ว") +
 
-    _bhSection("📦", "วัตถุดิบที่เบิกจริง แต่ไม่อยู่ในสูตรไหนเลย",
-      "ไม่ได้แปลว่าผิด — อาจเป็นของใช้ทั่วไป (ถุงมือ น้ำยาล้าง) หรือสูตรยังไม่ได้ใส่",
+    _bhSection("📦", "วัตถุดิบที่เบิกจริง แต่ไม่อยู่ในข้อมูลอ้างอิงของสินค้าไหนเลย",
+      "ไม่ได้แปลว่าผิด — อาจเป็นของใช้ทั่วไป (ถุงมือ น้ำยาล้าง) หรือยังไม่ได้ใส่ข้อมูลอ้างอิง",
       res.notInAnyBom,
       [ { label:"วัตถุดิบ", render:r => `<span class="sq-name">${esc(r.name)}</span>` },
         { label:"SKU", render:r => `<span class="sq-meta">${esc(r.sku)}</span>` },
         { label:"โรงงาน", align:"center", render:r => esc(r.module) },
         { label:"เบิก", align:"right", render:r => `${r.outCount} ครั้ง` },
         { label:"รวม", align:"right", render:r => `<span class="sq-num">${r.outQty}</span>` } ],
-      "วัตถุดิบที่เบิกล่าสุดอยู่ในสูตรครบ") +
+      "วัตถุดิบที่เบิกล่าสุดอยู่ในข้อมูลอ้างอิงครบ") +
 
     _bhSection("🔗", "ประวัติการเบิกที่จับคู่กับวัตถุดิบไม่ได้",
       "ประวัติเก็บแค่ชื่อ ไม่มี SKU — ถ้าเปลี่ยนชื่อวัตถุดิบภายหลัง ประวัติเก่าจะอ้างกลับไม่ได้",
@@ -183,7 +183,7 @@ function renderBomHealth(res) {
       "ประวัติล่าสุดจับคู่กับวัตถุดิบได้ครบ") +
 
     _bhSection("📅", "ยังไม่ได้ตั้งค่า \"ใช้ต่อวัน\"",
-      "ไม่กระทบการเทียบสูตร แต่ทำให้คาดการณ์ของหมดไม่ได้",
+      "ไม่กระทบการเทียบยอด แต่ทำให้คาดการณ์ของหมดไม่ได้",
       res.badDailyUsage,
       [ { label:"วัตถุดิบ", render:r => esc(r.name) },
         { label:"SKU", render:r => `<span class="sq-meta">${esc(r.sku)}</span>` },
@@ -195,10 +195,10 @@ function renderBomHealth(res) {
     <div class="sq-card">
       <div class="sq-card-head">
         <span class="sq-card-title">🔍 วัตถุดิบตัวนี้ใช้ในสินค้าอะไรบ้าง</span>
-        <span class="sq-card-note">พิมพ์ชื่อหรือ SKU เพื่อดูว่าอยู่ในสูตรของสินค้าใด</span>
+        <span class="sq-card-note">พิมพ์ชื่อหรือ SKU เพื่อดูว่าอยู่ในข้อมูลอ้างอิงของสินค้าใด</span>
       </div>
       <div class="sq-card-body">
-        <input id="bhWhereInput" type="text" class="sq-input" style="width:100%;"
+        <input id="bhWhereInput" type="text" aria-label="ค้นหาวัตถุดิบ" class="sq-input" style="width:100%;"
                placeholder="เช่น น้ำตาล หรือ SQF-0001" oninput="bhRenderWhereUsed()">
         <div id="bhWhereResult" style="margin-top:10px;"></div>
       </div>
@@ -217,7 +217,7 @@ function bhRenderWhereUsed() {
     return (wu[sku][0] && String(wu[sku][0].name || "").toLowerCase().includes(q));
   }).slice(0, 8);
 
-  if (!hits.length) { out.innerHTML = '<p class="sq-empty" style="padding:16px;">ไม่พบวัตถุดิบนี้ในสูตรใดเลย</p>'; return; }
+  if (!hits.length) { out.innerHTML = '<p class="sq-empty" style="padding:16px;">ไม่พบวัตถุดิบนี้ในข้อมูลอ้างอิงของสินค้าใดเลย</p>'; return; }
 
   out.innerHTML = hits.map(sku => {
     const nm = String(wu[sku][0].name || "").trim();

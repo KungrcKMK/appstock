@@ -3,7 +3,7 @@
 // Cache static assets สำหรับใช้งาน offline บางส่วน
 // =====================================================
 
-const CACHE_NAME = "appstock-v89";
+const CACHE_NAME = "appstock-v90";
 
 // ไฟล์ที่ cache ไว้ใช้ offline
 // ⚠️ addAll เป็น all-or-nothing — ไฟล์เดียวโหลดไม่ได้ = ติดตั้งไม่สำเร็จทั้งชุด
@@ -24,6 +24,9 @@ const STATIC_ASSETS = [
   "./fonts/sarabun-latin-400.woff2",
   "./fonts/sarabun-latin-600.woff2",
   "./fonts/sarabun-latin-800.woff2",
+  "./fonts/kanit.css",
+  "./fonts/kanit-thai-700.woff2",
+  "./fonts/kanit-latin-700.woff2",
   "./manifest.json",
   "./manifest-exec.json",
   "./icons/exec-192.png",

@@ -192,9 +192,9 @@ export async function bomHealthReport(c) {
   const coveragePct = producedTotal > 0 ? Math.round((producedWithBom / producedTotal) * 100) : 0;
   let readiness, readinessNote;
   if (producedTotal === 0) { readiness = "ยังไม่มีข้อมูล"; readinessNote = "ยังไม่มีใบสั่งผลิตให้ตรวจ — สร้างใบสั่งผลิตก่อน"; }
-  else if (coveragePct >= 80 && unitMismatch.length === 0) { readiness = "พร้อม"; readinessNote = "ข้อมูลสูตรครอบคลุมพอที่จะเทียบยอดใช้จริงได้"; }
-  else if (coveragePct >= 50) { readiness = "เกือบพร้อม"; readinessNote = "ยังขาดสูตรบางส่วน ตัวเลขเทียบจะไม่ครบทุกรายการ"; }
-  else { readiness = "ยังไม่พร้อม"; readinessNote = "สูตรครอบคลุมน้อยเกินไป ถ้าเทียบตอนนี้ตัวเลขจะเพี้ยน"; }
+  else if (coveragePct >= 80 && unitMismatch.length === 0) { readiness = "พร้อม"; readinessNote = "ข้อมูลอ้างอิงครอบคลุมพอที่จะเทียบยอดใช้จริงได้"; }
+  else if (coveragePct >= 50) { readiness = "เกือบพร้อม"; readinessNote = "ยังขาดข้อมูลอ้างอิงบางส่วน ตัวเลขเทียบจะไม่ครบทุกรายการ"; }
+  else { readiness = "ยังไม่พร้อม"; readinessNote = "ข้อมูลอ้างอิงครอบคลุมน้อยเกินไป ถ้าเทียบตอนนี้ตัวเลขจะเพี้ยน"; }
 
   return {
     ok: true,

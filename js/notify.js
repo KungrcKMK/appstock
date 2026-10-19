@@ -28,7 +28,7 @@ async function _ntfCall(body) {
 async function ntfLoad() {
   const box = document.getElementById("ntfBox");
   if (!box) return;
-  box.innerHTML = '<p class="text-xs text-slate-400 font-bold">⏳ กำลังโหลดกำหนดการ…</p>';
+  box.innerHTML = '<p class="text-xs text-slate-600 font-bold">⏳ กำลังโหลดกำหนดการ…</p>';
   try {
     const r = await _ntfCall({ action: "NOTIFYGET" });
     if (!r || r.status !== "success") throw new Error((r && r.message) || "ไม่ได้รับคำตอบ");
@@ -63,7 +63,7 @@ function _ntfCard(ch, s) {
         <button type="button" onclick="ntfQuickDays('${ch}','mon')">จันทร์อย่างเดียว</button>
       </div>
       <div class="ntf-lbl">เวลาส่ง</div>
-      <select id="ntf-${ch}-hour" class="bg-white border-2 border-slate-200 p-2 rounded-2xl font-bold text-sm" onchange="ntfUpdateHints()">${hours}</select>
+      <select id="ntf-${ch}-hour" aria-label="เวลาส่ง" class="bg-white border-2 border-slate-200 p-2 rounded-2xl font-bold text-sm" onchange="ntfUpdateHints()">${hours}</select>
       <div class="ntf-lbl">หัวข้อที่ส่ง</div>
       <div class="ntf-col">${topics}</div>
       <div class="ntf-lbl">รูปแบบข้อความ</div>

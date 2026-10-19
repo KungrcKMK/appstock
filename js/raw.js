@@ -632,7 +632,7 @@ function rawExportPdf() {
     thead tr{background:#1e293b;color:#fff;}
     th{padding:10px 12px;border:1px solid #334155;text-align:left;font-size:12px;font-weight:700;}
     td{font-size:12px;}
-    .footer{margin-top:32px;font-size:11px;color:#94a3b8;text-align:right;}
+    .footer{margin-top:32px;font-size:11px;color:#5b6e63;text-align:right;}
     .doc-head{display:flex;align-items:center;gap:16px;border-bottom:2px solid #1e293b;padding-bottom:12px;margin-bottom:16px;}
     @media print{body{padding:16px;}}
   </style></head><body>
@@ -693,8 +693,8 @@ function openPurchaseRequest() {
       <td style="padding:8px 12px;border:1px solid #e2e8f0;text-align:right;color:#64748b;">${daily > 0 ? daily.toLocaleString() : "-"}</td>
       <td style="padding:8px 12px;border:1px solid #e2e8f0;text-align:center;font-weight:700;color:${daysLeft!==null&&daysLeft<=7?"#dc2626":daysLeft!==null&&daysLeft<=14?"#ea580c":"#475569"};">${daysText}</td>
       <td style="padding:8px 12px;border:1px solid #e2e8f0;text-align:right;">
-        <input type="number" class="order-input" value="${suggestQty > 0 ? suggestQty : ""}" min="0"
-          style="width:80px;padding:4px 6px;border:2px solid #6366f1;border-radius:8px;font-size:13px;font-weight:700;text-align:right;font-family:inherit;"
+        <input type="number" class="order-input" aria-label="จำนวนที่จะสั่ง" value="${suggestQty > 0 ? suggestQty : ""}" min="0"
+          style="width:80px;padding:4px 6px;border:2px solid #0e7a3f;border-radius:8px;font-size:13px;font-weight:700;text-align:right;font-family:inherit;"
           oninput="calcDaysAfter(this)">
         <span class="order-input-print" style="display:none;font-weight:700;">${suggestQty > 0 ? suggestQty.toLocaleString() : "-"}</span>
       </td>
@@ -716,14 +716,14 @@ function openPurchaseRequest() {
     .sub{font-size:13px;color:#475569;}
     .doc-no{text-align:right;font-size:12px;color:#64748b;line-height:1.8;}
     .formula-note{background:#eff6ff;border:1px solid #bfdbfe;border-radius:10px;padding:10px 16px;font-size:11px;color:#1d4ed8;margin-bottom:16px;line-height:1.8;}
-    .print-btn{background:#6366f1;color:#fff;border:none;padding:8px 20px;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;margin-bottom:12px;}
+    .print-btn{background:#0e7a3f;color:#fff;border:none;padding:8px 20px;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;margin-bottom:12px;}
     table{width:100%;border-collapse:collapse;margin-top:8px;}
     thead tr{background:#1e293b;color:#fff;}
     th{padding:10px 12px;border:1px solid #334155;font-size:11px;font-weight:700;text-align:left;}
     td{font-size:12px;}
     .sign-section{margin-top:60px;display:flex;gap:60px;}
     .sign-box{flex:1;text-align:center;border-top:2px solid #94a3b8;padding-top:8px;font-size:12px;color:#64748b;}
-    .footer{margin-top:24px;font-size:11px;color:#94a3b8;text-align:center;}
+    .footer{margin-top:24px;font-size:11px;color:#5b6e63;text-align:center;}
     @media print{
       .no-print{display:none!important;}
       .order-input{display:none!important;}
@@ -733,7 +733,7 @@ function openPurchaseRequest() {
   </style></head><body>
   <div class="no-print" style="margin-bottom:12px;display:flex;gap:10px;align-items:center;">
     <button class="print-btn" onclick="window.print()">🖨️ พิมพ์ใบขอซื้อ</button>
-    <span style="font-size:12px;color:#64748b;">✏️ แก้ไขช่อง <b style="color:#6366f1;">สั่งจริง</b> ได้ก่อนพิมพ์ — ระบบจะคำนวณ <b style="color:#059669;">ใช้ได้กี่วัน</b> ให้อัตโนมัติ</span>
+    <span style="font-size:12px;color:#64748b;">✏️ แก้ไขช่อง <b style="color:#0e7a3f;">สั่งจริง</b> ได้ก่อนพิมพ์ — ระบบจะคำนวณ <b style="color:#059669;">ใช้ได้กี่วัน</b> ให้อัตโนมัติ</span>
   </div>
   <div class="header">
     <div style="display:flex;align-items:center;gap:14px;">
@@ -830,7 +830,7 @@ function openStockReport() {
       const daysLeft = daily > 0 ? Math.floor(qty/daily) : null;
       const outDate  = daysLeft !== null ? (() => { const d=new Date(); d.setHours(0,0,0,0); d.setDate(d.getDate()+daysLeft); return `${String(d.getDate()).padStart(2,"0")}/${String(d.getMonth()+1).padStart(2,"0")}/${d.getFullYear()+543}`; })() : null;
       const daysText = daysLeft !== null
-        ? `<span style="font-weight:700;color:${daysLeft<=7?"#dc2626":daysLeft<=14?"#ea580c":"#475569"}">${daysLeft} วัน</span>${outDate?`<br><span style="font-size:10px;color:#94a3b8;font-weight:400;">(ถึง ${outDate})</span>`:""}`
+        ? `<span style="font-weight:700;color:${daysLeft<=7?"#dc2626":daysLeft<=14?"#ea580c":"#475569"}">${daysLeft} วัน</span>${outDate?`<br><span style="font-size:11px;color:#5b6e63;font-weight:400;">(ถึง ${outDate})</span>`:""}`
         : "-";
       return `<tr style="background:${idx%2===0?"#fff":bgColor}">
         <td style="padding:7px 10px;border:1px solid #e2e8f0;text-align:center;font-size:11px;">${idx+1}</td>
@@ -871,10 +871,10 @@ function openStockReport() {
     .summary{display:flex;gap:12px;margin-bottom:24px;flex-wrap:wrap;}
     .sum-card{flex:1;min-width:120px;background:#f8fafc;border:2px solid #e2e8f0;border-radius:10px;padding:12px 16px;text-align:center;}
     .sum-card .num{font-size:26px;font-weight:900;line-height:1;}
-    .sum-card .lbl{font-size:10px;font-weight:700;color:#94a3b8;margin-top:4px;text-transform:uppercase;}
+    .sum-card .lbl{font-size:10px;font-weight:700;color:#5b6e63;margin-top:4px;text-transform:uppercase;}
     .sign-section{margin-top:48px;display:flex;gap:48px;}
     .sign-box{flex:1;text-align:center;border-top:2px solid #94a3b8;padding-top:8px;font-size:11px;color:#64748b;}
-    .footer{margin-top:20px;font-size:10px;color:#94a3b8;text-align:center;border-top:1px solid #e2e8f0;padding-top:12px;}
+    .footer{margin-top:20px;font-size:11px;color:#5b6e63;text-align:center;border-top:1px solid #e2e8f0;padding-top:12px;}
     @media print{body{padding:12px 20px;} .no-print{display:none;}}
   </style></head><body>
   <div class="report-header">
@@ -1002,9 +1002,13 @@ function rawUpdateAfter() {
   const type = document.getElementById("rawModalType").value;
   const unit = (document.getElementById("rawModalUnit").innerText || "").replace(/^หน่วยนับ:\s*/, "").replace(/^-$/, "");
   const q = Number(raw.replace(/,/g, ""));
-  if (!raw || /[+\-*\/()]/.test(raw) || isNaN(q) || q <= 0) { el.textContent = ""; return; }   // กำลังพิมพ์โจทย์คำนวณ — รอผลก่อน
-  const after = Math.round((type === "OUT" ? cur - q : cur + q) * 1000) / 1000;
   const f = n => Number(n).toLocaleString("th-TH", { maximumFractionDigits: 3 });
+  // ปุ่มบันทึกบอกประเภท + จำนวน ให้อ่านทวนก่อนกด (เหมือนมือถือ "📤 เบิก 500 ใบ")
+  const btn = document.getElementById("rawBtnSubmit");
+  const ok = raw && !/[+\-*\/()]/.test(raw) && !isNaN(q) && q > 0;
+  if (btn && !btn.disabled) btn.textContent = ok ? ({ OUT: "📤 เบิก", RETURN: "↩️ คืน", IN: "📥 รับ" }[type] || "✔️ บันทึก") + " " + f(q) + " " + unit : "✔️ บันทึกรายการ";
+  if (!ok) { el.textContent = ""; return; }   // กำลังพิมพ์โจทย์คำนวณ — รอผลก่อน
+  const after = Math.round((type === "OUT" ? cur - q : cur + q) * 1000) / 1000;
   if (after < 0) {
     el.style.color = "var(--sq-crit)";
     el.textContent = "⚠️ เกินยอดที่มี (" + f(cur) + " " + unit + ")";
@@ -1046,11 +1050,13 @@ async function rawFillWorkOrders() {
 function setRawType(t) {
   document.getElementById("rawModalType").value = t;
   const base = "flex-1 py-3 rounded-xl font-black text-base";
+  // สีตัวหนังสือ -700 ผ่าน AA ทั้งตอนเลือก/ไม่เลือก (เดิม slate-400 = 2.3:1 แทบมองไม่เห็นว่ากดได้ · audit 2026-10-19)
   const on   = c => `${base} bg-white shadow-xl ${c}`;
-  const off  = `${base} text-slate-400`;
-  document.getElementById("rawBtnOut").className = t==="OUT"    ? on("text-orange-600")  : off;
-  document.getElementById("rawBtnRet").className = t==="RETURN" ? on("text-sky-600")     : off;
-  document.getElementById("rawBtnIn").className  = t==="IN"     ? on("text-emerald-600") : off;
+  const off  = `${base} text-slate-600 hover:bg-slate-200`;
+  ["rawBtnOut", "rawBtnRet", "rawBtnIn"].forEach((id, i) => document.getElementById(id).setAttribute("aria-pressed", String(t === ["OUT", "RETURN", "IN"][i])));
+  document.getElementById("rawBtnOut").className = t==="OUT"    ? on("text-orange-700")  : off;
+  document.getElementById("rawBtnRet").className = t==="RETURN" ? on("text-sky-700")     : off;
+  document.getElementById("rawBtnIn").className  = t==="IN"     ? on("text-emerald-700") : off;
   // เบิกออกบังคับกรอก "ใช้กับงาน" ส่วนรับ/คืน กรอกก็ได้ไม่กรอกก็ได้
   const _req = document.getElementById("rawPurposeReq");
   const _pin = document.getElementById("rawModalPurpose");
@@ -1437,7 +1443,7 @@ function rawIsBusy(id) { return !!_rawBusyIds[id]; }
 function setRawBusy(id, busy, txt="กำลังบันทึก...") {
   _rawBusyIds[id] = !!busy;
   const btn=document.getElementById(id); if (!btn) return;
-  if (!btn.dataset.orig) btn.dataset.orig = btn.innerHTML;
+  if (busy && !btn.disabled) btn.dataset.orig = btn.innerHTML;   // จำข้อความ ณ ตอนกด — ปุ่มบันทึกรับ/เบิกเปลี่ยนข้อความตามจำนวน
   btn.classList.toggle("btn-disabled", busy);
   btn.disabled = !!busy;
   btn.innerHTML = busy ? txt : btn.dataset.orig;

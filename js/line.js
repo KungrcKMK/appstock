@@ -26,7 +26,7 @@ async function lineLoadStatus() {
   document.getElementById("lineWebhookUrl").value = lineWebhookUrl();
   document.getElementById("lineTokenIn").value = "";
   document.getElementById("lineSecretIn").value = "";
-  info.innerHTML = '<p class="text-xs text-slate-400 font-bold">⏳ กำลังตรวจสถานะ LINE…</p>';
+  info.innerHTML = '<p class="text-xs text-slate-600 font-bold">⏳ กำลังตรวจสถานะ LINE…</p>';
   try {
     const r = await _lineCall({ action: "LINESTATUS" });
     if (!r || r.status !== "success") throw new Error((r && r.message) || "ไม่ได้รับคำตอบ");
@@ -79,7 +79,7 @@ function lineRender() {
     const t = (() => { try { return new Date(s.last.at).toLocaleString("th-TH", { dateStyle: "short", timeStyle: "short" }); } catch (e) { return ""; } })();
     rows.push(`<div class="text-xs mt-1">${s.last.sent ? "✅" : "⚠️"} ส่งล่าสุด ${escapeHtml(t)}${s.last.sent ? ` · ${s.last.groups}/${s.last.of} กลุ่ม` : ""}${s.last.reason ? " · " + escapeHtml(s.last.reason) : ""}</div>`);
   }
-  info.innerHTML = rows.join("") + '<button type="button" onclick="lineLoadStatus()" class="text-xs font-black text-green-800 mt-2">↻ ตรวจใหม่</button>';
+  info.innerHTML = rows.join("") + '<button type="button" onclick="lineLoadStatus()" class="text-xs font-black text-green-800 mt-2" style="min-height:32px;padding:6px 8px;margin-left:-8px;">↻ ตรวจใหม่</button>';
   if (typeof ntfUpdateHints === "function") ntfUpdateHints();   // โควตา LINE ในกำหนดการส่งสรุปใช้จำนวนสมาชิกจากที่นี่
 }
 

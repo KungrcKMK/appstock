@@ -39,8 +39,9 @@ jobs:
 
       # ไฟล์ของนักพัฒนา ไม่ขึ้นเว็บจริง (QA M22 2026-10-10) — migrate.html = เครื่องมือย้ายข้อมูลยุค GAS
       # (โหลด Tailwind จาก CDN ขัดกฎ "ห้าม CDN" + มีที่อยู่ GAS กรอกไว้) · ยังเก็บไว้ใน repo เผื่อใช้ในเครื่อง
+      # .impeccable/ = ข้อตกลงออกแบบสำหรับนักพัฒนา (direction contract) ห้ามเสิร์ฟคู่กับหน้าเว็บ
       - name: Remove developer-only files
-        run: rm -f migrate.html
+        run: rm -rf migrate.html .impeccable
 
       - name: Upload artifact
         uses: actions/upload-pages-artifact@v3

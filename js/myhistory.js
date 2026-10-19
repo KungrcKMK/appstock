@@ -41,7 +41,7 @@ async function openMyHistory() {
       const m = _mhMeta(k);
       return `<div style="background:${m.bg};border:1px solid ${m.fg}33;border-radius:14px;padding:10px 16px;text-align:center;min-width:96px;">
         <div style="font-size:22px;font-weight:900;color:${m.fg};line-height:1.1;">${sum[k]}</div>
-        <div style="font-size:11px;font-weight:800;color:${m.fg};opacity:.8;margin-top:2px;">${m.icon} ${escapeHtml(k)}</div>
+        <div style="font-size:12px;font-weight:800;color:${m.fg};opacity:.8;margin-top:2px;">${m.icon} ${escapeHtml(k)}</div>
       </div>`;
     }).join("");
 

@@ -1,0 +1,53 @@
+{
+  "detector": {
+    "ignoreRules": [],
+    "ignoreFiles": [],
+    "ignoreValues": [
+      {
+        "rule": "cream-palette",
+        "value": "*",
+        "files": [
+          ".impeccable/mocks/decision/challenger-consumer.html"
+        ],
+        "createdAt": "2026-10-19T15:12:11.563Z",
+        "reason": "Claude: ภาพร่างของทิศทาง warm-consumer-app ที่ catalog กำหนด 'warm tinted ground' เป็นลักษณะหลัก — ไฟล์ภาพร่างตัดสินใจเท่านั้น ไม่ขึ้นแอป"
+      },
+      {
+        "rule": "cramped-padding",
+        "value": "*",
+        "files": [
+          ".impeccable/mocks/decision/r1-ikeda.html"
+        ],
+        "createdAt": "2026-10-19T15:19:52.714Z",
+        "reason": "Claude: ภาพร่างของทิศทางที่ตกไปแล้ว (เจ้าของกดสุ่มใหม่ รอบ 2) ไม่ถูกสร้างจริง"
+      },
+      {
+        "rule": "design-system-font",
+        "value": "*",
+        "files": [
+          ".impeccable/mocks/decision/*.html"
+        ],
+        "createdAt": "2026-10-19T16:13:48.692Z",
+        "reason": "Claude: ภาพร่างหน้าเลือกทิศทาง (เจ้าของเลือก model-pick แล้ว 2026-10-19) ฟอนต์ของทิศทางที่ตกไปตั้งใจต่างจาก DESIGN.md · ไฟล์อยู่ใน .gitignore ไม่ขึ้นแอป"
+      },
+      {
+        "rule": "cramped-padding",
+        "value": "*",
+        "files": [
+          ".impeccable/mocks/decision/challenger-ticket.html"
+        ],
+        "createdAt": "2026-10-19T16:13:59.620Z",
+        "reason": "Claude: ภาพร่างทิศทางที่ตกไป (ตั๋ว) ไม่ถูกสร้างจริง · อยู่ใน .gitignore"
+      },
+      {
+        "rule": "design-system-color",
+        "value": "*",
+        "files": [
+          ".impeccable/mocks/decision/*.html"
+        ],
+        "createdAt": "2026-10-19T16:13:59.840Z",
+        "reason": "Claude: ภาพร่างหน้าเลือกทิศทาง สีของทิศทางที่ตกไปตั้งใจต่างจาก DESIGN.md · ไม่ขึ้นแอป"
+      }
+    ]
+  }
+}

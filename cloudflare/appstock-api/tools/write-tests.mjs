@@ -206,6 +206,8 @@ console.log("7) ห้องเย็น");
   const rv = await Promise.all([1, 2].map(() => post({ module: "SYSTEM", action: "reviewStockIn", payload: { username: USER, stockInID: si.stockInID, action: "approve" }, sessionToken: tok })));
   const after2 = (await cr("getProductAndBalances", { barcode: bc })).balances[0].Qty;
   T("รับสินค้าตรง: สองคนกดยืนยันพร้อมกัน ยอดเข้าครั้งเดียว +3", si.ok && rv.filter((r) => r.ok).length === 1 && after2 === after + 3, [after, after2, rv]);
+  // ล้างล็อตของรอบนี้ — เดิมค้างในฐานข้อมูลทดสอบข้ามรอบ ครบ 7 วันกลายเป็นล็อตค้าง ดันเคสข้อความเตือนห้องเย็นตก (2026-10-19)
+  for (const b of (await cr("getProductAndBalances", { barcode: bc })).balances) await cr("clearLotStock", { barcode: bc, mfg: b.MFG, reason: "ล้างของทดสอบ" });
   const ar = await cr("archiveOldStock", {}, atok);
   T("เก็บถาวรล็อตที่ยอดเป็น 0", ar.ok && ar.archived >= 1, ar);
 }
@@ -595,6 +597,8 @@ console.log("13) ⏰ ห้องเย็น — ล็อตที่ไม่
   };
   const s0 = (await post({ module: "SQF", action: "USAGEPLAN", sessionToken: tok })).saved;
   await raw("PLANSET", { staleDays: 7 }, atok);
+  // ล้างล็อตทดสอบที่ค้างจากรอบก่อน (บาร์โค้ด T/STALE+เลขเวลา มีแต่สคริปต์นี้สร้าง) — ข้อความเตือนแสดงได้ 20 ล็อต เกินนั้นล็อตของรอบนี้ถูกตัด
+  for (const l of (await cr("getStartupOverview", {})).allLots.filter((l) => /^(T|STALE)\d{13}$/.test(l.Barcode))) await cr("clearLotStock", { barcode: l.Barcode, mfg: l.MFG, reason: "ล้างของทดสอบรอบก่อน" });
   const bc = "STALE" + Date.now();
   await cr("saveNewProduct", { barcode: bc, productName: "ล็อตค้าง " + bc, sku: "SK" + bc, defaultUnit: "ถ้วย", standardShelfLifeDays: 60, warningPercentage: 10 });
   const th = new Date(Date.now() + 7 * 3600000), dd = (d) => String(d.getUTCDate()).padStart(2, "0") + String(d.getUTCMonth() + 1).padStart(2, "0") + String(d.getUTCFullYear()).slice(2);

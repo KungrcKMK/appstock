@@ -381,9 +381,12 @@ function ddmmyyToIsoWo(str) {
   return `${2000+parseInt(yy,10)}-${mm}-${dd}`;
 }
 
+// วันนี้ตามเวลาเครื่อง (ไทย) — toISOString เป็น UTC ก่อน 7 โมงเช้าได้วันของเมื่อวาน (กับดักข้อ 5 · คู่กับ toISO ใน crOpenNewLot ของ mobile.html)
+const crTodayIso = () => { const d = new Date(); return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0"); };
+
 async function crInitWorkOrder() {
   crWoLockButtons(); // ต้องตรวจสอบวัตถุดิบก่อนถึงจะบันทึก/พิมพ์ได้
-  const today = new Date().toISOString().slice(0,10);
+  const today = crTodayIso();
   $$cr("crWoDate").value      = today;
   $$cr("crWoCreatedBy").value = currentUser;
   const seq = String(Math.floor(Math.random()*900)+100);
@@ -994,7 +997,7 @@ function crSiOnProductChange(sel) {
   // MFG = วันนี้ใน DDMMYY ถ้ายังไม่ได้กรอก
   const mfgEl = row.querySelector(".cr-si-mfg");
   if (!mfgEl.value) {
-    mfgEl.value = isoToDdmmyy(new Date().toISOString().slice(0,10));
+    mfgEl.value = isoToDdmmyy(crTodayIso());
   }
 
   // EXP คำนวณจาก shelf life ของสินค้า
@@ -1561,10 +1564,10 @@ async function crSaveCount() {
   if (!mfgIso || !expIso) {
     await crShowModal("alert","วันที่ไม่ถูกต้อง","กรุณาตรวจสอบ MFG/EXP อีกครั้ง"); return;
   }
-  const today = new Date().toISOString().slice(0,10);
-  if (mfgIso > today) {
-    await crShowModal("alert","วันผลิตอยู่ในอนาคต","วันผลิต (MFG) อยู่ในอนาคต — ตรวจสอบอีกครั้ง"); return;
-  }
+  // วันผลิตล่วงหน้าได้ — หน้างานผลิตแล้วพิมพ์ป้ายวันที่ล่วงหน้า (เจ้าของ 2026-10-20 · เดิมปฏิเสธทุกวันที่เลยวันนี้)
+  // ถามยืนยันเฉพาะไกลเกิน 30 วัน กันพิมพ์ปีผิด (เช่น 101027 แทน 101026) — ไม่บล็อก กด OK แล้วบันทึกต่อได้
+  const aheadDays = Math.round((new Date(mfgIso) - new Date(crTodayIso())) / 86400000);
+  if (aheadDays > 30 && !confirm(`วันผลิต ${pl.mfg} อยู่ล่วงหน้า ${aheadDays} วัน\n\nแน่ใจว่าถูกต้อง?`)) return;
   if (expIso <= mfgIso) {
     await crShowModal("alert","วันหมดอายุไม่ถูกต้อง","วันหมดอายุ (EXP) ต้องมากกว่าวันผลิต (MFG)"); return;
   }

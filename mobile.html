@@ -59,9 +59,7 @@
     #mChips button, #aPurposeChips button{min-height:40px}
     #aQuick button{min-height:44px}
     .tap44{min-height:44px;min-width:44px}
-    /* แถวชิปเลื่อนข้างด้วยนิ้ว — ไม่ต้องโชว์แถบเลื่อน (บนเครื่องที่โชว์ มันกลายเป็นขีดเทาใต้ชิป) */
-    #mChips, #planTiles, #myHistSummary{scrollbar-width:none}
-    #mChips::-webkit-scrollbar, #planTiles::-webkit-scrollbar, #myHistSummary::-webkit-scrollbar{display:none}
+    /* ไม่มีแถวไหนเลื่อนซ้าย-ขวา (เจ้าของสั่ง 2026-10-20) — ชิป/ช่องสรุปขึ้นบรรทัดใหม่เองเมื่อไม่พอ */
     /* ตัวอักษรใหญ่: ส่วนหัวสูงเกินครึ่งจอ → เลื่อนทั้งหน้าจอรวมกัน (mFitHeader · QA M9) */
     #sMain.m-scroll-all{overflow-y:auto}
     #sMain.m-scroll-all #mList{flex:none;overflow:visible}
@@ -116,7 +114,7 @@
     .m-btn{background:#fff;border:2px solid var(--m-ink);border-radius:6px;font-weight:800;min-height:44px}
     .m-btn-ink{background:var(--m-ink);color:#fff;border-radius:6px;font-weight:800;min-height:48px}
     .m-btn-go{background:var(--m-green);color:#fff;border-radius:6px;font-weight:800;min-height:48px}
-    .m-chip{background:#fff;border:1.5px solid var(--m-line2);border-radius:6px;font-weight:800;font-size:13px;white-space:nowrap}
+    .m-chip{background:#fff;border:1.5px solid var(--m-line2);border-radius:6px;font-weight:800;font-size:13px;line-height:1.2}
     .m-chip.hot{border:2px solid var(--m-ink)}
     .m-chip.on{background:var(--m-ink);border:2px solid var(--m-ink);color:#fff}
     .m-type{min-height:52px;border-radius:6px;font-weight:800;font-size:15px;background:#fff;border:2px solid var(--m-line2)}
@@ -157,7 +155,7 @@
     .m-tool{min-height:64px;font-size:13px}
     .fac-sqf{background:#c2410c} .fac-mlm{background:#15803d} .fac-cr{background:#0e7490}
     /* ── ต้องสั่ง ── */
-    .m-tile{background:#fff;border:1.5px solid var(--m-line);border-radius:6px;min-width:88px}
+    .m-tile{background:#fff;border:1.5px solid var(--m-line);border-radius:6px;min-width:0}
     .m-tile.on{border:2px solid var(--m-ink);box-shadow:inset 0 -4px 0 var(--m-green)}
     /* ── แจ้งผล: แผ่นป้ายสีตามความหมาย ── */
     .m-toast{border:2px solid var(--m-ink);border-radius:6px;box-shadow:0 8px 24px rgba(0,0,0,.25)}
@@ -276,7 +274,7 @@
         class="m-field w-full py-3 pl-10 pr-3 outline-none">
     </div>
     <!-- ตัวกรองเร็ว = ป้ายเดียวกับในแถว: ทั้งหมด / หมด·หมดอายุ / ต้องสั่ง·ใกล้หมดอายุ / ไม่อัปเดต / ใช้บ่อย -->
-    <div id="mChips" class="flex gap-1.5 overflow-x-auto"></div>
+    <div id="mChips" class="grid grid-cols-3 grid-flow-row-dense gap-1.5"></div>
   </div>
 
   <!-- List -->
@@ -516,7 +514,7 @@
     </div>
     <button onclick="closeMyHistory()" class="btn-tap m-btn-line flex-shrink-0 px-4 text-sm">✕ ปิด</button>
   </div>
-  <div id="myHistSummary" class="m-wrap flex gap-2 px-3 py-3 overflow-x-auto flex-shrink-0"></div>
+  <div id="myHistSummary" class="m-wrap flex flex-wrap gap-2 px-3 py-3 flex-shrink-0"></div>
   <div id="myHistList" class="m-wrap flex-1 overflow-y-auto px-3 pb-6 space-y-1.5"></div>
 </div>
 
@@ -532,7 +530,7 @@
     </div>
     <button onclick="closePlan()" class="btn-tap m-btn-line flex-shrink-0 px-4 text-sm">✕ ปิด</button>
   </div>
-  <div id="planTiles" class="m-wrap flex gap-2 px-3 py-2.5 overflow-x-auto flex-shrink-0"></div>
+  <div id="planTiles" class="m-wrap grid grid-cols-4 gap-1.5 px-3 py-2.5 flex-shrink-0"></div>
   <div id="planList" class="m-wrap flex-1 overflow-y-auto px-3 pb-4 space-y-2"></div>
   <div class="flex-shrink-0 px-3 pt-2 bg-white" style="border-top:3px solid var(--m-ink);padding-bottom:max(12px,env(safe-area-inset-bottom))">
     <button id="planCopyBtn" onclick="planCopy()" class="btn-tap m-btn-go icb ic-copy w-full py-3.5 text-base">
@@ -880,9 +878,9 @@ async function openMyHistory() {
     $("myHistSummary").innerHTML = keys.length
       ? keys.map(k => {
           const st = MYHIST_STYLE[k] || MYHIST_NONE;
-          return `<div class="m-panel px-4 py-2 flex-shrink-0 text-center">
+          return `<div class="m-panel px-3 py-2 text-center max-w-full">
             <div class="m-k text-2xl leading-tight ${st.cls}">${escH(sum[k])}</div>
-            <div class="text-xs font-bold m-ink2 mt-0.5 whitespace-nowrap"><i class="ic ic-${st.ic}"></i> ${escH(k)}</div>
+            <div class="text-xs font-bold m-ink2 mt-0.5"><i class="ic ic-${st.ic}"></i> ${escH(k)}</div>
           </div>`;
         }).join("")
       : "";
@@ -1093,7 +1091,10 @@ async function loadData(opts) {
     let fresh;
     if (mod === "COLDROOM") {
       // ข้อ 5: ขอเฉพาะที่มือถือใช้ (allLots) ไม่ต้องแบก totalByProduct/expiring/expired
-      const r = await gasPost({ module: "COLDROOM", action: "getStartupOverview", payload: { lite: true } });
+      const [r, pr] = await Promise.all([
+        gasPost({ module: "COLDROOM", action: "getStartupOverview", payload: { lite: true } }),
+        gasPost({ module: "COLDROOM", action: "getColdRoomProducts" }).catch(() => null)
+      ]);
       if (m0 === mod && r.staleDays !== undefined) mStoreSet("m_staledays_" + mod, Number(r.staleDays) || 0);
       // Aggregate lots by barcode, keep individual lots for counting
       const byBc = {};
@@ -1128,7 +1129,14 @@ async function loadData(opts) {
         if (!p.lots.some(l => l.idle !== undefined)) return;
         p.idle = p.lots.some(l => l.idle === null) ? null : Math.max(...p.lots.map(l => Number(l.idle) || 0));
       });
-      fresh = Object.values(byBc).filter(i => i.qty > 0).sort((a,b) => a.name.localeCompare(b.name,"th"));
+      // สินค้าที่ลงทะเบียนแต่ยังไม่มีล็อตคงเหลือ — ต้องแตะได้ ไม่งั้นรับเข้าล็อตแรกจากมือถือไม่ได้ (เดิมขึ้นเฉพาะที่มียอด)
+      ((pr && pr.products) || []).forEach(p => {
+        const bc = String(p.Barcode || "");
+        if (!bc || byBc[bc]) return;
+        byBc[bc] = { sku: bc, name: p.ProductName || bc, qty: 0, unit: p.DefaultUnit || "", min: 0, daily: 0, cr: true, lots: [],
+                     shelfDays: Number(p.StandardShelfLifeDays) || 0 };
+      });
+      fresh = Object.values(byBc).sort((a,b) => a.name.localeCompare(b.name,"th"));
     } else {
       const res = await fetch(`${GAS_URL}?module=${mod}`);
       const r   = await gasJson(res);
@@ -1214,9 +1222,9 @@ const expTagHtml = d => d.expStatus === "expired"
 const mStaleDays = () => Number(mStoreGet("m_staledays_" + mod, 0)) || 0;
 const isStaleItem = d => { const n = mStaleDays(); return !!n && d.idle !== undefined && (d.idle === null || d.idle > n); };
 // ป้ายของแต่ละรายการ: หมด/หมดอายุ (วงกลมขีดแดง) > ต่ำกว่าจุดสั่งซื้อ/ใกล้หมดอายุ (สามเหลี่ยมเหลือง) > ไม่อัปเดต (วงกลมน้ำเงิน ต้องนับ) > พอ
-const mSignOf = d => (d.qty <= 0 || d.expStatus === "expired") ? "no"
+const mSignOf = d => (d.cr && d.qty <= 0) ? "none" : (d.qty <= 0 || d.expStatus === "expired") ? "no"
   : (isLowItem(d) || d.expStatus === "near") ? "warn" : isStaleItem(d) ? "must" : "ok";
-const M_RANK = { no: 0, warn: 1, must: 2, ok: 3 };
+const M_RANK = { no: 0, warn: 1, must: 2, ok: 3, none: 4 };
 function _filterListNow() {
   const q = $("mSearch").value.trim().toLowerCase();
   let list = q ? data.filter(d => d.name.toLowerCase().includes(q) || d.sku.toLowerCase().includes(q)) : [...data];
@@ -1243,14 +1251,16 @@ function renderChips() {
   const f = mStoreGet("m_freq_" + mod, {});
   const freq = data.filter(d => f[d.sku] > 0).length;
   const nSign = k => data.filter(d => mSignOf(d) === k).length;
-  // ชิปตัวกรอง = ป้ายเดียวกับในแถว · ขึ้นเฉพาะกลุ่มที่มีรายการ (หรือกำลังเลือกอยู่)
-  const chip = (key, label, cnt, icon) => (!cnt && mListFilter !== key && key !== "freq") ? "" :
-    `<button onclick="setListFilter('${key}')" aria-pressed="${mListFilter === key}" class="btn-tap m-chip ${mListFilter === key ? "on" : icon && icon !== "star" ? "hot" : ""} flex-shrink-0 inline-flex items-center gap-1.5 px-3">${icon === "star" ? '<i class="ic ic-star"></i>' : icon ? mSign(icon, 18) : ""}${label}${cnt ? " " + cnt : ""}</button>`;
-  el.innerHTML = chip("all", "ทั้งหมด", data.length)
-    + chip("no", "หมด/หมดอายุ", nSign("no"), "no")
-    + chip("warn", "ต้องสั่ง/ใกล้หมดอายุ", nSign("warn"), "warn")
-    + (mStaleDays() ? chip("must", "ไม่อัปเดต", data.filter(isStaleItem).length, "must") : "")
-    + chip("freq", "ใช้บ่อย", freq, "star");
+  // ชิปตัวกรอง = ป้ายเดียวกับในแถว · ขึ้นเฉพาะกลุ่มที่มีรายการ (หรือกำลังเลือกอยู่) · "ทั้งหมด" ขึ้นเสมอ = ทางกลับ (คลังว่างแล้วกดใช้บ่อย เคยไม่มีทางกลับ · 2026-10-20)
+  // ตาราง 3 ช่อง ไม่เลื่อนซ้าย-ขวา (เจ้าของสั่ง 2026-10-20) · คำยาวตัดหลัง "/" เท่านั้น (nowrap กันตัด "หมด|อายุ") · ต้องสั่ง/ใกล้หมดอายุ กว้าง 2 ช่อง
+  const nw = t => `<span class="whitespace-nowrap">${t}</span>`;
+  const chip = (key, label, cnt, icon, span) => (!cnt && mListFilter !== key && key !== "freq" && key !== "all") ? "" :
+    `<button onclick="setListFilter('${key}')" aria-pressed="${mListFilter === key}" class="btn-tap m-chip ${mListFilter === key ? "on" : icon && icon !== "star" ? "hot" : ""} ${span ? "col-span-2" : ""} inline-flex items-center justify-center gap-1 px-1.5 py-1 text-left">${icon === "star" ? '<i class="ic ic-star"></i>' : icon ? mSign(icon, 18) : ""}<span>${label}${cnt ? nw(" " + cnt) : ""}</span></button>`;
+  el.innerHTML = chip("all", nw("ทั้งหมด"), data.length)
+    + chip("no", "หมด/" + nw("หมดอายุ"), nSign("no"), "no")
+    + (mStaleDays() ? chip("must", nw("ไม่อัปเดต"), data.filter(isStaleItem).length, "must") : "")
+    + chip("warn", "ต้องสั่ง/" + nw("ใกล้หมดอายุ"), nSign("warn"), "warn", true)
+    + chip("freq", nw("ใช้บ่อย"), freq, "star");
 }
 
 function populateDropdown() {
@@ -1281,7 +1291,8 @@ function renderList(more) {
     const why = mListFilter === "no" ? "✅ ไม่มีของที่หมดหรือหมดอายุ"
       : mListFilter === "warn" ? "✅ ไม่มีของที่ต้องสั่งหรือใกล้หมดอายุ"
       : mListFilter === "must" ? "✅ ทุกรายการมีการอัปเดตภายใน " + mStaleDays() + " วัน"
-      : mListFilter === "freq" ? "ยังไม่มีรายการที่ใช้บ่อย<br><span class=\"text-xs\">ทำรายการแล้วจะขึ้นที่นี่เอง</span>" : "ไม่พบรายการ";
+      : mListFilter === "freq" ? "ยังไม่มีรายการที่ใช้บ่อย<br><span class=\"text-xs\">ทำรายการแล้วจะขึ้นที่นี่เอง</span>"
+      : data.length ? "ไม่พบรายการ" : "ยังไม่มีของคงเหลือในคลังนี้";
     el.innerHTML = mEmptyHtml(why, "py-16");
     return;
   }
@@ -1291,16 +1302,16 @@ function renderList(more) {
     const days = item.daily > 0 ? Math.floor(item.qty / item.daily) : null;
     // บรรทัดสถานะเป็นคำพูด — ป้ายรูปทรงซ้ายเป็นแค่ตัวช่วยกวาดตา
     const meta = [`<span class="m-sku">${escH(item.sku)}</span>`];
-    if (item.qty <= 0) meta.push('<span class="m-red font-black">หมดแล้ว</span>');
+    if (item.qty <= 0) meta.push(item.cr ? '<span class="font-black">ยังไม่มีของในคลัง · แตะเพื่อรับเข้า</span>' : '<span class="m-red font-black">หมดแล้ว</span>');
     else if (isLowItem(item)) meta.push('<span class="m-warn font-black">ต่ำกว่าจุดสั่งซื้อ</span>');
     if (isExpItem(item)) meta.push(expTagHtml(item));
     if (isStaleItem(item)) meta.push('<span class="m-must font-black">' + (item.idle === null ? "ไม่เคยบันทึกยอด" : "ไม่อัปเดต " + item.idle + " วัน") + "</span>");
     if (days !== null) meta.push(`<span class="font-black" style="color:${daysColor(days)}">พอ ${fmtNum(days)} วัน</span>`);
     return `
     <button onclick="pickItem('${escJA(item.sku)}')" class="item-card m-row">
-      ${mSign(mSignOf(item))}
+      ${mSign(mSignOf(item)) || "<span></span>"}
       <span class="min-w-0"><span class="m-name block">${escH(item.name)}</span><span class="m-meta block">${meta.join(" · ")}</span></span>
-      <span class="m-qty"><b class="${item.qty <= 0 ? "m-red" : ""}">${fmtNum(item.qty)}</b><span>${escH(item.unit)}</span></span>
+      <span class="m-qty"><b class="${item.qty <= 0 ? (item.cr ? "m-ink2" : "m-red") : ""}">${fmtNum(item.qty)}</b><span>${escH(item.unit)}</span></span>
     </button>`;
   }).join("") + (filt.length > _mShown
     ? `<button onclick="renderList(true)" class="btn-tap m-btn w-full py-3 mt-1">แสดงเพิ่ม (เหลืออีก ${filt.length - _mShown} รายการ)</button>`
@@ -1477,7 +1488,8 @@ function crOpenNewLot() {
   _hideCrInputs();
 
   const today = new Date();
-  const toISO = d => d.toISOString().split("T")[0];
+  // วันตามเวลาเครื่อง (ไทย) — toISOString เป็น UTC ก่อน 7 โมงเช้าได้วันของเมื่อวาน (กับดักข้อ 5)
+  const toISO = d => d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
   $("aCrMfg").value = toISO(today);
   $("aCrQtyIn2").value = 1;
 
@@ -1903,19 +1915,19 @@ function renderPlan() {
   const sum = planData.summary, S = planData.settings;
   $("planSub").textContent = MOD_CFG[mod].title + " · รอของ " + S.leadDays + " วัน + กันชน " + S.safetyDays + " วัน";
   const todo = sum.late + sum.now + sum.soon;
-  const tile = (key, label, n, tone) => {
+  const tile = (key, label, n, tone, sign) => {
     const on = planFilter === key;
-    return `<button onclick="planSetFilter('${key}')" aria-pressed="${on}" class="btn-tap m-tile ${on ? "on" : ""} flex-shrink-0 px-3 py-2 text-center">
-      <div class="m-k text-2xl leading-tight ${tone}">${n}</div>
-      <div class="text-xs font-bold m-ink2 mt-0.5 whitespace-nowrap inline-flex items-center gap-1">${label}</div></button>`;
+    return `<button onclick="planSetFilter('${key}')" aria-pressed="${on}" class="btn-tap m-tile ${on ? "on" : ""} px-1 py-2 text-center">
+      <div class="flex items-center justify-center gap-1">${sign ? mSign(sign, 16) : ""}<span class="m-k text-2xl leading-tight ${tone}">${n}</span></div>
+      <div class="text-xs font-bold m-ink2 mt-0.5 leading-tight">${label}</div></button>`;
   };
   $("planTiles").innerHTML =
       tile("todo", "ต้องลงมือ", todo, todo ? "" : "m-ink2")
-    + tile("late", mSign("no", 14) + "สั่งไม่ทันแล้ว", sum.late, sum.late ? "m-red" : "m-ink2")
-    + tile("now",  mSign("warn", 14) + "สั่งวันนี้", sum.now, sum.now ? "text-orange-700" : "m-ink2")
-    + tile("soon", mSign("warn", 14) + "ใกล้ถึงเวลา", sum.soon, sum.soon ? "m-warn" : "m-ink2")
-    + (S.staleDays ? tile("stale", mSign("must", 14) + "ไม่อัปเดต", sum.stale || 0, sum.stale ? "m-must" : "m-ink2") : "")
-    + tile("ok",   mSign("ok", 14) + "ยังพอ", sum.ok, "m-go")
+    + tile("late", "สั่งไม่ทันแล้ว", sum.late, sum.late ? "m-red" : "m-ink2", "no")
+    + tile("now",  "สั่งวันนี้", sum.now, sum.now ? "text-orange-700" : "m-ink2", "warn")
+    + tile("soon", "ใกล้ถึงเวลา", sum.soon, sum.soon ? "m-warn" : "m-ink2", "warn")
+    + (S.staleDays ? tile("stale", "ไม่อัปเดต", sum.stale || 0, sum.stale ? "m-must" : "m-ink2", "must") : "")
+    + tile("ok",   "ยังพอ", sum.ok, "m-go", "ok")
     + tile("all",  "ทั้งหมด", sum.total, "");
 
   const rows = planRows();

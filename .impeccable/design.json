@@ -1,6 +1,6 @@
 {
   "schemaVersion": 2,
-  "generatedAt": "2026-10-19T16:11:53.409Z",
+  "generatedAt": "2026-10-20T01:09:04.611Z",
   "title": "Design System: AppStock",
   "extensions": {
     "colorMeta": {
@@ -34,34 +34,19 @@
           "#e5fff1"
         ]
       },
-      "m-yellow": {
+      "m-band": {
         "role": "secondary",
-        "displayName": "เหลืองสัญญาณ",
-        "canonical": "#ffd100",
+        "displayName": "ส้มประจำโรงงาน (แถบสัญญาณ)",
+        "canonical": "#f2951c",
         "tonalRamp": [
-          "#4d3f00",
-          "#856d00",
-          "#bd9b00",
-          "#f5c900",
-          "#ffda33",
-          "#ffe570",
-          "#fff0ad",
-          "#fffae5"
-        ]
-      },
-      "m-warn-ink": {
-        "role": "secondary",
-        "displayName": "ตัวหนังสือเตือน",
-        "canonical": "#8a5a00",
-        "tonalRamp": [
-          "#4d3200",
-          "#855600",
-          "#bd7b00",
-          "#f5a000",
-          "#ffb833",
-          "#ffcd70",
-          "#ffe3ad",
-          "#fff6e5"
+          "#482b04",
+          "#7d4a07",
+          "#b2690a",
+          "#e8890d",
+          "#f4a53e",
+          "#f7c078",
+          "#fbdbb2",
+          "#fef4e7"
         ]
       },
       "m-red": {
@@ -92,6 +77,21 @@
           "#70c3ff",
           "#addcff",
           "#e5f4ff"
+        ]
+      },
+      "m-warn-ink": {
+        "role": "secondary",
+        "displayName": "ตัวหนังสือเตือน",
+        "canonical": "#8a5a00",
+        "tonalRamp": [
+          "#4d3200",
+          "#855600",
+          "#bd7b00",
+          "#f5a000",
+          "#ffb833",
+          "#ffcd70",
+          "#ffe3ad",
+          "#fff6e5"
         ]
       },
       "m-ink": {
@@ -199,8 +199,23 @@
           "#f3f3f2"
         ]
       },
+      "sign-yellow": {
+        "role": "tertiary",
+        "displayName": "เหลืองป้ายเตือน (ในรูปทรงเท่านั้น)",
+        "canonical": "#ffd100",
+        "tonalRamp": [
+          "#4d3f00",
+          "#856d00",
+          "#bd9b00",
+          "#f5c900",
+          "#ffda33",
+          "#ffe570",
+          "#fff0ad",
+          "#fffae5"
+        ]
+      },
       "t-out": {
-        "role": "action",
+        "role": "neutral",
         "displayName": "งานเบิก",
         "canonical": "#c2410c",
         "tonalRamp": [
@@ -215,7 +230,7 @@
         ]
       },
       "t-ret": {
-        "role": "action",
+        "role": "neutral",
         "displayName": "งานคืน",
         "canonical": "#0369a1",
         "tonalRamp": [
@@ -230,7 +245,7 @@
         ]
       },
       "t-in": {
-        "role": "action",
+        "role": "neutral",
         "displayName": "งานรับเข้า",
         "canonical": "#047857",
         "tonalRamp": [
@@ -245,7 +260,7 @@
         ]
       },
       "t-cnt": {
-        "role": "action",
+        "role": "neutral",
         "displayName": "งานนับ",
         "canonical": "#0e7490",
         "tonalRamp": [
@@ -260,7 +275,7 @@
         ]
       },
       "t-new": {
-        "role": "action",
+        "role": "neutral",
         "displayName": "สร้างรายการ",
         "canonical": "#6d28d9",
         "tonalRamp": [
@@ -275,7 +290,7 @@
         ]
       },
       "fac-sqf": {
-        "role": "factory",
+        "role": "neutral",
         "displayName": "โรงงาน SQF",
         "canonical": "#c2410c",
         "tonalRamp": [
@@ -290,7 +305,7 @@
         ]
       },
       "fac-mlm": {
-        "role": "factory",
+        "role": "neutral",
         "displayName": "โรงงาน MLM",
         "canonical": "#15803d",
         "tonalRamp": [
@@ -305,7 +320,7 @@
         ]
       },
       "fac-cr": {
-        "role": "factory",
+        "role": "neutral",
         "displayName": "ห้องเย็น",
         "canonical": "#0e7490",
         "tonalRamp": [
@@ -319,24 +334,54 @@
           "#e8f8fd"
         ]
       },
+      "sq-green": {
+        "role": "primary",
+        "displayName": "เขียวเซฟตี้ (หน้าคอม)",
+        "canonical": "#00843d",
+        "tonalRamp": [
+          "#004d23",
+          "#00853d",
+          "#00bd57",
+          "#00f571",
+          "#33ff91",
+          "#70ffb2",
+          "#adffd3",
+          "#e5fff1"
+        ]
+      },
+      "sq-band": {
+        "role": "secondary",
+        "displayName": "ส้มสัญญาณ (หน้าคอม)",
+        "canonical": "#f2951c",
+        "tonalRamp": [
+          "#482b04",
+          "#7d4a07",
+          "#b2690a",
+          "#e8890d",
+          "#f4a53e",
+          "#f7c078",
+          "#fbdbb2",
+          "#fef4e7"
+        ]
+      },
       "sq-ground": {
         "role": "neutral",
-        "displayName": "หน้าคอม · พื้นหน้า",
-        "canonical": "#f4f7f4",
+        "displayName": "ผนังโรงงาน (หน้าคอม)",
+        "canonical": "#f2f2ef",
         "tonalRamp": [
-          "#202c20",
-          "#384d38",
-          "#4f6d4f",
-          "#678e67",
-          "#89a989",
-          "#acc3ac",
-          "#d0ddd0",
-          "#f0f4f0"
+          "#2a2a22",
+          "#49493b",
+          "#686855",
+          "#87876e",
+          "#a4a48e",
+          "#bfbfb0",
+          "#dadad2",
+          "#f4f4f1"
         ]
       },
       "sq-surface": {
         "role": "neutral",
-        "displayName": "หน้าคอม · การ์ด",
+        "displayName": "แผ่นป้าย",
         "canonical": "#ffffff",
         "tonalRamp": [
           "#262626",
@@ -349,129 +394,174 @@
           "#f2f2f2"
         ]
       },
+      "sq-raised": {
+        "role": "neutral",
+        "displayName": "พื้นยก (ชี้/หัวตาราง)",
+        "canonical": "#f7f7f4",
+        "tonalRamp": [
+          "#2c2c20",
+          "#4d4d38",
+          "#6d6d4f",
+          "#8e8e67",
+          "#a9a989",
+          "#c3c3ac",
+          "#ddddd0",
+          "#f4f4f0"
+        ]
+      },
       "sq-line": {
         "role": "neutral",
-        "displayName": "หน้าคอม · เส้น",
-        "canonical": "#dfe6e0",
+        "displayName": "เส้นบาง",
+        "canonical": "#d6d6d0",
         "tonalRamp": [
-          "#222b23",
-          "#3a4a3c",
-          "#536a56",
-          "#6b8970",
-          "#8ca690",
-          "#afc0b1",
-          "#d1dbd3",
-          "#f1f4f1"
+          "#292924",
+          "#47473e",
+          "#656558",
+          "#838372",
+          "#a0a092",
+          "#bcbcb3",
+          "#d9d9d3",
+          "#f3f3f1"
+        ]
+      },
+      "sq-line-soft": {
+        "role": "neutral",
+        "displayName": "เส้นคั่นอ่อน",
+        "canonical": "#e6e6e1",
+        "tonalRamp": [
+          "#2a2a23",
+          "#48483c",
+          "#676756",
+          "#86866f",
+          "#a2a290",
+          "#bebeb1",
+          "#dadad2",
+          "#f3f3f1"
+        ]
+      },
+      "sq-line2": {
+        "role": "neutral",
+        "displayName": "เส้นกลาง (ปุ่ม/ชิป/ช่องกรอก)",
+        "canonical": "#8a8a84",
+        "tonalRamp": [
+          "#272725",
+          "#444441",
+          "#61615c",
+          "#7d7d77",
+          "#9c9c96",
+          "#b9b9b6",
+          "#d7d7d5",
+          "#f3f3f2"
         ]
       },
       "sq-ink": {
         "role": "neutral",
-        "displayName": "หน้าคอม · ตัวหนังสือ",
-        "canonical": "#16241b",
+        "displayName": "หมึกดำ",
+        "canonical": "#111111",
         "tonalRamp": [
-          "#1d2f24",
-          "#32523e",
-          "#487558",
-          "#5d9872",
-          "#80b292",
-          "#a6c9b3",
-          "#cce0d3",
-          "#eff5f1"
+          "#262626",
+          "#424242",
+          "#5e5e5e",
+          "#7a7a7a",
+          "#999999",
+          "#b8b8b8",
+          "#d6d6d6",
+          "#f2f2f2"
         ]
       },
       "sq-ink2": {
         "role": "neutral",
-        "displayName": "หน้าคอม · ตัวหนังสือรอง",
-        "canonical": "#435349",
+        "displayName": "หมึกรอง",
+        "canonical": "#3d3d3d",
         "tonalRamp": [
-          "#222a25",
-          "#3b4941",
-          "#54685c",
-          "#6d8777",
-          "#8ea496",
-          "#b0bfb6",
-          "#d2dbd5",
-          "#f1f4f2"
+          "#262626",
+          "#424242",
+          "#5e5e5e",
+          "#7a7a7a",
+          "#999999",
+          "#b8b8b8",
+          "#d6d6d6",
+          "#f2f2f2"
         ]
       },
       "sq-muted": {
         "role": "neutral",
-        "displayName": "หน้าคอม · ตัวหนังสือจาง",
-        "canonical": "#5b6e63",
+        "displayName": "หมึกจาง",
+        "canonical": "#5c5c57",
         "tonalRamp": [
-          "#232a26",
-          "#3c4941",
-          "#55675d",
-          "#6f8679",
-          "#8fa397",
-          "#b1beb7",
-          "#d2dad6",
-          "#f1f3f2"
+          "#272725",
+          "#444440",
+          "#61615c",
+          "#7e7e77",
+          "#9c9c96",
+          "#babab6",
+          "#d7d7d5",
+          "#f3f3f2"
         ]
       },
       "sq-accent": {
         "role": "primary",
-        "displayName": "หน้าคอม · เขียวแบรนด์",
-        "canonical": "#0e7a3f",
+        "displayName": "เขียวตัวหนังสือ (หน้าคอม)",
+        "canonical": "#006b31",
         "tonalRamp": [
-          "#084523",
-          "#0e773d",
-          "#13a957",
-          "#19dc71",
-          "#48ea92",
-          "#7ff0b2",
-          "#b6f7d3",
-          "#e8fcf1"
+          "#004d23",
+          "#00853d",
+          "#00bd56",
+          "#00f570",
+          "#33ff90",
+          "#70ffb2",
+          "#adffd3",
+          "#e5fff1"
         ]
       },
       "sq-accent-2": {
-        "role": "primary",
-        "displayName": "หน้าคอม · เขียวอ่อน",
-        "canonical": "#e8f4ec",
+        "role": "neutral",
+        "displayName": "เขียวอ่อน (พื้นสถานะปกติ)",
+        "canonical": "#e3f1e8",
         "tonalRamp": [
-          "#193422",
-          "#2b5a3b",
-          "#3d8053",
-          "#4fa66c",
-          "#75bd8d",
-          "#9ed1af",
-          "#c8e5d1",
+          "#1a3323",
+          "#2c583c",
+          "#3f7e55",
+          "#52a36f",
+          "#77bb8f",
+          "#a0cfb1",
+          "#c9e4d2",
           "#eef7f1"
         ]
       },
       "sq-crit": {
-        "role": "status",
-        "displayName": "หน้าคอม · วิกฤต",
-        "canonical": "#c0362c",
+        "role": "tertiary",
+        "displayName": "แดงวิกฤต",
+        "canonical": "#c8102e",
         "tonalRamp": [
-          "#3e120e",
-          "#6c1e19",
-          "#9a2b23",
-          "#c7382e",
-          "#d96259",
-          "#e4918b",
-          "#f0c0bd",
-          "#faebea"
+          "#470610",
+          "#7b0a1c",
+          "#af0e28",
+          "#e31234",
+          "#f0425e",
+          "#f47b8f",
+          "#f9b3bf",
+          "#fde7eb"
         ]
       },
       "sq-crit-bg": {
-        "role": "status",
-        "displayName": "หน้าคอม · พื้นวิกฤต",
-        "canonical": "#fbeceb",
+        "role": "neutral",
+        "displayName": "พื้นวิกฤต",
+        "canonical": "#fbe9ec",
         "tonalRamp": [
-          "#40100d",
-          "#6e1c16",
-          "#9d271f",
-          "#cc3329",
-          "#dd5e55",
-          "#e78e88",
-          "#f1bebb",
-          "#fbebea"
+          "#410c15",
+          "#701424",
+          "#a01d33",
+          "#cf2642",
+          "#e0526a",
+          "#e98697",
+          "#f2bac3",
+          "#fbe9ec"
         ]
       },
       "sq-high": {
-        "role": "status",
-        "displayName": "หน้าคอม · เร่งด่วน",
+        "role": "tertiary",
+        "displayName": "น้ำตาลส้มเร่งด่วน",
         "canonical": "#a8560a",
         "tonalRamp": [
           "#482504",
@@ -485,8 +575,8 @@
         ]
       },
       "sq-high-bg": {
-        "role": "status",
-        "displayName": "หน้าคอม · พื้นเร่งด่วน",
+        "role": "neutral",
+        "displayName": "พื้นเร่งด่วน",
         "canonical": "#fdf0e2",
         "tonalRamp": [
           "#482705",
@@ -500,48 +590,93 @@
         ]
       },
       "sq-warn": {
-        "role": "status",
-        "displayName": "หน้าคอม · ควรดู",
-        "canonical": "#7d6407",
+        "role": "secondary",
+        "displayName": "ตัวหนังสือควรดู",
+        "canonical": "#8a5a00",
         "tonalRamp": [
-          "#483a04",
-          "#7e6407",
-          "#b38f0a",
-          "#e8b90d",
-          "#f4ce3e",
-          "#f7dc78",
-          "#fbebb2",
-          "#fef9e7"
+          "#4d3200",
+          "#855600",
+          "#bd7b00",
+          "#f5a000",
+          "#ffb833",
+          "#ffcd70",
+          "#ffe3ad",
+          "#fff6e5"
         ]
       },
       "sq-warn-bg": {
-        "role": "status",
-        "displayName": "หน้าคอม · พื้นควรดู",
-        "canonical": "#faf3d9",
+        "role": "neutral",
+        "displayName": "พื้นควรดู",
+        "canonical": "#fff6cc",
         "tonalRamp": [
-          "#443709",
-          "#75600f",
-          "#a78816",
-          "#d8b01c",
-          "#e7c64b",
-          "#eed781",
-          "#f6e8b7",
-          "#fcf8e8"
+          "#4d3f00",
+          "#856d00",
+          "#bd9b00",
+          "#f5ca00",
+          "#ffdb33",
+          "#ffe670",
+          "#fff1ad",
+          "#fffbe5"
         ]
       },
-      "sq-orange": {
-        "role": "brand",
-        "displayName": "หน้าคอม · ส้มโลโก้",
-        "canonical": "#f2951c",
+      "sq-must": {
+        "role": "tertiary",
+        "displayName": "น้ำเงินบังคับ (หน้าคอม)",
+        "canonical": "#005a9c",
         "tonalRamp": [
-          "#482b04",
-          "#7d4a07",
-          "#b2690a",
-          "#e8890d",
-          "#f4a53e",
-          "#f7c078",
-          "#fbdbb2",
-          "#fef4e7"
+          "#002c4d",
+          "#004c85",
+          "#006dbd",
+          "#008df5",
+          "#33a9ff",
+          "#70c3ff",
+          "#addcff",
+          "#e5f4ff"
+        ]
+      },
+      "sq-must-bg": {
+        "role": "neutral",
+        "displayName": "พื้นบังคับ",
+        "canonical": "#e5eff8",
+        "tonalRamp": [
+          "#10273c",
+          "#1c4468",
+          "#286195",
+          "#347ec1",
+          "#5e9cd4",
+          "#8ebae1",
+          "#bfd7ee",
+          "#ebf3fa"
+        ]
+      },
+      "sq-none-bg": {
+        "role": "neutral",
+        "displayName": "พื้นกลาง",
+        "canonical": "#ecece8",
+        "tonalRamp": [
+          "#2a2a23",
+          "#49493c",
+          "#676755",
+          "#86866f",
+          "#a3a38f",
+          "#bebeb1",
+          "#dadad2",
+          "#f3f3f1"
+        ]
+      },
+      "sq-focus-halo": {
+        "role": "neutral",
+        "displayName": "วงโฟกัสส้มอ่อน",
+        "canonical": "#fde0bd",
+        "tonalRamp": [
+          "#4a2a02",
+          "#814804",
+          "#b76706",
+          "#ee8507",
+          "#f9a239",
+          "#fbbe74",
+          "#fddab0",
+          "#fef3e6"
         ]
       }
     },
@@ -584,7 +719,39 @@
       },
       "sq-body": {
         "displayName": "หน้าคอม · เนื้อหา",
-        "purpose": "หน้าคอม Sarabun สเกล 12–25px (รายละเอียดใน DESIGN.md ส่วนหน้าคอม)"
+        "purpose": "Sarabun 13–14px"
+      },
+      "sq-page-title": {
+        "displayName": "หน้าคอม · หัวหน้า",
+        "purpose": "Kanit 26px .sq-h1 / .rm-title"
+      },
+      "sq-modal-title": {
+        "displayName": "หน้าคอม · หัวหน้าต่าง",
+        "purpose": "Kanit 22px ใน .ui-plate-head"
+      },
+      "sq-tile-num": {
+        "displayName": "หน้าคอม · ตัวเลขสรุป",
+        "purpose": "Kanit 28px การ์ดสรุป"
+      },
+      "sq-qty": {
+        "displayName": "หน้าคอม · ยอดในตาราง",
+        "purpose": "Kanit 19px .rm-qty"
+      },
+      "sq-nav-warehouse": {
+        "displayName": "หน้าคอม · ปุ่มคลังบนแถบเมนู",
+        "purpose": "Kanit 16px .nav-btn.nav-wh"
+      },
+      "sq-control": {
+        "displayName": "หน้าคอม · ปุ่ม",
+        "purpose": "Sarabun 13.5px/800"
+      },
+      "sq-label": {
+        "displayName": "หน้าคอม · หัวตาราง",
+        "purpose": "Sarabun 12.5px/700 สีหมึกรอง"
+      },
+      "sq-mono": {
+        "displayName": "หน้าคอม · รหัส/เวลา/ตัวเลขตาราง",
+        "purpose": "--sq-mono"
       }
     },
     "shadows": [
@@ -614,9 +781,29 @@
         "purpose": "เส้นเขียวล่างไทล์ต้องสั่งที่เลือก"
       },
       {
-        "name": "sq-shadow",
-        "value": "0 1px 2px rgba(22,36,27,.06),0 4px 12px rgba(22,36,27,.05)",
-        "purpose": "หน้าคอม · การ์ด"
+        "name": "sq-modal",
+        "value": "0 18px 44px rgba(0,0,0,.35)",
+        "purpose": "หน้าคอม · หน้าต่าง .ui-modal"
+      },
+      {
+        "name": "sq-menu",
+        "value": "0 10px 24px rgba(0,0,0,.18)",
+        "purpose": "หน้าคอม · เมนูเพิ่มเติม"
+      },
+      {
+        "name": "sq-toast",
+        "value": "0 8px 20px rgba(0,0,0,.2)",
+        "purpose": "หน้าคอม · toast"
+      },
+      {
+        "name": "sq-focus-halo",
+        "value": "0 0 0 3px #fde0bd",
+        "purpose": "หน้าคอม · วงโฟกัสช่องกรอก"
+      },
+      {
+        "name": "sq-flat",
+        "value": "none",
+        "purpose": "หน้าคอม · --sq-shadow แผ่นป้ายแบน"
       }
     ],
     "motion": [
@@ -646,6 +833,11 @@
         "name": "sq-card-table",
         "value": "900px",
         "purpose": "หน้าคอม: ตารางเป็นการ์ดเมื่อจอ ≤ 900px"
+      },
+      {
+        "name": "sq-row-actions-inline",
+        "value": "901px",
+        "purpose": "หน้าคอม: ปุ่มในแถว 3 ปุ่มบรรทัดเดียวชิดขวา"
       }
     ],
     "surfaces": {
@@ -657,7 +849,7 @@
       "desktop": {
         "file": "index.html + js/*.js",
         "tokens": "--sq-*",
-        "components": "บันทึกเป็นข้อความใน DESIGN.md ส่วน 'หน้าคอม (index.html)' เท่านั้น — ยังไม่มี snippet"
+        "components": "snippet หน้าคอมขึ้นต้น ds-sq- ใน components · รายละเอียดใน DESIGN.md ส่วน 'หน้าคอม (index.html)'"
       }
     }
   },
@@ -666,9 +858,9 @@
       "name": "หัวจอ (มือถือ)",
       "kind": "nav",
       "refersTo": "m-header",
-      "description": "หัวเขียวเซฟตี้เต็มกว้าง แถบเหลือง 6px ล่าง · ปุ่มขอบขาว + ชื่อ Kanit 24 + บรรทัดรอง",
+      "description": "หัวเขียวเซฟตี้เต็มกว้าง แถบส้ม 6px ล่าง · ปุ่มขอบขาว + ชื่อ Kanit 24 + บรรทัดรอง",
       "html": "<header class=\"ds-m-head\"><button class=\"ds-m-btn-line\">‹ คลัง</button><div class=\"ds-m-head-t\"><div class=\"ds-m-title\">วัตถุดิบ SQF</div><div class=\"ds-m-sub\">พนักงาน · SQF · อัปเดต 22:59</div></div><button class=\"ds-m-btn-line\" aria-label=\"โหลดข้อมูลใหม่\"><svg width=\"20\" height=\"20\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M20 12a8 8 0 1 1-2.3-5.7M20 4v5h-5\"/></svg></button></header>",
-      "css": ".ds-m-head{display:flex;align-items:center;gap:12px;padding:12px 16px;background:#00843d;color:#fff;border-bottom:6px solid #ffd100;font-family:Sarabun,system-ui,sans-serif}.ds-m-head-t{flex:1;min-width:0}.ds-m-title{font-family:Kanit,Sarabun,sans-serif;font-weight:700;font-size:24px;line-height:1.25}.ds-m-sub{font-size:12px;font-weight:700}.ds-m-btn-line{min-height:44px;min-width:44px;padding:0 12px;border:2px solid #fff;border-radius:6px;background:transparent;color:#fff;font-weight:800;font-size:16px;display:inline-flex;align-items:center;justify-content:center}.ds-m-btn-line:active{opacity:.75;transform:scale(.97)}.ds-m-btn-line:focus-visible{outline:3px solid #fff;outline-offset:2px}"
+      "css": ".ds-m-head{display:flex;align-items:center;gap:12px;padding:12px 16px;background:#00843d;color:#fff;border-bottom:6px solid #f2951c;font-family:Sarabun,system-ui,sans-serif}.ds-m-head-t{flex:1;min-width:0}.ds-m-title{font-family:Kanit,Sarabun,sans-serif;font-weight:700;font-size:24px;line-height:1.25}.ds-m-sub{font-size:12px;font-weight:700}.ds-m-btn-line{min-height:44px;min-width:44px;padding:0 12px;border:2px solid #fff;border-radius:6px;background:transparent;color:#fff;font-weight:800;font-size:16px;display:inline-flex;align-items:center;justify-content:center}.ds-m-btn-line:active{opacity:.75;transform:scale(.97)}.ds-m-btn-line:focus-visible{outline:3px solid #fff;outline-offset:2px}"
     },
     {
       "name": "แถวรายการ + ป้ายรูปทรง",
@@ -682,9 +874,9 @@
       "name": "ชิปตัวกรอง",
       "kind": "chip",
       "refersTo": "m-chip",
-      "description": "ป้ายรูปทรงเดียวกับในแถว · ปกติ / hot (ขอบดำ) / on (พื้นดำ) สูง 40",
+      "description": "ป้ายรูปทรงเดียวกับในแถว · ปกติ / hot (ขอบเขียว) / on (พื้นเขียว) สูง 40",
       "html": "<div class=\"ds-m-chips\"><button class=\"ds-m-chip on\" aria-pressed=\"true\">ทั้งหมด 8</button><button class=\"ds-m-chip hot\"><svg width=\"18\" height=\"18\" viewBox=\"0 0 34 34\" aria-hidden=\"true\"><circle cx=\"17\" cy=\"17\" r=\"13.5\" fill=\"#fff\" stroke=\"#c8102e\" stroke-width=\"5\"/><path d=\"M7.5 7.5 26.5 26.5\" stroke=\"#c8102e\" stroke-width=\"5\"/></svg>หมด/หมดอายุ 2</button><button class=\"ds-m-chip hot\"><svg width=\"18\" height=\"18\" viewBox=\"0 0 34 34\" aria-hidden=\"true\"><path d=\"M17 2.5 32.5 30.5H1.5Z\" fill=\"#ffd100\" stroke=\"#111\" stroke-width=\"2.5\" stroke-linejoin=\"round\"/><path d=\"M17 11v10\" stroke=\"#111\" stroke-width=\"3.5\" stroke-linecap=\"round\"/><circle cx=\"17\" cy=\"25.6\" r=\"2\" fill=\"#111\"/></svg>ต้องสั่ง/ใกล้หมดอายุ 2</button><button class=\"ds-m-chip hot\"><svg width=\"18\" height=\"18\" viewBox=\"0 0 34 34\" aria-hidden=\"true\"><circle cx=\"17\" cy=\"17\" r=\"16\" fill=\"#005a9c\"/><path d=\"M17 8.5v11\" stroke=\"#fff\" stroke-width=\"3.5\" stroke-linecap=\"round\"/><circle cx=\"17\" cy=\"25\" r=\"2.2\" fill=\"#fff\"/></svg>ไม่อัปเดต 1</button></div>",
-      "css": ".ds-m-chips{display:flex;gap:6px;flex-wrap:wrap}.ds-m-chip{min-height:40px;padding:0 12px;display:inline-flex;align-items:center;gap:6px;background:#fff;color:#111;border:1.5px solid #8a8a84;border-radius:6px;font:800 13px Sarabun,system-ui,sans-serif;white-space:nowrap}.ds-m-chip.hot{border:2px solid #111}.ds-m-chip.on{background:#111;border:2px solid #111;color:#fff}.ds-m-chip:active{opacity:.75;transform:scale(.97)}.ds-m-chip:focus-visible{outline:3px solid #111;outline-offset:2px;}"
+      "css": ".ds-m-chips{display:flex;gap:6px;flex-wrap:wrap}.ds-m-chip{min-height:40px;padding:0 12px;display:inline-flex;align-items:center;gap:6px;background:#fff;color:#111;border:1.5px solid #8a8a84;border-radius:6px;font:800 13px Sarabun,system-ui,sans-serif;white-space:nowrap}.ds-m-chip.hot{border:2px solid #00843d}.ds-m-chip.on{background:#00843d;border:2px solid #00843d;color:#fff}.ds-m-chip:active{opacity:.75;transform:scale(.97)}.ds-m-chip:focus-visible{outline:3px solid #111;outline-offset:2px;}"
     },
     {
       "name": "ช่องกรอก",
@@ -698,90 +890,131 @@
       "name": "ปุ่มเลือกงาน + ปุ่มยืนยัน",
       "kind": "button",
       "refersTo": "m-confirm-out",
-      "description": "เลือกงานแล้วปุ่มทึบสีงาน · ปุ่มยืนยันเป็นแผ่นป้ายสีงาน ขอบดำ + เส้นขาวใน อ่านทวน 'เบิก 500 ใบ'",
+      "description": "เลือกงานแล้วปุ่มทึบสีงาน · ปุ่มยืนยันเป็นแผ่นป้ายสีงาน ขอบเข้ม + เส้นขาวใน อ่านทวน 'เบิก 500 ใบ'",
       "html": "<div class=\"ds-m-act\"><div class=\"ds-m-types\"><button class=\"ds-m-type on\" aria-pressed=\"true\"><svg width=\"20\" height=\"20\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M12 15V3M7 8l5-5 5 5M4 14v5a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-5\"/></svg> เบิก</button><button class=\"ds-m-type\" aria-pressed=\"false\">คืน</button><button class=\"ds-m-type\" aria-pressed=\"false\">รับ</button><button class=\"ds-m-type\" aria-pressed=\"false\">นับ</button></div><button class=\"ds-m-confirm\"><svg width=\"20\" height=\"20\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M12 15V3M7 8l5-5 5 5M4 14v5a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-5\"/></svg> เบิก 500 ใบ</button></div>",
-      "css": ".ds-m-act{display:flex;flex-direction:column;gap:12px}.ds-m-types{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}.ds-m-type{min-height:52px;border-radius:6px;font:800 15px Sarabun,system-ui,sans-serif;background:#fff;color:#111;border:2px solid #8a8a84;display:inline-flex;align-items:center;justify-content:center;gap:6px}.ds-m-type.on{background:#c2410c;color:#fff;border-color:#111}.ds-m-type:focus-visible,.ds-m-confirm:focus-visible{outline:3px solid #111;outline-offset:2px;}.ds-m-confirm{width:100%;min-height:60px;padding:14px 12px;background:#c2410c;color:#fff;border:2px solid #111;border-radius:8px;box-shadow:inset 0 0 0 3px #fff;font:700 20px/1.25 Kanit,Sarabun,sans-serif;display:inline-flex;align-items:center;justify-content:center;gap:8px}.ds-m-confirm:active{opacity:.75;transform:scale(.97)}.ds-m-confirm:disabled{opacity:.5;filter:saturate(.6)}"
+      "css": ".ds-m-act{display:flex;flex-direction:column;gap:12px}.ds-m-types{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}.ds-m-type{min-height:52px;border-radius:6px;font:800 15px Sarabun,system-ui,sans-serif;background:#fff;color:#111;border:2px solid #8a8a84;display:inline-flex;align-items:center;justify-content:center;gap:6px}.ds-m-type.on{background:#c2410c;color:#fff;border-color:rgba(0,0,0,.3)}.ds-m-type:focus-visible,.ds-m-confirm:focus-visible{outline:3px solid #111;outline-offset:2px;}.ds-m-confirm{width:100%;min-height:60px;padding:14px 12px;background:#c2410c;color:#fff;border:2px solid rgba(0,0,0,.3);border-radius:8px;box-shadow:inset 0 0 0 3px #fff;font:700 20px/1.25 Kanit,Sarabun,sans-serif;display:inline-flex;align-items:center;justify-content:center;gap:8px}.ds-m-confirm:active{opacity:.75;transform:scale(.97)}.ds-m-confirm:disabled{opacity:.5;filter:saturate(.6)}"
     },
     {
-      "name": "ปุ่มดำ / เขียว / รอง",
+      "name": "ปุ่มเขียว / รอง",
       "kind": "button",
       "refersTo": "m-btn-go",
-      "description": "ดำ = สแกน · เขียว = ไปต่อ/ลองใหม่ (1 ปุ่มต่อส่วน) · ขาวขอบดำ = รอง",
-      "html": "<div class=\"ds-m-btns\"><button class=\"ds-m-btn-ink\"><svg width=\"20\" height=\"20\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M4 8V4h4M16 4h4v4M20 16v4h-4M8 20H4v-4M4 12h16\"/></svg> สแกน Barcode / QR Code</button><button class=\"ds-m-btn-go\">↻ ลองใหม่</button><button class=\"ds-m-btn\">✕ ปิด</button></div>",
-      "css": ".ds-m-btns{display:flex;flex-direction:column;gap:8px}.ds-m-btn-ink,.ds-m-btn-go,.ds-m-btn{border-radius:6px;font:800 16px Sarabun,system-ui,sans-serif;padding:12px 16px;display:inline-flex;align-items:center;justify-content:center;gap:8px}.ds-m-btn-ink{background:#111;color:#fff;border:0;min-height:48px}.ds-m-btn-go{background:#00843d;color:#fff;border:0;min-height:48px}.ds-m-btn{background:#fff;color:#111;border:2px solid #111;min-height:44px}.ds-m-btn-ink:active,.ds-m-btn-go:active,.ds-m-btn:active{opacity:.75;transform:scale(.97)}.ds-m-btn-ink:focus-visible,.ds-m-btn-go:focus-visible,.ds-m-btn:focus-visible{outline:3px solid #111;outline-offset:2px;}"
+      "description": "เขียว = สแกน / ไปต่อ / ลองใหม่ (1 ปุ่มหลักต่อส่วน) · ขาวขอบเขียว = รอง",
+      "html": "<div class=\"ds-m-btns\"><button class=\"ds-m-btn-ink\"><svg width=\"20\" height=\"20\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M4 8V4h4M16 4h4v4M20 16v4h-4M8 20H4v-4M4 12h16\"/></svg> สแกน Barcode / QR Code</button><button class=\"ds-m-btn-go\">ลองใหม่</button><button class=\"ds-m-btn\">ปิด</button></div>",
+      "css": ".ds-m-btns{display:flex;flex-direction:column;gap:8px}.ds-m-btn-ink,.ds-m-btn-go,.ds-m-btn{border-radius:6px;font:800 16px Sarabun,system-ui,sans-serif;padding:12px 16px;display:inline-flex;align-items:center;justify-content:center;gap:8px}.ds-m-btn-ink{background:#00843d;color:#fff;border:0;min-height:48px}.ds-m-btn-go{background:#00843d;color:#fff;border:0;min-height:48px}.ds-m-btn{background:#fff;color:#111;border:2px solid #00843d;min-height:44px}.ds-m-btn-ink:active,.ds-m-btn-go:active,.ds-m-btn:active{opacity:.75;transform:scale(.97)}.ds-m-btn-ink:focus-visible,.ds-m-btn-go:focus-visible,.ds-m-btn:focus-visible{outline:3px solid #111;outline-offset:2px;}"
     },
     {
       "name": "เมนูล่าง",
       "kind": "nav",
       "refersTo": "m-tab-on",
-      "description": "ขาว ขอบบนดำ 3px · แท็บที่เลือกตัวเขียวเข้ม + แถบเขียว 4px บน · ป้ายตัวเลขแดง",
+      "description": "ขาว ขอบบนเขียว 3px · แท็บที่เลือกตัวเขียวเข้ม + แถบเขียว 4px บน · ป้ายตัวเลขแดง",
       "html": "<nav class=\"ds-m-nav\"><button class=\"ds-m-tab on\" aria-current=\"page\"><svg width=\"20\" height=\"20\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><rect x=\"5\" y=\"4\" width=\"14\" height=\"17\" rx=\"2\"/><path d=\"M9 4V2.8h6V4M9 10h6M9 14h6M9 18h3\"/></svg><span>สต๊อก</span></button><button class=\"ds-m-tab\"><svg width=\"20\" height=\"20\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M4 8V4h4M16 4h4v4M20 16v4h-4M8 20H4v-4M4 12h16\"/></svg><span>สแกน</span></button><button class=\"ds-m-tab\"><svg width=\"20\" height=\"20\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M2.5 3.5h3l2.2 11h10.6l2.2-8H6.6\"/><circle cx=\"9.5\" cy=\"19.5\" r=\"1.6\"/><circle cx=\"17\" cy=\"19.5\" r=\"1.6\"/></svg><span>ต้องสั่ง</span><i class=\"ds-m-badge\">2</i></button><button class=\"ds-m-tab\"><svg width=\"20\" height=\"20\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><circle cx=\"12\" cy=\"8\" r=\"4\"/><path d=\"M4 21c0-4.4 3.6-7 8-7s8 2.6 8 7\"/></svg><span>ของฉัน</span></button></nav>",
-      "css": ".ds-m-nav{display:flex;background:#fff;border-top:3px solid #111}.ds-m-tab{flex:1;position:relative;min-height:62px;padding:8px 0 10px;display:flex;flex-direction:column;align-items:center;gap:2px;background:none;border:0;font:800 12px Sarabun,system-ui,sans-serif;color:#3d3d3d}.ds-m-tab svg{width:26px;height:26px}.ds-m-tab.on{color:#006b31;box-shadow:inset 0 4px 0 #00843d}.ds-m-tab:active{opacity:.6;transform:scale(.95)}.ds-m-tab:focus-visible{outline:3px solid #111;outline-offset:2px;}.ds-m-badge{position:absolute;top:4px;left:calc(50% + 6px);min-width:18px;line-height:18px;padding:0 6px;border-radius:999px;background:#c8102e;color:#fff;font:800 12px Sarabun,sans-serif;font-style:normal}"
+      "css": ".ds-m-nav{display:flex;background:#fff;border-top:3px solid #00843d}.ds-m-tab{flex:1;position:relative;min-height:62px;padding:8px 0 10px;display:flex;flex-direction:column;align-items:center;gap:2px;background:none;border:0;font:800 12px Sarabun,system-ui,sans-serif;color:#3d3d3d}.ds-m-tab svg{width:26px;height:26px}.ds-m-tab.on{color:#006b31;box-shadow:inset 0 4px 0 #00843d}.ds-m-tab:active{opacity:.6;transform:scale(.95)}.ds-m-tab:focus-visible{outline:3px solid #111;outline-offset:2px;}.ds-m-badge{position:absolute;top:4px;left:calc(50% + 6px);min-width:18px;line-height:18px;padding:0 6px;border-radius:999px;background:#c8102e;color:#fff;font:800 12px Sarabun,sans-serif;font-style:normal}"
     },
     {
       "name": "แจ้งผล: toast + เทปคิวออฟไลน์",
       "kind": "custom",
       "refersTo": "m-hazard",
-      "description": "toast เป็นแผ่นป้ายสีตามความหมาย · คิวออฟไลน์เป็นเทปกั้นเหลืองดำบน-ล่าง (ตั้งใจให้เด่น)",
+      "description": "toast เป็นแผ่นป้ายสีตามความหมาย (เตือน = ส้มตัวหมึก) · คิวออฟไลน์เป็นเทปกั้นลายทแยงหมึก-ส้มบน-ล่าง (ตั้งใจให้เด่น)",
       "html": "<div class=\"ds-m-fb\"><div class=\"ds-m-toast ok\" role=\"status\">เบิก 500 ใบ · ถ้วยพลาสติก</div><div class=\"ds-m-toast warn\">เน็ตล่ม — เก็บไว้ส่งทีหลัง</div><div class=\"ds-m-toast err\">บันทึกไม่สำเร็จ</div><button class=\"ds-m-hazard\">มีงานรอส่ง 2 รายการ › แตะเพื่อดู/ลองส่งใหม่</button></div>",
-      "css": ".ds-m-fb{display:flex;flex-direction:column;gap:8px}.ds-m-toast{padding:16px;border:2px solid #111;border-radius:6px;box-shadow:0 8px 24px rgba(0,0,0,.25);font:800 14px Sarabun,system-ui,sans-serif;text-align:center}.ds-m-toast.ok{background:#00843d;color:#fff}.ds-m-toast.warn{background:#ffd100;color:#111}.ds-m-toast.err{background:#c8102e;color:#fff}.ds-m-hazard{text-align:left;font:800 14px Sarabun,system-ui,sans-serif;color:#111;border:2px solid #111;border-radius:6px;padding:14px 12px;background:repeating-linear-gradient(-45deg,#111 0 6px,#ffd100 6px 12px) top/100% 7px no-repeat,repeating-linear-gradient(-45deg,#111 0 6px,#ffd100 6px 12px) bottom/100% 7px no-repeat,#ffd100}.ds-m-hazard:active{opacity:.75}.ds-m-hazard:focus-visible{outline:3px solid #111;outline-offset:2px;}"
+      "css": ".ds-m-fb{display:flex;flex-direction:column;gap:8px}.ds-m-toast{padding:16px;border:0;border-radius:6px;box-shadow:0 8px 24px rgba(0,0,0,.25);font:800 14px Sarabun,system-ui,sans-serif;text-align:center}.ds-m-toast.ok{background:#00843d;color:#fff}.ds-m-toast.warn{background:#f2951c;color:#111}.ds-m-toast.err{background:#c8102e;color:#fff}.ds-m-hazard{text-align:left;font:800 14px Sarabun,system-ui,sans-serif;color:#111;border:2px solid #111;border-radius:6px;padding:14px 12px;background:repeating-linear-gradient(-45deg,#111 0 6px,#f2951c 6px 12px) top/100% 7px no-repeat,repeating-linear-gradient(-45deg,#111 0 6px,#f2951c 6px 12px) bottom/100% 7px no-repeat,#f2951c}.ds-m-hazard:active{opacity:.75}.ds-m-hazard:focus-visible{outline:3px solid #111;outline-offset:2px;}"
+    },
+    {
+      "name": "แถบเมนู (หน้าคอม)",
+      "kind": "nav",
+      "refersTo": "sq-nav",
+      "description": "เขียวเต็มกว้าง แถบส้ม 6px ล่าง · ปุ่มคลัง Kanit · หน้าที่เปิดอยู่ = แผ่นขาวตัวหมึก · ป้ายตัวเลขแดง · ขึ้นบรรทัดใหม่ ไม่เลื่อนข้าง",
+      "html": "<nav class=\"ds-sq-nav\"><div class=\"ds-sq-row\"><button class=\"ds-sq-nb wh\"><svg width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M12 2.5v19M3.8 7.25l16.4 9.5M20.2 7.25 3.8 16.75\"/></svg>คลังสินค้า</button><button class=\"ds-sq-nb wh on\" aria-current=\"page\"><svg width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M3 21V10l5 3.5V10l5 3.5V10l5 3.5V4h3v17zM2 21h20\"/></svg>วัตถุดิบ SQF<span class=\"ds-sq-badge\">3</span></button><button class=\"ds-sq-nb wh\"><svg width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M3 21V10l5 3.5V10l5 3.5V10l5 3.5V4h3v17zM2 21h20\"/></svg>วัตถุดิบ MLM</button><span style=\"flex:1\"></span><button class=\"ds-sq-nb out\">ออก</button></div></nav>",
+      "css": ".ds-sq-nav{background:#00843d;border-bottom:6px solid #f2951c;padding:8px 12px;font-family:Sarabun,sans-serif}.ds-sq-row{display:flex;align-items:center;gap:6px;flex-wrap:wrap}.ds-sq-nb{display:inline-flex;align-items:center;gap:6px;min-height:36px;padding:5px 11px;border-radius:6px;font:800 13.5px Sarabun,sans-serif;color:#fff;background:transparent;border:2px solid transparent;cursor:pointer;white-space:nowrap;transition:background .12s}.ds-sq-nb.wh{font:700 16px Kanit,Sarabun,sans-serif;min-height:42px;padding:5px 14px}.ds-sq-nb:hover:not(.on){background:rgba(0,0,0,.18)}.ds-sq-nb:focus-visible{outline:3px solid #fff;outline-offset:1px}.ds-sq-nb.on{background:#fff;color:#111;border-color:#fff}.ds-sq-nb.out{border-color:rgba(255,255,255,.85)}.ds-sq-nb.out:hover{background:#c8102e;border-color:#fff}.ds-sq-badge{display:inline-flex;align-items:center;justify-content:center;min-width:20px;height:20px;padding:0 6px;border-radius:999px;font:700 12.5px/1 Kanit,sans-serif;background:#c8102e;color:#fff;margin-left:2px}"
+    },
+    {
+      "name": "ปุ่ม + ชิปกรอง (หน้าคอม)",
+      "kind": "button",
+      "refersTo": "sq-btn-primary",
+      "description": "ปุ่มเส้นขาว / ปุ่มหลักเขียว 1 ปุ่มต่อส่วน · ชิปกรองมีป้ายรูปทรง เลือกอยู่ = พื้นเขียว · ขึ้นบรรทัดใหม่ ไม่เลื่อนข้าง",
+      "html": "<div class=\"ds-sq-bar\"><button class=\"ds-sq-btn\"><svg width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M3 17l6-6 4 4 8-8M15 7h6v6\"/></svg>วางแผนสั่งซื้อ</button><button class=\"ds-sq-btn pri\"><svg width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M12 5v14M5 12h14\"/></svg>เพิ่มวัตถุดิบ</button></div><div class=\"ds-sq-chips\"><button class=\"ds-sq-chip on\" aria-pressed=\"true\">ทั้งหมด</button><button class=\"ds-sq-chip\" aria-pressed=\"false\"><svg width=\"20\" height=\"20\" viewBox=\"0 0 34 34\" aria-hidden=\"true\"><path d=\"M17 2.5 32.5 30.5H1.5Z\" fill=\"#ffd100\" stroke=\"#111\" stroke-width=\"2.5\" stroke-linejoin=\"round\"/><path d=\"M17 11v10\" stroke=\"#111\" stroke-width=\"3.5\" stroke-linecap=\"round\"/><circle cx=\"17\" cy=\"25.6\" r=\"2\" fill=\"#111\"/></svg>ต่ำกว่าจุดสั่งซื้อ</button><button class=\"ds-sq-chip\" aria-pressed=\"false\"><svg width=\"20\" height=\"20\" viewBox=\"0 0 34 34\" aria-hidden=\"true\"><circle cx=\"17\" cy=\"17\" r=\"13.5\" fill=\"#fff\" stroke=\"#c8102e\" stroke-width=\"5\"/><path d=\"M7.5 7.5 26.5 26.5\" stroke=\"#c8102e\" stroke-width=\"5\"/></svg>หมดอายุ</button></div>",
+      "css": ".ds-sq-bar,.ds-sq-chips{display:flex;gap:6px;flex-wrap:wrap;font-family:Sarabun,sans-serif}.ds-sq-chips{margin-top:10px}.ds-sq-btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;min-height:38px;padding:7px 13px;border:1.5px solid #8a8a84;border-radius:6px;background:#fff;color:#111;font:800 13.5px Sarabun,sans-serif;cursor:pointer;transition:background .12s,border-color .12s}.ds-sq-btn:hover{border-color:#00843d;background:#f7f7f4}.ds-sq-btn.pri{background:#00843d;border-color:#00843d;color:#fff}.ds-sq-btn.pri:hover{background:#006b31;border-color:#006b31}.ds-sq-btn:focus-visible,.ds-sq-chip:focus-visible{outline:3px solid #006b31;outline-offset:2px}.ds-sq-chip{display:inline-flex;align-items:center;gap:6px;min-height:34px;padding:4px 11px;border:1.5px solid #8a8a84;border-radius:6px;background:#fff;color:#111;font:700 13px Sarabun,sans-serif;cursor:pointer;white-space:nowrap}.ds-sq-chip svg{width:16px;height:16px}.ds-sq-chip:hover{border-color:#5c5c57}.ds-sq-chip.on{background:#00843d;border-color:#00843d;color:#fff}"
+    },
+    {
+      "name": "ตาราง + ปุ่มในแถว (หน้าคอม)",
+      "kind": "card",
+      "refersTo": "sq-row-action",
+      "description": "แผ่นป้ายขอบ 1.5px มุม 6 · หัวตารางเส้นใต้เขียว · สถานะ = ป้ายรูปทรง + คำ ไม่มีแถบสีข้าง · 3 ปุ่มบรรทัดเดียวชิดขวา (ยกเลิกการใช้อยู่ในหน้าต่างแก้ไข)",
+      "html": "<div class=\"ds-sq-card\"><table class=\"ds-sq-t\"><thead><tr><th>วัตถุดิบ</th><th>สถานะ</th><th class=\"n\">คงเหลือ</th><th></th></tr></thead><tbody><tr><td><b>แป้งมัน</b><div class=\"ds-sq-meta\">S02</div></td><td><span class=\"ds-sq-st high\"><svg width=\"20\" height=\"20\" viewBox=\"0 0 34 34\" aria-hidden=\"true\"><path d=\"M17 2.5 32.5 30.5H1.5Z\" fill=\"#ffd100\" stroke=\"#111\" stroke-width=\"2.5\" stroke-linejoin=\"round\"/><path d=\"M17 11v10\" stroke=\"#111\" stroke-width=\"3.5\" stroke-linecap=\"round\"/><circle cx=\"17\" cy=\"25.6\" r=\"2\" fill=\"#111\"/></svg>ต่ำกว่าจุดสั่งซื้อ</span></td><td class=\"n\"><span class=\"ds-sq-q\">3</span> กระสอบ</td><td><div class=\"ds-sq-acts\"><button class=\"ds-sq-mini solid\">รับ / เบิก</button><button class=\"ds-sq-mini\">นับ</button><button class=\"ds-sq-mini\">แก้ไข</button></div></td></tr><tr><td><b>ถ้วยพลาสติก</b><div class=\"ds-sq-meta\">S03</div></td><td><span class=\"ds-sq-st\"><svg width=\"20\" height=\"20\" viewBox=\"0 0 34 34\" aria-hidden=\"true\"><rect x=\"1\" y=\"1\" width=\"32\" height=\"32\" rx=\"4\" fill=\"#00843d\"/><path d=\"M9 17.5l5.5 5.5L25.5 11\" fill=\"none\" stroke=\"#fff\" stroke-width=\"4\" stroke-linecap=\"round\" stroke-linejoin=\"round\"/></svg>ปกติ</span></td><td class=\"n\"><span class=\"ds-sq-q\">5,000</span> ใบ</td><td><div class=\"ds-sq-acts\"><button class=\"ds-sq-mini solid\">รับ / เบิก</button><button class=\"ds-sq-mini\">นับ</button><button class=\"ds-sq-mini\">แก้ไข</button></div></td></tr></tbody></table></div>",
+      "css": ".ds-sq-card{background:#fff;border:1.5px solid #d6d6d0;border-radius:6px;overflow:hidden;font:400 13px Sarabun,sans-serif;color:#111}.ds-sq-t{width:100%;border-collapse:collapse}.ds-sq-t th{font:700 12.5px Sarabun,sans-serif;color:#3d3d3d;text-align:left;padding:9px 12px;border-bottom:2px solid #00843d}.ds-sq-t td{padding:8px 12px;border-bottom:1px solid #d6d6d0;vertical-align:middle}.ds-sq-t tr:last-child td{border-bottom:0}.ds-sq-t tbody tr:hover{background:#f7f7f4}.ds-sq-t .n{text-align:right}.ds-sq-meta{font:500 12px ui-monospace,Consolas,monospace;color:#5c5c57}.ds-sq-q{font:700 19px Kanit,Sarabun,sans-serif}.ds-sq-st{display:inline-flex;align-items:center;gap:6px;font-weight:600;font-size:13px;color:#3d3d3d;white-space:nowrap}.ds-sq-st.high{color:#a8560a;font-weight:700}.ds-sq-acts{display:grid;grid-template-columns:repeat(3,auto);gap:6px;justify-content:end}.ds-sq-mini{min-height:34px;padding:4px 11px;border:1.5px solid #8a8a84;border-radius:6px;background:#fff;color:#111;font:700 13px Sarabun,sans-serif;cursor:pointer;white-space:nowrap}.ds-sq-mini:hover{border-color:#00843d;background:#f7f7f4}.ds-sq-mini.solid{background:#00843d;border-color:#00843d;color:#fff}.ds-sq-mini.solid:hover{background:#006b31}.ds-sq-mini:focus-visible{outline:3px solid #006b31;outline-offset:2px}"
+    },
+    {
+      "name": "หน้าต่าง + ปุ่มยืนยันสีตามงาน (หน้าคอม)",
+      "kind": "custom",
+      "refersTo": "sq-confirm-out",
+      "description": "กรอบเขียว 2px แถบส้มบน มุม 0 · หัวขาว Kanit 22 + ปุ่มปิด 44 · ช่องกรอกโฟกัสขอบเขียว+วงส้มอ่อน · ปุ่มยืนยันสีงาน + ยกเลิก · ลิงก์ยกเลิกการใช้มีเฉพาะหน้าต่างแก้ไข",
+      "html": "<div class=\"ds-sq-modal\" role=\"dialog\" aria-label=\"เบิกวัตถุดิบ\"><div class=\"ds-sq-mh\"><span>เบิก · แป้งมัน</span><button class=\"ds-sq-x\" aria-label=\"ปิด\"><svg width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M6 6l12 12M18 6 6 18\"/></svg></button></div><div class=\"ds-sq-mb\"><label class=\"ds-sq-lbl\" for=\"ds-q\">จำนวน (กระสอบ)</label><input id=\"ds-q\" class=\"ds-sq-field\" value=\"5\"><button class=\"ds-sq-confirm\"><svg width=\"18\" height=\"18\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2.5\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M12 15V3M7 8l5-5 5 5M4 14v5a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-5\"/></svg> เบิก 5 กระสอบ</button><button class=\"ds-sq-cancel\">ยกเลิก</button></div></div>",
+      "css": ".ds-sq-modal{max-width:420px;background:#fff;border:2px solid #00843d;border-top:6px solid #f2951c;border-radius:0;box-shadow:0 18px 44px rgba(0,0,0,.35);font-family:Sarabun,sans-serif;color:#111}.ds-sq-mh{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:16px 20px;border-bottom:1.5px solid #d6d6d0;font:700 22px/1.3 Kanit,Sarabun,sans-serif}.ds-sq-x{display:inline-flex;align-items:center;justify-content:center;width:44px;height:44px;border:1.5px solid #8a8a84;border-radius:6px;background:#fff;color:#111;cursor:pointer}.ds-sq-x:hover{border-color:#00843d}.ds-sq-mb{padding:16px 20px}.ds-sq-lbl{display:block;font:700 13px Sarabun,sans-serif;color:#3d3d3d;margin-bottom:6px}.ds-sq-field{width:100%;box-sizing:border-box;padding:10px 12px;font:600 16px Sarabun,sans-serif;background:#fff;border:2px solid #8a8a84;border-radius:6px;color:#111;outline:none}.ds-sq-field:focus{border-color:#00843d;box-shadow:0 0 0 3px #fde0bd}.ds-sq-confirm{display:flex;align-items:center;justify-content:center;gap:8px;width:100%;margin-top:16px;min-height:60px;padding:14px 12px;background:#c2410c;color:#fff;border:2px solid rgba(0,0,0,.3);border-radius:8px;box-shadow:inset 0 0 0 3px #fff;font:700 20px/1.25 Kanit,Sarabun,sans-serif;cursor:pointer}.ds-sq-confirm:hover{filter:brightness(1.1)}.ds-sq-confirm:focus-visible,.ds-sq-cancel:focus-visible,.ds-sq-x:focus-visible{outline:3px solid #006b31;outline-offset:2px}.ds-sq-cancel{display:block;width:100%;min-height:44px;margin-top:10px;padding:10px;background:none;border:0;font:800 14px Sarabun,sans-serif;color:#3d3d3d;cursor:pointer}.ds-sq-cancel:hover{color:#111;text-decoration:underline;text-underline-offset:3px}"
     }
   ],
   "narrative": {
     "northStar": "ป้ายความปลอดภัยในโรงงาน (ISO 7010)",
-    "overview": "หน้ามือถือพูดภาษาเดียวกับป้ายที่ติดอยู่ทั่วโรงงาน: ผนังเทาอ่อน แผ่นป้ายขาวขอบบาง หัวเขียวเซฟตี้มีแถบเหลืองสัญญาณขอบล่าง\nสถานะของแต่ละรายการบอกด้วย **รูปทรงป้าย** (วงกลมขีดแดง / สามเหลี่ยมเหลือง / วงกลมน้ำเงิน / สี่เหลี่ยมเขียว) ไม่ใช่สีอย่างเดียว —\nคนตาบอดสีหรือจอโดนแดดก็ยังแยกออก เปิดคลังมาแล้วป้ายแดงและเหลืองขึ้นก่อน พนักงานรู้ทันทีว่าตัวไหนต้องจัดการ\n\nความหนาแน่นปานกลาง ตัวเลขใหญ่ หัวข้อและตัวเลขใช้ Kanit หนา เนื้อหาใช้ Sarabun · มุมเกือบเหลี่ยม เส้นขอบชัด เงาน้อยมาก —\nความลึกมาจากขอบดำและแถบเหลือง ไม่ใช่จากเงา · ปฏิเสธรูปแบบตั้งต้นของแอปสต๊อก (รายการพื้นมืด + สีเน้นสีเดียว) ที่มือถือเดิมเคยเป็น",
+    "overview": "แอปพูดภาษาเดียวกับป้ายที่ติดอยู่ทั่วโรงงาน: ผนังเทาอ่อน แผ่นป้ายขาวขอบบาง หัวเขียวเซฟตี้มีแถบส้มสัญญาณขอบล่าง\nสถานะของแต่ละรายการบอกด้วย **รูปทรงป้าย** (วงกลมขีดแดง / สามเหลี่ยมเหลือง / วงกลมน้ำเงิน / สี่เหลี่ยมเขียว) ไม่ใช่สีอย่างเดียว\nคนตาบอดสีหรือจอโดนแดดก็ยังแยกออก เปิดคลังมาแล้วป้ายแดงและเหลืองขึ้นก่อน พนักงานรู้ทันทีว่าตัวไหนต้องจัดการ\n\nสีมี 2 หน้าที่แยกกันชัด: **เขียว-ส้ม-ขาว คือตัวแบรนด์** (หัวจอ กรอบแผ่นป้าย ปุ่มหลัก ชิปที่เลือก แถบสัญญาณ)\nส่วน **แดง เหลือง น้ำเงิน เขียว ในรูปทรงป้ายคือความหมาย** ตาม ISO และไม่เปลี่ยนตามธีม\n\nความหนาแน่นปานกลางบนมือถือ (ตัวเลขใหญ่) และหนาแน่นแบบคอมบนหน้าคอม (ตารางหลายคอลัมน์) · หัวข้อและตัวเลขใช้ Kanit หนา เนื้อหาใช้ Sarabun ·\nมุมเกือบเหลี่ยม เส้นขอบชัด เงาน้อยมาก ความลึกมาจากกรอบเขียวและแถบส้ม ไม่ใช่จากเงา ·\nปฏิเสธรูปแบบตั้งต้นของแอปสต๊อก (รายการพื้นมืด + สีเน้นสีเดียว) และหน้าแอดมินสำเร็จรูป (แถบกรมท่า ปุ่มเม็ดยาว emoji แทนไอคอน ป๊อปอัปสีม่วง) ที่เคยเป็น",
     "keyCharacteristics": [
       "พื้นเทาผนังโรงงาน + แผ่นป้ายขาวขอบบาง",
-      "หัวจอเขียวเซฟตี้เต็มกว้าง แถบเหลือง 6px ขอบล่าง",
+      "หัวจอ/แถบเมนูเขียวเซฟตี้เต็มกว้าง แถบส้ม 6px ขอบล่าง",
       "สถานะ = รูปทรงป้าย ISO 7010 + คำพูดเสมอ",
       "ปุ่มยืนยันเป็นแผ่นป้ายสีตามงาน อ่านทวน \"เบิก 500 ใบ\" ก่อนกด",
       "ไอคอนเส้นชุดเดียวทั้งแอป ไม่มี emoji บนส่วนควบคุม"
     ],
     "rules": [
       {
-        "name": "The Yellow-Takes-Black Rule",
-        "body": "เหลืองสัญญาณอยู่คู่ตัวดำเสมอ ไม่มีตัวขาวบนเหลือง ไม่มีตัวเหลืองบนพื้นอ่อน",
+        "name": "The Orange-Is-A-Band Rule",
+        "body": "ส้มเป็นแถบและพื้นเท่านั้น ตัวหนังสือบนส้มเป็นหมึกดำ ไม่มีตัวขาวบนส้ม ไม่มีตัวส้มบนพื้นอ่อน",
+        "section": "colors"
+      },
+      {
+        "name": "The Sign-Colors-Mean-Something Rule",
+        "body": "แดง เหลือง น้ำเงิน ในรูปทรงป้ายคือความหมาย ISO ไม่ใช่สีตกแต่ง · เหลือง `#ffd100` อยู่ในสามเหลี่ยมเตือนเท่านั้น",
         "section": "colors"
       },
       {
         "name": "The Ink-Variant Rule",
-        "body": "สีที่เป็นพื้น (`--m-green`, เหลือง) กับสีที่เป็นตัวหนังสือ (`--m-green-ink`, `--m-warn-ink`) เป็นคนละ token — ตัวหนังสือสีบนพื้นอ่อนใช้ตัว `-ink` เท่านั้น",
+        "body": "สีที่เป็นพื้น (`--m-green`, ส้ม) กับสีที่เป็นตัวหนังสือ (`--m-green-ink`, `--m-warn-ink`) เป็นคนละ token ตัวหนังสือสีบนพื้นอ่อนใช้ตัว `-ink` เท่านั้น",
         "section": "colors"
       },
       {
         "name": "The Kanit-For-Signs Rule",
-        "body": "Kanit ใช้กับหัวข้อ ตัวเลข และปุ่มยืนยันเท่านั้น (`.m-k` หรือ `var(--m-head)`) — เนื้อหาและป้ายช่องกรอกเป็น Sarabun",
+        "body": "Kanit ใช้กับหัวข้อ ตัวเลขเดี่ยว และปุ่มยืนยันเท่านั้น (`.m-k` / `.ui-k` หรือ `var(--m-head)` / `var(--sq-head)`) เนื้อหาและป้ายช่องกรอกเป็น Sarabun",
         "section": "typography"
       },
       {
         "name": "The 16px Input Rule",
-        "body": "ช่องกรอกทุกช่อง ≥ 16px (`font-size:max(16px,1em)`) ไม่งั้น iPhone ซูมหน้าเอง — **ห้ามใส่ `text-sm` ที่ช่องกรอก** (คลาสชนะกฎนี้)",
+        "body": "ช่องกรอกทุกช่องบนมือถือ ≥ 16px (`font-size:max(16px,1em)`) ไม่งั้น iPhone ซูมหน้าเอง · **ห้ามใส่ `text-sm` ที่ช่องกรอก** (คลาสชนะกฎนี้)",
         "section": "typography"
       },
       {
         "name": "The Border-Not-Shadow Rule",
-        "body": "แผ่นป้ายบนพื้นแยกด้วยขอบ 1.5–2px ไม่ใช่เงา — เงาสงวนไว้ให้แผ่นเลื่อนกับ toast",
+        "body": "แผ่นป้ายบนพื้นแยกด้วยขอบ 1.5–2px ไม่ใช่เงา เงาสงวนไว้ให้แผ่นเลื่อน toast หน้าต่าง และเมนูที่ลอย",
         "section": "elevation"
       }
     ],
     "dos": [
-      "Do เริ่มหน้าใหม่ด้วยหัว `.m-head m-safe-top pt-3` + เนื้อหาใน `.m-wrap` บนพื้น `--m-ground`",
-      "Do บอกสถานะด้วย `mSign()` + คำพูดคู่กันเสมอ และเรียงรายการตาม `M_RANK`",
-      "Do ใช้ `--m-green-ink` / `--m-warn-ink` เมื่อเป็นตัวหนังสือสีบนพื้นอ่อน",
-      "Do ให้ปุ่มยืนยันใช้ `.m-confirm` + `t-*` ของงาน และอ่านทวนประเภท + จำนวน + หน่วย",
-      "Do ใช้ไอคอนจากชุด `.ic` / `.icb` — ไม่มีให้ก็วาดเพิ่มตามสเปก (viewBox 24, stroke 2.5, ปลายมน)",
-      "Do เป้าแตะ ≥ 44px (ชิป 40) · contrast ≥ 4.5:1 บนพื้นจริง · ช่องกรอกทุกช่องมีชื่อ",
-      "Do ใช้ emoji ได้เฉพาะข้อความชั่วคราว (toast, `alert`/`confirm`, ข้อความที่คัดลอกไปแชต) และใน `<option>` ของระบบ",
-      "Do เพิ่ม class Tailwind ใหม่แล้วรัน `npm run build:css` (Tailwind ใช้จัดวางเท่านั้น สีมาจาก `--m-*`)"
+      "Do เริ่มหน้าใหม่ด้วยหัว `.m-head m-safe-top pt-3` + เนื้อหาใน `.m-wrap` บนพื้น `--m-ground` (มือถือ) · หน้าคอมใช้ `.sq-page` + `.sq-wrap`",
+      "Do บอกสถานะด้วย `mSign()` / `uiSign()` + คำพูดคู่กันเสมอ และเรียงรายการตาม `M_RANK`",
+      "Do ใช้ `--m-green-ink` / `--m-warn-ink` (`--sq-accent` / `--sq-warn`) เมื่อเป็นตัวหนังสือสีบนพื้นอ่อน",
+      "Do ใช้ส้มเป็นแถบ 6px หรือพื้นที่มีตัวหมึกเท่านั้น",
+      "Do ให้ปุ่มยืนยันใช้ `.m-confirm` / `.ui-confirm` + `t-*` ของงาน และอ่านทวนประเภท + จำนวน + หน่วย",
+      "Do ใช้ไอคอนจากชุด `.ic` / `.icb` ถ้าไม่มีก็วาดเพิ่มตามสเปก (viewBox 24, stroke 2.5, ปลายมน)",
+      "Do เป้าแตะ ≥ 44px (ชิปมือถือ 40 · ปุ่มในแถวหน้าคอม 34 บนจอกว้าง 44 ในโหมดการ์ด) · contrast ≥ 4.5:1 บนพื้นจริง · ช่องกรอกทุกช่องมีชื่อ",
+      "Do ใช้ตาราง/ขึ้นบรรทัดใหม่แทนแถวเลื่อนข้าง และตรวจที่จอ 320px ว่าไม่มีอะไรล้น",
+      "Do ใช้ emoji ได้เฉพาะข้อความชั่วคราว (`alert`/`confirm`, ข้อความที่คัดลอกไปแชต) และใน `<option>` ของระบบ · toast/หัวกล่องยืนยันหน้าคอมตัด emoji นำหน้าด้วย `uiNoEmoji()`",
+      "Do เพิ่ม class Tailwind ใหม่แล้วรัน `npm run build:css` (Tailwind ใช้จัดวางเท่านั้น สีมาจาก `--m-*` / `--sq-*`)"
     ],
     "donts": [
-      "Don't ตั้ง `display` ในคลาส `m-*` ที่ใช้กับของที่ `show()`/`hide()` ซ่อน — ชนกับคลาส `hidden` (ข้อยกเว้นเดียว: `.m-row` เป็น grid เพราะแถวสร้างใหม่ทั้งชุด ไม่เคยถูกซ่อน)",
-      "Don't วางตัวขาวบนเหลือง หรือใช้ `#00843d` เป็นสีตัวหนังสือบนพื้นเทา (4.3:1)",
-      "Don't ใช้สีพื้นมืด / `bg-slate-900` / สี slate-indigo ที่ remap เป็นเขียวจากธีมเก่า (`tailwind.mobile.config.js` ยังมีอยู่แต่ไม่ใช่แหล่งสีแล้ว)",
+      "Don't ทำแถวปุ่ม/การ์ด/ชิป/แท็บที่ต้องเลื่อนซ้าย-ขวา (เจ้าของสั่ง 2026-10-20)",
+      "Don't ตั้ง `display` ในคลาส `m-*` ที่ใช้กับของที่ `show()`/`hide()` ซ่อน เพราะชนกับคลาส `hidden` (ข้อยกเว้นเดียว: `.m-row` เป็น grid เพราะแถวสร้างใหม่ทั้งชุด ไม่เคยถูกซ่อน)",
+      "Don't วางตัวขาวบนส้ม ใช้ส้มเป็นสีตัวหนังสือ หรือใช้ `#00843d` เป็นสีตัวหนังสือบนพื้นเทา (4.3:1)",
+      "Don't ใช้เหลือง `#ffd100` นอกรูปทรงป้ายเตือน",
+      "Don't ใช้สีพื้นมืด / `bg-slate-900` / สีกรมท่า ม่วงคราม ไล่สีจากธีมเก่า (`tailwind.mobile.config.js` ยังมีอยู่แต่ไม่ใช่แหล่งสีแล้ว)",
       "Don't ใส่ emoji บนปุ่ม หัวจอ แท็บ หรือป้ายสถานะ",
-      "Don't ใส่มุมมนกับแผ่นที่มีแถบเหลืองบน หรือใช้มุมมนเกิน 8px",
-      "Don't ใส่ `text-sm` ที่ช่องกรอก หรือใช้ตัวหนังสือเล็กกว่า 12px",
-      "Don't โหลดฟอนต์/สคริปต์จาก CDN หรือ Google — ฟอนต์อยู่ใน `fonts/`",
+      "Don't ใส่มุมมนกับแผ่นที่มีแถบหนาบน หรือใช้มุมมนเกิน 8px",
+      "Don't ใส่ `text-sm` ที่ช่องกรอกมือถือ หรือใช้ตัวหนังสือเล็กกว่า 12px",
+      "Don't โหลดฟอนต์/สคริปต์จาก CDN หรือ Google เพราะฟอนต์อยู่ใน `fonts/`",
       "Don't เปลี่ยนชื่อ id ของ DOM หรือชื่อฟังก์ชันเดิม"
     ]
   }

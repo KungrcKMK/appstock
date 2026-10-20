@@ -50,11 +50,11 @@ function closeDocReport() {
 // ─────────────────────────────────────────────
 async function drLoad(month) {
   const body = document.getElementById("drBody");
-  body.innerHTML = '<p class="sq-empty">⏳ กำลังโหลด...</p>';
+  body.innerHTML = '<p class="sq-empty">กำลังโหลด...</p>';
   try {
     const res = await rawFetch({ action: "DOCREPORT", month: month || "" });
     if (!res || res.status !== "success") {
-      body.innerHTML = `<p class="sq-empty" style="color:var(--sq-crit);font-weight:700;">❌ ${escapeHtml((res && res.message) || "โหลดไม่สำเร็จ")}</p>`;
+      body.innerHTML = `<p class="sq-empty" style="color:var(--sq-crit);font-weight:700;">${escapeHtml((res && res.message) || "โหลดไม่สำเร็จ")}</p>`;
       return;
     }
     // ยังไม่ได้เลือกเดือน → ใช้เดือนล่าสุดที่มีข้อมูล
@@ -94,7 +94,7 @@ function drRender() {
   }
   const waiting = _drRows.filter(r => !r.ackBy).length;
   document.getElementById("drAckAllBtn").style.display = waiting ? "" : "none";
-  document.getElementById("drAckAllBtn").textContent = "✅ รับทราบทั้งหมด (" + waiting + " ใบ)";
+  document.getElementById("drAckAllBtn").textContent = "รับทราบทั้งหมด (" + waiting + " ใบ)";
 
   const rows = _drRows.map(r => {
     const acked = !!r.ackBy;
@@ -112,7 +112,7 @@ function drRender() {
             ? `<span class="sq-chip ok">✓ รับทราบ</span>
                <div class="sq-meta"><span>${escapeHtml(personName(r.ackBy))}</span><span>${escapeHtml(_drTime(r.ackAt))}</span></div>`
             : `<button onclick="drAck('${escapeJsAttr(r.docNo)}', event)" class="sq-btn sq-btn-sm">รับทราบ</button>`}</td>
-      <td class="c"><button onclick="drSlip('${escapeJsAttr(r.docNo)}')" class="sq-btn sq-btn-sm">🧾</button></td>
+      <td class="c"><button onclick="drSlip('${escapeJsAttr(r.docNo)}')" class="sq-btn sq-btn-sm">ดูใบ</button></td>
     </tr>`;
   }).join("");
 
@@ -153,7 +153,7 @@ async function drAck(docNo, evt) {
     if (!res || res.status !== "success") { showToast((res && res.message) || "ไม่สำเร็จ", "error"); return; }
     const r = (res.results || [])[0];
     if (r && r.status === "already") showToast("ใบนี้ " + personName(r.ackBy) + " รับทราบไปแล้ว", "warn", 4000);
-    else showToast("รับทราบ " + docNo + " แล้ว ✅", "success");
+    else showToast("รับทราบ " + docNo + " แล้ว ", "success");
     await drLoad(_drMonth);
   });
 }
@@ -195,7 +195,7 @@ function drPrint() {
 
   const rows = _drRows.map(r => `
     <tr${r.ackBy ? "" : ' style="background:#faf3d9;"'}>
-      <td style="text-align:center;font-size:16px;">☐</td>
+      <td style="text-align:center;font-size:16px;"></td>
       <td style="font-family:monospace;">${escapeHtml(r.docNo)}</td>
       <td>${escapeHtml(_drTime(r.at))}</td>
       <td>${escapeHtml(r.name)}</td>
@@ -223,12 +223,12 @@ function drPrint() {
     @media print{body{padding:12px;} .noprint{display:none;}}
   </style></head><body>
   <div class="noprint" style="margin-bottom:12px;">
-    <button onclick="window.print()" style="background:#0e7a3f;color:#fff;border:none;padding:9px 22px;border-radius:8px;font-weight:700;font-size:13px;cursor:pointer;">🖨️ พิมพ์</button>
+    <button onclick="window.print()" style="background:#0e7a3f;color:#fff;border:none;padding:9px 22px;border-radius:8px;font-weight:700;font-size:13px;cursor:pointer;">พิมพ์</button>
   </div>
   <div class="hd">
     <img src="${logoUrl()}" alt="" onerror="this.style.display='none'" style="height:44px;">
     <div>
-      <h1>📋 รายงานใบเบิกวัตถุดิบ — ${escapeHtml(_drMonthLabel(_drMonth))}</h1>
+      <h1>รายงานใบเบิกวัตถุดิบ — ${escapeHtml(_drMonthLabel(_drMonth))}</h1>
       <div class="sub">โรงงาน ${factory} &nbsp;|&nbsp; ทั้งหมด ${_drRows.length} ใบ &nbsp;|&nbsp; ยังไม่รับทราบ ${waiting} ใบ</div>
     </div>
   </div>

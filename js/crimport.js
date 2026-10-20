@@ -95,9 +95,9 @@ async function criPreview() {
   if (!res || !res.ok) { showToast("ตรวจไฟล์ไม่สำเร็จ: " + ((res && res.message) || ""), "error"); return; }
 
   const ST = {
-    added:   { chip: '<span class="sq-chip ok">➕ ล็อตใหม่</span>' },
-    updated: { chip: '<span class="sq-chip high">✏️ ทับล็อตเดิม</span>' },
-    skipped: { chip: '<span class="sq-chip">⏭ ข้าม (มีล็อตนี้แล้ว)</span>' },
+    added:   { chip: '<span class="sq-chip ok">ล็อตใหม่</span>' },
+    updated: { chip: '<span class="sq-chip high">ทับล็อตเดิม</span>' },
+    skipped: { chip: '<span class="sq-chip">ข้าม (มีล็อตนี้แล้ว)</span>' },
     error:   { chip: '<span class="sq-chip crit">✕ ผิด</span>' }
   };
   const body = res.results.map(x => {
@@ -116,8 +116,8 @@ async function criPreview() {
   wrap.style.display = "";
   wrap.innerHTML = `
     <div class="sq-card-note" style="margin-bottom:8px;">
-      📄 ${escapeHtml(_criFileName)} · ${res.results.length} แถว —
-      ➕ ใหม่ ${res.added} · ✏️ ทับ ${res.updated} · ⏭ ข้าม ${res.skipped} ·
+      ${escapeHtml(_criFileName)} · ${res.results.length} แถว —
+      ใหม่ ${res.added} · ทับ ${res.updated} · ข้าม ${res.skipped} ·
       <span style="color:${res.errors ? "var(--sq-crit)" : "var(--sq-muted)"};font-weight:800;">✕ ผิด ${res.errors}</span>
       ${res.errors ? "<br>แถวที่ผิดจะถูกข้าม ไม่ถูกนำเข้า" : ""}
     </div>
@@ -129,7 +129,7 @@ async function criPreview() {
   const importable = res.added + res.updated;
   const btn = document.getElementById("criConfirmBtn");
   btn.disabled = importable === 0;
-  btn.textContent = importable ? `✅ ยืนยันนำเข้า ${importable} ล็อต` : "ไม่มีแถวที่นำเข้าได้";
+  btn.textContent = importable ? `ยืนยันนำเข้า ${importable} ล็อต` : "ไม่มีแถวที่นำเข้าได้";
 }
 
 // ── ยืนยัน = เซิร์ฟเวอร์ทำซ้ำแบบไม่ dry (ตรวจใหม่อีกรอบก่อนเขียนเสมอ) ──
@@ -144,7 +144,7 @@ async function criConfirm() {
     btn.disabled = false;
     return;
   }
-  showToast(`นำเข้าแล้ว ➕ ${res.added} ล็อตใหม่ · ✏️ ทับ ${res.updated}` +
+  showToast(`นำเข้าแล้ว ${res.added} ล็อตใหม่ · ทับ ${res.updated}` +
             (res.errors ? ` · ข้ามแถวผิด ${res.errors}` : ""), "success");
   criClose();
   // ดึงยอดใหม่ให้เห็นทันที

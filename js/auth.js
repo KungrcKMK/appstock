@@ -35,7 +35,7 @@ async function login() {
       document.getElementById("passwordSection").style.display = "";
       document.getElementById("passwordInput").value = "";
       document.getElementById("passwordInput").focus();
-      _setLoginBtn("เข้าสู่ระบบ 🔑", false);
+      _setLoginBtn("เข้าสู่ระบบ", false);
       document.getElementById("usernameInput").readOnly = true;
       return;
     }
@@ -44,7 +44,7 @@ async function login() {
       if (res.notFound) { _showAccessBox("notfound", res.message, user); return; }
       if (res.pending)  { _showAccessBox("pending",  res.message, user); return; }
       if (res.rejected) { _showAccessBox("rejected", res.message, user); return; }
-      alert("❌ " + (res.message || "เข้าสู่ระบบไม่สำเร็จ"));
+      alert("" + (res.message || "เข้าสู่ระบบไม่สำเร็จ"));
       return;
     }
     _hideAccessBox();
@@ -52,7 +52,7 @@ async function login() {
   } catch(e) {
     alert("เกิดข้อผิดพลาด: " + netErrorText(e));
   } finally {
-    if (!_loginNeedsPassword) _setLoginBtn("เข้าสู่ระบบ 🚀", false);
+    if (!_loginNeedsPassword) _setLoginBtn("เข้าสู่ระบบ", false);
   }
 }
 
@@ -76,26 +76,26 @@ function _showAccessBox(kind, msg, username) {
   _accessReqUser = username || "";
 
   const tone = {
-    notfound: { bg:"var(--sq-warn-bg)", bd:"var(--sq-warn)", fg:"var(--sq-high)", icon:"❓",
+    notfound: { bg:"var(--sq-warn-bg)", bd:"var(--sq-warn)", fg:"var(--sq-warn)", sign:"warn",
                 hint:"กดปุ่มด้านล่างเพื่อส่งคำขอ แล้วรอหัวหน้าเปิดสิทธิ์ให้", showBtn:true },
-    pending:  { bg:"var(--sq-accent-2)", bd:"var(--sq-accent)", fg:"var(--sq-accent)", icon:"⏳",
+    pending:  { bg:"var(--sq-must-bg)", bd:"var(--sq-must)", fg:"var(--sq-must)", sign:"must",
                 hint:"หัวหน้าได้รับคำขอแล้ว เมื่ออนุมัติจะเข้าใช้งานได้ทันที", showBtn:false },
-    rejected: { bg:"var(--sq-crit-bg)", bd:"var(--sq-crit)", fg:"var(--sq-crit)", icon:"🚫",
+    rejected: { bg:"var(--sq-crit-bg)", bd:"var(--sq-crit)", fg:"var(--sq-crit)", sign:"no",
                 hint:"กรุณาติดต่อหัวหน้างานโดยตรง", showBtn:false },
-    sent:     { bg:"var(--sq-accent-2)", bd:"var(--sq-accent)", fg:"var(--sq-accent)", icon:"✅",
+    sent:     { bg:"var(--sq-accent-2)", bd:"var(--sq-accent)", fg:"var(--sq-accent)", sign:"ok",
                 hint:"หัวหน้าจะได้รับแจ้งเตือน เมื่ออนุมัติแล้วลองเข้าสู่ระบบอีกครั้ง", showBtn:false }
-  }[kind] || { bg:"var(--sq-raised)", bd:"var(--sq-line)", fg:"var(--sq-ink2)", icon:"ℹ️", hint:"", showBtn:false };
+  }[kind] || { bg:"var(--sq-raised)", bd:"var(--sq-line)", fg:"var(--sq-ink2)", sign:"", hint:"", showBtn:false };
 
   box.style.background  = tone.bg;
   box.style.border      = "2px solid " + tone.bd;
   box.style.display     = "";
   msgP.style.color      = tone.fg;
-  msgP.textContent      = tone.icon + " " + (msg || "");
+  msgP.innerHTML        = uiSign(tone.sign, 24) + "<span>" + escapeHtml(uiNoEmoji(msg || "")) + "</span>";
   hint.style.color      = tone.fg;
   hint.textContent      = tone.hint;
   btn.style.display     = tone.showBtn ? "" : "none";
   btn.disabled          = false;
-  btn.textContent       = "🙋 ขอสิทธิ์เข้าใช้งานจาก Admin";
+  btn.textContent       = "ขอสิทธิ์เข้าใช้งานจากหัวหน้า";
 }
 
 async function submitAccessRequest() {
@@ -141,16 +141,16 @@ async function loginWithPassword() {
       body: JSON.stringify({ module: "SYSTEM", action: "verifyUser", payload: { username: user, password: pass } })
     }).then(r => r.json());
     if (!res.ok) {
-      alert("❌ " + (res.message || "รหัสผ่านไม่ถูกต้อง"));
+      alert("" + (res.message || "รหัสผ่านไม่ถูกต้อง"));
       document.getElementById("passwordInput").value = "";
       document.getElementById("passwordInput").focus();
-      _setLoginBtn("เข้าสู่ระบบ 🔑", false);
+      _setLoginBtn("เข้าสู่ระบบ", false);
       return;
     }
     _loginSuccess(res.username || user, res.role, res.sessionToken || res.adminToken);
   } catch(e) {
     alert("เกิดข้อผิดพลาด: " + netErrorText(e));
-    _setLoginBtn("เข้าสู่ระบบ 🔑", false);
+    _setLoginBtn("เข้าสู่ระบบ", false);
   }
 }
 
@@ -162,7 +162,7 @@ function _loginSuccess(user, role, adminToken) {
   else { sessionStorage.removeItem("appstock_admin_token"); localStorage.removeItem("appstock_session"); }
   document.getElementById("passwordSection").style.display = "none";
   document.getElementById("usernameInput").readOnly = false;
-  _setLoginBtn("เข้าสู่ระบบ 🚀", false);
+  _setLoginBtn("เข้าสู่ระบบ", false);
   localStorage.setItem("unified_stock_user", user);
   localStorage.setItem("unified_stock_role", role || "user");
   loadDevice();
@@ -178,10 +178,8 @@ function showModePicker(user) {
   document.getElementById("modePickerUser").textContent = user || currentUser ||
     localStorage.getItem("unified_stock_user") || "";
   // Highlight recommended option
-  document.getElementById("modeBtnMobile").classList.toggle("ring-4", isMobile);
-  document.getElementById("modeBtnMobile").classList.toggle("ring-indigo-400", isMobile);
-  document.getElementById("modeBtnDesktop").classList.toggle("ring-4", !isMobile);
-  document.getElementById("modeBtnDesktop").classList.toggle("ring-indigo-400", !isMobile);
+  document.getElementById("modeBtnMobile").classList.toggle("is-rec", isMobile);    // ตัวที่แนะนำ = ขอบหนา แถบเหลือง
+  document.getElementById("modeBtnDesktop").classList.toggle("is-rec", !isMobile);
   if (isMobile) {
     document.getElementById("modeRecommend").textContent = "แนะนำสำหรับอุปกรณ์นี้";
     document.getElementById("modeRecommendEl").style.display = "block";

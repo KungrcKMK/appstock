@@ -30,7 +30,7 @@ async function execInstallApp() {
     _execShowInstall();
     return;
   }
-  alert("ติดตั้งบน iPhone / iPad:\n1. เปิดหน้านี้ใน Safari\n2. กดปุ่มแชร์ ⬆️ ด้านล่าง\n3. เลือก \"เพิ่มไปยังหน้าจอโฮม\"\n\nจะได้ไอคอนชื่อ \"ผู้บริหาร\" เปิดเข้าหน้าภาพรวมได้ทันที");
+  alert("ติดตั้งบน iPhone / iPad:\n1. เปิดหน้านี้ใน Safari\n2. กดปุ่มแชร์ ด้านล่าง\n3. เลือก \"เพิ่มไปยังหน้าจอโฮม\"\n\nจะได้ไอคอนชื่อ \"ผู้บริหาร\" เปิดเข้าหน้าภาพรวมได้ทันที");
 }
 document.addEventListener("DOMContentLoaded", _execShowInstall);
 
@@ -40,18 +40,18 @@ async function loadExecDashboard() {
   document.getElementById("execDashTimestamp").textContent = "กำลังดึงข้อมูล...";
   // 📱 มือถือที่มีการ์ดอยู่แล้ว (กลับมาเปิดแอป / กดรีเฟรช) → คงของเดิมไว้จนของใหม่มา ไม่ล้างจอ ไม่เด้งกลับขึ้นบนสุด
   const keepOld = mobile && !!el.querySelector(".xm");
-  if (keepOld) document.getElementById("execDashTimestamp").textContent = "⏳ กำลังตรวจข้อมูลล่าสุด...";
+  if (keepOld) document.getElementById("execDashTimestamp").textContent = "กำลังตรวจข้อมูลล่าสุด...";
   // ข้อ 9: สามคลังโหลดพร้อมกัน แต่ละส่วนวาดทันทีที่มาถึง ไม่รอครบ · ตัวเลขรวม (KPI) รอจนครบสองโรงงานเท่านั้น
   if (!keepOld) el.innerHTML =
-    '<div id="execKpiSlot"><p class="sq-empty">⏳ รอข้อมูลครบสองโรงงานสำหรับตัวเลขรวม...</p></div>' +
+    '<div id="execKpiSlot"><p class="sq-empty">รอข้อมูลครบสองโรงงานสำหรับตัวเลขรวม...</p></div>' +
     '<div id="execChartSlot"></div>' +
-    '<div id="execSlotCR"><p class="sq-empty">⏳ กำลังโหลดคลังสินค้า...</p></div>' +
-    '<div id="execSlotSQF"><p class="sq-empty">⏳ กำลังโหลดวัตถุดิบ SQF...</p></div>' +
-    '<div id="execSlotMLM"><p class="sq-empty">⏳ กำลังโหลดวัตถุดิบ MLM...</p></div>';
+    '<div id="execSlotCR"><p class="sq-empty">กำลังโหลดคลังสินค้า...</p></div>' +
+    '<div id="execSlotSQF"><p class="sq-empty">กำลังโหลดวัตถุดิบ SQF...</p></div>' +
+    '<div id="execSlotMLM"><p class="sq-empty">กำลังโหลดวัตถุดิบ MLM...</p></div>';
   _execChartData = { SQF: [], MLM: [], CR: {} };
   // มือถือ: ระหว่างรอไม่วาดตารางของหน้าคอม (จะเห็นตารางกว้างแวบหนึ่งก่อนเปลี่ยนเป็นการ์ด)
   const slot = id => (mobile && id !== "execKpiSlot") ? null : document.getElementById(id);
-  const failBox = msg => `<div class="sq-card"><p class="sq-empty" style="color:var(--sq-crit);font-weight:700;">⚠️ ${escapeHtml(msg)}</p></div>`;
+  const failBox = msg => `<div class="sq-card"><p class="sq-empty" style="color:var(--sq-crit);font-weight:700;">${escapeHtml(msg)}</p></div>`;
   const tasks = [
     fetch(GAS_URL, { method:"POST", headers:{"Content-Type":"text/plain;charset=utf-8"},
       body: JSON.stringify({ module:"COLDROOM", action:"getStartupOverview" }) }).then(r=>r.json()).then(crRes => {
@@ -60,20 +60,20 @@ async function loadExecDashboard() {
         const expired  = crRes.ok ? (crRes.expiredLots||[])  : [];
         _execChartData.CR = { products: topProds, expiring: expiring, expired: expired, staleLots: crRes.ok ? (crRes.staleLots || []) : [] };
         if (crRes.ok && crRes.staleDays !== undefined) _execChartData.staleDays = Number(crRes.staleDays) || 0;
-        if (slot("execSlotCR")) slot("execSlotCR").innerHTML = execStockSection("❄️", "คลังสินค้า", "rail-cold", topProds, expiring, expired,
+        if (slot("execSlotCR")) slot("execSlotCR").innerHTML = execStockSection("", "คลังสินค้า", "rail-cold", topProds, expiring, expired,
           crRes.ok ? (crRes.staleLots || []) : [], crRes.ok ? Number(crRes.staleDays) || 0 : 0);
       }).catch(e => { if (slot("execSlotCR")) slot("execSlotCR").innerHTML = failBox("คลังสินค้าโหลดไม่สำเร็จ: " + netErrorText(e)); throw e; }),
     fetch(GAS_URL + "?module=SQF").then(r=>r.json()).then(res => {
         const m = res.status === "success" ? res.materials : [];
         _execChartData.SQF = m;
         if (res.staleDays !== undefined) _execChartData.staleDays = Number(res.staleDays) || 0;
-        if (slot("execSlotSQF")) slot("execSlotSQF").innerHTML = execRawSection("🏭", "วัตถุดิบ SQF — สุพรรณคิวฟู้ดส์", "rail-sqf", m, Number(res.staleDays) || 0);
+        if (slot("execSlotSQF")) slot("execSlotSQF").innerHTML = execRawSection("", "วัตถุดิบ SQF — สุพรรณคิวฟู้ดส์", "rail-sqf", m, Number(res.staleDays) || 0);
       }).catch(e => { if (slot("execSlotSQF")) slot("execSlotSQF").innerHTML = failBox("วัตถุดิบ SQF โหลดไม่สำเร็จ: " + netErrorText(e)); throw e; }),
     fetch(GAS_URL + "?module=MLM").then(r=>r.json()).then(res => {
         const m = res.status === "success" ? res.materials : [];
         _execChartData.MLM = m;
         if (res.staleDays !== undefined) _execChartData.staleDays = Number(res.staleDays) || 0;
-        if (slot("execSlotMLM")) slot("execSlotMLM").innerHTML = execRawSection("🏭", "วัตถุดิบ MLM — แม่ละมาย", "rail-mlm", m, Number(res.staleDays) || 0);
+        if (slot("execSlotMLM")) slot("execSlotMLM").innerHTML = execRawSection("", "วัตถุดิบ MLM — แม่ละมาย", "rail-mlm", m, Number(res.staleDays) || 0);
       }).catch(e => { if (slot("execSlotMLM")) slot("execSlotMLM").innerHTML = failBox("วัตถุดิบ MLM โหลดไม่สำเร็จ: " + netErrorText(e)); throw e; })
   ];
   const results = await Promise.allSettled(tasks);
@@ -82,23 +82,23 @@ async function loadExecDashboard() {
     // Google สะดุดชั่วคราว (ตอบเป็นหน้า HTML) → ลองใหม่เองหนึ่งครั้ง ก่อนโชว์ข้อผิดพลาดพร้อมปุ่มลองใหม่
     if (!loadExecDashboard._retried && navigator.onLine) {
       loadExecDashboard._retried = true;
-      document.getElementById("execDashTimestamp").textContent = "⏳ เซิร์ฟเวอร์ตอบไม่ปกติ กำลังลองใหม่...";
+      document.getElementById("execDashTimestamp").textContent = "เซิร์ฟเวอร์ตอบไม่ปกติ กำลังลองใหม่...";
       setTimeout(loadExecDashboard, 4000);
       return;
     }
     document.getElementById("execDashTimestamp").textContent = "โหลดไม่ครบ";
     if (keepOld) {  // มือถือที่มีของเดิมบนจอ → คงไว้ บอกแค่ว่าตรวจล่าสุดไม่ได้
-      document.getElementById("execDashTimestamp").textContent = "⚠️ ตรวจข้อมูลล่าสุดไม่ได้ — แสดงของเดิม (กดรีเฟรชอีกครั้ง)";
+      document.getElementById("execDashTimestamp").textContent = "ตรวจข้อมูลล่าสุดไม่ได้ — แสดงของเดิม (กดรีเฟรชอีกครั้ง)";
       return;
     }
     if (mobile) {   // มือถือ: บอกว่าไม่ครบ + ปุ่มลองใหม่ (ไม่โชว์ตัวเลขจากบางคลัง จะหลอกตา)
-      el.innerHTML = `<div class="sq-card"><p class="sq-empty" style="color:var(--sq-crit);font-weight:700;">⚠️ ข้อมูลไม่ครบ (${failed.length} คลังโหลดไม่สำเร็จ)</p>
-        <p style="text-align:center;margin:0 0 14px;"><button onclick="loadExecDashboard()" class="sq-btn sq-btn-primary">🔄 ลองใหม่</button></p></div>`;
+      el.innerHTML = `<div class="sq-card"><p class="sq-empty" style="color:var(--sq-crit);font-weight:700;">ข้อมูลไม่ครบ (${failed.length} คลังโหลดไม่สำเร็จ)</p>
+        <p style="text-align:center;margin:0 0 14px;"><button onclick="loadExecDashboard()" class="sq-btn sq-btn-primary">ลองใหม่</button></p></div>`;
       return;
     }
     if (slot("execKpiSlot")) slot("execKpiSlot").innerHTML =
-      `<div class="sq-card"><p class="sq-empty" style="color:var(--sq-crit);font-weight:700;">⚠️ ข้อมูลไม่ครบ (${failed.length} คลังโหลดไม่สำเร็จ) — ตัวเลขรวมยังไม่แสดง เพราะรวมแค่บางคลังจะหลอกตา</p>
-        <p style="text-align:center;margin-top:10px;"><button onclick="loadExecDashboard()" style="padding:9px 18px;border-radius:10px;border:1px solid var(--sq-line,#cfd8d2);background:#fff;font-weight:700;cursor:pointer;">🔄 ลองใหม่</button></p></div>`;
+      `<div class="sq-card"><p class="sq-empty" style="color:var(--sq-crit);font-weight:700;">ข้อมูลไม่ครบ (${failed.length} คลังโหลดไม่สำเร็จ) — ตัวเลขรวมยังไม่แสดง เพราะรวมแค่บางคลังจะหลอกตา</p>
+        <p style="text-align:center;margin-top:10px;"><button onclick="loadExecDashboard()" style="padding:9px 18px;border-radius:10px;border:1px solid var(--sq-line,#cfd8d2);background:#fff;font-weight:700;cursor:pointer;">ลองใหม่</button></p></div>`;
     return;
   }
   const now = new Date().toLocaleString("th-TH", { dateStyle:"medium", timeStyle:"short" });
@@ -124,7 +124,7 @@ function execIdleCell(idle, iso, staleDays) {
   let d = "";
   try { d = iso ? new Date(iso).toLocaleDateString("th-TH", { day: "2-digit", month: "2-digit", year: "2-digit" }) : ""; } catch (e) {}
   const main = execIsStale(idle, staleDays)
-    ? `<span class="sq-chip high" title="ไม่มีใครเบิก/รับ/คืน/นับ เกิน ${staleDays} วัน — ยอดอาจไม่ตรงของจริง">⏰ ${txt}</span>`
+    ? `<span class="sq-chip high" title="ไม่มีใครเบิก/รับ/คืน/นับ เกิน ${staleDays} วัน — ยอดอาจไม่ตรงของจริง">${txt}</span>`
     : `<span style="font-weight:700;color:var(--sq-ink2);white-space:nowrap;">${txt}</span>`;
   return main + (d && idle ? `<div class="sq-meter-note">${d}</div>` : "");
 }
@@ -140,13 +140,13 @@ function execChartSection() {
   return `
   <div class="sq-card">
     <div class="sq-card-head">
-      <span class="sq-card-title">📈 กราฟวิเคราะห์</span>
+      <span class="sq-card-title">กราฟวิเคราะห์</span>
       <span class="sq-card-note">ทุกคลังในจอเดียว</span>
     </div>
     <div class="sq-card-body" style="display:flex;flex-direction:column;gap:22px;">
-      ${block("execBarSQF", "🏭", "วัตถุดิบสุพรรณคิวฟู้ดส์ — วันที่ใช้งานได้คงเหลือ", "เฉพาะรายการที่กรอกอัตราใช้ต่อวันไว้")}
-      ${block("execBarMLM", "🏭", "วัตถุดิบแม่ละมาย — วันที่ใช้งานได้คงเหลือ", "เฉพาะรายการที่กรอกอัตราใช้ต่อวันไว้")}
-      ${block("execBarCR",  "❄️", "คลังสินค้าห้องเย็น — คงเหลือต่อสินค้า", "สีของแท่งบอกความเร่งด่วนของวันหมดอายุ")}
+      ${block("execBarSQF", "", "วัตถุดิบสุพรรณคิวฟู้ดส์ — วันที่ใช้งานได้คงเหลือ", "เฉพาะรายการที่กรอกอัตราใช้ต่อวันไว้")}
+      ${block("execBarMLM", "", "วัตถุดิบแม่ละมาย — วันที่ใช้งานได้คงเหลือ", "เฉพาะรายการที่กรอกอัตราใช้ต่อวันไว้")}
+      ${block("execBarCR",  "", "คลังสินค้าห้องเย็น — คงเหลือต่อสินค้า", "สีของแท่งบอกความเร่งด่วนของวันหมดอายุ")}
     </div>
   </div>`;
 }
@@ -191,8 +191,8 @@ function _execDaysBar(id, items) {
             label: ctx => `${ctx.parsed.y} วัน`,
             afterLabel: ctx => {
               const d = ctx.parsed.y;
-              return d <= 7 ? "⚠️ วิกฤต — ต้องสั่งด่วน!" : d <= 14 ? "🟠 เร่งด่วน" :
-                     d <= 30 ? "🟡 ควรวางแผนสั่ง" : "✅ ปลอดภัย";
+              return d <= 7 ? "วิกฤต — ต้องสั่งด่วน!" : d <= 14 ? "เร่งด่วน" :
+                     d <= 30 ? "ควรวางแผนสั่ง" : "ปลอดภัย";
             }
           }
         }
@@ -214,7 +214,7 @@ function _execCrBar(id, cr) {
   const prods = (cr.products || []).slice(0, 12);
   const note = document.getElementById(id + "Note");
   if (note) note.textContent = prods.length
-    ? `${prods.length} สินค้า · 🔴 มีล็อตหมดอายุ · 🟠 มีล็อตใกล้หมดอายุ · 🔵 ปกติ`
+    ? `${prods.length} สินค้า · มีล็อตหมดอายุ · มีล็อตใกล้หมดอายุ · ปกติ`
     : "ยังไม่มีสต๊อกในห้องเย็น";
   const expNames  = new Set((cr.expired  || []).map(x => x.ProductName));
   const nearNames = new Set((cr.expiring || []).map(x => x.ProductName));
@@ -243,8 +243,8 @@ function _execCrBar(id, cr) {
             },
             afterLabel: ctx => {
               const n = prods[ctx.dataIndex].ProductName;
-              return expNames.has(n) ? "⛔ มีล็อตหมดอายุ — เอาออกด่วน" :
-                     nearNames.has(n) ? "⏳ มีล็อตใกล้หมดอายุ" : "✅ ปกติ";
+              return expNames.has(n) ? "มีล็อตหมดอายุ — เอาออกด่วน" :
+                     nearNames.has(n) ? "มีล็อตใกล้หมดอายุ" : "ปกติ";
             }
           }
         }
@@ -283,22 +283,22 @@ function execBuildKpi(allMats, staleDays) {
     else if (days !== null && days <= 30) warn++;
     else ok++;
   });
-  const tile = (dot, label, val, note, color) =>
+  const tile = (sg, label, val, note, color) =>
     `<div class="sq-tile">
-      <div class="sq-tile-label"><span class="sq-dot" style="background:${dot}"></span>${label}</div>
+      <div class="sq-tile-label">${uiSign(sg, 16)}${label}</div>
       <div class="sq-tile-num"${color?` style="color:${color}"`:""}>${val.toLocaleString()}</div>
       <div class="sq-tile-note">${note}</div>
     </div>`;
   return `
   <div class="sq-card-note" style="margin:0 0 7px 2px;">ภาพรวมวัตถุดิบทั้งหมด (SQF + MLM)</div>
   <div class="sq-tiles">
-    ${tile("var(--sq-crit)",  "วิกฤต ≤7 วัน",     crisis,   "ต้องสั่งทันที",        crisis   ? "var(--sq-crit)" : "")}
-    ${tile("var(--sq-high)",  "เร่งด่วน ≤14 วัน", urgent,   "ควรสั่งภายในสัปดาห์",  urgent   ? "var(--sq-high)" : "")}
-    ${tile("var(--sq-warn)",  "ควรวางแผน ≤30 วัน", warn,    "วางแผนสั่งล่วงหน้า",   warn     ? "var(--sq-warn)" : "")}
-    ${tile("var(--sq-muted)", "ปกติ",              ok,       "สต๊อกเพียงพอ",         "")}
-    ${tile("var(--sq-high)",  "ต่ำกว่าจุดสั่งซื้อ", lowStock, "ยอดต่ำกว่าที่ตั้งไว้", lowStock ? "var(--sq-high)" : "")}
+    ${tile("no",   "วิกฤต ≤7 วัน",     crisis,   "ต้องสั่งทันที",        crisis   ? "var(--sq-crit)" : "")}
+    ${tile("warn", "เร่งด่วน ≤14 วัน", urgent,   "ควรสั่งภายในสัปดาห์",  urgent   ? "var(--sq-high)" : "")}
+    ${tile("warn", "ควรวางแผน ≤30 วัน", warn,    "วางแผนสั่งล่วงหน้า",   warn     ? "var(--sq-warn)" : "")}
+    ${tile("ok",   "ปกติ",              ok,       "สต๊อกเพียงพอ",         "")}
+    ${tile("warn", "ต่ำกว่าจุดสั่งซื้อ", lowStock, "ยอดต่ำกว่าที่ตั้งไว้", lowStock ? "var(--sq-high)" : "")}
     ${staleDays ? (() => { const n = active.filter(m => execIsStale(m.IdleDays, staleDays)).length;
-        return tile("var(--sq-high)", "⏰ ไม่อัปเดตเกิน " + staleDays + " วัน", n, "ยอดอาจไม่ตรง — ควรนับ", n ? "var(--sq-high)" : ""); })() : ""}
+        return tile("must", "ไม่อัปเดตเกิน " + staleDays + " วัน", n, "ยอดอาจไม่ตรง — ควรนับ", n ? "var(--sq-high)" : ""); })() : ""}
   </div>`;
 }
 
@@ -315,7 +315,7 @@ function execStockSection(icon, title, railClass, products, expiring, expired, s
     </tr>`).join("");
   const staleList = !staleDays || !staleLots.length ? "" : `
     <div class="sq-card-body" style="border-top:1px solid var(--sq-line-soft);">
-      <div class="sq-chip high" style="margin-bottom:7px;">⏰ ไม่อัปเดตเกิน ${staleDays} วัน ${staleLots.length} ล็อต</div>
+      <div class="sq-chip high" style="margin-bottom:7px;">ไม่อัปเดตเกิน ${staleDays} วัน ${staleLots.length} ล็อต</div>
       <div class="sq-list">
         ${staleLots.slice(0,8).map(x => `
           <div class="sq-list-row">
@@ -343,7 +343,7 @@ function execStockSection(icon, title, railClass, products, expiring, expired, s
   <div class="sq-card ${railClass}">
     <div class="sq-card-head">
       <span class="sq-card-title">${icon} ${title}</span>
-      <span class="sq-card-note">${products.length} ชนิด${warnCount>0?` · <span style="color:var(--sq-high);font-weight:700;">${warnCount} ต้องดู</span>`:""}${staleDays && staleLots.length ? ` · <span style="color:var(--sq-high);font-weight:700;">⏰ ${staleLots.length} ไม่อัปเดต</span>` : ""}</span>
+      <span class="sq-card-note">${products.length} ชนิด${warnCount>0?` · <span style="color:var(--sq-high);font-weight:700;">${warnCount} ต้องดู</span>`:""}${staleDays && staleLots.length ? ` · <span style="color:var(--sq-high);font-weight:700;">${staleLots.length} ไม่อัปเดต</span>` : ""}</span>
     </div>
     ${products.length === 0
       ? '<p class="sq-empty">ยังไม่มีสต๊อก</p>'
@@ -351,8 +351,8 @@ function execStockSection(icon, title, railClass, products, expiring, expired, s
           <thead><tr><th>สินค้า</th><th class="n">คงเหลือ</th><th class="n">จำนวน lot</th><th class="c">อัปเดตล่าสุด</th></tr></thead>
           <tbody>${rows}</tbody>
         </table></div>`}
-    ${lotList(expiring, "warn", "⏳", "ใกล้หมดอายุ", false)}
-    ${lotList(expired,  "crit", "⛔", "หมดอายุแล้ว", true)}
+    ${lotList(expiring, "warn", "", "ใกล้หมดอายุ", false)}
+    ${lotList(expired,  "crit", "", "หมดอายุแล้ว", true)}
     ${staleList}
   </div>`;
 }
@@ -406,8 +406,8 @@ function execRawSection(icon, title, railClass, mats, staleDays) {
 
     // วันหมดอายุ
     const expCell = m.expDays===null ? `<span class="sq-dim">—</span>` :
-      m.expDays < 0   ? `<span class="sq-chip crit">⛔ หมดแล้ว</span>` :
-      m.expDays <= 30 ? `<span class="sq-chip warn">⏳ ${m.expDays} วัน</span>` :
+      m.expDays < 0   ? `<span class="sq-chip crit">หมดแล้ว</span>` :
+      m.expDays <= 30 ? `<span class="sq-chip warn">${m.expDays} วัน</span>` :
                         `<span class="sq-dim" style="font-family:var(--sq-mono);font-size:12px;">${isoToDdmmyy(String(m.ExpiryDate))}</span>`;
 
     // หลอดเทียบยอดกับจุดสั่งซื้อ
@@ -444,11 +444,11 @@ function execRawSection(icon, title, railClass, mats, staleDays) {
       <span class="sq-card-note">${active.length} รายการ${lowCount>0?` · <span style="color:var(--sq-high);font-weight:700;">${lowCount} ต่ำกว่าจุดสั่งซื้อ</span>`:""}</span>
     </div>
     <div class="sq-card-body" style="display:flex;gap:6px;flex-wrap:wrap;border-bottom:1px solid var(--sq-line-soft);">
-      ${miniKpi("crit","🔴","วิกฤต",crisis)}
-      ${miniKpi("high","🟠","เร่งด่วน",urgent2)}
-      ${miniKpi("warn","⏳","ควรสั่ง",warn2)}
+      ${miniKpi("crit","","วิกฤต",crisis)}
+      ${miniKpi("high","","เร่งด่วน",urgent2)}
+      ${miniKpi("warn","","ควรสั่ง",warn2)}
       ${miniKpi("","✓","ปกติ",ok2)}
-      ${staleDays ? miniKpi(staleCount ? "high" : "", "⏰", "ไม่อัปเดตเกิน " + staleDays + " วัน", staleCount) : ""}
+      ${staleDays ? miniKpi(staleCount ? "high" : "", "", "ไม่อัปเดตเกิน " + staleDays + " วัน", staleCount) : ""}
     </div>
     ${items.length === 0
       ? '<p class="sq-empty">ยังไม่มีรายการวัตถุดิบ</p>'
@@ -500,9 +500,9 @@ function _xmRawCard(m, factory, staleDays) {
   const pct = m.min > 0 ? Math.min(100, Math.round((m.qty / m.min) * 100)) : null;
   const tags = [];
   if (isLow) tags.push('<span class="sq-chip high">ต่ำกว่าจุดสั่งซื้อ</span>');
-  if (m.expDays !== null && m.expDays < 0) tags.push('<span class="sq-chip crit">⛔ หมดอายุแล้ว</span>');
-  else if (m.expDays !== null && m.expDays <= 30) tags.push(`<span class="sq-chip warn">⏳ หมดอายุใน ${m.expDays} วัน</span>`);
-  if (stale) tags.push(`<span class="sq-chip high">⏰ ไม่อัปเดต ${m.IdleDays === null ? "(ไม่เคยบันทึก)" : m.IdleDays + " วัน"}</span>`);
+  if (m.expDays !== null && m.expDays < 0) tags.push('<span class="sq-chip crit">หมดอายุแล้ว</span>');
+  else if (m.expDays !== null && m.expDays <= 30) tags.push(`<span class="sq-chip warn">หมดอายุใน ${m.expDays} วัน</span>`);
+  if (stale) tags.push(`<span class="sq-chip high">ไม่อัปเดต ${m.IdleDays === null ? "(ไม่เคยบันทึก)" : m.IdleDays + " วัน"}</span>`);
   return `<div class="xm-card ${sev ? "sev-" + sev : ""}">
     <div class="xm-top">
       <div class="xm-name">${escapeHtml(String(m.Name || "-"))}${factory ? ` <span class="xm-fac">${factory}</span>` : ""}</div>
@@ -522,7 +522,7 @@ function _xmLotCard(x, kind, staleDays) {
   const right = kind === "expired" ? `<span class="xm-days crit">${Math.abs(x.ExpireDays)}<small>วันแล้ว</small></span>`
     : kind === "expiring" ? `<span class="xm-days high">${x.ExpireDays}<small>วัน</small></span>`
     : `<span class="xm-days high">${x.IdleDays === null ? "—" : x.IdleDays}<small>วัน</small></span>`;
-  const label = kind === "expired" ? "⛔ หมดอายุแล้ว" : kind === "expiring" ? "⏳ ใกล้หมดอายุ" : "⏰ ไม่อัปเดตเกิน " + staleDays + " วัน";
+  const label = kind === "expired" ? "หมดอายุแล้ว" : kind === "expiring" ? "ใกล้หมดอายุ" : "ไม่อัปเดตเกิน " + staleDays + " วัน";
   return `<div class="xm-card sev-${cls}">
     <div class="xm-top"><div class="xm-name">${escapeHtml(String(x.ProductName || "-"))} <span class="xm-fac">ห้องเย็น</span></div>${right}</div>
     <div class="xm-line">ล็อต MFG ${isoToDdmmyy(String(x.MFG || ""))}${x.EXP ? " · EXP " + isoToDdmmyy(String(x.EXP)) : ""} · เหลือ <b>${_xmNum(x.Qty)}</b> ${escapeHtml(String(x.Unit || ""))}</div>
@@ -545,17 +545,17 @@ function execMobileView() {
   const k = (n, label, cls) => `<div class="xm-kpi"><div class="xm-kpi-n ${n ? cls : ""}">${_xmNum(n)}</div><div class="xm-kpi-l">${label}</div></div>`;
   const cnt = f => all.filter(f).length;
   const kpis = `<div class="xm-kpis">
-    ${k(cnt(({ m }) => m.urgency === 0), "🔴 วิกฤต ≤7 วัน", "crit")}
-    ${k(cnt(({ m }) => m.urgency === 1), "🟠 เร่งด่วน ≤14", "high")}
-    ${k(cnt(({ m }) => m.urgency === 2), "🟡 ควรวางแผน ≤30", "warn")}
+    ${k(cnt(({ m }) => m.urgency === 0), "วิกฤต ≤7 วัน", "crit")}
+    ${k(cnt(({ m }) => m.urgency === 1), "เร่งด่วน ≤14", "high")}
+    ${k(cnt(({ m }) => m.urgency === 2), "ควรวางแผน ≤30", "warn")}
     ${k(cnt(({ m }) => m.min > 0 && m.qty <= m.min), "ต่ำกว่าจุดสั่งซื้อ", "high")}
-    ${sd ? k(cnt(({ m }) => execIsStale(m.IdleDays, sd)), "⏰ ไม่อัปเดต >" + sd + " วัน", "high") : k(cnt(({ m }) => m.urgency >= 3), "✓ ปกติ", "")}
-    ${k(crNeeds, "❄️ ห้องเย็นต้องดู", "high")}
+    ${sd ? k(cnt(({ m }) => execIsStale(m.IdleDays, sd)), "ไม่อัปเดต >" + sd + " วัน", "high") : k(cnt(({ m }) => m.urgency >= 3), "✓ ปกติ", "")}
+    ${k(crNeeds, "ห้องเย็นต้องดู", "high")}
   </div>`;
 
   const tab = (key, label, n) => `<button type="button" class="xm-tab${_xmTab === key ? " on" : ""}" onclick="execMobileTab('${key}')">${label}${n !== undefined ? ` <span class="xm-tab-n">${n}</span>` : ""}</button>`;
   const tabs = `<div class="xm-tabs" role="tablist">
-    ${tab("todo", "🚨 ต้องดู", todoCount)}${tab("chart", "📈 กราฟ")}${tab("SQF", "SQF", sqf.length)}${tab("MLM", "MLM", mlm.length)}${tab("CR", "❄️ ห้องเย็น", prods.length)}
+    ${tab("todo", "ต้องดู", todoCount)}${tab("chart", "กราฟ")}${tab("SQF", "SQF", sqf.length)}${tab("MLM", "MLM", mlm.length)}${tab("CR", "ห้องเย็น", prods.length)}
   </div>`;
 
   let list = "";
@@ -567,7 +567,7 @@ function execMobileView() {
       exp.map(x => _xmLotCard(x, "expired", sd)).join("") +
       near.map(x => _xmLotCard(x, "expiring", sd)).join("") +
       (sd ? staleLots.map(x => _xmLotCard(x, "stale", sd)).join("") : "");
-    if (!needs.length && !crNeeds) list += '<p class="sq-empty">✅ ไม่มีรายการที่ต้องดูตอนนี้</p>';
+    if (!needs.length && !crNeeds) list += '<p class="sq-empty">ไม่มีรายการที่ต้องดูตอนนี้</p>';
   } else if (_xmTab === "SQF" || _xmTab === "MLM") {
     const items = _xmTab === "SQF" ? sqf : mlm;
     list = items.length ? _xmChartCard(_xmTab) + items.map(m => _xmRawCard(m, "", sd)).join("") : '<p class="sq-empty">ยังไม่มีรายการ</p>';
@@ -578,13 +578,13 @@ function execMobileView() {
         <div class="xm-top"><div class="xm-name">${escapeHtml(String(p.ProductName || "-"))}</div>
           <span class="xm-days ok" style="font-size:18px;">${_xmNum(p.TotalQty)}<small>${escapeHtml(String(p.Unit || ""))}</small></span></div>
         <div class="xm-sub">${p.LotCount} ล็อต · อัปเดตล่าสุด ${p.IdleDays === undefined ? "—" : _xmIdleTxt(p.IdleDays)}</div>
-        ${stale ? `<div class="xm-tags"><span class="sq-chip high">⏰ ไม่อัปเดต ${p.IdleDays === null ? "(ไม่เคยบันทึก)" : p.IdleDays + " วัน"}</span></div>` : ""}
+        ${stale ? `<div class="xm-tags"><span class="sq-chip high">ไม่อัปเดต ${p.IdleDays === null ? "(ไม่เคยบันทึก)" : p.IdleDays + " วัน"}</span></div>` : ""}
       </div>`;
     }).join("") + exp.map(x => _xmLotCard(x, "expired", sd)).join("") + near.map(x => _xmLotCard(x, "expiring", sd)).join("")
       : '<p class="sq-empty">ยังไม่มีสต๊อกในห้องเย็น</p>';
   }
   return `<div class="xm">${kpis}${tabs}<div class="xm-list">${list}</div>
-    <p class="xm-foot">ดูอย่างเดียว · ตัวเลขดึงใหม่เองทุกครั้งที่กลับมาเปิดแอป · ⏰ = ไม่มีใครเบิก/รับ/นับ เกิน ${sd || "-"} วัน</p></div>`;
+    <p class="xm-foot">ดูอย่างเดียว · ตัวเลขดึงใหม่เองทุกครั้งที่กลับมาเปิดแอป · = ไม่มีใครเบิก/รับ/นับ เกิน ${sd || "-"} วัน</p></div>`;
 }
 function execMobileTab(t) {
   _xmTab = t;
@@ -615,10 +615,10 @@ function _xmChartRows(key) {
 }
 function _xmChartCard(key) {
   const META = {
-    status: ["📊 สถานะวัตถุดิบแต่ละโรงงาน", "จำนวนรายการตามความเร่งด่วน (วันที่ใช้งานได้คงเหลือ)"],
-    SQF: ["🏭 SQF — วันที่ใช้งานได้คงเหลือ", "10 อันดับที่ด่วนสุด · เฉพาะรายการที่กรอกใช้ต่อวัน"],
-    MLM: ["🏭 MLM — วันที่ใช้งานได้คงเหลือ", "10 อันดับที่ด่วนสุด · เฉพาะรายการที่กรอกใช้ต่อวัน"],
-    CR:  ["❄️ ห้องเย็น — คงเหลือต่อสินค้า", "🔴 มีล็อตหมดอายุ · 🟠 มีล็อตใกล้หมดอายุ · 🔵 ปกติ"],
+    status: ["สถานะวัตถุดิบแต่ละโรงงาน", "จำนวนรายการตามความเร่งด่วน (วันที่ใช้งานได้คงเหลือ)"],
+    SQF: ["SQF — วันที่ใช้งานได้คงเหลือ", "10 อันดับที่ด่วนสุด · เฉพาะรายการที่กรอกใช้ต่อวัน"],
+    MLM: ["MLM — วันที่ใช้งานได้คงเหลือ", "10 อันดับที่ด่วนสุด · เฉพาะรายการที่กรอกใช้ต่อวัน"],
+    CR:  ["ห้องเย็น — คงเหลือต่อสินค้า", "มีล็อตหมดอายุ · มีล็อตใกล้หมดอายุ · ปกติ"],
   }[key];
   const n = key === "status" ? 2 : _xmChartRows(key).length;
   if (!n) return key === "CR" ? "" : `<div class="xm-chart"><div class="xm-chart-h">${META[0]}</div><p class="xm-sub" style="margin:6px 0 0;">ยังไม่มีรายการที่กรอกอัตราใช้ต่อวัน</p></div>`;

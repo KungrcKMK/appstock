@@ -23,7 +23,7 @@ function _adminNeedLogin(listEl, why) {
   if (!listEl) return;
   listEl.innerHTML = `
     <div class="sq-note warn" style="text-align:center;">
-      <b>🔑 ต้องเข้าสู่ระบบใหม่ก่อน</b><br>
+      <b>ต้องเข้าสู่ระบบใหม่ก่อน</b><br>
       ${escapeHtml(why || "บัตรผ่านหมดอายุแล้ว")}
       <div style="margin-top:10px;">
         <button onclick="reloginForAdmin()" class="sq-btn sq-btn-primary">เข้าสู่ระบบใหม่</button>
@@ -69,9 +69,9 @@ async function loadPendingUsers() {
     }).then(r => r.json());
 
     if (_adminHandleDenied(res, listEl)) return;
-    if (!res.ok) { listEl.innerHTML = `<p class="sq-empty" style="color:var(--sq-crit);font-weight:700;">❌ ${escapeHtml(res.message||"")}</p>`; return; }
+    if (!res.ok) { listEl.innerHTML = `<p class="sq-empty" style="color:var(--sq-crit);font-weight:700;">${escapeHtml(res.message||"")}</p>`; return; }
     if (!res.list || res.list.length === 0) {
-      listEl.innerHTML = '<p class="sq-empty">✅ ไม่มีคำขอรอการอนุมัติ</p>';
+      listEl.innerHTML = '<p class="sq-empty">ไม่มีคำขอรอการอนุมัติ</p>';
       const badge = document.getElementById("adminNavBadge");
       const tabBadge = document.getElementById("adminPendingTabBadge");
       if (badge) badge.style.display = "none";
@@ -91,15 +91,15 @@ async function loadPendingUsers() {
       return `
       <div class="sq-row">
         <div class="sq-row-id">
-          <p class="sq-row-name">👤 ${escapeHtml(u.username||"")}</p>
+          <p class="sq-row-name">${escapeHtml(u.username||"")}</p>
           <p class="sq-row-meta">
             <span class="sq-chip">ขอสิทธิ์ ${escapeHtml(roleLabel)}</span>
             <span>ส่งคำขอ ${escapeHtml(u.requestedAt||"")}</span>
           </p>
         </div>
         <div class="sq-row-acts">
-          <button onclick="adminApprove('${safeU}', event)" class="sq-btn sq-btn-primary">✅ อนุมัติ</button>
-          <button onclick="adminReject('${safeU}', event)" class="sq-btn">❌ ปฏิเสธ</button>
+          <button onclick="adminApprove('${safeU}', event)" class="sq-btn sq-btn-primary">อนุมัติ</button>
+          <button onclick="adminReject('${safeU}', event)" class="sq-btn">ปฏิเสธ</button>
         </div>
       </div>`;
     }).join("");
@@ -119,8 +119,8 @@ async function adminApprove(username, evt) {
         body: JSON.stringify({ module: "SYSTEM", action: "approveUser",
           payload: { adminToken: _adminToken, username } })
       }).then(r => r.json());
-      if (res.ok) { showToast("✅ อนุมัติ " + username + " แล้ว"); loadPendingUsers(); }
-      else alert("❌ " + res.message);
+      if (res.ok) { showToast("อนุมัติ " + username + " แล้ว"); loadPendingUsers(); }
+      else alert("" + res.message);
     } catch(e) { alert("เกิดข้อผิดพลาด: " + netErrorText(e)); }
   });
 }
@@ -136,8 +136,8 @@ async function adminReject(username, evt) {
         body: JSON.stringify({ module: "SYSTEM", action: "rejectUser",
           payload: { adminToken: _adminToken, username } })
       }).then(r => r.json());
-      if (res.ok) { showToast("🚫 ปฏิเสธ " + username + " แล้ว"); loadPendingUsers(); }
-      else alert("❌ " + res.message);
+      if (res.ok) { showToast("ปฏิเสธ " + username + " แล้ว"); loadPendingUsers(); }
+      else alert("" + res.message);
     } catch(e) { alert("เกิดข้อผิดพลาด: " + netErrorText(e)); }
   });
 }
@@ -163,12 +163,12 @@ function adminSwitchTab(tab) {
 
 // กดให้เซิร์ฟเวอร์สั่ง Google อัปเดตสำเนาในชีตเดี๋ยวนั้น (ปกติทำเองทุก 15 นาที) — Google ใช้เวลาเขียนราว 10–40 วินาที
 async function adminMirrorNow(btn) {
-  if (btn) { btn.disabled = true; btn.textContent = "⏳ กำลังอัปเดต… (ราวครึ่งนาที)"; }
+  if (btn) { btn.disabled = true; btn.textContent = "กำลังอัปเดต… (ราวครึ่งนาที)"; }
   try {
     const r = await (await fetch(GAS_URL, { method: "POST", headers: { "Content-Type": "text/plain;charset=utf-8" },
       body: JSON.stringify({ module: "SYSTEM", action: "MIRRORPUSH" }) })).json();
     if (handleTokenExpired(r)) return;
-    if (r && r.ok) showToast(r.last && r.last.busy ? "กำลังอัปเดตอยู่แล้ว รอสักครู่" : "อัปเดตสำเนาใน Google Sheets แล้ว ✅", "success");
+    if (r && r.ok) showToast(r.last && r.last.busy ? "กำลังอัปเดตอยู่แล้ว รอสักครู่" : "อัปเดตสำเนาใน Google Sheets แล้ว ", "success");
     else showToast("อัปเดตสำเนาไม่สำเร็จ: " + ((r && r.message) || "ไม่ได้รับคำตอบ"), "error", 6000);
   } catch (e) { showToast("อัปเดตสำเนาไม่สำเร็จ: " + netErrorText(e), "error", 6000); }
   adminLoadStatus();
@@ -178,7 +178,7 @@ async function adminMirrorNow(btn) {
 async function adminLoadStatus() {
   const el = document.getElementById("adminStatusBody");
   if (!el) return;
-  el.innerHTML = '<p class="sq-empty">⏳ กำลังตรวจ...</p>';
+  el.innerHTML = '<p class="sq-empty">กำลังตรวจ...</p>';
   const t = d => d ? (() => { try { return new Date(d).toLocaleString("th-TH", { dateStyle: "short", timeStyle: "short" }); } catch (e) { return String(d); } })() : "—";
   // ฝั่งหน้าจอ
   let swVer = "—";
@@ -206,28 +206,28 @@ async function adminLoadStatus() {
         ? `${t(mr.at)} · ${mr.ok ? chip(true, "สำเร็จ", "") : `<span class="sq-chip crit">ไม่สำเร็จ: ${escapeHtml(mr.message || "")}</span>`}
            <div class="sq-meter-note">ใช้เวลา ${Math.round((mr.ms || 0) / 100) / 10} วินาที${mr.rows ? " · " + Object.keys(mr.rows).length + " แท็บ" : ""} · ชีตเป็นสำเนาอ่านอย่างเดียว แก้ในชีตไม่มีผลกับระบบ</div>`
         : '<span class="sq-chip warn">ยังไม่เคยสำเนา</span>')
-      + ` <button class="sq-btn sq-btn-sm" style="margin-top:4px;" onclick="adminMirrorNow(this)">🔄 อัปเดตสำเนาเดี๋ยวนี้</button>`;
+      + ` <button class="sq-btn sq-btn-sm" style="margin-top:4px;" onclick="adminMirrorNow(this)">อัปเดตสำเนาเดี๋ยวนี้</button>`;
   el.innerHTML = `
-    <div class="sq-card"><div class="sq-card-head"><span class="sq-card-title">🖥️ หน้าจอ (เครื่องนี้)</span></div>
+    <div class="sq-card"><div class="sq-card-head"><span class="sq-card-title">หน้าจอ (เครื่องนี้)</span></div>
       <div class="sq-tablewrap"><table class="sq-table"><tbody>
         ${row("รุ่นแอป (Service Worker)", `<code>${escapeHtml(swVer)}</code> ${chip(swCtl, "ทำงานอยู่", "ยังไม่คุม")}`)}
         ${row("เน็ตตอนนี้", chip(navigator.onLine, "ออนไลน์", "ออฟไลน์"))}
         ${row("โหลดข้อมูลครั้งล่าสุด", window._gasLastAt ? `${t(window._gasLastAt)} · ใช้เวลา ${window._gasLastMs} ms` : "ยังไม่ได้โหลดในรอบนี้")}
-        ${row("งานค้างในเครื่องนี้", (q || f) ? `<span class="sq-chip warn">⏳ รอส่ง ${q} · ⚠️ ไม่ผ่าน ${f}</span>` : chip(true, "ไม่มี", ""))}
+        ${row("งานค้างในเครื่องนี้", (q || f) ? `<span class="sq-chip warn">รอส่ง ${q} · ไม่ผ่าน ${f}</span>` : chip(true, "ไม่มี", ""))}
         ${row("บันทึกครั้งล่าสุด (เวลาแยกส่วน)", window._gasLastWriteTiming
           ? `เซิร์ฟเวอร์รวม ${window._gasLastWriteTiming.totalMs || 0} ms · รอล็อก ${window._gasLastWriteTiming.lockWaitMs || 0} ms · ต่อคิว Telegram ${window._gasLastWriteTiming.tgMs || 0} ms`
           : "ยังไม่มีการบันทึกในรอบนี้")}
       </tbody></table></div></div>
-    <div class="sq-card" style="margin-top:12px;"><div class="sq-card-head"><span class="sq-card-title">☁️ เซิร์ฟเวอร์ (Cloudflare)</span>
+    <div class="sq-card" style="margin-top:12px;"><div class="sq-card-head"><span class="sq-card-title">เซิร์ฟเวอร์ (Cloudflare)</span>
       ${srv ? `<span class="sq-chip ok">ตอบใน ${srvMs} ms${srv.serverMs ? ` · เซิร์ฟเวอร์ใช้ ${srv.serverMs} ms` : ""}</span>` : `<span class="sq-chip crit">ติดต่อไม่ได้</span>`}</div>
       <div class="sq-tablewrap"><table class="sq-table"><tbody>
         ${srv ? `
         ${row("รุ่นโค้ดเซิร์ฟเวอร์", `<code>${escapeHtml(srv.gasVersion)}</code> · เขตเวลา ${escapeHtml(srv.timeZone)}`)}
         ${row("เวลาเซิร์ฟเวอร์", t(srv.serverTime))}
-        ${row("บัญชีเจ้าของระบบใน Config", chip(srv.superAdminConfigured, "ตั้งไว้แล้ว", "⚠️ ไม่มี — เกราะ super admin ปิดอยู่"))}
+        ${row("บัญชีเจ้าของระบบใน Config", chip(srv.superAdminConfigured, "ตั้งไว้แล้ว", "ไม่มี — เกราะ super admin ปิดอยู่"))}
         ${row("สำรองข้อมูลล่าสุด", srv.lastBackup ? `${t(srv.lastBackup.at)} · ${escapeHtml(String(srv.lastBackup.result))}<div class="sq-meter-note">${escapeHtml(String(srv.lastBackup.detail || "").split(" | ")[0])}</div>` : '<span class="sq-chip warn">ยังไม่มีบันทึก</span>')}
         ${row("สำเนาลง Google Sheets", mirrorCell)}
-        ${row("LINE ครั้งล่าสุด", srv.lastLine ? `${t(srv.lastLine.at)} · ${srv.lastLine.sent ? chip(true, "ส่งสำเร็จ " + srv.lastLine.groups + "/" + srv.lastLine.of + " กลุ่ม", "") : `<span class="sq-chip warn">ไม่ได้ส่ง: ${escapeHtml(srv.lastLine.reason || "")}</span>`}` : "ยังไม่มีการส่ง (ตั้งค่าที่ปุ่ม ⚙️ แจ้งเตือน)")}
+        ${row("LINE ครั้งล่าสุด", srv.lastLine ? `${t(srv.lastLine.at)} · ${srv.lastLine.sent ? chip(true, "ส่งสำเร็จ " + srv.lastLine.groups + "/" + srv.lastLine.of + " กลุ่ม", "") : `<span class="sq-chip warn">ไม่ได้ส่ง: ${escapeHtml(srv.lastLine.reason || "")}</span>`}` : "ยังไม่มีการส่ง (ตั้งค่าที่ปุ่ม แจ้งเตือน)")}
         ${row("Telegram ครั้งล่าสุด", tg ? `${t(tg.at)} · ${tg.sent ? chip(true, "ส่งสำเร็จ", "") : `<span class="sq-chip warn">ไม่ได้ส่ง: ${escapeHtml(tg.reason || "")}</span>`}` : "ยังไม่มีการส่งในรอบนี้")}
         ${row("Telegram ผิดพลาดล่าสุด", srv.lastTelegramError ? `${t(srv.lastTelegramError.at)} · ${escapeHtml(String(srv.lastTelegramError.detail))}` : chip(true, "ไม่มี", ""))}
         ${row("จำนวนแถวข้อมูล", Object.keys(srv.rowCounts || {}).map(k => `${escapeHtml(k)}: <b>${srv.rowCounts[k] == null ? "—" : srv.rowCounts[k].toLocaleString()}</b>`).join(" · "))}
@@ -236,7 +236,7 @@ async function adminLoadStatus() {
         ${row("Telegram รอส่ง", srv.tgPending == null ? "—" : (srv.tgPending ? `<span class="sq-chip warn">${srv.tgPending} ข้อความ</span>` : chip(true, "ไม่มี", "")))}
         ` : row("ข้อผิดพลาด", `<span style="color:var(--sq-crit);font-weight:800;">${escapeHtml(srvErr)}</span>`)}
       </tbody></table></div></div>
-    <p class="sq-note" style="margin-top:10px;">อ่านผล: "ตอบใน" มากแต่ "เซิร์ฟเวอร์ใช้" น้อย = ช้าที่เน็ตของเครื่องนี้ ไม่ใช่โปรแกรม · เซิร์ฟเวอร์ไม่ตอบ = เน็ตหลุดหรือเซิร์ฟเวอร์มีปัญหา · รุ่นแอปไม่ตรงกับที่ deploy ล่าสุด = เครื่องนี้ยังไม่ได้อัปเดต (กด 🔄 อัปเดต) · งานค้างในเครื่องอื่นจะไม่เห็นจากที่นี่</p>`;
+    <p class="sq-note" style="margin-top:10px;">อ่านผล: "ตอบใน" มากแต่ "เซิร์ฟเวอร์ใช้" น้อย = ช้าที่เน็ตของเครื่องนี้ ไม่ใช่โปรแกรม · เซิร์ฟเวอร์ไม่ตอบ = เน็ตหลุดหรือเซิร์ฟเวอร์มีปัญหา · รุ่นแอปไม่ตรงกับที่ deploy ล่าสุด = เครื่องนี้ยังไม่ได้อัปเดต (กด อัปเดต) · งานค้างในเครื่องอื่นจะไม่เห็นจากที่นี่</p>`;
 }
 
 // (loadUsers เดิมอ้าง #adminUserList ที่ไม่มีในหน้าแล้ว และไม่มีใครเรียก — ลบ 2026-10-10 · QA L7 · หน้าผู้ใช้อยู่ที่ loadRolesPage)
@@ -245,7 +245,7 @@ async function loadRolesPage() {
   const listEl = document.getElementById("rolesPageList");
   if (!listEl) return;
   if (!_adminTokenReady(listEl)) return;
-  listEl.innerHTML = '<p class="sq-empty">⏳ กำลังโหลด...</p>';
+  listEl.innerHTML = '<p class="sq-empty">กำลังโหลด...</p>';
   try {
     const res = await fetch(GAS_URL, {
       method: "POST",
@@ -253,10 +253,10 @@ async function loadRolesPage() {
       body: JSON.stringify({ module: "SYSTEM", action: "getUsers", payload: { adminToken: _adminToken } })
     }).then(r => r.json());
     if (_adminHandleDenied(res, listEl)) return;
-    if (!res.ok) { listEl.innerHTML = `<p class="sq-empty" style="color:var(--sq-crit);font-weight:700;">❌ ${escapeHtml(res.message||"")}</p>`; return; }
+    if (!res.ok) { listEl.innerHTML = `<p class="sq-empty" style="color:var(--sq-crit);font-weight:700;">${escapeHtml(res.message||"")}</p>`; return; }
     // สีป้าย role — ใช้ class กลาง ไม่ใช่สีดิบ
     const roleChip    = { admin:"warn", manager:"ok", viewer:"", user:"" };
-    const roleLabels  = { admin:"🔧 admin", manager:"📋 manager", viewer:"👁️ viewer", user:"👤 user" };
+    const roleLabels  = { admin:"admin", manager:"manager", viewer:"viewer", user:"user" };
     const KNOWN = ["user","viewer","manager","admin"];
     const isSuperViewer = !!res.callerIsSuper;
     const otherAdmins = res.users.filter(u => !u.isSuper && String(u.role).toLowerCase() === "admin");
@@ -266,10 +266,10 @@ async function loadRolesPage() {
     if (isSuperViewer && otherAdmins.length) {
       banner = `
       <div class="sq-note warn">
-        <b>👑 มี admin คนอื่นอยู่ ${otherAdmins.length} คน</b><br>
+        <b>มี admin คนอื่นอยู่ ${otherAdmins.length} คน</b><br>
         ${escapeHtml(otherAdmins.map(u=>u.username).join(", "))}
         <div style="margin-top:8px;">
-          <button onclick="demoteOtherAdmins(event)" class="sq-btn">⬇️ ลดทุกคนเป็น user (เหลือเจ้าของระบบคนเดียว)</button>
+          <button onclick="demoteOtherAdmins(event)" class="sq-btn">ลดทุกคนเป็น user (เหลือเจ้าของระบบคนเดียว)</button>
         </div>
       </div>`;
     }
@@ -277,19 +277,19 @@ async function loadRolesPage() {
     // ➕ ฟอร์มเพิ่มผู้ใช้ใหม่โดยตรง (ไม่ต้องรอเขาส่งคำขอ)
     const createForm = `
       <div class="sq-card" style="margin-bottom:12px;">
-        <div class="sq-card-head"><span class="sq-card-title">➕ เพิ่มผู้ใช้ใหม่</span>
+        <div class="sq-card-head"><span class="sq-card-title">เพิ่มผู้ใช้ใหม่</span>
           <span class="sq-card-note">ใช้ได้ทันที ไม่ต้องรอเขาส่งคำขอ</span></div>
         <div class="sq-card-body" style="display:flex;gap:7px;flex-wrap:wrap;align-items:center;">
           <input id="newUserName" type="text" aria-label="ชื่อพนักงานใหม่" placeholder="ชื่อพนักงาน" class="sq-input"
             onkeydown="if(event.key==='Enter') createNewUser(event)" style="flex:1;min-width:150px;">
           <select id="newUserRole" class="sq-select" aria-label="สิทธิ์">
-            <option value="user">👤 user</option>
-            <option value="viewer">👁️ viewer</option>
-            <option value="manager">📋 manager</option>
-            ${isSuperViewer ? '<option value="admin">🔧 admin</option>' : ''}
+            <option value="user">user</option>
+            <option value="viewer">viewer</option>
+            <option value="manager">manager</option>
+            ${isSuperViewer ? '<option value="admin">admin</option>' : ''}
           </select>
           <input id="newUserPwd" type="password" aria-label="รหัสผ่าน (ไม่ใส่ก็ได้)" placeholder="รหัสผ่าน (ไม่ใส่ก็ได้)" class="sq-input" style="width:180px;">
-          <button onclick="createNewUser(event)" class="sq-btn sq-btn-primary">➕ เพิ่ม</button>
+          <button onclick="createNewUser(event)" class="sq-btn sq-btn-primary">เพิ่ม</button>
         </div>
       </div>`;
 
@@ -299,39 +299,39 @@ async function loadRolesPage() {
         const safeId = escapeAttr(u.username||"");
         const chip = roleChip[u.role] || "";
         const unknownRole = !KNOWN.includes(String(u.role).toLowerCase());
-        const pwdNote = u.hasPassword ? "🔒 มีรหัสผ่าน" : "🔓 ไม่มีรหัสผ่าน";
+        const pwdNote = u.hasPassword ? "มีรหัสผ่าน" : "ไม่มีรหัสผ่าน";
 
         // 👑 เจ้าของระบบ — ล็อกไว้ ไม่ให้แก้จากหน้าจอ
         if (u.isSuper) {
           return `
           <div class="sq-row is-super">
             <div class="sq-row-id">
-              <p class="sq-row-name">👑 ${escapeHtml(u.username||"")}</p>
+              <p class="sq-row-name">${escapeHtml(u.username||"")}</p>
               <p class="sq-row-meta"><span>เจ้าของระบบ (admin สูงสุด)</span><span>${pwdNote}</span></p>
             </div>
-            <span class="sq-chip warn">🔒 แก้ไขไม่ได้</span>
+            <span class="sq-chip warn">แก้ไขไม่ได้</span>
           </div>`;
         }
 
         return `
         <div class="sq-row">
           <div class="sq-row-id">
-            <p class="sq-row-name">👤 ${escapeHtml(u.username||"")}</p>
+            <p class="sq-row-name">${escapeHtml(u.username||"")}</p>
             <p class="sq-row-meta">
               <span class="sq-chip ${chip}">${escapeHtml(roleLabels[u.role]||u.role||"")}</span>
-              ${unknownRole ? `<span class="sq-chip crit">⚠️ role เก่า (${escapeHtml(u.role||"")}) — กดบันทึกเพื่อปรับเป็น user</span>` : ""}
+              ${unknownRole ? `<span class="sq-chip crit">role เก่า (${escapeHtml(u.role||"")}) — กดบันทึกเพื่อปรับเป็น user</span>` : ""}
               <span>${pwdNote}</span>
             </p>
           </div>
           <div class="sq-row-acts">
             <select id="rpRoleSelect-${safeId}" class="sq-select" aria-label="สิทธิ์">
-              <option value="user"     ${u.role==="user"    ?"selected":""}>👤 user</option>
-              <option value="viewer"   ${u.role==="viewer"  ?"selected":""}>👁️ viewer</option>
-              <option value="manager"  ${u.role==="manager" ?"selected":""}>📋 manager</option>
-              <option value="admin"    ${u.role==="admin"   ?"selected":""} ${isSuperViewer ? "" : "disabled"}>🔧 admin${isSuperViewer ? "" : " (เฉพาะเจ้าของระบบ)"}</option>
+              <option value="user"     ${u.role==="user"    ?"selected":""}>user</option>
+              <option value="viewer"   ${u.role==="viewer"  ?"selected":""}>viewer</option>
+              <option value="manager"  ${u.role==="manager" ?"selected":""}>manager</option>
+              <option value="admin"    ${u.role==="admin"   ?"selected":""} ${isSuperViewer ? "" : "disabled"}>admin${isSuperViewer ? "" : " (เฉพาะเจ้าของระบบ)"}</option>
             </select>
-            <button onclick="saveRolePageUser('${safeU}')" class="sq-btn sq-btn-primary">💾 บันทึก</button>
-            <button onclick="deleteUserRow('${safeU}', event)" title="ลบผู้ใช้ออกจากระบบ" class="sq-btn">🗑️</button>
+            <button onclick="saveRolePageUser('${safeU}')" class="sq-btn sq-btn-primary">บันทึก</button>
+            <button onclick="deleteUserRow('${safeU}', event)" title="ลบผู้ใช้ออกจากระบบ" aria-label="ลบผู้ใช้ ${escapeAttr(u.username||"")}" class="sq-btn" style="color:var(--sq-crit);"><i class="ic ic-trash" aria-hidden="true"></i></button>
           </div>
         </div>`;
       }).join("") + `</div>`;
@@ -358,7 +358,7 @@ async function createNewUser(evt) {
         headers: { "Content-Type": "text/plain;charset=utf-8" },
         body: JSON.stringify({ module: "SYSTEM", action: "createUser", payload })
       }).then(r => r.json());
-      if (res.ok) { showToast(`➕ เพิ่ม "${username}" แล้ว`, "success"); loadRolesPage(); }
+      if (res.ok) { showToast(`เพิ่ม "${username}" แล้ว`, "success"); loadRolesPage(); }
       else showToast(res.message || "เพิ่มไม่สำเร็จ", "error");
     } catch (e) { showToast("เชื่อมต่อไม่สำเร็จ: " + netErrorText(e), "error"); }
   });
@@ -366,7 +366,7 @@ async function createNewUser(evt) {
 
 // 🗑️ ลบผู้ใช้ (ถาวร)
 async function deleteUserRow(username, evt) {
-  if (!confirm(`ลบผู้ใช้ "${username}" ออกจากระบบ?\n\n⚠️ ลบแล้วเข้าใช้งานไม่ได้ทันที และย้อนกลับไม่ได้\n(ประวัติการเบิก/รับ เดิมยังอยู่ครบ)`)) return;
+  if (!confirm(`ลบผู้ใช้ "${username}" ออกจากระบบ?\n\nลบแล้วเข้าใช้งานไม่ได้ทันที และย้อนกลับไม่ได้\n(ประวัติการเบิก/รับ เดิมยังอยู่ครบ)`)) return;
   await guardedClick(evt?.currentTarget, async () => {
     try {
       const res = await fetch(GAS_URL, {
@@ -374,7 +374,7 @@ async function deleteUserRow(username, evt) {
         headers: { "Content-Type": "text/plain;charset=utf-8" },
         body: JSON.stringify({ module: "SYSTEM", action: "deleteUser", payload: { adminToken: _adminToken, username } })
       }).then(r => r.json());
-      if (res.ok) { showToast(`🗑️ ลบ "${username}" แล้ว`, "warn"); loadRolesPage(); }
+      if (res.ok) { showToast(`ลบ "${username}" แล้ว`, "warn"); loadRolesPage(); }
       else showToast(res.message || "ลบไม่สำเร็จ", "error");
     } catch (e) { showToast("เชื่อมต่อไม่สำเร็จ: " + netErrorText(e), "error"); }
   });
@@ -391,7 +391,7 @@ async function demoteOtherAdmins(evt) {
         body: JSON.stringify({ module: "SYSTEM", action: "demoteOtherAdmins", payload: { adminToken: _adminToken } })
       }).then(r => r.json());
       if (res.ok) {
-        showToast(res.count ? `⬇️ ลด ${res.count} คนเป็น user แล้ว` : "ไม่มี admin คนอื่นให้ลด", "success");
+        showToast(res.count ? `ลด ${res.count} คนเป็น user แล้ว` : "ไม่มี admin คนอื่นให้ลด", "success");
         loadRolesPage();
       } else {
         showToast(res.message || "ไม่สำเร็จ", "error");
@@ -411,8 +411,8 @@ async function saveRolePageUser(username) {
       body: JSON.stringify({ module: "SYSTEM", action: "setUserRole",
         payload: { adminToken: _adminToken, username, role: newRole } })
     }).then(r => r.json());
-    if (res.ok) { showToast(`✅ ${username} → ${newRole}`); loadRolesPage(); }
-    else alert("❌ " + res.message);
+    if (res.ok) { showToast(`${username} → ${newRole}`); loadRolesPage(); }
+    else alert("" + res.message);
   } catch(e) { alert("เกิดข้อผิดพลาด: " + netErrorText(e)); }
 }
 
@@ -430,8 +430,8 @@ async function saveUserRole(username) {
       headers: { "Content-Type": "text/plain;charset=utf-8" },
       body: JSON.stringify({ module: "SYSTEM", action: "setUserRole", payload })
     }).then(r => r.json());
-    if (res.ok) { showToast(`✅ บันทึก ${username} → ${newRole}${newPwd?" + รหัสผ่านใหม่":""}`); if(pwdEl) pwdEl.value=""; }
-    else alert("❌ " + res.message);
+    if (res.ok) { showToast(`บันทึก ${username} → ${newRole}${newPwd?" + รหัสผ่านใหม่":""}`); if(pwdEl) pwdEl.value=""; }
+    else alert("" + res.message);
   } catch(e) { alert("เกิดข้อผิดพลาด: " + netErrorText(e)); }
 }
 
@@ -464,24 +464,25 @@ function renderActivityList() {
     listEl.innerHTML = '<p class="text-slate-600 text-center text-sm font-bold py-8">ไม่มีข้อมูลในช่วงนี้</p>';
     return;
   }
-  const moduleColor = { COLDROOM: "bg-indigo-100 text-indigo-700", SQF: "bg-orange-100 text-orange-700", MLM: "bg-blue-100 text-blue-700" };
-  const moduleIcon  = { COLDROOM: "❄️", SQF: "🏭", MLM: "🏭" };
+  const moduleColor = { COLDROOM: "text-white", SQF: "text-white", MLM: "text-white" };
+  const moduleBg    = { COLDROOM: "var(--sq-fac-cr)", SQF: "var(--sq-fac-sqf)", MLM: "var(--sq-fac-mlm)" };   // สีโรงงานชุดเดียวกับการ์ดหน้าแรก/แถบเมนู
+  const moduleIcon  = { COLDROOM: "", SQF: "", MLM: "" };
   listEl.innerHTML = items.map(a => `
     <div class="flex gap-3 items-start bg-slate-50 rounded-2xl p-3 border border-slate-100">
-      <span class="shrink-0 text-xl mt-0.5">${moduleIcon[a.module] || "📋"}</span>
+      <span class="shrink-0 text-xl mt-0.5">${moduleIcon[a.module] || ""}</span>
       <div class="flex-1 min-w-0">
         <div class="flex items-center gap-2 flex-wrap">
-          <span class="text-xs font-black px-2 py-0.5 rounded-full ${moduleColor[a.module] || "bg-slate-100 text-slate-600"}">${escapeHtml(a.module||"")}</span>
+          <span class="text-xs font-black px-2 py-0.5 rounded-full ${moduleColor[a.module] || "bg-slate-100 text-slate-600"}" style="${moduleBg[a.module] ? "background:" + moduleBg[a.module] : ""}">${escapeHtml(a.module||"")}</span>
           <span class="text-xs font-black text-slate-700 truncate">${escapeHtml(a.name||"")}</span>
           ${a.action ? `<span class="text-xs text-slate-500 font-bold">${escapeHtml(a.action)}</span>` : ""}
           ${a.qty !== undefined && a.qty !== "" ? `<span class="text-xs font-black text-emerald-600">× ${escapeHtml(String(a.qty))}</span>` : ""}
         </div>
         <div class="flex gap-3 mt-1 flex-wrap">
-          <span class="text-xs text-slate-600">👤 ${escapeHtml(a.user||"-")}</span>
-          ${a.device ? `<span class="text-xs text-slate-500">🖥️ ${escapeHtml(a.device)}</span>` : ""}
-          <span class="text-xs text-slate-600 ml-auto shrink-0">🕐 ${escapeHtml(a.timestamp||"")}</span>
+          <span class="text-xs text-slate-600">${escapeHtml(a.user||"-")}</span>
+          ${a.device ? `<span class="text-xs text-slate-500">${escapeHtml(a.device)}</span>` : ""}
+          <span class="text-xs text-slate-600 ml-auto shrink-0">${escapeHtml(a.timestamp||"")}</span>
         </div>
-        ${a.note ? `<p class="text-xs text-slate-600 mt-0.5">💬 ${escapeHtml(a.note)}</p>` : ""}
+        ${a.note ? `<p class="text-xs text-slate-600 mt-0.5">${escapeHtml(a.note)}</p>` : ""}
       </div>
     </div>`).join("");
 }
@@ -496,7 +497,7 @@ async function loadActivityLog() {
       body: JSON.stringify({ module: "SYSTEM", action: "getActivityLog",
         payload: { adminToken: _adminToken } })
     }).then(r => r.json());
-    if (!res.ok) { listEl.innerHTML = `<p class="text-red-500 text-center text-sm font-bold py-8">❌ ${res.message}</p>`; return; }
+    if (!res.ok) { listEl.innerHTML = `<p class="text-red-500 text-center text-sm font-bold py-8">${res.message}</p>`; return; }
     _activityData = res.list || [];
     renderActivityList();
   } catch(e) {

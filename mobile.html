@@ -28,7 +28,7 @@
     :root{
       --m-green:#00843d;     /* เขียวเซฟตี้ — หัวจอ ปุ่มไปต่อ (ตัวขาวบนนี้ 4.8:1) */
       --m-green-ink:#006b31; /* ตัวหนังสือเขียวบนพื้นอ่อน (#00843d บนพื้นเทาได้แค่ 4.3:1) */
-      --m-yellow:#ffd100;    /* แถบสัญญาณ ป้ายเตือน — ใช้คู่ตัวดำเท่านั้น */
+      --m-band:#f2951c;      /* ส้มประจำโรงงาน = แถบสัญญาณ/แถบเตือน (ธีม เขียว-ส้ม-ขาว · เจ้าของสั่ง 2026-10-20) — ใช้คู่ตัวดำ ห้ามเป็นตัวหนังสือบนขาว (2.3:1) */
       --m-red:#c8102e;       /* ห้าม / หมด */
       --m-blue:#005a9c;      /* บังคับ / ต้องนับ */
       --m-warn-ink:#8a5a00;  /* ตัวหนังสือเตือนบนพื้นอ่อน (เหลืองล้วนอ่านไม่ออก) */
@@ -66,7 +66,7 @@
     button:disabled{opacity:.5;cursor:not-allowed;filter:saturate(.6)}
     /* โฟกัสด้วยคีย์บอร์ดต้องเห็น (แท็บเล็ต/คีย์บอร์ดบลูทูธ) */
     button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible, [role=button]:focus-visible{outline:3px solid var(--m-ink);outline-offset:2px}
-    #sScanner :focus-visible{outline-color:var(--m-yellow)}
+    #sScanner :focus-visible{outline-color:var(--m-band)}
 
     /* ── ไอคอนเส้นชุดเดียวทั้งแอป (แทน emoji · วาดแบบเดียวกับป้าย) — สร้างจาก scratchpad make-icons.mjs
        ใช้: <i class="ic ic-out"></i> หรือ class="icb ic-out" = ไอคอนหน้าข้อความ (ใช้กับปุ่มที่ JS เปลี่ยน textContent) ── */
@@ -103,7 +103,7 @@
     .m-ink2{color:var(--m-ink2)} .m-go{color:var(--m-green-ink)} .m-warn{color:var(--m-warn-ink)} .m-red{color:var(--m-red)} .m-must{color:var(--m-blue)}
     .m-sku{font-family:ui-monospace,Consolas,monospace;font-weight:700}
     /* ── หัวจอ: เขียวเต็มกว้าง แถบเหลืองสัญญาณขอบล่าง ── */
-    .m-head{background:var(--m-green);color:#fff;border-bottom:6px solid var(--m-yellow)}
+    .m-head{background:var(--m-green);color:#fff;border-bottom:6px solid var(--m-band)}
     /* หัวจอเว้นใต้แถบสถานะ iPhone (black-translucent) · คู่กับคลาส pt-3 ในหัวจอ = ค่าสำรองเมื่ออ่าน env() ไม่ได้ */
     .m-safe-top{padding-top:calc(env(safe-area-inset-top,0px) + 12px)}
     .m-btn-line{border:2px solid #fff;border-radius:6px;font-weight:800;min-height:44px;color:#fff}
@@ -111,21 +111,21 @@
     .m-panel{background:#fff;border:1.5px solid var(--m-line);border-radius:6px}
     .m-well{background:var(--m-ground);border:1.5px solid var(--m-line);border-radius:6px}
     .m-field{background:#fff;border:2px solid var(--m-ink);border-radius:6px}
-    .m-btn{background:#fff;border:2px solid var(--m-ink);border-radius:6px;font-weight:800;min-height:44px}
-    .m-btn-ink{background:var(--m-ink);color:#fff;border-radius:6px;font-weight:800;min-height:48px}
+    .m-btn{background:#fff;border:2px solid var(--m-green);border-radius:6px;font-weight:800;min-height:44px}
+    .m-btn-ink{background:var(--m-green);color:#fff;border-radius:6px;font-weight:800;min-height:48px}
     .m-btn-go{background:var(--m-green);color:#fff;border-radius:6px;font-weight:800;min-height:48px}
     .m-chip{background:#fff;border:1.5px solid var(--m-line2);border-radius:6px;font-weight:800;font-size:13px;line-height:1.2}
-    .m-chip.hot{border:2px solid var(--m-ink)}
-    .m-chip.on{background:var(--m-ink);border:2px solid var(--m-ink);color:#fff}
+    .m-chip.hot{border:2px solid var(--m-green)}
+    .m-chip.on{background:var(--m-green);border:2px solid var(--m-green);color:#fff}
     .m-type{min-height:52px;border-radius:6px;font-weight:800;font-size:16px;background:#fff;border:2px solid var(--m-line2)}
-    .m-type.on{color:#fff;border-color:var(--m-ink)}
+    .m-type.on{color:#fff;border-color:rgba(0,0,0,.3)}
     /* สีประจำงาน — ชุดเดียวกับหน้าคอม (ต้องอยู่หลัง .m-type เพื่อชนะพื้นขาว) */
     .t-out{background:#c2410c;--i:var(--ic-out)} .t-ret{background:#0369a1;--i:var(--ic-ret)} .t-in{background:#047857;--i:var(--ic-in)} .t-cnt{background:#0e7490;--i:var(--ic-count)} .t-new{background:#6d28d9;--i:var(--ic-new)} .t-none{background:var(--m-ink2);--i:var(--ic-doc)}
     /* ปุ่มยืนยัน = แผ่นป้าย: สีตามงาน (มองปุ่มก็รู้ว่าเบิกหรือรับ) ขอบขาวด้านใน อ่านทวน "เบิก 500 ใบ" ตัวใหญ่ · ไอคอนงานมาจาก .icb + --i ของ t-* */
-    .m-confirm{color:#fff;border:2px solid var(--m-ink);border-radius:8px;box-shadow:inset 0 0 0 3px #fff;padding:14px 12px;font-family:var(--m-head);font-weight:700;font-size:20px;line-height:1.25;min-height:60px}
+    .m-confirm{color:#fff;border:2px solid rgba(0,0,0,.3);border-radius:8px;box-shadow:inset 0 0 0 3px #fff;padding:14px 12px;font-family:var(--m-head);font-weight:700;font-size:20px;line-height:1.25;min-height:60px}
     /* แผ่นที่มีแถบเหลืองบน = มุมเหลี่ยมแบบแผ่นป้าย (แถบหนาบนมุมมนดูบิด) */
-    .m-sheet{background:#fff;border-top:6px solid var(--m-yellow);box-shadow:0 -8px 30px rgba(0,0,0,.3)}
-    .m-card{background:#fff;border:2px solid var(--m-ink);border-top:6px solid var(--m-yellow)}
+    .m-sheet{background:#fff;border-top:6px solid var(--m-band);box-shadow:0 -8px 30px rgba(0,0,0,.3)}
+    .m-card{background:#fff;border:2px solid var(--m-green);border-top:6px solid var(--m-band)}
     /* เส้นเล็งกล้องกวาดขึ้นลงเรียบๆ (เดิม animate-bounce เด้ง) · ปิดได้ตามค่าลดการเคลื่อนไหวของเครื่อง */
     @keyframes m-sweep{0%,100%{transform:translateY(-90px)}50%{transform:translateY(90px)}}
     #scanLine{animation:m-sweep 2.4s ease-in-out infinite}
@@ -138,17 +138,17 @@
     .m-qty b{display:block;font-family:var(--m-head);font-weight:700;font-size:26px;line-height:1}
     .m-qty span{display:block;font-size:12px;font-weight:700;color:var(--m-ink2);margin-top:3px}
     .m-sign{flex:none}
-    /* งานค้างในเครื่อง = เทปกั้นเหลืองดำเต็มกว้างขอบบน-ล่าง (ไม่ใช่แถบสีข้างการ์ด) */
-    .m-hazard{background:repeating-linear-gradient(-45deg,var(--m-ink) 0 6px,var(--m-yellow) 6px 12px) top/100% 7px no-repeat,repeating-linear-gradient(-45deg,var(--m-ink) 0 6px,var(--m-yellow) 6px 12px) bottom/100% 7px no-repeat,var(--m-yellow);color:var(--m-ink);border:2px solid var(--m-ink);border-radius:6px;padding:14px 12px}
-    .m-warnbar{background:var(--m-yellow);color:var(--m-ink);border:2px solid var(--m-ink);border-radius:6px;padding:6px 12px;font-weight:800;font-size:14px}
-    /* ── เมนูล่าง: ขาว ขอบบนดำ แท็บที่เลือกเขียวมีแถบบน ── */
-    .m-nav{background:#fff;border-top:3px solid var(--m-ink)}
+    /* งานค้างในเครื่อง = เทปกั้นส้มดำเต็มกว้างขอบบน-ล่าง (ไม่ใช่แถบสีข้างการ์ด) */
+    .m-hazard{background:repeating-linear-gradient(-45deg,var(--m-ink) 0 6px,var(--m-band) 6px 12px) top/100% 7px no-repeat,repeating-linear-gradient(-45deg,var(--m-ink) 0 6px,var(--m-band) 6px 12px) bottom/100% 7px no-repeat,var(--m-band);color:var(--m-ink);border:2px solid var(--m-ink);border-radius:6px;padding:14px 12px}
+    .m-warnbar{background:var(--m-band);color:var(--m-ink);border:2px solid var(--m-ink);border-radius:6px;padding:6px 12px;font-weight:800;font-size:14px}
+    /* ── เมนูล่าง: ขาว ขอบบนเขียว แท็บที่เลือกเขียวมีแถบบน ── */
+    .m-nav{background:#fff;border-top:3px solid var(--m-green)}
     .m-tab{flex:1;padding:8px 0 10px;font-size:12px;font-weight:800;color:var(--m-ink2);position:relative;min-height:62px}
     .m-tab.on{color:var(--m-green-ink);box-shadow:inset 0 4px 0 var(--m-green)}
     .ic-lg{width:26px;height:26px}
     .m-badge{background:var(--m-red);color:#fff}
     /* ── หน้าเลือกคลัง: แผ่นป้ายประจำคลัง สีโรงงานเดียวกับหน้าคอม (--sq-fac-*) ── */
-    .m-fac{width:100%;background:#fff;border:2px solid var(--m-ink);border-radius:6px;overflow:hidden;text-align:left;min-height:76px}
+    .m-fac{width:100%;background:#fff;border:2px solid var(--m-green);border-radius:6px;overflow:hidden;text-align:left;min-height:76px}
     .m-fac-ico{width:60px;flex:none;color:#fff}
     .m-fac-ico .ic{width:30px;height:30px}
     /* ปุ่มเครื่องมือหน้าเลือกคลัง: ไอคอนบน ชื่อล่าง กว้างเท่ากัน */
@@ -156,11 +156,11 @@
     .fac-sqf{background:#c2410c} .fac-mlm{background:#15803d} .fac-cr{background:#0e7490}
     /* ── ต้องสั่ง ── */
     .m-tile{background:#fff;border:1.5px solid var(--m-line);border-radius:6px;min-width:0}
-    .m-tile.on{border:2px solid var(--m-ink);box-shadow:inset 0 -4px 0 var(--m-green)}
+    .m-tile.on{border:2px solid var(--m-green);box-shadow:inset 0 -4px 0 var(--m-green)}
     /* ── แจ้งผล: แผ่นป้ายสีตามความหมาย ── */
-    .m-toast{border:2px solid var(--m-ink);border-radius:6px;box-shadow:0 8px 24px rgba(0,0,0,.25)}
-    .m-toast-ok{background:var(--m-green);color:#fff} .m-toast-warn{background:var(--m-yellow);color:var(--m-ink)} .m-toast-err{background:var(--m-red);color:#fff}
-    .m-corner{border-color:var(--m-yellow)}
+    .m-toast{border:0;border-radius:6px;box-shadow:0 8px 24px rgba(0,0,0,.25)}
+    .m-toast-ok{background:var(--m-green);color:#fff} .m-toast-warn{background:var(--m-band);color:var(--m-ink)} .m-toast-err{background:var(--m-red);color:#fff}
+    .m-corner{border-color:var(--m-band)}
     /* แท็บเล็ต: ไม่ยืดรายการเต็มจอ (ชื่อกับจำนวนห่างกันเกินสายตา) — หัว/เมนูล่างยังเต็มกว้าง */
     @media (min-width:700px){
       .m-wrap{width:100%;max-width:640px;margin-left:auto;margin-right:auto}
@@ -312,7 +312,7 @@
      SCANNER (fullscreen overlay)
 ══════════════════════════════════════════ -->
 <div id="sScanner" class="hidden fixed inset-0 bg-black flex-col z-50">
-  <div class="m-safe-top flex-shrink-0 flex items-center gap-3 px-4 pt-3 pb-3" style="border-bottom:6px solid var(--m-yellow)">
+  <div class="m-safe-top flex-shrink-0 flex items-center gap-3 px-4 pt-3 pb-3" style="border-bottom:6px solid var(--m-band)">
     <button onclick="closeScanner()" class="btn-tap m-btn-line px-5 text-base">✕ ปิด</button>
     <div class="m-k text-white flex-1 text-center text-xl">สแกน Barcode / QR</div>
     <div class="w-8"></div>
@@ -326,7 +326,7 @@
         <div class="m-corner absolute top-0 right-0 w-8 h-8 border-t-4 border-r-4"></div>
         <div class="m-corner absolute bottom-0 left-0 w-8 h-8 border-b-4 border-l-4"></div>
         <div class="m-corner absolute bottom-0 right-0 w-8 h-8 border-b-4 border-r-4"></div>
-        <div id="scanLine" class="absolute left-1 right-1 h-0.5 rounded top-1/2" style="background:var(--m-yellow)"></div>
+        <div id="scanLine" class="absolute left-1 right-1 h-0.5 rounded top-1/2" style="background:var(--m-band)"></div>
       </div>
     </div>
   </div>
@@ -534,7 +534,7 @@
   </div>
   <div id="planTiles" class="m-wrap grid grid-cols-4 gap-1.5 px-3 py-2.5 flex-shrink-0"></div>
   <div id="planList" class="m-wrap flex-1 overflow-y-auto px-3 pb-4 space-y-2"></div>
-  <div class="flex-shrink-0 px-3 pt-2 bg-white" style="border-top:3px solid var(--m-ink);padding-bottom:max(12px,env(safe-area-inset-bottom))">
+  <div class="flex-shrink-0 px-3 pt-2 bg-white" style="border-top:3px solid var(--m-green);padding-bottom:max(12px,env(safe-area-inset-bottom))">
     <button id="planCopyBtn" onclick="planCopy()" class="btn-tap m-btn-go icb ic-copy w-full py-3.5 text-base">
       คัดลอกรายการสั่ง
     </button>

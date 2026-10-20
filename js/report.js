@@ -9,18 +9,18 @@ let _bomHealth = null;
 async function loadBomHealth() {
   const el = document.getElementById("bomHealthContent");
   if (!el) return;
-  el.innerHTML = '<p class="sq-empty">⏳ กำลังตรวจข้อมูล...</p>';
+  el.innerHTML = '<p class="sq-empty">กำลังตรวจข้อมูล...</p>';
   let res;
   try {
     res = await crCallServer("getBomHealth");
   } catch (e) {
     const cached = cacheGet("bom_health");
-    if (cached) { _bomHealth = cached; renderBomHealth(cached); showToast("⏳ แสดงผลตรวจครั้งก่อน (เชื่อมต่อไม่ได้)", "warn", 4000); return; }
-    el.innerHTML = `<p class="sq-empty" style="color:var(--sq-crit);font-weight:700;">❌ เชื่อมต่อไม่สำเร็จ</p>`;
+    if (cached) { _bomHealth = cached; renderBomHealth(cached); showToast("แสดงผลตรวจครั้งก่อน (เชื่อมต่อไม่ได้)", "warn", 4000); return; }
+    el.innerHTML = `<p class="sq-empty" style="color:var(--sq-crit);font-weight:700;">เชื่อมต่อไม่สำเร็จ</p>`;
     return;
   }
   if (!res || !res.ok) {
-    el.innerHTML = `<p class="sq-empty" style="color:var(--sq-crit);font-weight:700;">❌ ${escapeHtml((res && res.message) || "โหลดไม่สำเร็จ")}</p>`;
+    el.innerHTML = `<p class="sq-empty" style="color:var(--sq-crit);font-weight:700;">${escapeHtml((res && res.message) || "โหลดไม่สำเร็จ")}</p>`;
     return;
   }
   _bomHealth = res;
@@ -35,7 +35,7 @@ async function _bhLedgerAudit() {
   if (!el) return;
   const box = document.createElement("div");
   box.className = "sq-card";
-  box.innerHTML = '<div class="sq-card-head"><span class="sq-card-title">🧾 ยอดตรงกับประวัติมั๊ย (SQF + MLM)</span><span class="sq-chip">⏳ กำลังตรวจ</span></div>';
+  box.innerHTML = '<div class="sq-card-head"><span class="sq-card-title">ยอดตรงกับประวัติมั๊ย (SQF + MLM)</span><span class="sq-chip">กำลังตรวจ</span></div>';
   el.appendChild(box);
   const post = mod => fetch(GAS_URL, { method: "POST", headers: { "Content-Type": "text/plain;charset=utf-8" },
       body: JSON.stringify({ module: mod, action: "LEDGERAUDIT" }) }).then(r => r.json()).catch(() => null);
@@ -46,8 +46,8 @@ async function _bhLedgerAudit() {
   const rows = all.map(x => `<tr><td>${escapeHtml(x.module)}</td><td><b>${escapeHtml(x.name)}</b><div class="sq-meter-note">${escapeHtml(x.sku)}</div></td>
       <td class="n">${Number(x.qty).toLocaleString()}</td><td class="n">${Number(x.ledger).toLocaleString()}</td><td>${escapeHtml(String(x.at || "").slice(0, 16).replace("T", " "))}</td></tr>`).join("");
   box.innerHTML = `
-    <div class="sq-card-head"><span class="sq-card-title">🧾 ยอดตรงกับประวัติมั๊ย (SQF + MLM)</span>
-      <span class="sq-chip ${all.length ? "crit" : "ok"}">${all.length ? "⚠️ " + all.length + " รายการ" : "✓ ตรงทั้งหมด"}</span></div>
+    <div class="sq-card-head"><span class="sq-card-title">ยอดตรงกับประวัติมั๊ย (SQF + MLM)</span>
+      <span class="sq-chip ${all.length ? "crit" : "ok"}">${all.length ? "" + all.length + " รายการ" : "✓ ตรงทั้งหมด"}</span></div>
     <div class="sq-card-body">
       <p class="sq-card-note">ตรวจ ${checked} รายการที่มีประวัติ — ยอดในชีตต้องเท่ากับยอดหลังรายการล่าสุดในประวัติ ถ้าไม่ตรงแปลว่ามีรายการที่บันทึกได้ครึ่งเดียว หรือมีคนแก้ยอดในชีตตรงๆ</p>
       ${all.length ? `<div class="sq-tablewrap"><table class="sq-table"><thead><tr><th>คลัง</th><th>วัตถุดิบ</th><th class="n">ยอดในชีต</th><th class="n">ยอดตามประวัติ</th><th>ประวัติล่าสุด</th></tr></thead><tbody>${rows}</tbody></table></div>
@@ -62,7 +62,7 @@ function _bhSection(icon, title, why, rows, cols, emptyMsg) {
   const head = `
     <div class="sq-card-head">
       <span class="sq-card-title">${icon} ${escapeHtml(title)}</span>
-      <span class="sq-chip ${n ? "crit" : "ok"}">${n ? "⚠️ " + n + " รายการ" : "✓ ผ่าน"}</span>
+      <span class="sq-chip ${n ? "crit" : "ok"}">${n ? uiSign("warn", 16) + n + " รายการ" : uiSign("ok", 16) + "ผ่าน"}</span>
     </div>
     <div class="sq-card-body" style="padding-bottom:0;">
       <p class="sq-card-note" style="margin:0 0 10px;">${escapeHtml(why)}</p>
@@ -90,11 +90,11 @@ function _bhSection(icon, title, why, rows, cols, emptyMsg) {
 function renderBomHealth(res) {
   const s = res.summary;
   // สีตามความพร้อม — ใช้ token เดียวกับทั้งระบบ
-  const tone = { "พร้อม":          { chip:"ok",   bar:"var(--sq-accent)", icon:"✅" },
-                 "เกือบพร้อม":     { chip:"warn", bar:"var(--sq-warn)",   icon:"⚠️" },
-                 "ยังไม่พร้อม":    { chip:"crit", bar:"var(--sq-crit)",   icon:"🔴" },
-                 "ยังไม่มีข้อมูล": { chip:"",     bar:"var(--sq-muted)",  icon:"📭" } }[s.readiness]
-              || { chip:"", bar:"var(--sq-muted)", icon:"❔" };
+  const tone = { "พร้อม":          { chip:"ok",   bar:"var(--sq-accent)", icon:uiSign("ok", 20) },
+                 "เกือบพร้อม":     { chip:"warn", bar:"var(--sq-warn)",   icon:uiSign("warn", 20) },
+                 "ยังไม่พร้อม":    { chip:"crit", bar:"var(--sq-crit)",   icon:uiSign("no", 20) },
+                 "ยังไม่มีข้อมูล": { chip:"",     bar:"var(--sq-muted)",  icon:"" } }[s.readiness]
+              || { chip:"", bar:"var(--sq-muted)", icon:"" };
 
   const banner = `
     <div class="sq-card">
@@ -130,7 +130,7 @@ function renderBomHealth(res) {
   const esc = v => escapeHtml(String(v ?? ""));
 
   const sections =
-    _bhSection("🔴", "สินค้าที่ผลิตแล้ว แต่ยังไม่มีข้อมูลอ้างอิง",
+    _bhSection("", "สินค้าที่ผลิตแล้ว แต่ยังไม่มีข้อมูลอ้างอิง",
       "สำคัญที่สุด — ถ้าไม่มีข้อมูลอ้างอิง ระบบไม่รู้ว่าควรใช้วัตถุดิบเท่าไร จึงเทียบไม่ได้เลย",
       res.missingBom,
       [ { label:"สินค้า", render:r => `<span class="sq-name">${esc(r.productName)}</span>` },
@@ -138,7 +138,7 @@ function renderBomHealth(res) {
         { label:"พบในใบสั่งผลิต", align:"right", render:r => `<span class="sq-num" style="color:var(--sq-crit)">${r.orderCount}</span> ครั้ง` } ],
       "สินค้าที่ผลิตทุกตัวมีข้อมูลอ้างอิงครบแล้ว") +
 
-    _bhSection("📏", "หน่วยในข้อมูลอ้างอิงไม่ตรงกับหน่วยในคลัง",
+    _bhSection("", "หน่วยในข้อมูลอ้างอิงไม่ตรงกับหน่วยในคลัง",
       "ทำให้ตัวเลขผิดแบบเงียบๆ เช่น ข้อมูลอ้างอิงเขียน กก. แต่คลังนับเป็น กระสอบ",
       res.unitMismatch,
       [ { label:"วัตถุดิบ", render:r => `<span class="sq-name">${esc(r.materialName || r.materialSku)}</span>` },
@@ -147,7 +147,7 @@ function renderBomHealth(res) {
         { label:"หน่วยในคลัง", align:"center", render:r => `<span class="sq-chip ok">${esc(r.stockUnit)}</span>` } ],
       "หน่วยตรงกันทั้งหมด") +
 
-    _bhSection("❓", "ข้อมูลอ้างอิงมีวัตถุดิบที่ไม่มีในคลัง",
+    _bhSection("", "ข้อมูลอ้างอิงมีวัตถุดิบที่ไม่มีในคลัง",
       "อาจลบวัตถุดิบไปแล้ว หรือพิมพ์ SKU ผิด — บรรทัดนี้จะคำนวณไม่ได้",
       res.orphanMaterial,
       [ { label:"SKU ในข้อมูลอ้างอิง", render:r => `<span class="sq-meta">${esc(r.materialSku)}</span>` },
@@ -155,7 +155,7 @@ function renderBomHealth(res) {
         { label:"ใช้ใน", align:"right", render:r => `${r.usedIn} สินค้า` } ],
       "ทุก SKU ในข้อมูลอ้างอิงมีอยู่จริงในคลัง") +
 
-    _bhSection("⚠️", "บรรทัดที่จำนวนต่อหน่วยเป็น 0",
+    _bhSection("", "บรรทัดที่จำนวนต่อหน่วยเป็น 0",
       "ตั้งค่าไว้ 0 = ระบบคิดว่าไม่ใช้วัตถุดิบตัวนี้เลย",
       res.badQtyPerUnit,
       [ { label:"สินค้า", render:r => esc(r.productName) },
@@ -163,7 +163,7 @@ function renderBomHealth(res) {
         { label:"ต่อหน่วย", align:"right", render:r => `<span class="sq-num" style="color:var(--sq-crit)">${r.qtyPerUnit}</span>` } ],
       "ทุกบรรทัดมีจำนวนต่อหน่วยแล้ว") +
 
-    _bhSection("📦", "วัตถุดิบที่เบิกจริง แต่ไม่อยู่ในข้อมูลอ้างอิงของสินค้าไหนเลย",
+    _bhSection("", "วัตถุดิบที่เบิกจริง แต่ไม่อยู่ในข้อมูลอ้างอิงของสินค้าไหนเลย",
       "ไม่ได้แปลว่าผิด — อาจเป็นของใช้ทั่วไป (ถุงมือ น้ำยาล้าง) หรือยังไม่ได้ใส่ข้อมูลอ้างอิง",
       res.notInAnyBom,
       [ { label:"วัตถุดิบ", render:r => `<span class="sq-name">${esc(r.name)}</span>` },
@@ -173,7 +173,7 @@ function renderBomHealth(res) {
         { label:"รวม", align:"right", render:r => `<span class="sq-num">${r.outQty}</span>` } ],
       "วัตถุดิบที่เบิกล่าสุดอยู่ในข้อมูลอ้างอิงครบ") +
 
-    _bhSection("🔗", "ประวัติการเบิกที่จับคู่กับวัตถุดิบไม่ได้",
+    _bhSection("", "ประวัติการเบิกที่จับคู่กับวัตถุดิบไม่ได้",
       "ประวัติเก็บแค่ชื่อ ไม่มี SKU — ถ้าเปลี่ยนชื่อวัตถุดิบภายหลัง ประวัติเก่าจะอ้างกลับไม่ได้",
       res.unmatchedHistory || [],
       [ { label:"ชื่อในประวัติ", render:r => `<span class="sq-name">${esc(r.name)}</span>` },
@@ -182,7 +182,7 @@ function renderBomHealth(res) {
         { label:"รวม", align:"right", render:r => `<span class="sq-num">${r.outQty}</span>` } ],
       "ประวัติล่าสุดจับคู่กับวัตถุดิบได้ครบ") +
 
-    _bhSection("📅", "ยังไม่ได้ตั้งค่า \"ใช้ต่อวัน\"",
+    _bhSection("", "ยังไม่ได้ตั้งค่า \"ใช้ต่อวัน\"",
       "ไม่กระทบการเทียบยอด แต่ทำให้คาดการณ์ของหมดไม่ได้",
       res.badDailyUsage,
       [ { label:"วัตถุดิบ", render:r => esc(r.name) },
@@ -194,7 +194,7 @@ function renderBomHealth(res) {
   const whereUsed = `
     <div class="sq-card">
       <div class="sq-card-head">
-        <span class="sq-card-title">🔍 วัตถุดิบตัวนี้ใช้ในสินค้าอะไรบ้าง</span>
+        <span class="sq-card-title">วัตถุดิบตัวนี้ใช้ในสินค้าอะไรบ้าง</span>
         <span class="sq-card-note">พิมพ์ชื่อหรือ SKU เพื่อดูว่าอยู่ในข้อมูลอ้างอิงของสินค้าใด</span>
       </div>
       <div class="sq-card-body">

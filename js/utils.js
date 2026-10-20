@@ -6,6 +6,18 @@ function escapeAttr(v) { return escapeHtml(v); }
 // ต้อง escape สองชั้น: JS ก่อน แล้ว HTML attribute — escapeJs อย่างเดียว ชื่ออย่าง ถ้วย 8" จะทำ attribute ขาด
 function escapeJsAttr(v) { return escapeAttr(escapeJs(v)); }
 
+// ป้ายรูปทรงแบบ ISO 7010 — ชุดเดียวกับมือถือ (M_SIGN ใน mobile.html) รูปทรงต่างกันจึงอ่านสถานะได้แม้ตาบอดสี · คำบรรยายต้องอยู่ข้างป้ายเสมอ
+// no = ห้าม/หมด · warn = เตือน · must = ต้องทำ (นับ/อัปเดต) · ok = ปกติ · รูปในหน้าต่างพิมพ์ก็ใช้ได้ (สีเป็น hex)
+const UI_SIGN = {
+  no:   '<circle cx="17" cy="17" r="13.5" fill="#fff" stroke="#c8102e" stroke-width="5"/><path d="M7.5 7.5 26.5 26.5" stroke="#c8102e" stroke-width="5"/>',
+  warn: '<path d="M17 2.5 32.5 30.5H1.5Z" fill="#ffd100" stroke="#111" stroke-width="2.5" stroke-linejoin="round"/><path d="M17 11v10" stroke="#111" stroke-width="3.5" stroke-linecap="round"/><circle cx="17" cy="25.6" r="2" fill="#111"/>',
+  must: '<circle cx="17" cy="17" r="16" fill="#005a9c"/><path d="M17 8.5v11" stroke="#fff" stroke-width="3.5" stroke-linecap="round"/><circle cx="17" cy="25" r="2.2" fill="#fff"/>',
+  ok:   '<rect x="1" y="1" width="32" height="32" rx="4" fill="#00843d"/><path d="M9 17.5l5.5 5.5L25.5 11" fill="none" stroke="#fff" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"/>'
+};
+const uiSign = (k, px) => UI_SIGN[k] ? `<svg class="ui-sign" width="${px || 22}" height="${px || 22}" viewBox="0 0 34 34" aria-hidden="true">${UI_SIGN[k]}</svg>` : "";
+// emoji หน้าข้อความ (เช่น "✅ บันทึกแล้ว") — ป้าย/สีบอกแทนแล้ว ตัดออกตอนแสดง (toast, หัวกล่องยืนยัน)
+const uiNoEmoji = s => String(s ?? "").replace(/^(?:[\p{Extended_Pictographic}\u{1F1E6}-\u{1F1FF}️‍⃣]+\s*)+/u, "");
+
 // ข้อความผิดพลาดเป็นภาษาคน — "Failed to fetch" ไม่บอกผู้ใช้ว่าต้องทำอะไรต่อ (QA M16 · คู่กับ mNetErr ใน mobile.html)
 // ข้อความที่หลังบ้านตอบมาเอง (ภาษาไทยอยู่แล้ว) ผ่านไปตามเดิม
 function netErrorText(e) {

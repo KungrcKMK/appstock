@@ -7,12 +7,12 @@
 // หลังบ้าน: cloudflare/appstock-api/src/notify.js (NOTIFYGET / NOTIFYSET) + src/plan.js (NOTIFYPREVIEW)
 // ═════════════════════════════════════════════
 
-const NTF_TOPICS = [["plan", "📈 ที่ต้องสั่งซื้อ"], ["low", "🟠 ต่ำกว่าจุดสั่งซื้อ"], ["stale", "⏰ ไม่อัปเดตสต๊อกเกินกำหนด"], ["expiry", "⛔ ใกล้หมดอายุ / หมดอายุ"]];
+const NTF_TOPICS = [["plan", "ที่ต้องสั่งซื้อ"], ["low", "ต่ำกว่าจุดสั่งซื้อ"], ["stale", "ไม่อัปเดตสต๊อกเกินกำหนด"], ["expiry", "ใกล้หมดอายุ / หมดอายุ"]];
 const NTF_DAYS = [[1, "จ"], [2, "อ"], [3, "พ"], [4, "พฤ"], [5, "ศ"], [6, "ส"], [0, "อา"]];
 const NTF_DAY_FULL = ["อาทิตย์", "จันทร์", "อังคาร", "พุธ", "พฤหัสฯ", "ศุกร์", "เสาร์"];
 const NTF_CH = {
-  tg:   { name: "📲 Telegram", color: "#1d4ed8", bg: "#eff6ff", border: "#bfdbfe" },
-  line: { name: "💚 LINE กลุ่ม", color: "#15803d", bg: "#f0fdf4", border: "#bbf7d0" }
+  tg:   { name: "Telegram", color: "#1d4ed8", bg: "#eff6ff", border: "#bfdbfe" },
+  line: { name: "LINE กลุ่ม", color: "#15803d", bg: "#f0fdf4", border: "#bbf7d0" }
 };
 let _ntf = null;
 
@@ -28,7 +28,7 @@ async function _ntfCall(body) {
 async function ntfLoad() {
   const box = document.getElementById("ntfBox");
   if (!box) return;
-  box.innerHTML = '<p class="text-xs text-slate-600 font-bold">⏳ กำลังโหลดกำหนดการ…</p>';
+  box.innerHTML = '<p class="text-xs text-slate-600 font-bold">กำลังโหลดกำหนดการ…</p>';
   try {
     const r = await _ntfCall({ action: "NOTIFYGET" });
     if (!r || r.status !== "success") throw new Error((r && r.message) || "ไม่ได้รับคำตอบ");
@@ -78,7 +78,7 @@ function _ntfCard(ch, s) {
       </div>
     </div>
     <div id="ntf-${ch}-hint" class="ntf-hint"></div>
-    <button type="button" class="ntf-btn" onclick="ntfPreview('${ch}', this)">👁️ ดูตัวอย่างข้อความ${ch === "line" ? " (ไม่ส่งจริง ไม่เสียโควตา)" : ""}</button>
+    <button type="button" class="ntf-btn" onclick="ntfPreview('${ch}', this)">ดูตัวอย่างข้อความ${ch === "line" ? " (ไม่ส่งจริง ไม่เสียโควตา)" : ""}</button>
     <div id="ntf-${ch}-preview"></div>
   </div>`;
 }
@@ -115,7 +115,7 @@ function ntfUpdateHints() {
     if (remEl) remEl.textContent = rem === undefined ? "" : `(ทวนซ้ำทุกวัน${NTF_DAY_FULL[rem]} แม้รายการเดิม)`;
     const tCount = NTF_TOPICS.filter(([k]) => s.topics[k]).length;
     const rows = [];
-    if (!s.on) rows.push("⏸️ ปิดอยู่ — ไม่ส่งสรุปเข้าช่องนี้ (รวมปุ่มส่งในหน้าวางแผนสั่งซื้อ)");
+    if (!s.on) rows.push("ปิดอยู่ — ไม่ส่งสรุปเข้าช่องนี้ (รวมปุ่มส่งในหน้าวางแผนสั่งซื้อ)");
     else {
       if (!s.days.length) rows.push('<b style="color:#b45309;">ยังไม่ได้เลือกวัน</b> = ไม่ส่งอัตโนมัติ (ยังกดส่งเองในหน้าวางแผนสั่งซื้อได้)');
       if (!tCount) rows.push('<b style="color:#b45309;">ยังไม่ได้เลือกหัวข้อ</b> = ไม่มีอะไรส่งตามเวลา');
@@ -125,9 +125,9 @@ function ntfUpdateHints() {
         const perMonth = Math.round(s.days.length * 30 / 7);
         if (n) {
           const max = n * perMonth, over = max > 300;
-          rows.push(`💰 โควตา: ส่ง 1 ครั้ง = ${n} ข้อความ (สมาชิก ${n} คน) · ${s.when === "always" ? "ประมาณ" : "สูงสุด"} <b${over ? ' style="color:#b91c1c;"' : ""}>${max.toLocaleString()}</b> ข้อความ/เดือน จากฟรี 300` +
+          rows.push(`โควตา: ส่ง 1 ครั้ง = ${n} ข้อความ (สมาชิก ${n} คน) · ${s.when === "always" ? "ประมาณ" : "สูงสุด"} <b${over ? ' style="color:#b91c1c;"' : ""}>${max.toLocaleString()}</b> ข้อความ/เดือน จากฟรี 300` +
             (s.when === "change" ? " (ส่งจริงน้อยกว่านี้ — เฉพาะวันที่รายการเปลี่ยน)" : "") + (over && s.when === "always" ? " — <b style=\"color:#b91c1c;\">เกินโควตาฟรี ลดวันลงหรือเลือก \"เฉพาะเมื่อรายการเปลี่ยน\"</b>" : ""));
-        } else rows.push("💰 LINE นับโควตาตามจำนวนสมาชิกในกลุ่ม (ฟรี 300 ข้อความ/เดือน) — เชิญบอทเข้ากลุ่มแล้วจะคำนวณให้");
+        } else rows.push("LINE นับโควตาตามจำนวนสมาชิกในกลุ่ม (ฟรี 300 ข้อความ/เดือน) — เชิญบอทเข้ากลุ่มแล้วจะคำนวณให้");
       }
     }
     hint.innerHTML = rows.map(r => `<div>${r}</div>`).join("");
@@ -142,17 +142,17 @@ async function ntfSave(btn) {
     const r = await _ntfCall(payload);
     if (!r || r.status !== "success") throw new Error((r && r.message) || "บันทึกไม่สำเร็จ");
     _ntf = r.schedule;
-    showToast("บันทึกกำหนดการส่งสรุปแล้ว ✅", "success");
+    showToast("บันทึกกำหนดการส่งสรุปแล้ว ", "success");
     if (typeof lineLoadStatus === "function") lineLoadStatus();   // ป้ายสถานะ LINE อ่านค่าเปิด/ปิดจากกำหนดการ
   } catch (e) { showToast("บันทึกไม่สำเร็จ: " + netErrorText(e), "error", 6000); }
-  finally { if (btn) { btn.disabled = false; btn.textContent = "💾 บันทึกกำหนดการส่งสรุป"; } }
+  finally { if (btn) { btn.disabled = false; btn.textContent = "บันทึกกำหนดการส่งสรุป"; } }
 }
 
 async function ntfPreview(ch, btn) {
   const out = document.getElementById(`ntf-${ch}-preview`);
   if (!out) return;
   if (btn) btn.disabled = true;
-  out.innerHTML = '<p class="ntf-dim" style="margin-top:8px;">⏳ กำลังสร้างตัวอย่าง…</p>';
+  out.innerHTML = '<p class="ntf-dim" style="margin-top:8px;">กำลังสร้างตัวอย่าง…</p>';
   try {
     const r = await _ntfCall({ action: "NOTIFYPREVIEW", channel: ch, [ch]: _ntfRead(ch) });
     if (!r || r.status !== "success") throw new Error((r && r.message) || "ไม่ได้รับคำตอบ");

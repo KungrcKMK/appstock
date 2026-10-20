@@ -1,5 +1,6 @@
 // ทดสอบคำสั่ง "เขียน" ของ Worker — รันกับเครื่องตัวเองเท่านั้น (wrangler dev + D1 ในเครื่อง)
 //   node tools/write-tests.mjs http://127.0.0.1:8787 <ชื่อผู้ใช้ทั่วไป> <ชื่อ admin ทดสอบ> <ชื่อ viewer ทดสอบ>
+//   หลังบ้าน: wrangler dev --local --test-scheduled (ไม่มี --test-scheduled = ข้ามเคสงานตามเวลาในข้อ 16)
 // ⚠️ ปฏิเสธที่อยู่ที่ไม่ใช่เครื่องตัวเอง — กันเผลอยิงใส่ระบบจริง
 const [, , BASE, USER, ADMIN, VIEWER] = process.argv;
 if (!/^http:\/\/(127\.0\.0\.1|localhost):\d+$/.test(BASE || "")) { console.error("รันได้เฉพาะกับ http://127.0.0.1:<port>"); process.exit(1); }
@@ -12,6 +13,21 @@ const login = async (u) => { const r = await post({ module: "SYSTEM", action: "v
 const op = () => "t-" + Math.random().toString(36).slice(2) + Date.now();
 const qtyOf = async (m, sku) => { const g = await get(m); const x = [...g.materials, ...g.discontinued].find((i) => i.SKU === sku); return x ? x.Qty : undefined; };
 const matOf = async (m, sku) => { const g = await get(m); return [...g.materials, ...g.discontinued].find((i) => i.SKU === sku); };
+// แก้ฐานข้อมูลในเครื่องตรงๆ (ย้อนเวลา/ล้างสิทธิ์งานตามเวลา) — คำสั่ง --local เท่านั้น ห้ามมี --remote
+// ส่ง SQL ผ่านไฟล์ (--file): บน Windows ต้องเรียกผ่าน shell ซึ่งไม่ครอบเครื่องหมายคำพูดให้ ส่งเป็นข้อความตรงๆ แล้ว SQL ขาด
+const sqlLocal = async (sql) => {
+  const { execFileSync } = await import("node:child_process");
+  const { fileURLToPath } = await import("node:url");
+  const { writeFileSync, unlinkSync } = await import("node:fs");
+  const { tmpdir } = await import("node:os");
+  const { join } = await import("node:path");
+  const f = join(tmpdir(), "appstock_test_" + Date.now() + ".sql");
+  writeFileSync(f, sql, "utf8");
+  try {
+    execFileSync(process.platform === "win32" ? "wrangler.cmd" : "wrangler", ["d1", "execute", "appstock", "--local", "--file", f],
+      { cwd: fileURLToPath(new URL("..", import.meta.url)), stdio: "pipe", shell: process.platform === "win32" });
+  } finally { try { unlinkSync(f); } catch (e) {} }
+};
 
 const tok = await login(USER), atok = await login(ADMIN), vtok = await login(VIEWER);
 const raw = (action, extra, token = tok, module = "SQF") => post(Object.assign({ module, action, sessionToken: token, opId: op(), clientAt: new Date().toISOString(), deviceName: "test" }, extra));
@@ -613,22 +629,7 @@ console.log("12) ⏰ เตือนเมื่อไม่มีการอ�
 
 console.log("13) ⏰ ห้องเย็น — ล็อตที่ไม่มีการอัปเดตเกินกำหนด (ย้อนเวลาล็อตทดสอบในฐานข้อมูลในเครื่องด้วย wrangler)");
 {
-  const { execFileSync } = await import("node:child_process");
-  const { fileURLToPath } = await import("node:url");
-  const here = fileURLToPath(new URL("..", import.meta.url));
-  // ย้อนเวลาเฉพาะล็อตทดสอบที่เพิ่งสร้าง — คำสั่ง --local เท่านั้น ห้ามมี --remote
-  // ส่ง SQL ผ่านไฟล์ (--file): บน Windows ต้องเรียกผ่าน shell ซึ่งไม่ครอบเครื่องหมายคำพูดให้ ส่งเป็นข้อความตรงๆ แล้ว SQL ขาด
-  const { writeFileSync, unlinkSync } = await import("node:fs");
-  const { tmpdir } = await import("node:os");
-  const { join } = await import("node:path");
-  const sqlLocal = (sql) => {
-    const f = join(tmpdir(), "appstock_test_" + Date.now() + ".sql");
-    writeFileSync(f, sql, "utf8");
-    try {
-      execFileSync(process.platform === "win32" ? "wrangler.cmd" : "wrangler", ["d1", "execute", "appstock", "--local", "--file", f],
-        { cwd: here, stdio: "pipe", shell: process.platform === "win32" });
-    } finally { try { unlinkSync(f); } catch (e) {} }
-  };
+  // ย้อนเวลาเฉพาะล็อตทดสอบที่เพิ่งสร้าง (sqlLocal ด้านบน)
   const s0 = (await post({ module: "SQF", action: "USAGEPLAN", sessionToken: tok })).saved;
   await raw("PLANSET", { staleDays: 7 }, atok);
   // ล้างล็อตทดสอบที่ค้างจากรอบก่อน (บาร์โค้ด T/STALE+เลขเวลา มีแต่สคริปต์นี้สร้าง) — ข้อความเตือนแสดงได้ 20 ล็อต เกินนั้นล็อตของรอบนี้ถูกตัด
@@ -646,7 +647,7 @@ console.log("13) ⏰ ห้องเย็น — ล็อตที่ไม่
   let backdated = false;
   try {
     const old = new Date(Date.now() - 12 * 86400000).toISOString();
-    sqlLocal(`UPDATE cr_stock SET updated_at = '${old}' WHERE barcode = '${bc}' AND mfg = '${isoA}'; UPDATE cr_lot_history SET ts = '${old}' WHERE barcode = '${bc}' AND mfg = '${isoA}'`);
+    await sqlLocal(`UPDATE cr_stock SET updated_at = '${old}' WHERE barcode = '${bc}' AND mfg = '${isoA}'; UPDATE cr_lot_history SET ts = '${old}' WHERE barcode = '${bc}' AND mfg = '${isoA}'`);
     backdated = true;
   } catch (e) { console.log("  ⏭️  ข้าม: ย้อนเวลาในฐานข้อมูลในเครื่องไม่ได้ (" + String(e.message).slice(0, 80) + ")"); }
   if (backdated) {
@@ -666,7 +667,7 @@ console.log("13) ⏰ ห้องเย็น — ล็อตที่ไม่
     await cr("saveOrUpdateCount", { barcode: bc, mfg: dd(new Date(th.getTime() - 20 * 86400000)), exp: expAll, newQty: 30, note: "นับยืนยัน" });
     ov = await cr("getStartupOverview", {});
     T("นับยืนยันที่ล็อตนั้น (ยอดเท่าเดิม) → หายจากรายการเตือน", mine(ov).find((l) => l.MFG === isoA).Stale === false && !ov.staleLots.some((l) => l.Barcode === bc));
-    sqlLocal(`UPDATE cr_stock SET updated_at = 'Win11/10/Chrome xx' WHERE barcode = '${bc}' AND mfg = '${isoA}'`);
+    await sqlLocal(`UPDATE cr_stock SET updated_at = 'Win11/10/Chrome xx' WHERE barcode = '${bc}' AND mfg = '${isoA}'`);
     ov = await cr("getStartupOverview", {});
     T("ช่องเวลาเพี้ยน (ชื่อเครื่อง) → ใช้เวลาจากประวัติล็อตแทน ไม่พัง", mine(ov).find((l) => l.MFG === isoA).IdleDays === 0);
     await raw("PLANSET", { staleDays: 0 }, atok);
@@ -747,6 +748,180 @@ console.log("15) QA 2026-10-10 — ยอดติดลบตอนสร้า
   cases.forEach(([sku, exp, days, st], i) =>
     T(`วันหมดอายุ "${exp}" → อีก ${days} วัน · สถานะ "${st || "ปกติ"}" (นับวันปฏิทินไทย)`, got[i] && got[i].ExpDays === days && got[i].ExpStatus === st, got[i] && [got[i].ExpDays, got[i].ExpStatus]));
   for (const [sku] of cases) await raw("DELETE", { sku });
+}
+
+console.log("16) ส่งสรุปเข้ากลุ่ม: บันทึกทุกรอบ · พลาดชั่วคราวคืนสิทธิ์ให้ลองใหม่ · 429/4xx ไม่ลองซ้ำ · ลายเซ็นเขียนเฉพาะตอนสำเร็จ · สำเนาชีตลองซ้ำ (2026-10-20)");
+{
+  const { createServer } = await import("node:http");
+  const { createHmac } = await import("node:crypto");
+  const { tgSendRaw } = await import("../src/lib.js");
+  const { mirrorCall } = await import("../src/system.js");
+  const listen = (srv, port) => new Promise((ok, bad) => { srv.once("error", bad); srv.listen(port, "127.0.0.1", ok); });
+
+  // ── Telegram: แยกพลาดชั่วคราว (ลองใหม่ได้) กับพลาดถาวร — แทน fetch ชั่วคราวในสคริปต์นี้ ไม่ยิงออกเน็ต ──
+  const realFetch = globalThis.fetch;
+  const fc = { env: {}, cfg: { telegramBotToken: "x", telegramChatIds: "1,2", enableTelegramStockUpdate: "true" } };
+  const tgWith = async (codes) => {   // ผลของแชทที่ 1, 2: เลข HTTP หรือ "net" = เครือข่ายล่ม
+    let i = 0;
+    globalThis.fetch = async () => {
+      const k = codes[i++];
+      if (k === "net") throw new TypeError("fetch failed");
+      return new Response(JSON.stringify(k === 200 ? { ok: true } : { ok: false, error_code: k, description: "HTTP " + k }), { status: k });
+    };
+    try { return await tgSendRaw(fc, "ทดสอบ", true); } finally { globalThis.fetch = realFetch; }
+  };
+  const t500 = await tgWith([500, 502]), tNet = await tgWith(["net", "net"]), t429 = await tgWith([429, 429]), t403 = await tgWith([403, 400]), tHalf = await tgWith([200, 500]), tOk = await tgWith([200, 200]);
+  T("Telegram 5xx / เครือข่ายล่ม → ลองใหม่ได้ (retry)", t500.sent === false && t500.retry === true && tNet.retry === true, [t500, tNet]);
+  T("Telegram 429 / 4xx → ไม่ลองซ้ำ", t429.retry === false && t403.retry === false, [t429, t403]);
+  T("Telegram ได้บางแชทแล้ว → ไม่ลองซ้ำ (กันแชทที่ได้แล้วได้ซ้ำ)", tHalf.sent === false && tHalf.retry === false, tHalf);
+  T("Telegram สำเร็จ → บอกจำนวนแชทที่ส่งถึง", tOk.sent === true && tOk.chats === 2, tOk);
+
+  // ── สำเนาชีต: Google ตอบพลาดชั่วคราว → ลองซ้ำ 1 ครั้ง (ตัวจำลองสคริปต์ฝั่ง Google ที่ 127.0.0.1:8797) ──
+  const gq = [], gcalls = [];
+  const gas = createServer((req, res) => {
+    let b = "";
+    req.on("data", (d) => (b += d));
+    req.on("end", () => {
+      gcalls.push({ method: req.method, url: req.url, body: b });
+      const [code, body, loc] = gq.shift() || [200, '{"ok":true}'];
+      res.writeHead(code, Object.assign({ "content-type": code === 200 ? "application/json" : "text/html" }, loc ? { location: loc } : {}));
+      res.end(body);
+    });
+  });
+  await listen(gas, 8797);
+  try {
+    const G = "http://127.0.0.1:8797/exec";
+    const mirror = async (seq) => { gq.length = 0; gq.push(...seq); gcalls.length = 0; return { r: await mirrorCall(G, "k", 0), calls: gcalls.slice() }; };
+    const MOVED = JSON.stringify({ ok: false, status: "error", migrated: true, message: "ระบบย้ายไปเซิร์ฟเวอร์ใหม่แล้ว" });
+    const m1 = await mirror([[404, "<html>not found</html>"], [200, '{"ok":true,"rows":{"SQF_History":3}}']]);
+    T("สำเนาชีต: Google ตอบ HTTP 404 → ลองซ้ำ 1 ครั้งแล้วผ่าน (ทั้งสองครั้งส่ง MIRRORNOW แบบ POST)", m1.r.ok === true && m1.calls.length === 2 &&
+      m1.calls.every((x) => x.method === "POST" && JSON.parse(x.body).action === "MIRRORNOW"), m1);
+    const m2 = await mirror([[302, "", "/exec?moved=1"], [200, MOVED], [200, '{"ok":true}']]);
+    T("สำเนาชีต: POST โดน redirect ก่อนสคริปต์รัน → กลายเป็น GET ไม่มี body → ได้ 'ระบบย้าย…' → ลองซ้ำแล้วผ่าน",
+      m2.r.ok === true && m2.calls.length === 3 && m2.calls[1].method === "GET" && m2.calls[1].body === "" && m2.calls[2].method === "POST", m2.calls.map((x) => x.method + " " + x.url));
+    const m3 = await mirror([[200, '{"ok":false,"message":"unauthorized"}']]);
+    T("สำเนาชีต: กุญแจผิด (ไม่ใช่ปัญหาชั่วคราว) → ไม่ลองซ้ำ", m3.r.ok === false && m3.calls.length === 1, m3);
+    const m4 = await mirror([[404, "x"], [200, MOVED]]);
+    T("สำเนาชีต: พลาดทั้งสองครั้ง → ข้อความบอกว่าลองซ้ำแล้ว + สาเหตุครั้งหลัง", m4.r.ok === false && m4.calls.length === 2 && /ลองซ้ำแล้ว/.test(m4.r.message) && /ไม่เห็น MIRRORNOW/.test(m4.r.message), m4.r);
+  } finally { gas.close(); }
+
+  // ── ล็อกคิว Telegram ถูกปล่อยด้วยรหัสของตัวเอง → รอบถัดไปทำงานต่อได้ทันที ──
+  const f1 = await post({ module: "SYSTEM", action: "TGFLUSH" }), f2 = await post({ module: "SYSTEM", action: "TGFLUSH" });
+  T("ส่งคิว Telegram 2 รอบติดกัน → รอบสองไม่ติดล็อกของรอบแรก", f1.ok && !f1.skipped && f2.ok && !f2.skipped, [f1, f2]);
+
+  // ── งานตามเวลา (cron) + LINE จำลอง ──
+  const tickUrl = BASE + "/__scheduled?cron=" + encodeURIComponent("*/5 * * * *");
+  if ((await fetch(tickUrl)).status !== 200) {
+    console.log("  ⏭️  ข้าม: เรียกงานตามเวลาไม่ได้ — เปิดหลังบ้านด้วย wrangler dev --test-scheduled");
+  } else {
+    let pushCode = 200;
+    const pushes = [];
+    const GOOD = "good-token-1234", SECRET = "0123456789abcdef0123456789abcdef";
+    const mock = createServer((req, res) => {
+      let b = "";
+      req.on("data", (d) => (b += d));
+      req.on("end", () => {
+        const send = (code, obj) => { res.writeHead(code, { "content-type": "application/json" }); res.end(JSON.stringify(obj)); };
+        if (req.headers.authorization !== "Bearer " + GOOD) return send(401, { message: "Authentication failed" });
+        if (req.url === "/v2/bot/info") return send(200, { displayName: "บอทสต๊อก", basicId: "@stocktest" });
+        if (/\/summary$/.test(req.url)) return send(200, { groupName: "ฝ่ายจัดซื้อ" });
+        if (/\/members\/count$/.test(req.url)) return send(200, { count: 7 });
+        if (req.url === "/v2/bot/message/reply") return send(200, {});
+        if (req.url === "/v2/bot/message/push") {
+          pushes.push({ key: req.headers["x-line-retry-key"], body: JSON.parse(b) });
+          if (pushCode === "net") return req.socket.destroy();
+          return pushCode === 200 ? send(200, {}) : send(pushCode, { message: pushCode === 429 ? "You have reached your monthly limit." : "Internal error" });
+        }
+        send(404, { message: "Not found" });
+      });
+    });
+    await listen(mock, 8799);
+    const lsys = (action, extra) => post(Object.assign({ module: "SYSTEM", action, sessionToken: atok }, extra || {}));
+    const ng0 = await lsys("NOTIFYGET");
+    try {
+      await lsys("LINESAVE", { clear: true });
+      await lsys("LINESAVE", { token: GOOD, secret: SECRET });
+      const body = JSON.stringify({ destination: "U0", events: [{ type: "join", replyToken: "rt", source: { type: "group", groupId: "G1" }, timestamp: Date.now() }] });
+      await fetch(BASE + "/line-webhook", { method: "POST", headers: { "content-type": "application/json", "x-line-signature": createHmac("sha256", SECRET).update(body).digest("base64") }, body });
+      await new Promise((ok) => setTimeout(ok, 400));
+      const th = new Date(Date.now() + 7 * 3600000), H = th.getUTCHours(), dow = th.getUTCDay();
+      if (th.getUTCMinutes() >= 58) console.log("  ⚠️  ใกล้เปลี่ยนชั่วโมง — ถ้าเคสตามเวลาตก ให้รันใหม่");
+      const ALL = [0, 1, 2, 3, 4, 5, 6], topics = { plan: true, low: true, stale: false, expiry: false };
+      const setSch = (when) => lsys("NOTIFYSET", { tg: { on: true, days: ALL, hour: H, topics, detail: "short", when: "always" }, line: { on: true, days: ALL, hour: H, topics, detail: "short", when } });
+      const CLAIM = "k LIKE 'tick_digest_%'", DONE = "k LIKE 'dg_done_%'", SIG = "k LIKE '%sig_line_%'";
+      const reset = (...w) => sqlLocal("DELETE FROM kv WHERE " + w.join(" OR "));
+      // รอบ cron หนึ่งรอบ แล้วอ่านแถว digest-* ที่เกิดหลังเวลาเริ่ม (จากสำเนาชีต System_Log)
+      const tick = async () => {
+        const t = new Date().toISOString();
+        pushes.length = 0;
+        await fetch(tickUrl);
+        await new Promise((ok) => setTimeout(ok, 300));
+        const rows = ((await lsys("EXPORT")).sheets.System_Log || []).slice(1).filter((r) => r[0] >= t);
+        return { tg: rows.filter((r) => r[1] === "digest-tg"), line: rows.filter((r) => r[1] === "digest-line"), n: pushes.length, keys: pushes.map((p) => p.key) };
+      };
+      const notMon = dow !== 1;   // วันจันทร์ = วันทวนซ้ำของโหมด "เฉพาะตอนเปลี่ยน" (ส่งแม้รายการเดิม) → เคสลายเซ็นตรวจไม่ได้
+      if (!notMon) console.log("  ⏭️  วันนี้วันจันทร์ (วันทวนซ้ำ) — ข้ามเคสที่ตรวจลายเซ็นผ่านโหมดเฉพาะตอนเปลี่ยน");
+
+      await setSch("change");
+      await reset(CLAIM, DONE, SIG);
+      pushCode = 500;
+      const a = await tick();
+      T("LINE ตอบ 500 ตอนส่งตามกำหนด → ยิง 1 ครั้ง + ลง digest-line 1 แถว ผล retry (บอกว่าคืนสิทธิ์)", a.n === 1 && a.line.length === 1 && a.line[0][4] === "retry" && /ตามกำหนด/.test(a.line[0][2]) && /คืนสิทธิ์/.test(a.line[0][2]), [a.n, a.line]);
+      T("รอบเดียวกัน Telegram ลง digest-tg 1 แถว (เครื่องทดสอบ disabled = พลาดแบบไม่ลองซ้ำ)", a.tg.length === 1 && a.tg[0][4] === "failed" && /disabled/.test(a.tg[0][2]) && a.tg[0][3] === "ระบบ", a.tg);
+      pushCode = 200;
+      const b = await tick();
+      T("รอบถัดไป (5 นาที) → สิทธิ์ถูกคืน ลองใหม่สำเร็จ · retry key เดิม (ครั้งก่อนถ้า LINE รับไปแล้วจะไม่ส่งซ้ำ)", b.n === 1 && b.keys[0] === a.keys[0] && /^[0-9a-f]{8}-[0-9a-f]{4}-4[0-9a-f]{3}-8[0-9a-f]{3}-[0-9a-f]{12}$/.test(b.keys[0]), [b.n, a.keys, b.keys]);
+      T("ส่งสำเร็จ → ลง digest-line ผล ok พร้อมจำนวนกล่อง/กลุ่ม/สมาชิก (= โควตาที่ใช้)", b.line.length === 1 && b.line[0][4] === "ok" && /กล่อง/.test(b.line[0][2]) && /1\/1 กลุ่ม/.test(b.line[0][2]) && /สมาชิก 7 คน/.test(b.line[0][2]), b.line);
+      T("Telegram ไม่ถูกเรียกซ้ำ (จองสิทธิ์แยกช่อง · คืนเฉพาะ LINE)", b.tg.length === 0, b.tg);
+      if (notMon) T("ส่งพลาด (500) ไม่เขียนลายเซ็น → โหมดเฉพาะตอนเปลี่ยน รอบลองใหม่ยังส่ง", b.n === 1);
+      const c3 = await tick();
+      T("ส่งสำเร็จแล้ว → รอบถัดไปในวันเดียวกันไม่ส่งซ้ำ ไม่ลงแถวเพิ่ม", c3.n === 0 && c3.line.length === 0 && c3.tg.length === 0, c3);
+
+      await setSch("always");
+      await reset("k LIKE 'tick_digest_line_%'");
+      const d = await tick();
+      T("รอบลองใหม่ (สิทธิ์ถูกคืน) แม้ตั้ง 'ส่งทุกครั้ง' → หัวข้อที่ส่งถึงแล้ววันนี้ไม่ส่งซ้ำ · ลงแถว skipped", d.n === 0 && d.line.length === 1 && d.line[0][4] === "skipped", [d.n, d.line]);
+      await setSch("change");
+      await reset("k LIKE 'tick_digest_line_%'", DONE);
+      const e = await tick();
+      if (notMon) T("ส่งสำเร็จเขียนลายเซ็น → วันถัดไปรายการเดิมไม่ส่งซ้ำ (เฉพาะตอนเปลี่ยน)", e.n === 0 && e.line.length === 1 && e.line[0][4] === "skipped", [e.n, e.line]);
+
+      await reset(CLAIM, DONE, SIG);
+      pushCode = 429;
+      const f = await tick();
+      T("LINE ตอบ 429 (โควตาหมด) → ลง digest-line ผล failed + เหตุผลภาษาคน", f.n === 1 && f.line.length === 1 && f.line[0][4] === "failed" && /โควตา/.test(f.line[0][2]), [f.n, f.line]);
+      const g = await tick();
+      T("429 → ไม่คืนสิทธิ์ รอบถัดไปไม่ยิงซ้ำ (ไม่เปลืองโควตา)", g.n === 0 && g.line.length === 0, [g.n, g.line]);
+      pushCode = 200;
+      await reset("k LIKE 'tick_digest_line_%'");
+      const h = await tick();
+      if (notMon) T("ส่งพลาด (429) ไม่เขียนลายเซ็น → รอบใหม่ยังส่งรายการนี้", h.n === 1 && h.line[0][4] === "ok", [h.n, h.line]);
+
+      await reset(CLAIM, DONE, SIG);
+      pushCode = "net";
+      const n1 = await tick();
+      T("LINE เครือข่ายล่ม → ผล retry", n1.n === 1 && n1.line.length === 1 && n1.line[0][4] === "retry", [n1.n, n1.line]);
+      pushCode = 200;
+      const n2 = await tick();
+      T("เน็ตกลับมา → รอบถัดไปส่งได้", n2.n === 1 && n2.line[0][4] === "ok", [n2.n, n2.line]);
+
+      // กดส่งเอง → ลงบันทึกทั้งสองช่อง + Telegram อัปเดตผลล่าสุด (tg_last) ให้หน้าสถานะระบบ
+      await reset("k = 'tg_last'");
+      const t0 = new Date().toISOString();
+      pushes.length = 0;
+      const md = await raw("PLANDIGEST", { send: true }, atok);
+      const rows = ((await lsys("EXPORT")).sheets.System_Log || []).slice(1).filter((r) => r[0] >= t0);
+      const mt = rows.filter((r) => r[1] === "digest-tg"), ml = rows.filter((r) => r[1] === "digest-line");
+      T("กดส่งเอง → digest-tg + digest-line อย่างละ 1 แถว ระบุว่ากดเอง + ชื่อผู้กด", md.ok && mt.length === 1 && ml.length === 1 && /กดส่งเอง/.test(ml[0][2]) && ml[0][3] === ADMIN && ml[0][4] === "ok" && pushes.length === 1, [mt, ml]);
+      const st = await post({ module: "SYSTEM", action: "SYSSTATUS", sessionToken: atok });
+      T("สรุปเข้า Telegram อัปเดตผลส่งล่าสุดที่หน้าสถานะระบบ (tg_last)", st.lastTelegram && st.lastTelegram.at >= t0 && st.lastTelegram.reason === "disabled", st.lastTelegram);
+    } finally {
+      await lsys("NOTIFYSET", { tg: ng0.schedule.tg, line: ng0.schedule.line });
+      await lsys("LINESAVE", { clear: true });
+      mock.close();
+    }
+    T("คืนกำหนดการเดิม + ลบการตั้งค่า LINE ทดสอบ", JSON.stringify((await lsys("NOTIFYGET")).schedule) === JSON.stringify(ng0.schedule));
+  }
 }
 
 console.log(`\nสรุป: ผ่าน ${pass} · ไม่ผ่าน ${fail}`);

@@ -223,7 +223,7 @@ async function openWithdrawSlip(s) {
   const box   = document.getElementById("slipPreview");
   if (!modal || !box) return;
 
-  box.innerHTML = '<p class="sq-empty">⏳ กำลังสร้างใบเบิก...</p>';
+  box.innerHTML = '<p class="sq-empty">กำลังสร้างใบเบิก...</p>';
   modal.classList.remove("hidden");
   document.getElementById("slipDocNo").textContent = s.docNo || "รายการเก่า — ไม่มีเลขที่";
 

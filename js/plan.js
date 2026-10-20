@@ -54,7 +54,7 @@ function _planInputs() {
 async function planLoad(useInputs) {
   const seq = ++_planReqSeq;
   const body = document.getElementById("planBody");
-  if (!_planData) body.innerHTML = '<p class="sq-empty">⏳ กำลังอ่านประวัติการเบิก…</p>';
+  if (!_planData) body.innerHTML = '<p class="sq-empty">กำลังอ่านประวัติการเบิก…</p>';
   try {
     const r = await rawFetch(Object.assign({ action: "USAGEPLAN", user: currentUser }, useInputs ? _planInputs() : {}));
     if (seq !== _planReqSeq) return;
@@ -95,7 +95,7 @@ async function planSaveSettings(btn) {
   try {
     const r = await rawFetch({ action: "PLANSET", leadDays: s.leadDays, safetyDays: s.safetyDays, coverDays: s.coverDays, user: currentUser });
     if (r.status !== "success") throw new Error(r.message || "บันทึกไม่สำเร็จ");
-    showToast("บันทึกค่ากลางแล้ว — ทุกคนเห็นค่าเดียวกัน ✅", "success");
+    showToast("บันทึกค่ากลางแล้ว — ทุกคนเห็นค่าเดียวกัน ", "success");
     await planLoad(false);
   } catch (e) { showToast("บันทึกไม่สำเร็จ: " + netErrorText(e), "error"); }
   finally { if (btn) btn.disabled = false; }
@@ -113,10 +113,10 @@ async function planLoadNtf() {
   if (el) el.innerHTML = _planNtfHtml();
 }
 function _planNtfHtml() {
-  if (!_planNtfText) return "🗓️ สรุปเข้ากลุ่ม Telegram / LINE: กำลังโหลดกำหนดการ…";
+  if (!_planNtfText) return "สรุปเข้ากลุ่ม Telegram / LINE: กำลังโหลดกำหนดการ…";
   const isAdmin = (localStorage.getItem("unified_stock_role") || "").toLowerCase() === "admin";
-  return `🗓️ <b>สรุปเข้ากลุ่มอัตโนมัติ</b> · Telegram: ${escapeHtml(_planNtfText.tg)} · LINE: ${escapeHtml(_planNtfText.line)}` +
-    (isAdmin ? ` <button class="sq-btn sq-btn-sm" onclick="closePlanModal();openUnifiedSettings()">ตั้งวัน/เวลา/รูปแบบ</button>` : " (แอดมินตั้งได้ที่ ⚙️ ตั้งค่าการแจ้งเตือน)");
+  return `<b>สรุปเข้ากลุ่มอัตโนมัติ</b> · Telegram: ${escapeHtml(_planNtfText.tg)} · LINE: ${escapeHtml(_planNtfText.line)}` +
+    (isAdmin ? ` <button class="sq-btn sq-btn-sm" onclick="closePlanModal();openUnifiedSettings()">ตั้งวัน/เวลา/รูปแบบ</button>` : " (แอดมินตั้งได้ที่ ตั้งค่าการแจ้งเตือน)");
 }
 
 // ── กรอง ──
@@ -171,12 +171,12 @@ function planRender() {
       <div class="sq-tile-note">${note}</div>
     </button>`;
   const tiles = `<div class="sq-tiles" style="margin-bottom:12px;">
-      ${tile("late", "var(--sq-crit)", "🔴 สั่งวันนี้ก็ไม่ทัน", sum.late, "ของจะหมดก่อนของใหม่มาถึง")}
-      ${tile("now",  "var(--sq-high)", "🟠 ต้องสั่งวันนี้",     sum.now,  "สั่งเลยถึงจะทัน")}
-      ${tile("soon", "var(--sq-warn)", "🟡 ใกล้ถึงเวลาสั่ง",   sum.soon, "ภายใน 7 วัน")}
-      ${tile("ok",   "var(--sq-accent)", "🟢 ยังพอ",            sum.ok,   "ยังไม่ต้องสั่ง")}
-      ${tile("nodata", "var(--sq-muted)", "⚪ ยังไม่มีข้อมูล",   sum.nodata, "ไม่เคยเบิก / ไม่ได้ตั้งค่า")}
-      ${S.staleDays ? tile("stale", "var(--sq-high)", "⏰ ไม่อัปเดตเกิน " + S.staleDays + " วัน", sum.stale || 0, "ยอดอาจไม่ตรง — ช่วยนับ") : ""}
+      ${tile("late", "var(--sq-crit)", "สั่งวันนี้ก็ไม่ทัน", sum.late, "ของจะหมดก่อนของใหม่มาถึง")}
+      ${tile("now",  "var(--sq-high)", "ต้องสั่งวันนี้",     sum.now,  "สั่งเลยถึงจะทัน")}
+      ${tile("soon", "var(--sq-warn)", "ใกล้ถึงเวลาสั่ง",   sum.soon, "ภายใน 7 วัน")}
+      ${tile("ok",   "var(--sq-accent)", "ยังพอ",            sum.ok,   "ยังไม่ต้องสั่ง")}
+      ${tile("nodata", "var(--sq-muted)", "ยังไม่มีข้อมูล",   sum.nodata, "ไม่เคยเบิก / ไม่ได้ตั้งค่า")}
+      ${S.staleDays ? tile("stale", "var(--sq-high)", "ไม่อัปเดตเกิน " + S.staleDays + " วัน", sum.stale || 0, "ยอดอาจไม่ตรง — ช่วยนับ") : ""}
     </div>`;
 
   const chips = [["todo", `ต้องลงมือ (${todo})`], ["all", `ทั้งหมด (${sum.total})`]].map(([k, t]) =>
@@ -187,7 +187,7 @@ function planRender() {
          <span style="flex:1;min-width:220px;">กำลัง<b>ลองดู</b>ด้วยค่า รอของ ${S.leadDays} วัน · กันชน ${S.safetyDays} วัน · สั่งให้พอ ${S.coverDays} วัน
            (ค่าที่ทุกคนใช้อยู่: ${d.saved.leadDays} / ${d.saved.safetyDays} / ${d.saved.coverDays}) — ยังไม่ได้บันทึก</span>
          <button class="sq-btn sq-btn-sm" onclick="planResetSettings()">↺ กลับไปค่าที่ใช้อยู่</button>
-         ${planCanManage() ? '<button class="sq-btn sq-btn-sm sq-btn-primary" onclick="planSaveSettings(this)">💾 ใช้ค่านี้กับทุกคน</button>' : ""}
+         ${planCanManage() ? '<button class="sq-btn sq-btn-sm sq-btn-primary" onclick="planSaveSettings(this)">ใช้ค่านี้กับทุกคน</button>' : ""}
        </div>` : "";
 
   const body = rows.map(x => {
@@ -212,7 +212,7 @@ function planRender() {
   }).join("");
 
   const empty = _planFilter === "todo"
-    ? "✅ ไม่มีรายการที่ต้องสั่งในตอนนี้"
+    ? "ไม่มีรายการที่ต้องสั่งในตอนนี้"
     : "ไม่มีรายการในกลุ่มนี้";
 
   const orderN = _planOrderList().length;
@@ -222,10 +222,10 @@ function planRender() {
     <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:10px;">
       ${chips}
       <span style="flex:1;"></span>
-      <button class="sq-btn sq-btn-sm" onclick="planCopyList()" ${orderN ? "" : "disabled"}>📋 คัดลอกรายการสั่ง (${orderN})</button>
-      <button class="sq-btn sq-btn-sm" onclick="planPrint()">🖨️ พิมพ์</button>
-      ${planCanManage() ? `<button class="sq-btn sq-btn-sm" onclick="planSendTelegram(this)" ${sum.late + sum.now ? "" : "disabled"}>📨 ส่งเข้ากลุ่มแชต</button>` : ""}
-      ${planCanManage() && sum.stale ? `<button class="sq-btn sq-btn-sm" onclick="planSendTelegram(this, 'stale')" title="ส่งรายการที่ไม่มีการอัปเดตเข้ากลุ่ม ให้ช่วยกันนับ">⏰ ส่งเตือนให้ช่วยนับ (${sum.stale})</button>` : ""}
+      <button class="sq-btn sq-btn-sm" onclick="planCopyList()" ${orderN ? "" : "disabled"}>คัดลอกรายการสั่ง (${orderN})</button>
+      <button class="sq-btn sq-btn-sm" onclick="planPrint()">พิมพ์</button>
+      ${planCanManage() ? `<button class="sq-btn sq-btn-sm" onclick="planSendTelegram(this)" ${sum.late + sum.now ? "" : "disabled"}>ส่งเข้ากลุ่มแชต</button>` : ""}
+      ${planCanManage() && sum.stale ? `<button class="sq-btn sq-btn-sm" onclick="planSendTelegram(this, 'stale')" title="ส่งรายการที่ไม่มีการอัปเดตเข้ากลุ่ม ให้ช่วยกันนับ">ส่งเตือนให้ช่วยนับ (${sum.stale})</button>` : ""}
     </div>
     <div class="sq-card" style="margin-bottom:12px;"><div class="sq-tablewrap">
       ${rows.length ? `<table class="sq-table">
@@ -246,7 +246,7 @@ function planRender() {
 // ── คัดลอกไปวางในแชต ──
 function _planOrderText() {
   const list = _planOrderList();
-  const head = `📈 รายการที่ต้องสั่งซื้อ — ${planFactoryName()} (${rawCurrentModule})\n${planThaiDate(_planData.today)}\n`;
+  const head = `รายการที่ต้องสั่งซื้อ — ${planFactoryName()} (${rawCurrentModule})\n${planThaiDate(_planData.today)}\n`;
   return head + list.map((x, i) =>
     `${i + 1}. ${x.name} — สั่ง ${planFmt(x.suggestQty)} ${x.unit}` +
     `\n    เหลือ ${planFmt(x.qty)} ${x.unit}${x.daysCover !== null ? " · พอใช้ " + planFmt(x.daysCover) + " วัน" : ""} · รอของ ${x.leadDays} วัน`).join("\n");
@@ -254,7 +254,7 @@ function _planOrderText() {
 async function planCopyList() {
   if (!_planData || !_planOrderList().length) return;
   const txt = _planOrderText();
-  try { await navigator.clipboard.writeText(txt); showToast("คัดลอกแล้ว — วางในแชตได้เลย ✅", "success"); }
+  try { await navigator.clipboard.writeText(txt); showToast("คัดลอกแล้ว — วางในแชตได้เลย ", "success"); }
   catch (e) {
     const ta = document.createElement("textarea");
     ta.value = txt; ta.style.cssText = "position:fixed;left:-9999px;top:0;";
@@ -262,7 +262,7 @@ async function planCopyList() {
     let ok = false;
     try { ok = document.execCommand("copy"); } catch (e2) {}
     ta.remove();
-    showToast(ok ? "คัดลอกแล้ว — วางในแชตได้เลย ✅" : "คัดลอกไม่สำเร็จ", ok ? "success" : "error");
+    showToast(ok ? "คัดลอกแล้ว — วางในแชตได้เลย " : "คัดลอกไม่สำเร็จ", ok ? "success" : "error");
   }
 }
 
@@ -285,8 +285,8 @@ async function planSendTelegram(btn, what) {
     const res = r && r.result && r.result[rawCurrentModule], lres = r && r.result && r.result.line;
     const TH = { "disabled": "ระบบปิดการส่งอยู่", "no token": "ยังไม่ได้ตั้งค่าโทเคนบอท", "no chatId": "ยังไม่ได้ตั้งค่ากลุ่มปลายทาง" };
     const tgOk = res === "sent", lineOk = lres === "sent";
-    const parts = [tgOk ? "Telegram ✅" : "Telegram ❌ " + (TH[String(res || "").replace(/^not-sent:\s*/, "")] || String(res || (r && r.message) || "").replace(/^not-sent:\s*/, ""))];
-    if (lineOn) parts.push(lineOk ? "LINE ✅" : "LINE ❌ " + String(lres || "").replace(/^(not-sent|partial):\s*/, ""));
+    const parts = [tgOk ? "Telegram " : "Telegram " + (TH[String(res || "").replace(/^not-sent:\s*/, "")] || String(res || (r && r.message) || "").replace(/^not-sent:\s*/, ""))];
+    if (lineOn) parts.push(lineOk ? "LINE " : "LINE " + String(lres || "").replace(/^(not-sent|partial):\s*/, ""));
     showToast(parts.join(" · "), (tgOk || lineOk) ? (tgOk && (!lineOn || lineOk) ? "success" : "warn") : "error", 6000);
   } catch (e) { showToast("ส่งไม่สำเร็จ: " + netErrorText(e), "error"); }
   finally { if (btn) btn.disabled = false; }
@@ -323,7 +323,7 @@ function planPrint() {
       ${logo ? `<img src="${escapeAttr(logo)}" alt="" style="height:44px;">` : ""}
       <div><div style="font-size:17px;font-weight:800;">วางแผนสั่งซื้อวัตถุดิบ — ${escapeHtml(planFactoryName())} (${escapeHtml(rawCurrentModule)})</div>
       <div style="color:#435349;">วันที่ ${planThaiDate(_planData.today)} · รอของ ${S.leadDays} วัน · กันชน ${S.safetyDays} วัน · สั่งให้พอใช้ ${S.coverDays} วัน · พิมพ์โดย ${escapeHtml(currentUser || "-")}</div></div>
-      <button class="noprint" onclick="window.print()" style="margin-left:auto;padding:8px 16px;font-weight:700;">🖨️ พิมพ์</button>
+      <button class="noprint" onclick="window.print()" style="margin-left:auto;padding:8px 16px;font-weight:700;">พิมพ์</button>
     </div>
     <table><thead><tr><th>#</th><th>สถานะ</th><th>วัตถุดิบ</th><th>คงเหลือ</th><th>ใช้/วัน</th><th>พอใช้อีก</th><th>รอของ (วัน)</th><th>ต้องสั่งภายใน</th><th>แนะนำสั่ง</th><th>สั่งจริง</th></tr></thead>
     <tbody>${body || '<tr><td colspan="10" style="padding:20px;text-align:center;">ไม่มีรายการ</td></tr>'}</tbody></table>
@@ -339,7 +339,7 @@ function planUpdateTile(r) {
   if (!el) return;
   const n = r && r.summary ? r.summary.late + r.summary.now : 0;
   const soon = r && r.summary ? r.summary.soon : 0;
-  el.innerHTML = "📈 วางแผนสั่งซื้อ" + (n ? ` <span class="sq-tab-badge">${n}</span>` :
+  el.innerHTML = '<i class="ic ic-trend" aria-hidden="true"></i>วางแผนสั่งซื้อ' + (n ? ` <span class="sq-tab-badge">${n}</span>` :
     soon ? ` <span class="sq-tab-badge" style="background:var(--sq-warn);">${soon}</span>` : "");
   el.title = r && r.summary ? `สั่งวันนี้ก็ไม่ทัน ${r.summary.late} · ต้องสั่งวันนี้ ${r.summary.now} · ใกล้ถึงเวลาสั่ง ${r.summary.soon}` : "";
 }

@@ -6,11 +6,11 @@
 // ═════════════════════════════════════════════
 
 const MYHIST_META = {
-  "เบิกออก":         { icon:"📤", fg:"var(--sq-high)", bg:"var(--sq-high-bg)" },
-  "รับเข้า":         { icon:"📥", fg:"var(--sq-accent)", bg:"var(--sq-accent-2)" },
-  "คืนวัตถุดิบ":     { icon:"↩️", fg:"var(--sq-accent)", bg:"var(--sq-accent-2)" },
-  "ตรวจนับ/ปรับยอด": { icon:"📊", fg:"var(--sq-accent)", bg:"var(--sq-accent-2)" },
-  "สร้างรายการ":     { icon:"🆕", fg:"var(--sq-accent)", bg:"var(--sq-accent-2)" }
+  "เบิกออก":         { icon:'<i class="ic ic-out" aria-hidden="true"></i>',   fg:"#c2410c", bg:"#fff" },
+  "รับเข้า":         { icon:'<i class="ic ic-in" aria-hidden="true"></i>',    fg:"#047857", bg:"#fff" },
+  "คืนวัตถุดิบ":     { icon:'<i class="ic ic-ret" aria-hidden="true"></i>',   fg:"#0369a1", bg:"#fff" },
+  "ตรวจนับ/ปรับยอด": { icon:'<i class="ic ic-count" aria-hidden="true"></i>', fg:"#0e7490", bg:"#fff" },
+  "สร้างรายการ":     { icon:'<i class="ic ic-new" aria-hidden="true"></i>',   fg:"#6d28d9", bg:"#fff" }
 };
 const _mhMeta = a => MYHIST_META[a] || { icon:"•", fg:"var(--sq-muted)", bg:"var(--sq-raised)" };
 
@@ -19,7 +19,7 @@ async function openMyHistory() {
   document.getElementById("myHistWhoDesk").textContent = currentUser || "";
   document.getElementById("myHistSummaryDesk").innerHTML = "";
   document.getElementById("myHistListDesk").innerHTML =
-    '<p style="color:var(--sq-muted);text-align:center;font-weight:700;padding:40px 0;">⏳ กำลังโหลด...</p>';
+    '<p style="color:var(--sq-muted);text-align:center;font-weight:700;padding:40px 0;">กำลังโหลด...</p>';
 
   try {
     const res = await fetch(GAS_URL, {
@@ -31,7 +31,7 @@ async function openMyHistory() {
 
     if (!res.ok) {
       document.getElementById("myHistListDesk").innerHTML =
-        `<p style="color:var(--sq-crit);text-align:center;font-weight:700;padding:40px 0;">❌ ${escapeHtml(res.message || "โหลดไม่สำเร็จ")}</p>`;
+        `<p style="color:var(--sq-crit);text-align:center;font-weight:700;padding:40px 0;">${escapeHtml(res.message || "โหลดไม่สำเร็จ")}</p>`;
       return;
     }
 

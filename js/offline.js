@@ -241,7 +241,7 @@ async function _offSyncRun(manual) {
   }
 
   if (done) {
-    _offCfg.onToast(`ส่งงานที่ค้างไว้สำเร็จ ${done} รายการ ✅`, "success");
+    _offCfg.onToast(`ส่งงานที่ค้างไว้สำเร็จ ${done} รายการ `, "success");
     try { _offCfg.onSynced(); } catch (e) {}
     if (typeof tgFlushSoon === "function") tgFlushSoon();   // ข้อความแจ้งเตือนของงานที่เพิ่งส่งอยู่ในคิวฝั่งเซิร์ฟเวอร์
   }
@@ -301,10 +301,10 @@ function offlineSummary() {
   const n = offlineCount(), f = offlineFailures().length;
   const waitLogin = offlineQueue().some(j => j.error === "รอเข้าสู่ระบบใหม่");
   if (!n && !f) return "";
-  if (waitLogin) return `🔑 เข้าสู่ระบบใหม่เพื่อส่งงานค้าง ${n} รายการ`;
-  if (n && f)  return `⏳ ค้าง ${n} · ⚠️ ไม่ผ่าน ${f}`;
-  if (n)       return `⏳ รอส่ง ${n} รายการ`;
-  return `⚠️ ส่งไม่ผ่าน ${f} รายการ`;
+  if (waitLogin) return `เข้าสู่ระบบใหม่เพื่อส่งงานค้าง ${n} รายการ`;
+  if (n && f)  return `ค้าง ${n} · ไม่ผ่าน ${f}`;
+  if (n)       return `รอส่ง ${n} รายการ`;
+  return `ส่งไม่ผ่าน ${f} รายการ`;
 }
 
 /** รายละเอียดงานค้าง+งานที่ไม่ผ่าน เป็นข้อความล้วน (ใช้ใน alert/มือถือ) */
@@ -312,7 +312,7 @@ function offlineDetailText() {
   const q = offlineQueue(), f = offlineFailures();
   const t = d => { try { return new Date(d).toLocaleString("th-TH", { dateStyle: "short", timeStyle: "short" }); } catch (e) { return ""; } };
   let s = "";
-  if (q.length) s += "⏳ รอส่งเมื่อเน็ตกลับมา\n" + q.map(j => `  • ${j.label}  (${t(j.at)})${j.error ? "  — " + j.error : ""}`).join("\n") + "\n\n";
-  if (f.length) s += "⚠️ ส่งไม่ผ่าน — ต้องตรวจแล้วส่งซ้ำหรือทำใหม่\n" + f.map(j => `  • ${j.label}  (${t(j.at)})\n    เหตุผล: ${j.error}`).join("\n");
+  if (q.length) s += "รอส่งเมื่อเน็ตกลับมา\n" + q.map(j => `  • ${j.label}  (${t(j.at)})${j.error ? "  — " + j.error : ""}`).join("\n") + "\n\n";
+  if (f.length) s += "ส่งไม่ผ่าน — ต้องตรวจแล้วส่งซ้ำหรือทำใหม่\n" + f.map(j => `  • ${j.label}  (${t(j.at)})\n    เหตุผล: ${j.error}`).join("\n");
   return s || "ไม่มีงานค้าง";
 }

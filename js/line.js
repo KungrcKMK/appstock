@@ -26,7 +26,7 @@ async function lineLoadStatus() {
   document.getElementById("lineWebhookUrl").value = lineWebhookUrl();
   document.getElementById("lineTokenIn").value = "";
   document.getElementById("lineSecretIn").value = "";
-  info.innerHTML = '<p class="text-xs text-slate-600 font-bold">⏳ กำลังตรวจสถานะ LINE…</p>';
+  info.innerHTML = '<p class="text-xs text-slate-600 font-bold">กำลังตรวจสถานะ LINE…</p>';
   try {
     const r = await _lineCall({ action: "LINESTATUS" });
     if (!r || r.status !== "success") throw new Error((r && r.message) || "ไม่ได้รับคำตอบ");
@@ -50,18 +50,18 @@ function lineRender() {
 
   const groupsOn = (s.groups || []).filter(g => g.on);
   const ready = s.tokenSet && s.secretSet && groupsOn.length && s.mode !== "off" && !s.tokenProblem;
-  badge.textContent = ready ? "✅ พร้อมส่ง" : !s.tokenSet ? "ยังไม่ได้ตั้งค่า" : s.tokenProblem ? "⚠️ token มีปัญหา" : !groupsOn.length ? "รอเชิญบอทเข้ากลุ่ม" : s.mode === "off" ? "ปิดการส่ง (ดูกำหนดการด้านล่าง)" : "ตั้งค่าไม่ครบ";
+  badge.textContent = ready ? "พร้อมส่ง" : !s.tokenSet ? "ยังไม่ได้ตั้งค่า" : s.tokenProblem ? "token มีปัญหา" : !groupsOn.length ? "รอเชิญบอทเข้ากลุ่ม" : s.mode === "off" ? "ปิดการส่ง (ดูกำหนดการด้านล่าง)" : "ตั้งค่าไม่ครบ";
   badge.className = "text-xs font-black px-3 py-1 rounded-full " + (ready ? "bg-green-600 text-white" : "bg-amber-100 text-amber-800");
 
   const rows = [];
-  if (s.botName) rows.push(`<div>🤖 บอท: <b>${escapeHtml(s.botName)}</b></div>`);
-  if (s.scheduleText) rows.push(`<div>🗓️ ส่งตามกำหนด: ${escapeHtml(s.scheduleText)}</div>`);
-  if (s.tokenProblem) rows.push(`<div class="font-black" style="color:var(--sq-crit);">⚠️ ${escapeHtml(s.tokenProblem)}</div>`);
+  if (s.botName) rows.push(`<div>บอท: <b>${escapeHtml(s.botName)}</b></div>`);
+  if (s.scheduleText) rows.push(`<div>ส่งตามกำหนด: ${escapeHtml(s.scheduleText)}</div>`);
+  if (s.tokenProblem) rows.push(`<div class="font-black" style="color:var(--sq-crit);">${escapeHtml(s.tokenProblem)}</div>`);
   if (s.quota) {
     const lim = s.quota.limited ? s.quota.limit.toLocaleString() : "ไม่จำกัด";
     const used = s.quota.used == null ? "?" : s.quota.used.toLocaleString();
     const near = s.quota.limited && s.quota.used != null && s.quota.used >= s.quota.limit * 0.8;
-    rows.push(`<div${near ? ' class="font-black" style="color:var(--sq-high);"' : ""}>📊 โควตาเดือนนี้: ใช้ไป <b>${used}</b> / ${lim} ข้อความ</div>`);
+    rows.push(`<div${near ? ' class="font-black" style="color:var(--sq-high);"' : ""}>โควตาเดือนนี้: ใช้ไป <b>${used}</b> / ${lim} ข้อความ</div>`);
   }
   if ((s.groups || []).length) {
     rows.push('<div class="font-black text-slate-500 text-xs mt-2">กลุ่มที่บอทอยู่ — ติ๊กกลุ่มที่ให้ส่ง แล้วกดบันทึก</div>');
@@ -77,7 +77,7 @@ function lineRender() {
   }
   if (s.last) {
     const t = (() => { try { return new Date(s.last.at).toLocaleString("th-TH", { dateStyle: "short", timeStyle: "short" }); } catch (e) { return ""; } })();
-    rows.push(`<div class="text-xs mt-1">${s.last.sent ? "✅" : "⚠️"} ส่งล่าสุด ${escapeHtml(t)}${s.last.sent ? ` · ${s.last.groups}/${s.last.of} กลุ่ม` : ""}${s.last.reason ? " · " + escapeHtml(s.last.reason) : ""}</div>`);
+    rows.push(`<div class="text-xs mt-1 flex items-center gap-1">${uiSign(s.last.sent ? "ok" : "warn", 16)} ส่งล่าสุด${s.last.sent ? "" : " (ไม่ผ่าน)"} ${escapeHtml(t)}${s.last.sent ? ` · ${s.last.groups}/${s.last.of} กลุ่ม` : ""}${s.last.reason ? " · " + escapeHtml(s.last.reason) : ""}</div>`);
   }
   info.innerHTML = rows.join("") + '<button type="button" onclick="lineLoadStatus()" class="text-xs font-black text-green-800 mt-2" style="min-height:32px;padding:6px 8px;margin-left:-8px;">↻ ตรวจใหม่</button>';
   if (typeof ntfUpdateHints === "function") ntfUpdateHints();   // โควตา LINE ในกำหนดการส่งสรุปใช้จำนวนสมาชิกจากที่นี่
@@ -95,10 +95,10 @@ async function lineSaveSettings(btn) {
   try {
     const r = await _lineCall(payload);
     if (!r || r.status !== "success") throw new Error((r && r.message) || "บันทึกไม่สำเร็จ");
-    showToast("บันทึกการตั้งค่า LINE แล้ว ✅" + (r.botName ? " · " + r.botName : ""), "success");
+    showToast("บันทึกการตั้งค่า LINE แล้ว " + (r.botName ? " · " + r.botName : ""), "success");
     await lineLoadStatus();
   } catch (e) { showToast(netErrorText(e), "error", 6000); }
-  finally { if (btn) { btn.disabled = false; btn.textContent = "💾 บันทึก LINE"; } }
+  finally { if (btn) { btn.disabled = false; btn.textContent = "บันทึก LINE"; } }
 }
 
 async function lineTestSend(btn) {
@@ -108,7 +108,7 @@ async function lineTestSend(btn) {
   if (btn) btn.disabled = true;
   try {
     const r = await _lineCall({ action: "LINETEST" });
-    if (r && r.status === "success") showToast(`ส่งทดสอบเข้า LINE แล้ว ${r.sent}/${r.of} กลุ่ม ✅`, "success");
+    if (r && r.status === "success") showToast(`ส่งทดสอบเข้า LINE แล้ว ${r.sent}/${r.of} กลุ่ม `, "success");
     else showToast("ส่งไม่สำเร็จ: " + ((r && r.message) || ""), "error", 6000);
     lineLoadStatus();
   } catch (e) { showToast("ส่งไม่สำเร็จ: " + netErrorText(e), "error"); }

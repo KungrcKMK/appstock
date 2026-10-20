@@ -4,9 +4,9 @@
 
 // สีประจำโรงงาน = token ชุดเดียวกับทุกหน้า (index.html :root --sq-fac-*) · ตัวขาวบนพื้นนี้ผ่าน contrast AA
 const ALERT_META = {
-  COLDROOM: { label:"❄️ คลังสินค้าห้องเย็น", color:"var(--sq-fac-cr)",  icon:"❄️" },
-  SQF:      { label:"🏭 วัตถุดิบ SQF",       color:"var(--sq-fac-sqf)", icon:"🏭" },
-  MLM:      { label:"🏭 วัตถุดิบ MLM",       color:"var(--sq-fac-mlm)", icon:"🏭" }
+  COLDROOM: { label:"คลังสินค้าห้องเย็น", color:"var(--sq-fac-cr)",  ic:"snow" },
+  SQF:      { label:"วัตถุดิบ SQF",       color:"var(--sq-fac-sqf)", ic:"factory" },
+  MLM:      { label:"วัตถุดิบ MLM",       color:"var(--sq-fac-mlm)", ic:"factory" }
 };
 
 // ── แจ้งเตือนสต๊อก: แผง "ต้องจัดการ" บนหน้าแรก ไม่บังจอ (critique 2026-10-20 · เดิมปรับตาม QA M1 2026-10-10) ──
@@ -56,13 +56,13 @@ function _alertRenderHome() {
   if (!secs.length) { box.style.display = "none"; box.innerHTML = ""; return; }
   const total = secs.reduce((a, s) => a + _alertCount(s), 0);
   const part = (n, t) => n ? t + " " + n : "";
-  box.innerHTML = `<div class="home-todo-head">⚠️ ต้องจัดการ <b>${total}</b> รายการ</div>` +
+  box.innerHTML = `<div class="home-todo-head">${uiSign("warn", 26)}<span>ต้องจัดการ ${total} รายการ</span></div>` +
     secs.map(s => {
       const meta = ALERT_META[s.module] || ALERT_META.MLM;
       const bits = [part(s.expItems.length, "หมดอายุ"), part(s.nearItems.length, "ใกล้หมดอายุ"),
                     part(s.lowItems.length, "ต่ำกว่าจุดสั่งซื้อ"), part((s.soonItems || []).length, "ต้องสั่ง")].filter(Boolean).join(" · ");
       return `<button type="button" class="home-todo-row" onclick="switchModule('${s.module}')">
-        <span class="home-todo-dot" style="background:${meta.color}"></span><b>${meta.label}</b><span class="home-todo-bits">${bits}</span><span class="home-todo-go" aria-hidden="true">›</span></button>`;
+        <i class="ic ic-${meta.ic}" style="color:${meta.color}" aria-hidden="true"></i><b>${meta.label}</b><span class="home-todo-bits">${bits}</span><span class="home-todo-go" aria-hidden="true">›</span></button>`;
     }).join("") +
     `<button type="button" class="home-todo-all" onclick="openStockAlert()">ดูรายการทั้งหมด</button>`;
   box.style.display = "";
@@ -76,41 +76,39 @@ function _alertRender() {
   const one = secs.length === 1 ? (ALERT_META[secs[0].module] || ALERT_META.MLM) : null;
 
   const head = document.getElementById("alertModalHeader");
-  head.className = "p-6 text-white";
-  head.style.background = one ? one.color : "var(--sq-ink)";
-  document.getElementById("alertModalIcon").textContent  = "⚠️";
+  document.getElementById("alertModalIcon").innerHTML = uiSign("warn", 40);
   document.getElementById("alertModalTitle").textContent = one ? "ต้องจัดการ — " + one.label : "ต้องจัดการ — " + secs.length + " คลัง";
   document.getElementById("alertModalSubtitle").textContent = `พบ ${total} รายการ • ${new Date().toLocaleString("th-TH")}`;
 
   const sum = k => secs.reduce((a, s) => a + (s[k] || []).length, 0);
-  const chip = (txt, c) => `<span class="text-white text-xs font-black px-3 py-1 rounded-full" style="background:${c};">${txt}</span>`;
+  const chip = (txt, c) => `<span class="ui-tag" style="color:${c};border-color:currentColor;">${txt}</span>`;
   const chips = [];
-  if (sum("expItems"))  chips.push(chip("⛔ หมดอายุ " + sum("expItems"), "var(--sq-crit)"));
-  if (sum("nearItems")) chips.push(chip("⏳ ใกล้หมดอายุ " + sum("nearItems"), "var(--sq-warn)"));
-  if (sum("lowItems"))  chips.push(chip("🟠 ต่ำกว่าจุดสั่งซื้อ " + sum("lowItems"), "var(--sq-high)"));
-  if (sum("soonItems")) chips.push(chip("🛒 ต้องสั่ง " + sum("soonItems"), "var(--sq-high)"));
+  if (sum("expItems"))  chips.push(chip("หมดอายุ " + sum("expItems"), "var(--sq-crit)"));
+  if (sum("nearItems")) chips.push(chip("ใกล้หมดอายุ " + sum("nearItems"), "var(--sq-warn)"));
+  if (sum("lowItems"))  chips.push(chip("ต่ำกว่าจุดสั่งซื้อ " + sum("lowItems"), "var(--sq-high)"));
+  if (sum("soonItems")) chips.push(chip("ต้องสั่ง " + sum("soonItems"), "var(--sq-high)"));
   document.getElementById("alertModalChips").innerHTML = chips.join("");
 
-  const group = (title, color, items, right) => !items.length ? "" :
-    `<div class="font-black text-sm mb-2 mt-4" style="color:${color};">${title}</div>` +
-    items.map(i => `<div class="alert-item"><span class="font-bold" style="color:var(--sq-ink);">📦 ${escapeHtml(_alertName(i))}</span>${right(i)}</div>`).join("");
+  const group = (title, color, items, right, sign) => !items.length ? "" :
+    `<div class="font-black text-sm mb-2 mt-4 flex items-center gap-2" style="color:${color};">${uiSign(sign, 20)}${title}</div>` +
+    items.map(i => `<div class="alert-item"><span class="font-bold" style="color:var(--sq-ink);">${escapeHtml(_alertName(i))}</span>${right(i)}</div>`).join("");
   const label = i => `<span class="font-black text-sm shrink-0" style="color:inherit;">${escapeHtml(i.expLabel || "")}</span>`;
   let html = "";
   secs.forEach(s => {
     const meta = ALERT_META[s.module] || ALERT_META.MLM;
-    if (!one) html += `<div class="font-black text-base mt-4 pb-1" style="color:${meta.color};border-bottom:2px solid ${meta.color};">${meta.label} · ${_alertCount(s)} รายการ</div>`;
-    html += group("⛔ หมดอายุแล้ว", "var(--sq-crit)", s.expItems, i => `<span style="color:var(--sq-crit);">${label(i)}</span>`);
-    html += group("⏳ ใกล้หมดอายุ", "var(--sq-warn)", s.nearItems, i => `<span style="color:var(--sq-warn);">${label(i)}</span>`);
-    html += group("🟠 ต่ำกว่าจุดสั่งซื้อ", "var(--sq-high)", s.lowItems, i => `
+    if (!one) html += `<div class="font-black text-base mt-4 pb-1 flex items-center gap-2" style="color:${meta.color};border-bottom:2px solid ${meta.color};"><i class="ic ic-${meta.ic}" aria-hidden="true"></i>${meta.label} · ${_alertCount(s)} รายการ</div>`;
+    html += group("หมดอายุแล้ว", "var(--sq-crit)", s.expItems, i => `<span style="color:var(--sq-crit);">${label(i)}</span>`, "no");
+    html += group("ใกล้หมดอายุ", "var(--sq-warn)", s.nearItems, i => `<span style="color:var(--sq-warn);">${label(i)}</span>`, "warn");
+    html += group("ต่ำกว่าจุดสั่งซื้อ", "var(--sq-high)", s.lowItems, i => `
         <div class="text-right shrink-0">
           <span class="font-black" style="color:var(--sq-high);">${Number(i.qty||i.Qty||0).toLocaleString()} ${escapeHtml(i.unit||i.Unit||"")}</span>
           <span class="text-xs block" style="color:var(--sq-muted);">จุดสั่งซื้อ ${Number(i.min||i.Min||0).toLocaleString()}</span>
-        </div>`);
-    html += group("🛒 ต้องสั่ง — ตามจอวางแผนสั่งซื้อ", "var(--sq-high)", s.soonItems || [], i => `
+        </div>`, "warn");
+    html += group("ต้องสั่ง — ตามจอวางแผนสั่งซื้อ", "var(--sq-high)", s.soonItems || [], i => `
         <div class="text-right shrink-0">
           <span class="font-black" style="color:var(--sq-high);">${Number(i.qty||0).toLocaleString()} ${escapeHtml(i.unit||"")}</span>
           <span class="text-xs block" style="color:var(--sq-muted);">${escapeHtml(i.expLabel || "")}</span>
-        </div>`);
+        </div>`, "warn");
   });
   document.getElementById("alertModalContent").innerHTML = html;
   modal.classList.remove("hidden");
@@ -208,7 +206,7 @@ async function saveUnifiedSettings() {
     })).json();
     hideLoading();
     if (r.ok) {
-      showToast("บันทึกการตั้งค่า Telegram แล้ว ✅  ใช้กับทุกโรงงาน", "success");
+      showToast("บันทึกการตั้งค่า Telegram แล้ว  ใช้กับทุกโรงงาน", "success");
       // sync ไปที่ Cold Room tab ด้วย (ถ้ามีอยู่)
       ["crTgBotName","crTgToken","crTgChatIds","crTgEnable"].forEach((id, i) => {
         const srcIds = ["uniTgBotName","uniTgToken","uniTgChatIds","uniTgEnable"];
@@ -217,7 +215,7 @@ async function saveUnifiedSettings() {
       });
     } else { showToast("บันทึกไม่สำเร็จ","error"); }
   } catch(e) { hideLoading(); showToast("เกิดข้อผิดพลาด: "+e.message,"error"); }
-  btn.disabled = false; btn.textContent = "💾 บันทึก Telegram";
+  btn.disabled = false; btn.textContent = "บันทึก Telegram";
 }
 
 async function testTelegram() {
@@ -289,7 +287,7 @@ async function saveRawSettings() {
     })).json();
     hideLoading();
     if (r.ok) {
-      showToast("บันทึกการตั้งค่าสำเร็จ ✅","success");
+      showToast("บันทึกการตั้งค่าสำเร็จ ","success");
       closeRawSettings();
       // sync to Cold Room tab ด้วย
       if (document.getElementById("crTgBotName")) {

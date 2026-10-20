@@ -14,11 +14,11 @@
 //
 // คิดที่หลังบ้านที่เดียว — หน้าคอม มือถือ และข้อความสรุปเข้ากลุ่ม (Telegram / LINE) ใช้ผลชุดเดียวกัน ตัวเลขจึงตรงกันเสมอ
 // หลักการ: แค่ "ชี้ให้เห็น" — ไม่สั่งซื้อเอง ไม่บล็อกการเบิก คนตัดสินใจเองทุกครั้ง
-import { all, getCfg, cfgSet, kvGet, kvPut, nowIso, fmtTH, dayTH, thaiMidnightMs, expiryInfoTH, tgSendRaw, sysLog, DAY_MS, TZ_MS, FACTORY_NAME } from "./lib.js";
+import { all, getCfg, cfgSet, kvGet, kvPut, nowIso, fmtTH, dayTH, thaiMidnightMs, expiryInfoTH, tgSendRaw, tgMarkLast, sysLog, DAY_MS, TZ_MS, FACTORY_NAME } from "./lib.js";
 import { lineConfig, lineSend, lineStatus } from "./line.js";
 import { lastStockUpdate, idleDaysTH, staleDaysOf } from "./raw.js";
 import { crGetStartupOverview } from "./cold.js";
-import { notifySchedule, normSchedule, topicDue, describeSchedule, NOTIFY_TOPICS } from "./notify.js";
+import { notifySchedule, normSchedule, topicDue, describeSchedule, NOTIFY_TOPICS, TOPIC_TEXT } from "./notify.js";
 
 export const PLAN_DEFAULTS = { leadDays: 7, safetyDays: 3, coverDays: 30, alert: true };
 const PLAN_MIN_TX = 5;      // เบิกอย่างน้อยกี่ครั้งใน 30 วัน ถึงจะเชื่ออัตราเบิกจริง (เกณฑ์เดียวกับจุดสั่งซื้อแนะนำ)
@@ -369,9 +369,17 @@ export function packTexts(msgs, max, limit) {
 const SIG_PREFIX = { plan: "plan_sig_", low: "low_sig_", stale: "stale_sig_", expiry: "exp_sig_" };
 const sigKey = (topic, module, ch) => SIG_PREFIX[topic] + (ch === "line" ? "line_" : "") + module;   // คีย์ plan_/stale_ เดิมใช้ต่อได้
 
+/** 1 แถวต่อช่องต่อรอบใน system_log (digest-tg / digest-line) — ตรวจย้อนหลังได้ว่าวันไหนส่งอะไร ถึงกี่คน พลาดเพราะอะไร */
+async function digestLog(c, ch, o, parts, result) {
+  const head = o.day ? "ตามกำหนด" : "กดส่งเอง: " + (TOPIC_TEXT[o.what] || o.what) + (o.modules ? " [" + o.modules.join(",") + "]" : "");
+  await sysLog(c, "digest-" + ch, [head].concat(parts.filter(Boolean)).join(" · ") + (result === "retry" ? " · คืนสิทธิ์ให้รอบถัดไปลองใหม่" : ""),
+    c.user || "ระบบ", result);
+}
+
 /**
  * ส่งสรุปเข้ากลุ่ม (Telegram + LINE)
- *   งานตามเวลา: channels = ช่องที่ถึงเวลา · ส่งหัวข้อที่ตั้งไว้ของช่องนั้น ตามรูปแบบที่ตั้งไว้
+ *   งานตามเวลา: channels = ช่องที่ถึงเวลา · day = วันที่ (เวลาไทย) ของรอบนั้น · ส่งหัวข้อที่ตั้งไว้ของช่องนั้น ตามรูปแบบที่ตั้งไว้
+ *     คืน retry = ช่องที่พลาดแบบชั่วคราว (เครือข่าย/หมดเวลา/5xx) → งานตามเวลาคืนสิทธิ์ให้รอบถัดไปลองใหม่
  *   ปุ่มในหน้าจอ: what = "plan" | "stale" (ส่งเรื่องเดียวทุกช่องที่เปิด) + force = ไม่สนว่าเคยส่งรายการเดิมไปแล้ว
  *   dry = ดูตัวอย่างข้อความ ไม่ส่ง · schedule = ใช้ค่าที่หน้าตั้งค่ากำลังแก้ (ยังไม่บันทึก) มาลองดู
  */
@@ -426,10 +434,11 @@ export async function planDigest(c, opts) {
   const keyOf = (e) => manual || e.topic === "plan" ? e.module : e.topic === "expiry" ? "expiry" : e.module + "_" + e.topic;
   const L = await lineConfig(c);
   const lineReady = !!L.token && L.groups.some((g) => g.on);
-  const out = {}, preview = {}, previewBy = {};
+  const out = {}, preview = {}, previewBy = {}, retry = [];
   for (const ch of channels) {
     const s = sch[ch], mine = topicsFor(ch);
     const lineMsgs = [], lineSigs = [];
+    const lg = { sent: 0, same: 0, failed: [], retry: false, chats: 0 };   // ผลของช่องนี้ ลง system_log ท้ายรอบ
     previewBy[ch] = [];
     for (const e of entries) {
       if (mine.indexOf(e.topic) < 0) continue;
@@ -442,15 +451,34 @@ export async function planDigest(c, opts) {
       const msg = e.msg(s.detail);
       if (o.dry) { previewBy[ch].push(msg); if (ch === "tg") { preview[k] = msg; out[k] = "preview"; } continue; }
       if (!s.on) { if (ch === "tg") out[k] = "off"; continue; }
-      if (!topicDue(s, o.force, await kvGet(c, sk), e.sig, dow)) { if (ch === "tg") out[k] = "same"; continue; }
+      // รอบลองใหม่ของวันเดียวกัน: ข้ามหัวข้อที่ส่งถึงแล้ว (วันทวนซ้ำ / โหมดส่งทุกครั้ง ไม่ดูลายเซ็น — ไม่กันไว้จะได้ข้อความซ้ำ)
+      const dk = o.day ? "dg_done_" + o.day + "_" + sk : "";
+      if (!topicDue(s, o.force, await kvGet(c, sk), e.sig, dow) || (dk && await kvGet(c, dk))) { lg.same++; if (ch === "tg") out[k] = "same"; continue; }
       if (ch === "tg") {
         const r = await tgSendRaw(c, msg, true);
-        if (r && r.sent) await kvPut(c, sk, e.sig, 60 * 86400);
-        else if (r && r.reason !== "disabled") await sysLog(c, "telegram-error", e.topic + " digest: " + (r && r.reason), "-", "failed");
+        await tgMarkLast(c, r);
+        if (r && r.chats) lg.chats = r.chats;
+        if (r && r.sent) {   // ลายเซ็นเขียนเฉพาะตอนส่งสำเร็จ — พลาด = รอบหน้ายังเห็นว่าเป็นรายการใหม่
+          await kvPut(c, sk, e.sig, 60 * 86400);
+          if (dk) await kvPut(c, dk, "1", 2 * 86400);
+          lg.sent++;
+        } else {
+          if (r && r.reason !== "disabled") await sysLog(c, "telegram-error", e.topic + " digest: " + (r && r.reason), "-", "failed");
+          lg.failed.push(k + ": " + ((r && r.reason) || ""));
+          if (r && r.retry) lg.retry = true;
+        }
         out[k] = r && r.sent ? "sent" : "not-sent: " + ((r && r.reason) || "");
-      } else { lineMsgs.push(msg); lineSigs.push([sk, e.sig]); }
+      } else { lineMsgs.push(msg); lineSigs.push([sk, e.sig, dk]); }
     }
-    if (ch !== "line") continue;
+    if (ch !== "line") {
+      if (!o.dry && s.on) {
+        const res = lg.failed.length ? (lg.retry && o.day ? "retry" : "failed") : lg.sent ? "ok" : "skipped";
+        if (res === "retry") retry.push(ch);
+        await digestLog(c, ch, o, [lg.sent + " ข้อความ" + (lg.chats ? " → " + lg.chats + " แชท" : ""), lg.same ? "ข้าม " + lg.same + " หัวข้อ (รายการเดิม/ส่งแล้ว)" : "",
+          lg.failed.length ? "ไม่ผ่าน: " + lg.failed.join(" | ") : ""], res);
+      }
+      continue;
+    }
     // LINE: ทุกข้อความรวมเป็นคำขอเดียว — โควตานับครั้งเดียวต่อสมาชิก ไม่ว่ากี่กล่อง
     if (o.dry) {
       out.line = !L.token ? "not-configured" : !lineReady ? "no-group" : !s.on ? "off" : "preview";
@@ -462,12 +490,20 @@ export async function planDigest(c, opts) {
     else if (!s.on) out.line = "off";
     else if (!lineMsgs.length) out.line = "same";
     else {
-      const r = await lineSend(c, packTexts(lineMsgs), { what: manual ? o.what : "schedule" });
-      if (r.sent) for (const [k, sg] of lineSigs) await kvPut(c, k, sg, 60 * 86400);
+      const boxes = packTexts(lineMsgs);
+      const r = await lineSend(c, boxes, { what: manual ? o.what : "schedule", retryKey: o.day ? "digest|" + o.day : "" });
+      if (r.sent) for (const [k, sg, dk] of lineSigs) { await kvPut(c, k, sg, 60 * 86400); if (dk) await kvPut(c, dk, "1", 2 * 86400); }
       out.line = r.sent ? (r.reason ? "partial: " + r.reason : "sent") : "not-sent: " + (r.reason || "");
+      const res = r.sent ? (r.reason ? "partial" : "ok") : r.retry && o.day ? "retry" : "failed";
+      if (res === "retry") retry.push(ch);
+      await digestLog(c, ch, o, [boxes.length + " กล่อง (" + lineMsgs.length + " หัวข้อ) → " + r.sent + "/" + r.of + " กลุ่ม",
+        r.sent && r.members !== null ? "สมาชิก " + r.members + " คน (= โควตาที่ใช้)" : "", r.reason ? "ไม่ผ่าน: " + r.reason : ""], res);
+      continue;
     }
+    if (!o.dry && s.on) await digestLog(c, ch, o, [out.line === "same" ? "ไม่มีหัวข้อที่ต้องส่ง" + (lg.same ? " (ข้าม " + lg.same + " หัวข้อ: รายการเดิม/ส่งแล้ว)" : "") :
+      out.line === "not-configured" ? "ยังไม่ได้ใส่ Channel access token" : "ยังไม่มีกลุ่มที่เปิดส่ง"], out.line === "same" ? "skipped" : "failed");
   }
-  return o.dry ? { ok: true, status: "success", result: out, preview, previewBy } : { ok: true, status: "success", result: out };
+  return o.dry ? { ok: true, status: "success", result: out, preview, previewBy } : { ok: true, status: "success", result: out, retry };
 }
 /** action PLANDIGEST — คนกดส่งรายการที่ต้องสั่งเข้ากลุ่มเอง (Telegram + LINE · manager ขึ้นไป) · send ไม่ใช่ true = ดูตัวอย่างข้อความ */
 export async function planDigestNow(c, data, module) {

@@ -36,8 +36,8 @@ function shareSetMode(mode) {
   _shareUrl = _shareMode === "exec" ? base + "?view=exec" : base;
   const on = (el, c) => { if (!el) return; el.style.background = c; el.style.color = "#fff"; };
   const off = (el, c) => { if (!el) return; el.style.background = "#fff"; el.style.color = c; };
-  if (_shareMode === "exec") { on(document.getElementById("shareModeExec"), "#0e7a3f"); off(document.getElementById("shareModeStaff"), "#0f172a"); }
-  else { on(document.getElementById("shareModeStaff"), "#0f172a"); off(document.getElementById("shareModeExec"), "#0e7a3f"); }
+  if (_shareMode === "exec") { on(document.getElementById("shareModeExec"), "#111"); off(document.getElementById("shareModeStaff"), "#111"); }
+  else { on(document.getElementById("shareModeStaff"), "#111"); off(document.getElementById("shareModeExec"), "#111"); }
   const note = document.getElementById("shareModeNote");
   if (note) {
     note.style.display = _shareMode === "exec" ? "" : "none";
@@ -72,7 +72,7 @@ function _shareQrDataUrl() {
 async function shareCopyLink() {
   try {
     await navigator.clipboard.writeText(_shareUrl);
-    showToast("คัดลอกลิงก์แล้ว ✅", "success");
+    showToast("คัดลอกลิงก์แล้ว ", "success");
     return;
   } catch (e) { /* เบราว์เซอร์เก่า หรือหน้าไม่ได้รันบน https → ใช้ทางสำรอง */ }
 
@@ -88,7 +88,7 @@ async function shareCopyLink() {
   let ok = false;
   try { ok = document.execCommand("copy"); } catch (e2) { ok = false; }
   ta.remove();
-  if (ok) { showToast("คัดลอกลิงก์แล้ว ✅", "success"); return; }
+  if (ok) { showToast("คัดลอกลิงก์แล้ว ", "success"); return; }
 
   // ทางออกสุดท้าย — ตอนนี้ไม่โชว์ลิงก์บนหน้าจอแล้ว ถ้าคัดลอกไม่ได้จะไม่เหลือทางเอาลิงก์ออกมาเลย
   // เด้งกล่องให้เห็นลิงก์เต็มๆ ผู้ใช้ลากคัดลอกเองได้
@@ -136,7 +136,7 @@ function sharePrintQr() {
     </style></head><body>
     <img src="${logoUrl()}" alt="" onerror="this.style.display='none'"
          style="width:100%;max-width:420px;height:auto;margin:0 auto 18px;display:block;">
-    <h1>${_shareMode === "exec" ? "📊 ภาพรวมผู้บริหาร" : "📦 ระบบจัดการสต๊อก"}</h1>
+    <h1>${_shareMode === "exec" ? "ภาพรวมผู้บริหาร" : "ระบบจัดการสต๊อก"}</h1>
     <div class="sub">สุพรรณคิวฟู้ดส์ | แม่ละมาย</div>
     <img src="${src}" alt="QR">
     <div class="url">${escapeHtml(_shareUrl)}</div>
@@ -150,7 +150,7 @@ function sharePrintQr() {
           : '<li>พิมพ์ชื่อพนักงาน แล้วกด "เข้าสู่ระบบ"<br>ถ้ายังไม่มีชื่อในระบบ จะมีกล่องขึ้นมาให้กด <b>"ขอสิทธิ์เข้าใช้งานจาก Admin"</b> แล้วรอหัวหน้าอนุมัติ</li>'}
         <li><b>ติดตั้งลงหน้าจอโฮม</b> เพื่อเปิดง่ายครั้งต่อไป:<br>
             • Android: กดเมนู ⋮ → "เพิ่มลงในหน้าจอหลัก"<br>
-            • iPhone: กดปุ่มแชร์ ⬆️ → "เพิ่มไปยังหน้าจอโฮม"</li>
+            • iPhone: กดปุ่มแชร์ → "เพิ่มไปยังหน้าจอโฮม"</li>
       </ol>
     </div>
     <div class="note">${_shareMode === "exec" ? "ติดตั้งแล้วจะได้ไอคอนชื่อ \"ผู้บริหาร\" แยกจากแอปของพนักงาน" : "พิมพ์แผ่นนี้ติดบอร์ดให้พนักงานสแกนได้เลย"}</div>

@@ -136,7 +136,7 @@ async function crSaveBom() {
   if (!materials.length) return showToast("กรุณาเพิ่มวัตถุดิบอย่างน้อย 1 รายการ","warn");
   const res = await crCallServer("saveBom", { barcode: _bomCurrentBarcode, name: _bomCurrentName, factory: _bomFactory, materials });
   if (res.ok) {
-    showToast(`✅ บันทึก BOM สำเร็จ (${res.saved} รายการ)`, "success");
+    showToast(`บันทึก BOM สำเร็จ (${res.saved} รายการ)`, "success");
     const badge = document.getElementById("crBomStatusBadge");
     badge.textContent = `บันทึกแล้ว ${res.saved} รายการ`;
     badge.style.background = "var(--sq-accent-2)"; badge.style.color = "var(--sq-accent)";
@@ -163,7 +163,7 @@ async function crDeleteBom() {
 // รายการ BOM ทั้งหมด (card ล่าง)
 async function crLoadBomList() {
   const listEl = document.getElementById("crBomProductList");
-  listEl.innerHTML = '<p style="color:var(--sq-muted);text-align:center;font-weight:700;padding:20px 0;">⏳ กำลังโหลด...</p>';
+  listEl.innerHTML = '<p style="color:var(--sq-muted);text-align:center;font-weight:700;padding:20px 0;">กำลังโหลด...</p>';
   const res = await crCallServer("getBomList");
   const boms = res.ok ? (res.boms || []) : [];
   if (!boms.length) {
@@ -172,8 +172,8 @@ async function crLoadBomList() {
   }
   listEl.innerHTML = `<div style="display:flex;flex-direction:column;gap:8px;">` +
     boms.map(b => {
-      const fc = b.factory === "SQF" ? "var(--sq-high)" : "var(--sq-accent)";
-      return `<div style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border:2px solid var(--sq-line);border-left:4px solid ${fc};border-radius:12px;background:var(--sq-raised);flex-wrap:wrap;gap:8px;">
+      const fc = b.factory === "SQF" ? "var(--sq-fac-sqf)" : "var(--sq-fac-mlm)";
+      return `<div style="display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border:1.5px solid var(--sq-line);border-top:6px solid ${fc};border-radius:0;background:var(--sq-raised);flex-wrap:wrap;gap:8px;">
         <div style="flex:1;min-width:0;">
           <div style="font-weight:800;font-size:14px;color:var(--sq-ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${escapeHtml(b.name)}</div>
           <div style="font-size:12px;color:var(--sq-muted);margin-top:2px;">${escapeHtml(b.barcode)} &nbsp;·&nbsp; ${b.materials.length} วัตถุดิบ</div>
@@ -181,7 +181,7 @@ async function crLoadBomList() {
         <div style="display:flex;align-items:center;gap:8px;flex-shrink:0;">
           <span style="background:${fc};color:#fff;border-radius:999px;padding:2px 10px;font-size:12px;font-weight:800;">${escapeHtml(b.factory)}</span>
           <button class="cr-btn btn-light" onclick="crBomQuickLoad('${escapeHtml(b.barcode)}','${escapeHtml(b.factory)}','${escapeHtml(b.name.replace(/'/g,"\\'"))}')"
-            style="padding:5px 12px;font-size:12px;">✏️ แก้ไข</button>
+            style="padding:5px 12px;font-size:12px;">แก้ไข</button>
         </div>
       </div>`;
     }).join("") + `</div>`;
@@ -279,8 +279,8 @@ async function crSendStale(btn) {
     const tg = r && r.result && r.result.COLDROOM, lr = r && r.result && r.result.line;
     const TH = { "disabled": "ระบบปิดการส่งอยู่", "no token": "ยังไม่ได้ตั้งค่าโทเคนบอท", "no chatId": "ยังไม่ได้ตั้งค่ากลุ่มปลายทาง" };
     const why = String(tg || (r && r.message) || "").replace(/^not-sent:\s*/, "");
-    const parts = [tg === "sent" ? "Telegram ✅" : "Telegram ❌ " + (TH[why] || why)];
-    if (lineOn) parts.push(lr === "sent" ? "LINE ✅" : "LINE ❌ " + String(lr || "").replace(/^(not-sent|partial):\s*/, ""));
+    const parts = [tg === "sent" ? "Telegram ส่งแล้ว" : "Telegram ไม่ผ่าน: " + (TH[why] || why)];
+    if (lineOn) parts.push(lr === "sent" ? "LINE ส่งแล้ว" : "LINE ไม่ผ่าน: " + String(lr || "").replace(/^(not-sent|partial):\s*/, ""));
     showToast(parts.join(" · "), tg === "sent" ? "success" : "warn", 6000);
   } catch (e) { showToast("ส่งไม่สำเร็จ: " + netErrorText(e), "error"); }
   finally { if (btn) btn.disabled = false; }
@@ -292,7 +292,7 @@ async function crOpenLotHistory(barcode) {
   if (!m) return;
   m.classList.remove("hidden");
   const body = document.getElementById("crLotHistBody");
-  body.innerHTML = '<p class="sq-empty">⏳ กำลังโหลด...</p>';
+  body.innerHTML = '<p class="sq-empty">กำลังโหลด...</p>';
   const r = await crCallServer("getLotHistory", { barcode: barcode || "" });
   if (!r || !r.ok) { body.innerHTML = `<p class="sq-empty" style="color:var(--sq-crit);">${escapeHtml((r && r.message) || "โหลดไม่สำเร็จ")}</p>`; return; }
   const t = d => { try { return new Date(d).toLocaleString("th-TH", { dateStyle: "short", timeStyle: "short" }); } catch (e) { return ""; } };
@@ -468,7 +468,7 @@ function crWoOnSelectProduct(idx) {
     let dup = 0;
     allSels.forEach(s => { if (s.id !== `crWoSel-${idx}` && s.value === barcode) dup++; });
     if (dup > 0) {
-      showToast("⚠️ สินค้านี้มีในใบสั่งอยู่แล้ว — แก้ไขจำนวนในแถวเดิมแทน","warn");
+      showToast("สินค้านี้มีในใบสั่งอยู่แล้ว — แก้ไขจำนวนในแถวเดิมแทน","warn");
       sel.value = "";
       return;
     }
@@ -508,7 +508,7 @@ function crWoOnSelectProduct(idx) {
     td.innerHTML = `
       <div style="display:flex;flex-direction:column;gap:6px;">
         <div style="background:var(--sq-warn-bg);border:1px solid var(--sq-warn);border-radius:8px;padding:5px 9px;font-size:12px;color:var(--sq-high);display:flex;align-items:center;gap:6px;">
-          <span>⚠️ ยังไม่ตั้งค่า ชุด/UPS</span>
+          <span>ยังไม่ตั้งค่า ชุด/UPS</span>
           <button onclick="crSwitchTab('editproduct');crOpenEditProduct('${escapeJsAttr(barcode)}')"
             style="background:var(--sq-high);color:#fff;border:none;border-radius:5px;padding:2px 7px;font-size:12px;font-weight:800;cursor:pointer;">แก้ไข</button>
         </div>
@@ -630,8 +630,8 @@ async function crPrintActualReport(o) {
     const mfgFmt  = isoToDdmmyy(ddmmyyToIsoWo(r.mfg)||r.mfg)||r.mfg||"-";
     const expFmt  = isoToDdmmyy(ddmmyyToIsoWo(r.exp)||r.exp)||r.exp||"-";
     const status  = diff>=0
-      ? `<span style="color:#059669;font-weight:700;">✅ ตามแผน</span>`
-      : `<span style="color:#dc2626;font-weight:700;">⚠️ ขาด ${Math.abs(diff).toLocaleString()}</span>`;
+      ? `<span style="color:#059669;font-weight:700;">ตามแผน</span>`
+      : `<span style="color:#dc2626;font-weight:700;">ขาด ${Math.abs(diff).toLocaleString()}</span>`;
     return `<tr style="background:${i%2===0?"#fff":"#f8fafc"}">
       <td style="padding:10px 12px;border:1px solid #e2e8f0;text-align:center;font-size:12px;color:#5b6e63;">${i+1}</td>
       <td style="padding:10px 12px;border:1px solid #e2e8f0;font-weight:700;">${escapeHtml(r.name||"-")}</td>
@@ -669,23 +669,23 @@ async function crPrintActualReport(o) {
   <div class="hd">
     <div style="display:flex;align-items:center;gap:14px;">
       ${logoImgTag(46)}
-      <div><h1>📊 รายงานยอดผลิตจริง</h1>
-        <div class="sub">อ้างอิงใบสั่งผลิต: <b>${escapeHtml(o.OrderID||"-")}</b> &nbsp;|&nbsp; ❄️ คลังสินค้า SQF</div>
+      <div><h1>รายงานยอดผลิตจริง</h1>
+        <div class="sub">อ้างอิงใบสั่งผลิต: <b>${escapeHtml(o.OrderID||"-")}</b> &nbsp;|&nbsp; คลังสินค้า SQF</div>
         <div class="sub">วันที่สั่งผลิต: <b>${dateStr}</b> &nbsp;|&nbsp; ผู้สั่ง: <b>${escapeHtml(personName(o.CreatedBy))}</b></div>
       </div>
     </div>
     <div style="text-align:right;">
       <div class="sub">วันที่พิมพ์: <b>${printDate}</b> &nbsp;|&nbsp; ผู้พิมพ์: <b>${personName(currentUser)}</b></div>
-      <button class="no-print" onclick="window.print()" style="margin-top:8px;background:#0f766e;color:#fff;border:none;padding:8px 20px;border-radius:6px;font-size:12px;font-weight:700;cursor:pointer;">🖨️ พิมพ์</button>
+      <button class="no-print" onclick="window.print()" style="margin-top:8px;background:#0f766e;color:#fff;border:none;padding:8px 20px;border-radius:6px;font-size:12px;font-weight:700;cursor:pointer;">พิมพ์</button>
     </div>
   </div>
   <div class="summary">
-    <div class="sum-card plan-c"><div class="n">${totalPlan.toLocaleString()}</div><div class="l">📋 สั่งผลิต (แผน)</div></div>
-    <div class="sum-card act-c"><div class="n">${totalActual.toLocaleString()}</div><div class="l">✅ ผลิตได้จริง</div></div>
-    <div class="sum-card dif-c"><div class="n" style="color:${overallDiffColor};">${totalDiff>=0?"+":""}${totalDiff.toLocaleString()}</div><div class="l">📐 ผลต่าง (จำนวน)</div></div>
+    <div class="sum-card plan-c"><div class="n">${totalPlan.toLocaleString()}</div><div class="l">สั่งผลิต (แผน)</div></div>
+    <div class="sum-card act-c"><div class="n">${totalActual.toLocaleString()}</div><div class="l">ผลิตได้จริง</div></div>
+    <div class="sum-card dif-c"><div class="n" style="color:${overallDiffColor};">${totalDiff>=0?"+":""}${totalDiff.toLocaleString()}</div><div class="l">ผลต่าง (จำนวน)</div></div>
   </div>
   <div class="status-bar" style="background:${totalDiff>=0?"#f0fdf4":"#fef2f2"};border:2px solid ${totalDiff>=0?"#22c55e":"#ef4444"};color:${totalDiff>=0?"#16a34a":"#dc2626"};">
-    ${totalDiff>=0?"✅ ผลิตได้ตามเป้าหมายโดยรวม":"⚠️ ผลิตได้ต่ำกว่าแผนโดยรวม — ตรวจสอบสาเหตุ"}
+    ${totalDiff>=0?"ผลิตได้ตามเป้าหมายโดยรวม":"ผลิตได้ต่ำกว่าแผนโดยรวม — ตรวจสอบสาเหตุ"}
   </div>
   <table style="width:100%;border-collapse:collapse;font-size:13px;">
     <thead><tr style="background:#1e293b;color:#fff;font-size:11px;">
@@ -693,9 +693,9 @@ async function crPrintActualReport(o) {
       <th style="padding:9px 12px;text-align:left;">ชื่อสินค้า</th>
       <th style="padding:9px 12px;text-align:center;width:80px">MFG</th>
       <th style="padding:9px 12px;text-align:center;width:80px">EXP</th>
-      <th style="padding:9px 12px;text-align:right;width:90px">📋 สั่งผลิต</th>
-      <th style="padding:9px 12px;text-align:right;width:90px">✅ ผลิตจริง</th>
-      <th style="padding:9px 12px;text-align:right;width:90px">📐 ผลต่าง</th>
+      <th style="padding:9px 12px;text-align:right;width:90px">สั่งผลิต</th>
+      <th style="padding:9px 12px;text-align:right;width:90px">ผลิตจริง</th>
+      <th style="padding:9px 12px;text-align:right;width:90px">ผลต่าง</th>
       <th style="padding:9px 12px;text-align:left;width:55px">หน่วย</th>
       <th style="padding:9px 12px;text-align:center;width:100px">สถานะ</th>
     </tr></thead>
@@ -708,7 +708,7 @@ async function crPrintActualReport(o) {
       <td colspan="2" style="padding:10px 12px;border:1px solid #e2e8f0;"></td>
     </tfoot>
   </table>
-  ${o.Note ? `<div style="background:#fef9c3;border-left:5px solid #eab308;padding:10px 14px;border-radius:6px;margin:16px 0;font-size:12px;">💬 <b>หมายเหตุ:</b> ${escapeHtml(o.Note)}</div>` : ""}
+  ${o.Note ? `<div style="background:#fef9c3;border-left:5px solid #eab308;padding:10px 14px;border-radius:6px;margin:16px 0;font-size:12px;"><b>หมายเหตุ:</b> ${escapeHtml(o.Note)}</div>` : ""}
   <div class="sign">
     <div class="sign-box">ผู้จัดทำรายงาน<br><br>( ${personName(currentUser)} )</div>
     <div class="sign-box">ผู้ควบคุมการผลิต<br><br>( .......................... )</div>
@@ -785,19 +785,19 @@ function crOpenWorkOrderPrint(o) {
     <div style="display:flex;align-items:center;gap:14px;">
       ${logoImgTag(46)}
       <div>
-        <h1>📋 ใบสั่งผลิต</h1>
-        <div class="sub">❄️ คลังสินค้า SQF — สุพรรณคิวฟู้ดส์</div>
+        <h1>ใบสั่งผลิต</h1>
+        <div class="sub">คลังสินค้า SQF — สุพรรณคิวฟู้ดส์</div>
       </div>
     </div>
     <div style="text-align:right;">
       <div style="font-size:22px;font-weight:900;color:#0e7a3f;">${escapeHtml(o.OrderID||"-")}</div>
       <div class="sub">วันที่: <b>${dateStr}</b> &nbsp;|&nbsp; ผู้สั่ง: <b>${escapeHtml(personName(o.CreatedBy))}</b></div>
-      <button class="no-print" onclick="window.print()" style="margin-top:8px;background:#1e293b;color:#fff;border:none;padding:8px 20px;border-radius:6px;font-size:12px;font-weight:700;cursor:pointer;">🖨️ พิมพ์</button>
+      <button class="no-print" onclick="window.print()" style="margin-top:8px;background:#1e293b;color:#fff;border:none;padding:8px 20px;border-radius:6px;font-size:12px;font-weight:700;cursor:pointer;">พิมพ์</button>
     </div>
   </div>
   ${setsSummary ? `<div class="total-bar">
-    <div class="total-card tc-sets"><div class="tc-label">📦 สั่งผลิต (ชุด)</div><div class="tc-value">${setsSummary}</div></div>
-    <div class="total-card tc-qty" ><div class="tc-label">🔢 รวมทั้งหมด (หน่วย)</div><div class="tc-value">${totalQty.toLocaleString()}</div></div>
+    <div class="total-card tc-sets"><div class="tc-label">สั่งผลิต (ชุด)</div><div class="tc-value">${setsSummary}</div></div>
+    <div class="total-card tc-qty" ><div class="tc-label">รวมทั้งหมด (หน่วย)</div><div class="tc-value">${totalQty.toLocaleString()}</div></div>
   </div>` : ""}
   <table style="width:100%;border-collapse:collapse;margin-bottom:16px;">
     <thead><tr style="background:#1e293b;color:#fff;font-size:12px;">
@@ -818,7 +818,7 @@ function crOpenWorkOrderPrint(o) {
       <td style="padding:10px 14px;border:1px solid #e2e8f0;"></td>
     </tr></tfoot>
   </table>
-  ${o.Note ? `<div class="note-box">💬 <b>หมายเหตุ:</b> ${escapeHtml(o.Note)}</div>` : ""}
+  ${o.Note ? `<div class="note-box"><b>หมายเหตุ:</b> ${escapeHtml(o.Note)}</div>` : ""}
   <div class="sign">
     <div class="sign-box">ผู้สั่งผลิต<br><br>( ${escapeHtml(personName(o.CreatedBy) || "...")} )</div>
     <div class="sign-box">ผู้ควบคุมการผลิต<br><br>( .......................... )</div>
@@ -851,15 +851,15 @@ async function crCheckBomMaterials() {
   });
   if (!items.length) {
     resultEl.style.display = "";
-    resultEl.innerHTML = `<div style="background:var(--sq-warn-bg);border:2px solid var(--sq-warn-bg);border-radius:12px;padding:12px 16px;font-size:13px;font-weight:700;color:var(--sq-high);">⚠️ กรุณาเพิ่มสินค้าและระบุจำนวนก่อน</div>`;
+    resultEl.innerHTML = `<div style="background:var(--sq-warn-bg);border:2px solid var(--sq-warn-bg);border-radius:12px;padding:12px 16px;font-size:13px;font-weight:700;color:var(--sq-high);">กรุณาเพิ่มสินค้าและระบุจำนวนก่อน</div>`;
     crWoLockButtons();
     return;
   }
   resultEl.style.display = "";
-  resultEl.innerHTML = `<div style="background:var(--sq-line-soft);border-radius:12px;padding:14px;font-size:13px;color:var(--sq-muted);font-weight:700;text-align:center;">⏳ กำลังคำนวณวัตถุดิบ...</div>`;
+  resultEl.innerHTML = `<div style="background:var(--sq-line-soft);border-radius:12px;padding:14px;font-size:13px;color:var(--sq-muted);font-weight:700;text-align:center;">กำลังคำนวณวัตถุดิบ...</div>`;
   const res = await crCallServer("calcWorkOrderMaterials", { items });
   if (!res.ok) {
-    resultEl.innerHTML = `<div style="background:var(--sq-crit-bg);border:2px solid var(--sq-crit);border-radius:12px;padding:12px 16px;font-size:13px;font-weight:700;color:var(--sq-crit);">❌ ${escapeHtml(res.message||"เกิดข้อผิดพลาด")}</div>`;
+    resultEl.innerHTML = `<div style="background:var(--sq-crit-bg);border:2px solid var(--sq-crit);border-radius:12px;padding:12px 16px;font-size:13px;font-weight:700;color:var(--sq-crit);">${escapeHtml(res.message||"เกิดข้อผิดพลาด")}</div>`;
     return;
   }
   const matsByFactory = res.materials || {};
@@ -868,12 +868,12 @@ async function crCheckBomMaterials() {
 
   let html = `<div style="border:2px solid ${hasShortage?"var(--sq-crit)":"var(--sq-accent)"};border-radius:16px;overflow:hidden;">
     <div style="background:${hasShortage?"var(--sq-crit-bg)":"var(--sq-accent-2)"};padding:12px 16px;font-size:14px;font-weight:900;color:${hasShortage?"var(--sq-crit)":"var(--sq-accent)"};">
-      ${hasShortage?"⚠️ มีวัตถุดิบไม่เพียงพอ — ตรวจสอบด้านล่าง":"✅ วัตถุดิบเพียงพอทั้งหมด"}
+      ${hasShortage?"มีวัตถุดิบไม่เพียงพอ — ตรวจสอบด้านล่าง":"วัตถุดิบเพียงพอทั้งหมด"}
     </div>`;
 
   Object.entries(matsByFactory).forEach(([fact, mats]) => {
     html += `<div style="padding:14px 16px;background:#fff;">
-      <div style="font-size:12px;font-weight:800;color:var(--sq-ink2);margin-bottom:10px;">🏭 ${escapeHtml(fact)}</div>
+      <div style="font-size:12px;font-weight:800;color:var(--sq-ink2);margin-bottom:10px;">${escapeHtml(fact)}</div>
       <div style="overflow-x:auto;"><table style="width:100%;border-collapse:collapse;font-size:12px;min-width:480px;">
         <thead><tr style="background:var(--sq-line-soft);color:var(--sq-ink2);font-size:12px;font-weight:800;">
           <th style="padding:8px 10px;text-align:left;">วัตถุดิบ</th>
@@ -895,8 +895,8 @@ async function crCheckBomMaterials() {
             <td style="padding:8px 10px;text-align:right;font-weight:900;color:${ok?"var(--sq-accent)":"var(--sq-crit)"};">${m.remaining.toLocaleString()} ${escapeHtml(m.unit)}</td>
             <td style="padding:8px 10px;text-align:center;">${dayBadge}</td>
             <td style="padding:8px 10px;text-align:center;">${ok
-              ? `<span style="background:var(--sq-accent-2);color:var(--sq-accent);border-radius:999px;padding:2px 9px;font-weight:800;font-size:12px;">✅ พอ</span>`
-              : `<span style="background:var(--sq-crit-bg);color:var(--sq-crit);border-radius:999px;padding:2px 9px;font-weight:800;font-size:12px;">❌ ขาด ${Math.abs(m.remaining).toLocaleString()}</span>`}
+              ? `<span style="background:var(--sq-accent-2);color:var(--sq-accent);border-radius:999px;padding:2px 9px;font-weight:800;font-size:12px;">พอ</span>`
+              : `<span style="background:var(--sq-crit-bg);color:var(--sq-crit);border-radius:999px;padding:2px 9px;font-weight:800;font-size:12px;">ขาด ${Math.abs(m.remaining).toLocaleString()}</span>`}
             </td>
           </tr>`;
         }).join("")}</tbody>
@@ -905,7 +905,7 @@ async function crCheckBomMaterials() {
 
   if (noBom.length > 0) {
     html += `<div style="background:var(--sq-high-bg);padding:10px 16px;font-size:12px;font-weight:700;color:var(--sq-high);border-top:1px solid var(--sq-high-bg);">
-      📋 ไม่พบ BOM: ${noBom.map(b=>escapeHtml(b)).join(", ")} — แจ้งหัวหน้า/แอดมินให้กำหนดที่แท็บ 📖 ข้อมูลอ้างอิง
+      ไม่พบ BOM: ${noBom.map(b=>escapeHtml(b)).join(", ")} — แจ้งหัวหน้า/แอดมินให้กำหนดที่แท็บ ข้อมูลอ้างอิง
     </div>`;
   }
   if (!Object.keys(matsByFactory).length && !noBom.length) {
@@ -951,7 +951,7 @@ function crSiAddRow() {
       <button onclick="this.closest('.cr-si-row').remove()" aria-label="ลบแถวนี้" style="position:absolute;top:6px;right:6px;background:none;border:none;font-size:18px;cursor:pointer;color:var(--sq-ink2);line-height:1;min-width:36px;min-height:36px;border-radius:8px;">✕</button>
 
       <div style="margin-bottom:10px;">
-        <label style="font-size:12px;font-weight:700;color:var(--sq-muted);display:block;margin-bottom:4px;">📦 สินค้า</label>
+        <label style="font-size:12px;font-weight:700;color:var(--sq-muted);display:block;margin-bottom:4px;">สินค้า</label>
         <select class="cr-si-product" aria-label="สินค้า" onchange="crSiOnProductChange(this)"
           style="width:100%;padding:10px 12px;border:1.5px solid var(--sq-line);border-radius:10px;font-size:14px;background:#fff;box-sizing:border-box;">
           <option value="">— เลือกสินค้า —</option>
@@ -961,13 +961,13 @@ function crSiAddRow() {
 
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:10px;">
         <div>
-          <label style="font-size:12px;font-weight:700;color:var(--sq-muted);display:block;margin-bottom:4px;">📅 MFG <span style="font-weight:400;opacity:.7;">(วันเดือนปี 6 หลัก)</span></label>
+          <label style="font-size:12px;font-weight:700;color:var(--sq-muted);display:block;margin-bottom:4px;">MFG <span style="font-weight:400;opacity:.7;">(วันเดือนปี 6 หลัก)</span></label>
           <input class="cr-si-mfg" aria-label="วันผลิต (MFG)" type="text" maxlength="6" inputmode="numeric" placeholder="เช่น 100426"
             oninput="this.value=this.value.replace(/\D/g,''); crSiAutoExp(this)"
             style="width:100%;padding:12px;border:1.5px solid var(--sq-line);border-radius:10px;font-size:20px;font-weight:900;text-align:center;letter-spacing:3px;box-sizing:border-box;">
         </div>
         <div>
-          <label style="font-size:12px;font-weight:700;color:var(--sq-high);display:block;margin-bottom:4px;">⚠️ EXP <span style="font-weight:400;opacity:.7;">(คำนวณอัตโนมัติ)</span></label>
+          <label style="font-size:12px;font-weight:700;color:var(--sq-high);display:block;margin-bottom:4px;">EXP <span style="font-weight:400;opacity:.7;">(คำนวณอัตโนมัติ)</span></label>
           <input class="cr-si-exp" aria-label="วันหมดอายุ (EXP)" type="text" maxlength="6" inputmode="numeric" placeholder="—" readonly
             style="width:100%;padding:12px;border:1.5px solid var(--sq-high-bg);border-radius:10px;font-size:20px;font-weight:900;text-align:center;letter-spacing:3px;background:var(--sq-high-bg);color:var(--sq-high);box-sizing:border-box;">
         </div>
@@ -975,7 +975,7 @@ function crSiAddRow() {
 
       <div style="display:grid;grid-template-columns:2fr 1fr;gap:10px;">
         <div>
-          <label style="font-size:12px;font-weight:700;color:var(--sq-muted);display:block;margin-bottom:4px;">🔢 จำนวน (ประมาณ)</label>
+          <label style="font-size:12px;font-weight:700;color:var(--sq-muted);display:block;margin-bottom:4px;">จำนวน (ประมาณ)</label>
           <input class="cr-si-qty" aria-label="จำนวน" type="number" min="0" value="" inputmode="numeric"
             style="width:100%;padding:12px;border:1.5px solid var(--sq-line);border-radius:10px;font-size:20px;font-weight:900;text-align:center;box-sizing:border-box;">
         </div>
@@ -1055,14 +1055,14 @@ async function crSiSubmit() {
   crSetStatus("crSiFormStatus","กำลังส่งรายการ...","");
   const res = await crCallServer("submitStockIn", { username: currentUser, items, note: document.getElementById("crSiNote").value.trim() });
   if (res.ok) {
-    crSetStatus("crSiFormStatus","✅ ส่งรายการแล้ว รอคนสั่งผลิตตรวจยอด ("+res.stockInID+")","ok");
-    showToast("📤 ส่งรายการแล้ว รหัส: "+res.stockInID);
+    crSetStatus("crSiFormStatus","ส่งรายการแล้ว รอคนสั่งผลิตตรวจยอด ("+res.stockInID+")","ok");
+    showToast("ส่งรายการแล้ว รหัส: "+res.stockInID);
     document.getElementById("crSiRows").innerHTML = "";
     document.getElementById("crSiNote").value = "";
     _siRowIdx = 0;
     crSiAddRow();
   } else {
-    crSetStatus("crSiFormStatus","❌ " + (res.message||"เกิดข้อผิดพลาด"),"err");
+    crSetStatus("crSiFormStatus","" + (res.message||"เกิดข้อผิดพลาด"),"err");
   }
 }
 
@@ -1073,10 +1073,10 @@ async function crSiLoadReviewList(filterStatus) {
   listEl.innerHTML = '<p style="text-align:center;color:var(--sq-muted);padding:20px;">กำลังโหลด...</p>';
   crSetStatus("crSiReviewStatus","","");
   const res = await crCallServer("getStockInList", { filterStatus: filterStatus || "" });
-  if (!res.ok) { listEl.innerHTML = `<p style="color:var(--sq-crit);text-align:center;padding:20px;">❌ ${escapeHtml(res.message||"")}</p>`; return; }
+  if (!res.ok) { listEl.innerHTML = `<p style="color:var(--sq-crit);text-align:center;padding:20px;">${escapeHtml(res.message||"")}</p>`; return; }
   const list = res.list || [];
   if (!list.length) {
-    listEl.innerHTML = `<p style="text-align:center;color:var(--sq-accent);padding:20px;font-weight:900;">${filterStatus==="รอตรวจยอด" ? "✅ ไม่มีรายการรอตรวจ" : "ยังไม่มีรายการ"}</p>`;
+    listEl.innerHTML = `<p style="text-align:center;color:var(--sq-accent);padding:20px;font-weight:900;">${filterStatus==="รอตรวจยอด" ? "ไม่มีรายการรอตรวจ" : "ยังไม่มีรายการ"}</p>`;
     return;
   }
   const statusBg = { "รอตรวจยอด":"var(--sq-high)","เข้าคลังแล้ว":"var(--sq-accent)","ยกเลิก":"var(--sq-muted)" };
@@ -1105,13 +1105,13 @@ async function crSiLoadReviewList(filterStatus) {
       <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:8px;margin-bottom:10px;">
         <div>
           <div style="font-size:15px;font-weight:900;color:var(--sq-ink);">${escapeHtml(si.StockInID)}</div>
-          <div style="font-size:12px;color:var(--sq-muted);">ส่งโดย: <b style="color:var(--sq-ink);">${escapeHtml(personName(si.SubmittedBy))}</b> &nbsp;|&nbsp; 🕐 ${si.SubmittedAtFmt||"-"}
+          <div style="font-size:12px;color:var(--sq-muted);">ส่งโดย: <b style="color:var(--sq-ink);">${escapeHtml(personName(si.SubmittedBy))}</b> &nbsp;|&nbsp; ${si.SubmittedAtFmt||"-"}
             ${si.ReviewedBy ? `&nbsp;|&nbsp; ตรวจโดย: <b>${escapeHtml(personName(si.ReviewedBy))}</b>` : ""}
           </div>
         </div>
         <span style="background:${statusBg[si.Status]||"var(--sq-muted)"};color:#fff;border-radius:999px;padding:3px 12px;font-size:12px;font-weight:900;">${escapeHtml(si.Status)}</span>
       </div>
-      ${si.Note ? `<div style="background:var(--sq-warn-bg);padding:8px 12px;border-radius:8px;font-size:12px;margin-bottom:10px;">💬 ${escapeHtml(si.Note)}</div>` : ""}
+      ${si.Note ? `<div style="background:var(--sq-warn-bg);padding:8px 12px;border-radius:8px;font-size:12px;margin-bottom:10px;">${escapeHtml(si.Note)}</div>` : ""}
       <div class="table-wrap" style="overflow-x:auto;margin-bottom:${isPending?"12px":"0"};">
         <table style="width:100%;border-collapse:collapse;min-width:320px;">
           <thead><tr style="background:var(--sq-ink);color:#fff;font-size:12px;">
@@ -1126,16 +1126,16 @@ async function crSiLoadReviewList(filterStatus) {
       ${isPending ? `
       <div style="display:flex;gap:10px;flex-wrap:wrap;">
         <button class="cr-btn btn-primary" style="flex:1;min-width:140px;padding:12px;font-size:14px;font-weight:900;background:var(--sq-accent);"
-          onclick="crSiApprove('${escapeJsAttr(si.StockInID)}')">✅ ยืนยันเข้าคลัง</button>
+          onclick="crSiApprove('${escapeJsAttr(si.StockInID)}')">ยืนยันเข้าคลัง</button>
         <button class="cr-btn btn-light" style="flex:1;min-width:100px;padding:12px;font-size:13px;color:var(--sq-crit);border:2px solid var(--sq-crit);"
-          onclick="crSiCancel('${escapeJsAttr(si.StockInID)}')">❌ ยกเลิก</button>
+          onclick="crSiCancel('${escapeJsAttr(si.StockInID)}')">ยกเลิก</button>
       </div>` : ""}
     </div>`;
   }).join("");
 }
 
 async function crSiApprove(siId) {
-  if (!await crShowModal("confirm","✅ ยืนยันเข้าคลัง",`ตรวจยอดจริงและยืนยันให้ยอดเข้าคลังห้องเย็น?`)) return;
+  if (!await crShowModal("confirm","ยืนยันเข้าคลัง",`ตรวจยอดจริงและยืนยันให้ยอดเข้าคลังห้องเย็น?`)) return;
   // เก็บ qty ที่แก้ไขจาก input
   const card = document.getElementById("cr-si-card-" + siId);
   const qtyInputs = card ? card.querySelectorAll(".cr-si-review-qty") : [];
@@ -1158,26 +1158,26 @@ async function crSiApprove(siId) {
   crSetStatus("crSiReviewStatus","กำลังยืนยัน...","");
   const res = await crCallServer("reviewStockIn", { username: currentUser, stockInID: siId, action:"approve", items: reviewedItems });
   if (res.ok) {
-    showToast("✅ ยืนยันเข้าคลังเรียบร้อย");
-    if (res.warnings?.length) showToast("⚠️ " + res.warnings.join(", "),"warn");
+    showToast("ยืนยันเข้าคลังเรียบร้อย");
+    if (res.warnings?.length) showToast("" + res.warnings.join(", "),"warn");
     crSiLoadReviewList("รอตรวจยอด");
   } else {
-    crSetStatus("crSiReviewStatus","❌ " + (res.message||"เกิดข้อผิดพลาด"),"err");
+    crSetStatus("crSiReviewStatus","" + (res.message||"เกิดข้อผิดพลาด"),"err");
   }
 }
 
 async function crSiCancel(siId) {
-  if (!await crShowModal("confirm","❌ ยกเลิกรายการ",`ยกเลิกรายการ ${siId}?`)) return;
+  if (!await crShowModal("confirm","ยกเลิกรายการ",`ยกเลิกรายการ ${siId}?`)) return;
   const res = await crCallServer("reviewStockIn", { username: currentUser, stockInID: siId, action:"cancel" });
   if (res.ok) { showToast("ยกเลิกรายการแล้ว","warn"); crSiLoadReviewList("รอตรวจยอด"); }
-  else crSetStatus("crSiReviewStatus","❌ " + (res.message||""),"err");
+  else crSetStatus("crSiReviewStatus","" + (res.message||""),"err");
 }
 
 // ── Modal ──
 function crShowModal(type, title, msg) {
   return new Promise(resolve => {
     const overlay = $$cr("crModal");
-    $$cr("crModalTitle").innerText = title;
+    $$cr("crModalTitle").innerText = uiNoEmoji(title);
     $$cr("crModalMessage").innerHTML = msg.replace(/\n/g,"<br>");
     const input = $$cr("crModalInput");
     if (type === "prompt") { input.style.display = "block"; input.value = ""; setTimeout(() => input.focus(), 100); }
@@ -1194,12 +1194,11 @@ function crShowModal(type, title, msg) {
 function crGoRegister(barcode) {
   if (barcode) $$cr("crNewBarcode").value = barcode;
   crSwitchTab("newproduct");
-  crSetStatus("crNewProductStatus", "กรอกข้อมูลสินค้าใหม่ด้านล่าง 👇", "warn");
+  crSetStatus("crNewProductStatus", "กรอกข้อมูลสินค้าใหม่ด้านล่าง ", "warn");
 }
 function crSetStatus(id, msg, type = "ok") {
   const el = $$cr(id); if (!el) return;
-  const icon = type === "warn" ? "⚠️" : type === "err" ? "❌" : "✅";
-  el.innerHTML = `<div>${icon}</div><div>${msg}</div>`;
+  el.innerHTML = `<div>${uiSign(type === "warn" ? "warn" : type === "err" ? "no" : "ok", 20)}</div><div>${uiNoEmoji(msg)}</div>`;
   el.className = "cr-status " + type;
 }
 function crClearStatus(id) { const el = $$cr(id); if (el) { el.innerHTML = ""; el.className = "cr-status"; } }
@@ -1216,7 +1215,7 @@ function crRenderLotBreakdown(rows) {
   let html = `<div style="margin-bottom:6px;font-weight:700;border-bottom:1px solid rgba(255,255,255,.2);padding-bottom:4px;">แยกตามรอบวันที่ผลิต:</div>`;
   html += rows.map(r => `
     <div style="display:flex;justify-content:space-between;align-items:center;margin-top:4px;">
-      <span>🔸 MFG ${isoToDdmmyy(r.MFG)} (EXP ${isoToDdmmyy(r.EXP)})</span>
+      <span>MFG ${isoToDdmmyy(r.MFG)} (EXP ${isoToDdmmyy(r.EXP)})</span>
       <div><span style="margin-right:8px;"><b>${r.Qty}</b> ${unit}</span>
         <button class="cr-btn btn-primary" style="padding:4px 8px;font-size:12px;border-radius:4px;" onclick="crSelectLot('${escapeJsAttr(String(r.MFG||""))}','${escapeJsAttr(String(r.EXP||""))}',${Number(r.Qty)||0})">เลือก</button>
       </div>
@@ -1243,7 +1242,7 @@ async function crLookupBarcode() {
     // พิมพ์ชื่อผิดนิดเดียวก็ถูกพาไปสร้างสินค้าใหม่ เสี่ยงขึ้นทะเบียนซ้ำ (QA M12 2026-10-10)
     const bc = term.replace(/\s+/g, "");
     crSetStatus("crMainStatus", `ไม่พบ "${escapeHtml(term)}" ในระบบ — ตรวจตัวสะกด หรือเลือกจากรายการสินค้า
-      <div style="margin-top:8px;"><button type="button" class="sq-btn sq-btn-sm" onclick="crGoRegister('${escapeJsAttr(/^\d+$/.test(bc) ? bc : "")}')">➕ ขึ้นทะเบียนสินค้าใหม่</button></div>`, "warn");
+      <div style="margin-top:8px;"><button type="button" class="sq-btn sq-btn-sm" onclick="crGoRegister('${escapeJsAttr(/^\d+$/.test(bc) ? bc : "")}')">ขึ้นทะเบียนสินค้าใหม่</button></div>`, "warn");
     return;
   }
   crCurrentProduct = res.product;
@@ -1275,7 +1274,7 @@ async function crLoadOverview(opts = {}) {
     res = cached;      // offline → ใช้ข้อมูลเก่า
     fromCache = true;
     if (!res) return;
-    showToast("⏳ แสดงข้อมูลเก่า (เชื่อมต่อไม่ได้)", "warn", 4000);
+    showToast("แสดงข้อมูลเก่า (เชื่อมต่อไม่ได้)", "warn", 4000);
   }
   if (!res || !res.ok) return;
   if (!fromCache) cacheSet("cr_overview", res);   // เก็บเฉพาะข้อมูลสด
@@ -1303,14 +1302,14 @@ function _crRenderOverview(res, stale) {
     $$cr("crSumStale").textContent = sl.length;
     $$cr("crSumStaleLbl").textContent = "ไม่อัปเดตเกิน " + sd + " วัน";
     $$cr("crStaleWrap").style.display = sd ? "" : "none";
-    $$cr("crStaleTitle").textContent = "⏰ ไม่มีการอัปเดตเกิน " + sd + " วัน — ช่วยนับยืนยัน (" + sl.length + " ล็อต)";
+    $$cr("crStaleTitle").textContent = "ไม่มีการอัปเดตเกิน " + sd + " วัน — ช่วยนับยืนยัน (" + sl.length + " ล็อต)";
     $$cr("crStaleSendBtn").style.display = (sl.length && typeof planCanManage === "function" && planCanManage()) ? "" : "none";
     $$cr("crStaleBody").innerHTML = sl.length ? sl.map(x =>
       `<tr><td data-label="ชื่อ">${escapeHtml(x.ProductName)}</td><td data-label="MFG"><b>${isoToDdmmyy(x.MFG)}</b></td>
         <td data-label="อัปเดตล่าสุด">${fmtD(x.LastUpdate)}</td>
         <td data-label="ไม่อัปเดต(วัน)" style="color:var(--sq-high);font-weight:700;">${x.IdleDays == null ? "ไม่เคยบันทึก" : x.IdleDays}</td>
         <td data-label="จำนวน"><b>${x.Qty}</b> ${escapeHtml(x.Unit || "")}</td></tr>`).join("")
-      : '<tr><td colspan="5" style="text-align:center;padding:14px;color:var(--muted);">✅ ทุกล็อตมีการอัปเดตภายใน ' + sd + ' วัน</td></tr>';
+      : '<tr><td colspan="5" style="text-align:center;padding:14px;color:var(--muted);">ทุกล็อตมีการอัปเดตภายใน ' + sd + ' วัน</td></tr>';
   }
 
   $$cr("crExpiredBody").innerHTML = res.expiredLots.map(x =>
@@ -1341,7 +1340,7 @@ const CR_LOTS_PER_PAGE = 50;
 
 function crRenderLotRow(r, i) {
   return `<tr id="crRow-${i}" onclick="crRowClick(event,${i})" style="cursor:pointer;">
-    <td data-label="☑" style="text-align:center;" onclick="event.stopPropagation()">
+    <td data-label="" style="text-align:center;" onclick="event.stopPropagation()">
       <input type="checkbox" class="cr-row-chk" data-idx="${i}"
         onchange="crToggleRow(${i}, this.checked)"
         style="width:17px;height:17px;cursor:pointer;accent-color:var(--primary);">
@@ -1351,8 +1350,8 @@ function crRenderLotRow(r, i) {
     <td data-label="EXP">${isoToDdmmyy(r.EXP)}</td>
     <td data-label="จำนวน" style="color:var(--primary);font-weight:700;">${r.Qty} <span style="font-size:12px;color:var(--text);font-weight:normal;">${escapeHtml(r.Unit)}</span></td>
     <td data-label="เหลือ(วัน)">${r.ExpireDays}</td>
-    <td data-label="สถานะ"><span class="pill ${r.ExpireStatus.includes('ปกติ') ? 'pill-ok' : r.ExpireStatus.includes('ใกล้') ? 'pill-warn' : 'pill-danger'}">${r.ExpireStatus}</span>${r.Stale ? ` <span class="pill pill-stale" title="ไม่มีใครนับ/เบิก/รับ ล็อตนี้เกินจำนวนวันที่ตั้ง — ยอดอาจไม่ตรงของจริง">⏰ ${r.IdleDays == null ? "ไม่เคยบันทึก" : "ไม่อัปเดต " + r.IdleDays + " วัน"}</span>` : ""}</td>
-    <td data-label="QC">${r.QcShelfLifeStatus}</td>
+    <td data-label="สถานะ"><span class="badge-status ${r.ExpireStatus.includes('ปกติ') ? '' : r.ExpireStatus.includes('ใกล้') ? 'warn' : 'crit'}">${uiSign(r.ExpireStatus.includes('ปกติ') ? 'ok' : r.ExpireStatus.includes('ใกล้') ? 'warn' : 'no', 18)}<span>${escapeHtml(r.ExpireStatus)}</span></span>${r.Stale ? ` <span class="pill pill-stale" title="ไม่มีใครนับ/เบิก/รับ ล็อตนี้เกินจำนวนวันที่ตั้ง — ยอดอาจไม่ตรงของจริง">${uiSign("must", 14)}${r.IdleDays == null ? "ไม่เคยบันทึก" : "ไม่อัปเดต " + r.IdleDays + " วัน"}</span>` : ""}</td>
+    <td data-label="QC"><span style="display:inline-flex;align-items:center;gap:5px;">${uiSign(/ผ่าน/.test(r.QcShelfLifeStatus) ? "ok" : /ใกล้/.test(r.QcShelfLifeStatus) ? "warn" : "no", 16)}${escapeHtml(uiNoEmoji(r.QcShelfLifeStatus))}</span></td>
   </tr>`;
 }
 
@@ -1447,9 +1446,9 @@ async function crBulkRemove() {
   if (crSelectedRows.size === 0) { alert("กรุณาเลือกสินค้าก่อน"); return; }
   const indices = [...crSelectedRows].sort((a,b) => b - a); // ลบจากหลังไปหน้า
   const names   = indices.map(i => `• ${window.crAllLotsData[i]?.ProductName} (MFG: ${isoToDdmmyy(window.crAllLotsData[i]?.MFG)})`).join("\n");
-  const reason  = window.prompt(`🗑️ นำสินค้าออก ${indices.length} รายการ\n\n${names}\n\nกรุณาระบุเหตุผล:`);
+  const reason  = window.prompt(`นำสินค้าออก ${indices.length} รายการ\n\n${names}\n\nกรุณาระบุเหตุผล:`);
   if (!reason || !reason.trim()) return;
-  const conf = window.confirm(`ยืนยันนำออก ${indices.length} รายการ?\nเหตุผล: ${reason}\n\n⚠️ ยอดจะถูกตั้งเป็น 0 ทั้งหมด`);
+  const conf = window.confirm(`ยืนยันนำออก ${indices.length} รายการ?\nเหตุผล: ${reason}\n\nยอดจะถูกตั้งเป็น 0 ทั้งหมด`);
   if (!conf) return;
   const emp = ($$cr("crEmployee")?.value?.trim()) || currentUser;
   let ok = 0, fail = 0;
@@ -1462,7 +1461,7 @@ async function crBulkRemove() {
     } catch(e) { fail++; }
   }
   if (navigator.vibrate) navigator.vibrate([100,50,100]);
-  showToast(fail === 0 ? `✅ นำออก ${ok} รายการเรียบร้อย` : `✅ ${ok} รายการ / ❌ ${fail} รายการผิดพลาด`);
+  showToast(fail === 0 ? `นำออก ${ok} รายการเรียบร้อย` : `${ok} รายการ / ${fail} รายการผิดพลาด`);
   crSelectedRows.clear();
   crLoadOverview();
 }
@@ -1488,20 +1487,20 @@ async function crAskClearGlobal(i) {
     }
     // ใช้ native prompt/confirm ที่ทำงานได้ทุกเบราว์เซอร์
     const reason = window.prompt(
-      `🗑️ นำสินค้าออก\nสินค้า: ${row.ProductName}\nMFG: ${isoToDdmmyy(row.MFG)}\n\nกรุณาระบุเหตุผล:`
+      `นำสินค้าออก\nสินค้า: ${row.ProductName}\nMFG: ${isoToDdmmyy(row.MFG)}\n\nกรุณาระบุเหตุผล:`
     );
     if (!reason || !reason.trim()) return;
     const conf = window.confirm(
-      `ยืนยันการนำออก?\n\nสินค้า: ${row.ProductName}\nMFG: ${isoToDdmmyy(row.MFG)}\nเหตุผล: ${reason}\n\n⚠️ ยอดคงเหลือจะถูกตั้งเป็น 0`
+      `ยืนยันการนำออก?\n\nสินค้า: ${row.ProductName}\nMFG: ${isoToDdmmyy(row.MFG)}\nเหตุผล: ${reason}\n\nยอดคงเหลือจะถูกตั้งเป็น 0`
     );
     if (conf) {
       const res = await crCallServer("clearLotStock",{ barcode:row.Barcode, mfg:row.MFG, reason: reason.trim(), employeeName:emp });
       if (res?.ok) {
         if (navigator.vibrate) navigator.vibrate([100,50,100]);
         if (res.tgSent === false && res.tgError) {
-          showToast("✅ นำออกแล้ว ⚠️ Telegram: " + res.tgError, "warn");
+          showToast("นำออกแล้ว Telegram: " + res.tgError, "warn");
         } else {
-          showToast("✅ นำสินค้าออกเรียบร้อย");
+          showToast("นำสินค้าออกเรียบร้อย");
         }
         crLoadOverview();
       } else {
@@ -1516,19 +1515,19 @@ async function crAskClearGlobal(i) {
 
 // ── Auto EXP ──
 function crAutoExp(mfgStr) {
-  if (!/^\d{6}$/.test(mfgStr)) { crSetStatus("crMainStatus","❌ วันผลิตต้องเป็นตัวเลข 6 หลัก","err"); $$cr("crExp").value = ""; return; }
+  if (!/^\d{6}$/.test(mfgStr)) { crSetStatus("crMainStatus","วันผลิตต้องเป็นตัวเลข 6 หลัก","err"); $$cr("crExp").value = ""; return; }
   const dd = parseInt(mfgStr.slice(0,2)), mm = parseInt(mfgStr.slice(2,4)), yy = parseInt(mfgStr.slice(4,6)), yyyy = 2000+yy;
   const d = new Date(yyyy, mm-1, dd);
-  if (isNaN(d.getTime())) { crSetStatus("crMainStatus","❌ วันที่ไม่ถูกต้อง","err"); $$cr("crExp").value=""; return; }
+  if (isNaN(d.getTime())) { crSetStatus("crMainStatus","วันที่ไม่ถูกต้อง","err"); $$cr("crExp").value=""; return; }
   if (!crCurrentProduct) {
-    crSetStatus("crMainStatus","⚠️ กรุณาเลือกสินค้าก่อน จึงจะคำนวณ EXP อัตโนมัติได้","warn");
+    crSetStatus("crMainStatus","กรุณาเลือกสินค้าก่อน จึงจะคำนวณ EXP อัตโนมัติได้","warn");
     return;
   }
   const sl = parseInt(crCurrentProduct.StandardShelfLifeDays);
-  if (!sl || sl <= 0) { crSetStatus("crMainStatus","⚠️ สินค้านี้ไม่ได้ตั้งอายุมาตรฐาน กรุณาระบุ EXP เอง","warn"); return; }
+  if (!sl || sl <= 0) { crSetStatus("crMainStatus","สินค้านี้ไม่ได้ตั้งอายุมาตรฐาน กรุณาระบุ EXP เอง","warn"); return; }
   d.setDate(d.getDate() + sl);
   $$cr("crExp").value = String(d.getDate()).padStart(2,"0") + String(d.getMonth()+1).padStart(2,"0") + String(d.getFullYear()).slice(2);
-  crSetStatus("crMainStatus",`✅ คำนวณ EXP อัตโนมัติ (+${sl} วัน)`,"ok");
+  crSetStatus("crMainStatus",`คำนวณ EXP อัตโนมัติ (+${sl} วัน)`,"ok");
 }
 
 function crEvalExpr(el) {
@@ -1541,7 +1540,7 @@ function crSetMode(m) {
   crMode = m;
   [["crModeIn", "in"], ["crModeCount", "count"]].forEach(([id, k]) => { const b = $$cr(id); if (b) b.setAttribute("aria-pressed", String(m === k)); });
   const lb = $$cr("crNewQtyLabel");
-  if (lb) lb.textContent = m === "in" ? "📦 จำนวนที่รับเข้า *" : m === "count" ? "📦 ยอดที่นับได้ทั้งล็อต *" : "📦 จำนวน *";
+  if (lb) lb.textContent = m === "in" ? "จำนวนที่รับเข้า *" : m === "count" ? "ยอดที่นับได้ทั้งล็อต *" : "จำนวน *";
   crQtyPreview();
 }
 function crQtyPreview() {
@@ -1554,15 +1553,15 @@ function crQtyPreview() {
   if (raw && /^[0-9+\-*/().\s]+$/.test(raw)) { try { q = Math.round(new Function("return " + raw)() * 100) / 100; } catch (e) {} }
   const lot = mfg.length === 6 ? crLastBalances.find(b => isoToDdmmyy(b.MFG) === mfg) : null;
   const have = lot ? Number(lot.Qty) || 0 : 0, n = v => Number(v).toLocaleString("en-US");
-  if (!crMode) { out.textContent = "เลือกก่อน: 📥 รับเข้า (บวกเพิ่ม) หรือ 📊 นับ (ยอดทั้งล็อต)"; btn.textContent = "✅ บันทึกข้อมูล"; return; }
-  if (isNaN(q)) { out.textContent = lot ? "ล็อต " + mfg + " ในระบบมี " + n(have) + " " + unit : (mfg.length === 6 ? "ล็อต " + mfg + " ยังไม่มีในระบบ (ล็อตใหม่)" : ""); btn.textContent = crMode === "in" ? "📥 รับเข้า" : "📊 บันทึกยอดนับ"; return; }
+  if (!crMode) { out.textContent = "เลือกก่อน: รับเข้า (บวกเพิ่ม) หรือ นับ (ยอดทั้งล็อต)"; btn.textContent = "บันทึกข้อมูล"; return; }
+  if (isNaN(q)) { out.textContent = lot ? "ล็อต " + mfg + " ในระบบมี " + n(have) + " " + unit : (mfg.length === 6 ? "ล็อต " + mfg + " ยังไม่มีในระบบ (ล็อตใหม่)" : ""); btn.textContent = crMode === "in" ? "รับเข้า" : "บันทึกยอดนับ"; return; }
   if (crMode === "in") {
     out.textContent = lot ? "ล็อต " + mfg + ": ในระบบ " + n(have) + " → หลังรับเข้า " + n(have + q) + " " + unit : "ล็อตใหม่ " + mfg + " → " + n(q) + " " + unit;
-    btn.textContent = "📥 รับเข้า " + n(q) + " " + unit;
+    btn.textContent = "รับเข้า " + n(q) + " " + unit;
   } else {
     const d = Math.round((q - have) * 100) / 100;
     out.textContent = lot ? "ล็อต " + mfg + ": ในระบบ " + n(have) + " → นับได้ " + n(q) + " " + unit + (d ? " (" + (d > 0 ? "+" : "−") + n(Math.abs(d)) + ")" : " (ตรงกับระบบ)") : "ล็อต " + mfg + " ยังไม่มีในระบบ → สร้างใหม่ " + n(q) + " " + unit;
-    btn.textContent = "📊 บันทึกยอดนับ " + n(q) + " " + unit;
+    btn.textContent = "บันทึกยอดนับ " + n(q) + " " + unit;
   }
 }
 
@@ -1570,7 +1569,7 @@ function crQtyPreview() {
 async function crSaveCount() {
   crEvalExpr($$cr("crNewQty"));
   if (!crMode) {
-    await crShowModal("alert", "เลือกก่อน", "กด 📥 รับเข้า (บวกเพิ่มเข้าล็อต) หรือ 📊 นับ (ยอดที่นับได้ทั้งล็อต) ก่อนบันทึก");
+    await crShowModal("alert", "เลือกก่อน", "กด รับเข้า (บวกเพิ่มเข้าล็อต) หรือ นับ (ยอดที่นับได้ทั้งล็อต) ก่อนบันทึก");
     $$cr("crModeIn")?.focus(); return;
   }
   const pl = {
@@ -1620,7 +1619,7 @@ async function crSaveCount() {
   // Poka-Yoke: เตือนเมื่อจำนวนใหม่ต่างจากเดิมมาก (> 5 เท่า)
   const curTotal = Number(($$cr("crTotalQty")?.textContent || "0").replace(/,/g,"")) || 0;
   if (crMode === "count" && curTotal > 0 && qty > curTotal * 5) {
-    if (!confirm(`⚠️ ยอดใหม่ (${qty}) สูงกว่ายอดปัจจุบันรวม (${curTotal}) มาก\n\nแน่ใจว่าถูกต้อง?`)) return;
+    if (!confirm(`ยอดใหม่ (${qty}) สูงกว่ายอดปัจจุบันรวม (${curTotal}) มาก\n\nแน่ใจว่าถูกต้อง?`)) return;
   }
   // รับเข้า = บวกเพิ่มในฐานข้อมูล (mode add) · opId กันบวกซ้ำถ้าคำขอเดียวกันถูกส่งซ้ำ
   if (crMode === "in") { pl.mode = "add"; pl.opId = (window.crypto && crypto.randomUUID) ? crypto.randomUUID() : "cr-" + Date.now() + "-" + Math.random().toString(36).slice(2); }
@@ -1628,12 +1627,12 @@ async function crSaveCount() {
   const res = await crCallServer("saveOrUpdateCount", pl);
   if (res.ok) {
     if (navigator.vibrate) navigator.vibrate([100,50,100]);
-    showToast(crMode === "in" ? "📥 รับเข้า " + qty + " " + unitTxt + " เรียบร้อย" : "📊 บันทึกยอดนับ " + qty + " " + unitTxt + " เรียบร้อย");
+    showToast(crMode === "in" ? "รับเข้า " + qty + " " + unitTxt + " เรียบร้อย" : "บันทึกยอดนับ " + qty + " " + unitTxt + " เรียบร้อย");
     const bc = $$cr("crBarcode").value.trim();
     crClearAll(); $$cr("crBarcode").value = bc; crLookupBarcode(); crLoadOverview({ silent: true });
   } else if (!res.needLogin) {
     // crShowModal ใส่ข้อความเป็น HTML → escape ข้อความจากหลังบ้าน (อาจมีชื่อสินค้าที่ผู้ใช้พิมพ์)
-    await crShowModal("alert", "บันทึกไม่สำเร็จ ❌", escapeHtml(res.message || "ระบบไม่รับรายการนี้") + "\n\nยอดในระบบยังไม่เปลี่ยน — แก้แล้วกดบันทึกอีกครั้ง");
+    await crShowModal("alert", "บันทึกไม่สำเร็จ ", escapeHtml(res.message || "ระบบไม่รับรายการนี้") + "\n\nยอดในระบบยังไม่เปลี่ยน — แก้แล้วกดบันทึกอีกครั้ง");
   }
 }
 
@@ -1658,9 +1657,9 @@ async function crSaveNewProduct() {
 let crEditProductCache = []; // cache รายการสินค้าทั้งหมด
 
 async function crLoadEditProductList() {
-  crSetStatus("crEditProductStatus","⏳ กำลังโหลดรายการสินค้า...","");
+  crSetStatus("crEditProductStatus","กำลังโหลดรายการสินค้า...","");
   const res = await crCallServer("getColdRoomProducts", {});
-  if (!res.ok) { crSetStatus("crEditProductStatus","❌ โหลดไม่ได้ กรุณาลองใหม่","err"); return; }
+  if (!res.ok) { crSetStatus("crEditProductStatus","โหลดไม่ได้ กรุณาลองใหม่","err"); return; }
   crEditProductCache = res.products || [];
   const sel = document.getElementById("crEditProductSelect");
   sel.innerHTML = `<option value="">-- เลือกสินค้า (${crEditProductCache.length} รายการ) --</option>`;
@@ -1672,7 +1671,7 @@ async function crLoadEditProductList() {
     sel.appendChild(opt);
   });
   crClearStatus("crEditProductStatus");
-  if (crEditProductCache.length === 0) crSetStatus("crEditProductStatus","⚠️ ยังไม่มีสินค้าในระบบ","warn");
+  if (crEditProductCache.length === 0) crSetStatus("crEditProductStatus","ยังไม่มีสินค้าในระบบ","warn");
 }
 
 function crSelectEditProduct() {
@@ -1682,7 +1681,7 @@ function crSelectEditProduct() {
   if (!barcode) { fields.style.display = "none"; return; }
   const prod = crEditProductCache.find(p => String(p.Barcode) === String(barcode));
   if (!prod) {
-    crSetStatus("crEditProductStatus","❌ ไม่พบข้อมูลสินค้า กรุณากด 'โหลดรายการ' ใหม่","err");
+    crSetStatus("crEditProductStatus","ไม่พบข้อมูลสินค้า กรุณากด 'โหลดรายการ' ใหม่","err");
     return;
   }
 
@@ -1705,7 +1704,7 @@ function crSelectEditProduct() {
   fields.style.display = "block";
   crClearStatus("crEditProductStatus");
   } catch(e) {
-    crSetStatus("crEditProductStatus","❌ เกิดข้อผิดพลาด: " + netErrorText(e),"err");
+    crSetStatus("crEditProductStatus","เกิดข้อผิดพลาด: " + netErrorText(e),"err");
   }
 }
 
@@ -1714,7 +1713,7 @@ async function crOpenEditProduct(barcode) {
   crSwitchTab("editproduct");
   if (crEditProductCache.length === 0) await crLoadEditProductList();
   const prod = crEditProductCache.find(p => String(p.Barcode) === String(barcode));
-  if (!prod) { crSetStatus("crEditProductStatus","❌ ไม่พบสินค้านี้ในรายการ","err"); return; }
+  if (!prod) { crSetStatus("crEditProductStatus","ไม่พบสินค้านี้ในรายการ","err"); return; }
   const sel = document.getElementById("crEditProductSelect");
   sel.value = String(barcode);
   crSelectEditProduct();
@@ -1744,11 +1743,11 @@ async function crSubmitEditProduct() {
     setName:               document.getElementById("crEditSetName").value.trim(),
     unitsPerSet:           Number(document.getElementById("crEditUnitsPerSet").value) || 1
   };
-  if (!pl.barcode || !pl.productName) { crSetStatus("crEditProductStatus","❌ กรุณากรอกชื่อสินค้า","err"); return; }
-  crSetStatus("crEditProductStatus","⏳ กำลังบันทึก...","");
+  if (!pl.barcode || !pl.productName) { crSetStatus("crEditProductStatus","กรุณากรอกชื่อสินค้า","err"); return; }
+  crSetStatus("crEditProductStatus","กำลังบันทึก...","");
   const res = await crCallServer("updateProduct", pl);
   if (res.ok) {
-    showToast("✅ แก้ไขข้อมูลสินค้าเรียบร้อย");
+    showToast("แก้ไขข้อมูลสินค้าเรียบร้อย");
     crClearStatus("crEditProductStatus");
     // อัปเดต cache ด้วย
     const idx = crEditProductCache.findIndex(p => String(p.Barcode) === String(pl.barcode));
@@ -1769,7 +1768,7 @@ async function crSubmitEditProduct() {
     }
     crLoadOverview();
   } else {
-    crSetStatus("crEditProductStatus","❌ "+(res.message||"เกิดข้อผิดพลาด"),"err");
+    crSetStatus("crEditProductStatus",""+(res.message||"เกิดข้อผิดพลาด"),"err");
   }
 }
 
@@ -1808,7 +1807,7 @@ async function crLoadProductDropdown() {
   }
   if (!products) return;
   const sorted = [...products].sort((a, b) => String(a.ProductName||"").localeCompare(String(b.ProductName||""), "th"));
-  sel.innerHTML = '<option value="">🔍 หรือเลือกจากรายการสินค้าทั้งหมด...</option>' +
+  sel.innerHTML = '<option value="">หรือเลือกจากรายการสินค้าทั้งหมด...</option>' +
     sorted.map(p => `<option value="${escapeAttr(String(p.Barcode||""))}">${escapeHtml(String(p.ProductName||""))}</option>`).join("");
 }
 
@@ -1830,7 +1829,7 @@ function crExport(format) {
     showToast("ดาวน์โหลด CSV เรียบร้อย");
   } else {
     const w = window.open("","","width=900,height=600");
-    w.document.write(`<!DOCTYPE html><html><head><title>รายงาน</title><style>@import url('${fontCssUrl()}');body{font-family:Sarabun,sans-serif;padding:20px}table{width:100%;border-collapse:collapse;font-size:14px}th,td{border:1px solid #5b6e63;padding:8px;text-align:left}th{background:#ebf0ec;font-weight:700}.hd{display:flex;align-items:center;gap:14px;border-bottom:2px solid #16241b;padding-bottom:10px;margin-bottom:12px}</style></head><body><div class="hd">${logoImgTag(44)}<div><h2 style="margin:0">รายงานสต๊อกคงเหลือ ❄️ SQF</h2><p style="margin:2px 0 0;font-size:12px;color:#5b6e63">อัปเดต: ${new Date().toLocaleString("th-TH")}</p></div></div><table><thead><tr><th>ชื่อสินค้า</th><th>MFG</th><th>จำนวน</th><th>เหลือ(วัน)</th><th>สถานะ</th><th>QC</th></tr></thead><tbody>${sorted.map(r=>`<tr><td>${escapeHtml(r.ProductName)}</td><td>${isoToDdmmyy(r.MFG)}</td><td>${r.Qty} ${escapeHtml(r.Unit)}</td><td>${r.ExpireDays}</td><td>${r.ExpireStatus}</td><td>${r.QcShelfLifeStatus}</td></tr>`).join("")}</tbody></table></body></html>`);
+    w.document.write(`<!DOCTYPE html><html><head><title>รายงาน</title><style>@import url('${fontCssUrl()}');body{font-family:Sarabun,sans-serif;padding:20px}table{width:100%;border-collapse:collapse;font-size:14px}th,td{border:1px solid #5b6e63;padding:8px;text-align:left}th{background:#ebf0ec;font-weight:700}.hd{display:flex;align-items:center;gap:14px;border-bottom:2px solid #16241b;padding-bottom:10px;margin-bottom:12px}</style></head><body><div class="hd">${logoImgTag(44)}<div><h2 style="margin:0">รายงานสต๊อกคงเหลือ SQF</h2><p style="margin:2px 0 0;font-size:12px;color:#5b6e63">อัปเดต: ${new Date().toLocaleString("th-TH")}</p></div></div><table><thead><tr><th>ชื่อสินค้า</th><th>MFG</th><th>จำนวน</th><th>เหลือ(วัน)</th><th>สถานะ</th><th>QC</th></tr></thead><tbody>${sorted.map(r=>`<tr><td>${escapeHtml(r.ProductName)}</td><td>${isoToDdmmyy(r.MFG)}</td><td>${r.Qty} ${escapeHtml(r.Unit)}</td><td>${r.ExpireDays}</td><td>${r.ExpireStatus}</td><td>${escapeHtml(uiNoEmoji(r.QcShelfLifeStatus))}</td></tr>`).join("")}</tbody></table></body></html>`);
     w.document.close(); setTimeout(()=>{ w.focus(); w.print(); },500);
   }
 }
@@ -1939,7 +1938,7 @@ function initColdroom() {
     (item) => {
       newBarcodeEl.value = item.value;
       $$cr("crNewName").value = "";
-      showToast(`⚠️ "${item.label}" มีในระบบแล้ว — ไปที่แก้ไขสินค้าแทน`,"warn");
+      showToast(`"${item.label}" มีในระบบแล้ว — ไปที่แก้ไขสินค้าแทน`,"warn");
       crSwitchTab("editproduct");
       crOpenEditProduct(item.value);
     }

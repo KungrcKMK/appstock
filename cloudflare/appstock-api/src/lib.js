@@ -179,12 +179,15 @@ export async function kvPut(c, k, v, ttlSec) {
     k, String(v == null ? "" : v), ttlSec ? Date.now() + ttlSec * 1000 : 0);
 }
 export async function kvDel(c, k) { await run(c, "DELETE FROM kv WHERE k = ?", k); }
-/** จองงาน: ใครจองได้ก่อนทำ (อะตอมมิก) — กันงานตามเวลาทำซ้ำ */
+/** จองงาน: ใครจองได้ก่อนทำ (อะตอมมิก) — กันงานตามเวลาทำซ้ำ · คืนรหัสการจอง (ใช้กับ release) หรือ "" ถ้ามีคนจองอยู่แล้ว */
 export async function claim(c, k, ttlSec) {
   await run(c, "DELETE FROM kv WHERE k = ? AND exp > 0 AND exp < ?", k, Date.now());
-  const r = await run(c, "INSERT OR IGNORE INTO kv (k, v, exp) VALUES (?, ?, ?)", k, nowIso(), Date.now() + ttlSec * 1000);
-  return changed(r) > 0;
+  const tok = uuid();
+  const r = await run(c, "INSERT OR IGNORE INTO kv (k, v, exp) VALUES (?, ?, ?)", k, tok, Date.now() + ttlSec * 1000);
+  return changed(r) > 0 ? tok : "";
 }
+/** ปล่อยการจอง — ลบเฉพาะที่ตัวเองจองไว้ (ถ้าหมดอายุไปแล้วและรอบอื่นจองต่อ ต้องไม่ไปลบของเขา) */
+export async function release(c, k, tok) { if (tok) await run(c, "DELETE FROM kv WHERE k = ? AND v = ?", k, tok); }
 
 // ───────────── ตั้งค่ากลาง (ตาราง config) ─────────────
 export async function getCfg(c) {
@@ -264,22 +267,32 @@ export async function tgSendRaw(c, message, force) {
     if (!token) return { sent: false, reason: "no token" };
     if (!chatIds.length) return { sent: false, reason: "no chatId" };
     const errors = [];
+    let okN = 0, soft = 0;
     await Promise.all(chatIds.map(async (chatId) => {
+      let st = 0;
       try {
         const resp = await fetch("https://api.telegram.org/bot" + token + "/sendMessage", {
           method: "POST", headers: { "content-type": "application/json" },
-          body: JSON.stringify({ chat_id: chatId, text: message }),
+          body: JSON.stringify({ chat_id: chatId, text: message }), signal: AbortSignal.timeout(20000),
         });
+        st = resp.status;
         const result = await resp.json();
-        if (!result.ok) errors.push(chatId + ": " + result.description);
+        if (result.ok) { okN++; return; }
+        errors.push(chatId + ": " + result.description);
       } catch (ex) { errors.push(chatId + ": " + String(ex)); }
+      if (st === 0 || st >= 500) soft++;   // เครือข่าย/หมดเวลา/5xx = ลองใหม่ได้ · 429 และ 4xx อื่น ลองซ้ำก็ไม่ผ่าน
     }));
-    if (errors.length) return { sent: false, reason: errors.join(", ") };
-    return { sent: true };
+    // retry = พลาดแบบชั่วคราวทุกแชท และยังไม่มีแชทไหนได้รับ (ได้บางแชทแล้วส่งซ้ำ = แชทนั้นได้ 2 รอบ)
+    if (errors.length) return { sent: false, reason: errors.join(", "), chats: chatIds.length, retry: !okN && soft === errors.length };
+    return { sent: true, chats: chatIds.length };
   } catch (e) { return { sent: false, reason: String(e) }; }
 }
-async function tgAfter(c, message, r) {
+/** จำผลส่ง Telegram ครั้งล่าสุด (หน้าสถานะระบบ → lastTelegram) */
+export async function tgMarkLast(c, r) {
   try { await kvPut(c, "tg_last", JSON.stringify({ at: nowIso(), sent: !!(r && r.sent), reason: (r && r.reason) || "" }), 30 * 86400); } catch (e) {}
+}
+async function tgAfter(c, message, r) {
+  await tgMarkLast(c, r);
   if (r && !r.sent && !tgCfgProblem(r)) {
     // ส่งไม่ผ่านเพราะปลายทาง/เครือข่าย → เก็บไว้ให้งานตามเวลาส่งซ้ำ
     try { await run(c, "INSERT INTO tg_queue (ts, message, status, tries, error) VALUES (?, ?, 'pending', 1, ?)", nowIso(), await maskNames(c, String(message)), String(r.reason || "")); } catch (e) {}
@@ -300,11 +313,15 @@ export function sendAlert(c, message, module) {
 }
 /** ส่งข้อความที่เคยส่งไม่ผ่าน (เรียกจากงานตามเวลา และ action TGFLUSH ที่หน้าจอยิงหลังบันทึก) */
 export async function tgFlushQueue(c) {
-  if (!(await claim(c, "tg_flushing", 60))) return { ok: true, skipped: true };
+  // ล็อกต้องอยู่นานกว่ารอบส่ง: หยุดหยิบข้อความใหม่หลัง 200 วิ + ข้อความสุดท้ายรอได้ไม่เกิน 20 วิ < 300 วิ (เดิม 60 วิ แต่รอบหนึ่งส่งได้ 40 ข้อความ)
+  const lock = await claim(c, "tg_flushing", 300);
+  if (!lock) return { ok: true, skipped: true };
+  const t0 = Date.now();
   let sent = 0, failed = 0;
   try {
     const rows = await all(c, "SELECT id, message, tries FROM tg_queue WHERE status = 'pending' ORDER BY id LIMIT 40");
     for (const row of rows) {
+      if (Date.now() - t0 > 200000) break;   // ที่เหลือไว้รอบหน้า
       const r = await tgSendRaw(c, row.message);
       const tries = Number(row.tries || 0) + 1;
       const ok = !!(r && r.sent);
@@ -312,12 +329,12 @@ export async function tgFlushQueue(c) {
       await run(c, "UPDATE tg_queue SET status = ?, tries = ?, sent_at = ?, error = ? WHERE id = ?",
         status, tries, ok ? nowIso() : "", ok ? "" : String((r && r.reason) || ""), row.id);
       if (ok) sent++; else failed++;
-      try { await kvPut(c, "tg_last", JSON.stringify({ at: nowIso(), sent: ok, reason: (r && r.reason) || "" }), 30 * 86400); } catch (e) {}
+      await tgMarkLast(c, r);
     }
     await run(c, "DELETE FROM tg_queue WHERE status <> 'pending' AND id < (SELECT COALESCE(MAX(id), 0) - 1000 FROM tg_queue)");
   } catch (e) {
     return { ok: false, message: String(e), sent, failed };
-  } finally { await kvDel(c, "tg_flushing"); }
+  } finally { await release(c, "tg_flushing", lock); }
   return { ok: true, sent, failed };
 }
 export async function tgPendingCount(c) {

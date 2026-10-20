@@ -37,7 +37,7 @@ async function lineApi(c, token, method, path, body, extraHeaders) {
   try {
     const resp = await fetch(apiBase(c) + path, {
       method, headers: Object.assign({ authorization: "Bearer " + token }, body ? { "content-type": "application/json" } : {}, extraHeaders || {}),
-      body: body ? JSON.stringify(body) : undefined,
+      body: body ? JSON.stringify(body) : undefined, signal: AbortSignal.timeout(20000),
     });
     let json = {};
     try { json = await resp.json(); } catch (e) {}
@@ -55,7 +55,20 @@ function reasonTH(r) {
   return (r.status ? "HTTP " + r.status + " " : "") + m;
 }
 
-/** ส่งข้อความ (สูงสุด 5 กล่อง) เข้าทุกกลุ่มที่เปิดไว้ — นับโควตาครั้งเดียวต่อสมาชิก ไม่ว่ากี่กล่อง */
+async function memberCount(c, token, g) {
+  const r = await lineApi(c, token, "GET", "/v2/bot/" + (g.type === "room" ? "room/" : "group/") + encodeURIComponent(g.id) + "/members/count");
+  return r.ok ? Number(r.json.count) || 0 : null;
+}
+/** UUID ที่ได้ค่าเดิมทุกครั้งจากข้อความเดิม — ใช้เป็น retry key ของรอบลองใหม่ */
+async function stableUuid(s) {
+  const h = Array.from(new Uint8Array(await crypto.subtle.digest("SHA-256", new TextEncoder().encode(s)))).slice(0, 16)
+    .map((b) => b.toString(16).padStart(2, "0")).join("");
+  return h.slice(0, 8) + "-" + h.slice(8, 12) + "-4" + h.slice(13, 16) + "-8" + h.slice(17, 20) + "-" + h.slice(20, 32);
+}
+
+/** ส่งข้อความ (สูงสุด 5 กล่อง) เข้าทุกกลุ่มที่เปิดไว้ — นับโควตาครั้งเดียวต่อสมาชิก ไม่ว่ากี่กล่อง
+ *  opts.retryKey = รอบตามกำหนดของวันเดียวกันใช้ retry key เดิม → ครั้งก่อนตอบพลาดแต่ LINE รับไปแล้ว รอบลองใหม่ได้ 409 ไม่ส่งซ้ำ/ไม่กินโควตาซ้ำ
+ *  คืน retry = ทุกกลุ่มพลาดแบบชั่วคราว (เครือข่าย/หมดเวลา/5xx) ลองใหม่ได้ · 429 (โควตาหมด) / 4xx อื่น = ไม่ */
 export async function lineSend(c, texts, opts) {
   const o = opts || {};
   const L = await lineConfig(c);
@@ -64,16 +77,25 @@ export async function lineSend(c, texts, opts) {
   if (!targets.length) return { sent: 0, reason: "no-group" };
   const messages = [];
   for (const t of texts.slice(0, 5)) messages.push({ type: "text", text: (await maskNames(c, String(t))).slice(0, 4900) });
-  let sent = 0;
+  let sent = 0, soft = 0, members = 0;
   const errors = [];
   for (const g of targets) {
-    const r = await lineApi(c, L.token, "POST", "/v2/bot/message/push", { to: g.id, messages }, { "x-line-retry-key": uuid() });
-    if (r.ok) sent++; else errors.push((g.name || g.id) + ": " + reasonTH(r));
+    const key = o.retryKey ? await stableUuid(o.retryKey + "|" + g.id) : uuid();
+    const r = await lineApi(c, L.token, "POST", "/v2/bot/message/push", { to: g.id, messages }, { "x-line-retry-key": key });
+    // 409 = LINE รับคำขอที่ใช้ retry key นี้ไปแล้ว (รอบก่อนส่งถึงแต่ตอบพลาด) → นับว่าส่งแล้ว
+    if (r.ok || r.status === 409) {
+      sent++;
+      const n = await memberCount(c, L.token, g);
+      members = n === null || members === null ? null : members + n;
+      continue;
+    }
+    errors.push((g.name || g.id) + ": " + reasonTH(r));
+    if ((r.status === 0 && r.json.message !== "disabled") || r.status >= 500) soft++;
   }
-  const rec = { at: nowIso(), sent: sent > 0, groups: sent, of: targets.length, reason: errors.join(" · "), what: o.what || "" };
+  const rec = { at: nowIso(), sent: sent > 0, groups: sent, of: targets.length, members, reason: errors.join(" · "), what: o.what || "" };
   try { await kvPut(c, "line_last", JSON.stringify(rec), 30 * 86400); } catch (e) {}
   if (errors.length && !/^disabled$/.test(errors[0].split(": ").pop())) await sysLog(c, "line-error", errors.join(" · "), c.user || "-", "failed");
-  return { sent, of: targets.length, reason: errors.join(" · ") };
+  return { sent, of: targets.length, members, reason: errors.join(" · "), retry: !sent && errors.length > 0 && soft === errors.length };
 }
 
 // ───────────── Webhook (LINE → เรา) ─────────────
@@ -161,10 +183,7 @@ export async function lineStatus(c) {
   ]);
   if (q.ok) out.quota = { limited: q.json.type === "limited", limit: Number(q.json.value) || 0, used: used.ok ? Number(used.json.totalUsage) || 0 : null };
   else out.tokenProblem = reasonTH(q);
-  out.groups = await Promise.all(L.groups.map(async (g) => {
-    const r = await lineApi(c, L.token, "GET", "/v2/bot/" + (g.type === "room" ? "room/" : "group/") + encodeURIComponent(g.id) + "/members/count");
-    return { id: g.id, name: g.name, on: !!g.on, members: r.ok ? Number(r.json.count) || 0 : null };
-  }));
+  out.groups = await Promise.all(L.groups.map(async (g) => ({ id: g.id, name: g.name, on: !!g.on, members: await memberCount(c, L.token, g) })));
   return out;
 }
 

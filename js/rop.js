@@ -52,7 +52,7 @@ async function openRopModal() {
   document.getElementById("ropTarget").textContent =
     rawCurrentModule === "SQF" ? "สุพรรณคิวฟู้ดส์" : "แม่ละมาย";
   document.getElementById("ropBody").innerHTML =
-    '<p class="sq-empty">⏳ กำลังอ่านประวัติการเบิกย้อนหลัง…</p>';
+    '<p class="sq-empty">กำลังอ่านประวัติการเบิกย้อนหลัง…</p>';
   try {
     const r = await rawFetch({ action: "ROPSTATS", user: currentUser });
     if (r.status !== "success") throw new Error(r.message || "โหลดไม่สำเร็จ");
@@ -184,14 +184,14 @@ function ropRender() {
 }
 
 async function ropAccept(sku, min, btn) {
-  if (btn) { btn.disabled = true; btn.textContent = "⏳"; }
+  if (btn) { btn.disabled = true; btn.textContent = "…"; }
   try {
     const r = await rawFetch({ action: "SETMIN", sku, min, user: currentUser });
     if (r.status !== "success") throw new Error(r.message || "ไม่สำเร็จ");
     // จำค่าก่อนเปลี่ยนไว้ให้กดคืนได้ — เก็บเฉพาะครั้งแรก (ค่าที่คนตั้งเอง)
     // ไม่ใช่ค่าจากการกดรับรอบก่อน ไม่งั้นกดรับซ้ำหลายรอบแล้ว "คืน" จะถอยแค่ทีละขั้น
     if (!(sku in _ropOldMin) && r.oldMin != null) _ropOldMin[sku] = Number(r.oldMin);
-    showToast(`ปรับจุดสั่งซื้อเป็น ${min} แล้ว ✅`, "success");
+    showToast(`ปรับจุดสั่งซื้อเป็น ${min} แล้ว `, "success");
     // อัปเดตค่าในตารางหลักที่ค้างในหน่วยความจำ แล้ววาดใหม่ทั้งคู่
     const mat = (Array.isArray(rawLastData) ? rawLastData : []).find(m => String(m.SKU) === String(sku));
     if (mat) mat.Min = min;
@@ -210,7 +210,7 @@ async function ropSetStart(sku, date, el) {
   try {
     const r = await rawFetch({ action: "SETROPSTART", sku, date, user: currentUser });
     if (r.status !== "success") throw new Error(r.message || "ไม่สำเร็จ");
-    showToast(date ? `นับข้อมูลตั้งแต่ ${date} ✅` : "ล้างวันเริ่มนับแล้ว — กลับไปนับทั้งช่วง", "success");
+    showToast(date ? `นับข้อมูลตั้งแต่ ${date} ` : "ล้างวันเริ่มนับแล้ว — กลับไปนับทั้งช่วง", "success");
     const s = await rawFetch({ action: "ROPSTATS", user: currentUser });
     if (s.status === "success") { _ropStats = s; ropRender(); }
   } catch (e) {
@@ -223,7 +223,7 @@ async function ropSetStart(sku, date, el) {
 async function ropRevert(sku, btn) {
   const old = _ropOldMin[sku];
   if (old == null) return;
-  if (btn) { btn.disabled = true; btn.textContent = "⏳"; }
+  if (btn) { btn.disabled = true; btn.textContent = "…"; }
   try {
     const r = await rawFetch({ action: "SETMIN", sku, min: old, user: currentUser });
     if (r.status !== "success") throw new Error(r.message || "ไม่สำเร็จ");

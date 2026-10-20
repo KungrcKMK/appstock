@@ -8,7 +8,7 @@
 
   <!-- PWA -->
   <link rel="manifest" id="appManifest" href="manifest.json">
-  <meta name="theme-color" id="appThemeColor" content="#0e7a3f">
+  <meta name="theme-color" id="appThemeColor" content="#00843d">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -23,7 +23,7 @@
       document.documentElement.classList.add("exec-only");
       document.title = "ภาพรวมผู้บริหาร";
       document.getElementById("appManifest").setAttribute("href", "manifest-exec.json");
-      document.getElementById("appThemeColor").setAttribute("content", "#0e7a3f");
+      document.getElementById("appThemeColor").setAttribute("content", "#00843d");
       document.getElementById("appAppleTitle").setAttribute("content", "ผู้บริหาร");
       document.getElementById("appAppleIcon").setAttribute("href", "icons/exec-192.png");
     }
@@ -46,18 +46,23 @@
   <!-- ข้อ 11 PERFORMANCE_REVIEW: Chart.js / html5-qrcode / qrcode โหลดตอนจะใช้ผ่าน loadVendor() ใน js/utils.js (ยัง precache ใน sw.js) -->
   <!-- ฟอนต์ Sarabun เก็บในแอป (fonts/) — เดิมโหลดจาก Google: เน็ตล่ม = ฟอนต์เพี้ยน และเน็ตช้าหน้าจอรอ · ห้ามกลับไปใช้ fonts.googleapis (npm test ตรวจ) -->
   <link rel="stylesheet" href="fonts/sarabun.css">
+  <!-- Kanit = หัวข้อและตัวเลข (โลกป้ายความปลอดภัยโรงงาน ชุดเดียวกับมือถือ · เจ้าของเลือก 2026-10-20) -->
+  <link rel="stylesheet" href="fonts/kanit.css">
   <style>
-    body { font-family: 'Sarabun', sans-serif; }
+    body { font-family: 'Sarabun', sans-serif;background:var(--sq-ground);color:var(--sq-ink); }
     .hide { display: none !important; }
     /* ตัวอย่างในช่องกรอก (เช่น "เช่น 16*48+5") — ค่าตั้งต้นของ Tailwind #9ca3af = 2.5:1 อ่านไม่ออก · audit 2026-10-19 */
-    input::placeholder, textarea::placeholder { color:#5b6e63;opacity:1;font-weight:400; }   /* ต้องเฉพาะเจาะจงเท่า preflight ของ Tailwind ไม่งั้นแพ้ */
-    ::selection { background:#cdebd8;color:#16241b; }
-    input, textarea { caret-color:#0e7a3f; }
+    body input::placeholder, body textarea::placeholder { color:#6b6b66;opacity:1;font-weight:400; }   /* body นำหน้า = ชนะ preflight ของ Tailwind (#9ca3af 2.5:1) แน่นอนไม่ขึ้นกับลำดับไฟล์ */
+    /* พื้นผิวของเบราว์เซอร์ให้อยู่ในโลกเดียวกัน: เลือกข้อความ = เหลืองสัญญาณ · เคอร์เซอร์/แถบเลื่อนสีหมึก */
+    ::selection { background:#fde0bd;color:#111; }
+    input, textarea { caret-color:#111; }
+    html { scrollbar-color:#8a8a84 #e6e6e1; }
+    :focus-visible { outline:3px solid var(--sq-accent);outline-offset:2px; }
 
     /* ── Loading ── */
     .loading-overlay { position:fixed;inset:0;z-index:9998;background:rgba(15,23,42,0.65);backdrop-filter:blur(4px);display:none;align-items:center;justify-content:center; }
     .loading-overlay.active { display:flex; }
-    .loading-box { background:#fff;border-radius:2rem;padding:28px 32px;box-shadow:0 16px 30px rgba(0,0,0,.2);display:flex;align-items:center;gap:16px;font-weight:800;color:#0f172a; }
+    .loading-box { background:#fff;border-radius:6px;padding:28px 32px;box-shadow:0 16px 30px rgba(0,0,0,.2);display:flex;align-items:center;gap:16px;font-weight:800;color:var(--sq-ink); }
     .spinner { width:28px;height:28px;border:4px solid #e2e8f0;border-top-color:var(--sq-accent);border-radius:50%;animation:spin .8s linear infinite; }
     @keyframes spin { to { transform:rotate(360deg); } }
 
@@ -120,75 +125,81 @@
         margin:-12px -12px 10px;padding:calc(env(safe-area-inset-top,0px) + 10px) 12px 8px;border-bottom:1px solid var(--sq-line); }
     }
     #main-nav { display:none; }
-    /* 2 แถว: แถวบน = ผู้ใช้ + คลังที่ทำงาน · แถวล่าง = เครื่องมือ */
-    .nav-row { display:flex;align-items:center;gap:6px;flex-wrap:wrap; }
-    /* จอแคบ: แถวเมนูเลื่อนซ้าย-ขวาแทนการขึ้นหลายบรรทัด — เดิมแถบเมนูกิน 22–34% ของจอ (QA L2) */
-    @media (max-width:700px) { .nav-row { flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch; } .nav-row::-webkit-scrollbar { display:none; } .nav-row > * { flex-shrink:0; } }
-    .nav-sep { height:1px;background:rgba(255,255,255,.08);margin:6px 0; }
-    .nav-btn { padding:8px 16px;border-radius:12px;font-weight:800;font-size:12px;text-transform:uppercase;transition:all .2s;color:rgba(255,255,255,.6);background:transparent;border:none;cursor:pointer;white-space:nowrap; }
-    .nav-btn.active { background:rgba(255,255,255,.15);color:#fff;box-shadow:0 2px 8px rgba(0,0,0,.2); }
-    .nav-btn:hover:not(.active) { color:#fff; }
-    /* QA L3: หน้าที่เปิดอยู่ต้องเด่นเสมอ (!important ชนะ style ในปุ่ม) · ปุ่มเครื่องมือสีเดียวกัน · ปุ่มออกเป็นแดงจริง */
-    .nav-btn { text-transform:none !important; }
-    .nav-btn.active { background:#fff !important;color:var(--sq-ink) !important;box-shadow:0 2px 10px rgba(0,0,0,.25); }
-    .nav-btn.nav-tool { background:rgba(255,255,255,.09);color:#e2e8f0; }
-    .nav-btn.nav-tool:hover { background:rgba(255,255,255,.18); }
-    .nav-btn.nav-logout { background:rgba(239,68,68,.16);color:#fecaca; }
-    .nav-btn.nav-logout:hover { background:rgba(239,68,68,.32);color:#fff; }
-    .nav-badge { display:inline-flex;align-items:center;justify-content:center;min-width:18px;height:18px;padding:0 5px;border-radius:999px;font-size:12px;font-weight:900;background:var(--sq-crit);color:#fff;margin-left:4px;animation:badgePop .3s ease; }
+    /* แถบเมนู = หัวป้ายเขียวเซฟตี้ แถบเหลืองสัญญาณขอบล่าง (เหมือนหัวจอมือถือ)
+       แถวบน = คลังที่ทำงาน (ตัวใหญ่ Kanit) · แถวล่าง = เครื่องมือ (เล็ก เบากว่า) แบ่งซ้าย "จัดการ" / ขวา "ของฉัน-แอป" */
+    #mainNav { background:var(--sq-green);border-bottom:6px solid var(--sq-band); }
+    .nav-row { display:flex;align-items:center;gap:4px 6px;flex-wrap:wrap; }   /* ขึ้นบรรทัดใหม่เองเมื่อไม่พอ — ไม่มีแถวเลื่อนซ้าย-ขวา (เจ้าของสั่ง 2026-10-20) */
+    .nav-sep { height:1px;background:rgba(255,255,255,.3);margin:6px 0; }
+    .nav-gap { flex:1 1 8px; }
+    .nav-btn { display:inline-flex;align-items:center;gap:6px;min-height:36px;padding:5px 11px;border-radius:6px;font:inherit;font-weight:800;font-size:13.5px;
+               color:#fff;background:transparent;border:2px solid transparent;cursor:pointer;white-space:nowrap;text-decoration:none;transition:background .12s; }
+    .nav-btn:hover:not(.active) { background:rgba(0,0,0,.18); }
+    .nav-btn:focus-visible { outline:3px solid #fff;outline-offset:1px; }
+    /* QA L3: หน้าที่เปิดอยู่ต้องเด่นเสมอ = แผ่นขาวตัวหมึก (!important ชนะ style ในปุ่ม) */
+    .nav-btn.active { background:#fff !important;color:var(--sq-ink) !important;border-color:#fff; }
+    .nav-btn.nav-wh { font-family:var(--sq-head);font-weight:700;font-size:16px;min-height:42px;padding:5px 14px; }
+    .nav-btn.nav-tool { font-size:13px;min-height:34px;padding:4px 9px; }
+    .nav-btn.nav-user { font-size:14px; }
+    .nav-btn.nav-logout { border-color:rgba(255,255,255,.85); }
+    .nav-btn.nav-logout:hover { background:var(--sq-crit);border-color:#fff; }
+    .nav-badge { display:inline-flex;align-items:center;justify-content:center;min-width:20px;height:20px;padding:0 6px;border-radius:999px;font:700 12.5px/1 var(--sq-head);background:var(--sq-crit);color:#fff;box-shadow:0 0 0 2px #fff;margin-left:2px;animation:badgePop .3s ease; }
+    .nav-btn.active .nav-badge { box-shadow:none; }
     @keyframes badgePop { 0%{transform:scale(0)} 70%{transform:scale(1.3)} 100%{transform:scale(1)} }
 
     /* ── หน้าแรก: เลือกคลังหลัง login (แถบเมนูยังใช้สลับได้เหมือนเดิม) ── */
     #module-HOME { background:var(--sq-ground);min-height:100vh; }
     .home-wrap { max-width:900px;margin:0 auto;padding:56px 24px 60px;text-align:center; }
     .home-logo { width:min(300px,70%);height:auto;margin:0 auto 26px;display:block; }
-    .home-hello { font-size:26px;font-weight:800;color:var(--sq-ink);margin:0 0 6px; }
-    .home-hello b { color:var(--sq-accent); }
-    .home-sub { font-size:14px;font-weight:600;color:var(--sq-muted);margin:0 0 34px; }
-    .home-cards { display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:16px; }
+    .home-hello { font:700 30px/1.25 var(--sq-head);color:var(--sq-ink);margin:0 0 6px; }
+    .home-hello b { color:var(--sq-accent);font-weight:700; }
+    .home-sub { font-size:15px;font-weight:600;color:var(--sq-ink2);margin:0 0 28px; }
+    .home-cards { display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:14px; }
+    /* การ์ดคลัง = แผ่นป้ายขาว แถบสีโรงงานหนาบนสุด (มุมเหลี่ยม — แถบหนาบนมุมมนดูบิด) */
     .home-card {
-      position:relative;background:var(--sq-surface);border:1px solid var(--sq-line);
-      border-radius:18px;padding:30px 18px 26px;cursor:pointer;font-family:inherit;
-      box-shadow:var(--sq-shadow);transition:.15s;text-align:center;
+      position:relative;background:var(--sq-surface);border:2px solid var(--sq-green);border-top:8px solid var(--sq-line2);
+      border-radius:0;padding:26px 18px 22px;cursor:pointer;font-family:inherit;transition:background .12s;text-align:center;
       display:flex;flex-direction:column;align-items:center;gap:6px;
-      border-top:5px solid var(--sq-line);
     }
-    .home-card:hover { transform:translateY(-3px);box-shadow:0 6px 18px rgba(22,36,27,.13);border-color:var(--sq-accent); }
+    .home-card:hover { background:var(--sq-raised); }
     .home-card.is-cr  { border-top-color:var(--sq-fac-cr); }
-    .home-card.is-sqf { border-top-color:var(--sq-orange); }
+    .home-card.is-sqf { border-top-color:var(--sq-fac-sqf); }
     .home-card.is-mlm { border-top-color:var(--sq-fac-mlm); }
-    .home-ic   { font-size:44px;line-height:1; }
-    .home-name { font-size:18px;font-weight:800;color:var(--sq-ink);margin-top:6px; }
-    .home-desc { font-size:12.5px;font-weight:600;color:var(--sq-muted); }
+    .home-card .ic { width:46px;height:46px; }
+    .home-card.is-cr .ic  { color:var(--sq-fac-cr); }
+    .home-card.is-sqf .ic { color:var(--sq-fac-sqf); }
+    .home-card.is-mlm .ic { color:var(--sq-fac-mlm); }
+    .home-name { font:700 19px/1.3 var(--sq-head);color:var(--sq-ink);margin-top:6px; }
+    .home-desc { font-size:13px;font-weight:600;color:var(--sq-ink2); }
     .home-badge {
-      position:absolute;top:12px;right:12px;min-width:26px;height:26px;padding:0 8px;
+      position:absolute;top:10px;right:10px;min-width:30px;height:30px;padding:0 9px;
       display:inline-flex;align-items:center;justify-content:center;border-radius:999px;
-      background:var(--sq-crit);color:#fff;font-size:13px;font-weight:900;animation:badgePop .3s ease;
+      background:var(--sq-crit);color:#fff;font:700 15px/1 var(--sq-head);animation:badgePop .3s ease;
     }
-    .home-hint { margin-top:30px;font-size:12.5px;font-weight:600;color:var(--sq-muted); }
-    .home-todo { margin-top:22px;text-align:left;background:#fff;border:1.5px solid var(--sq-line);border-radius:12px;padding:14px 16px; }
-    .home-todo-head { font-weight:800;font-size:15px;color:var(--sq-ink);margin-bottom:8px; }
-    .home-todo-row { display:flex;align-items:center;gap:10px;width:100%;text-align:left;padding:10px 8px;border-top:1px solid var(--sq-line-soft);font-size:14px;color:var(--sq-ink);background:none;min-height:44px; }
-    .home-todo-row:hover { background:var(--sq-line-soft); }
-    .home-todo-dot { width:12px;height:12px;border-radius:6px;flex:none; }
+    .home-hint { margin-top:22px;font-size:13px;font-weight:600;color:var(--sq-ink2);display:flex;align-items:center;justify-content:center;gap:8px; }
+    .home-hint-n { display:inline-flex;align-items:center;justify-content:center;min-width:22px;height:22px;padding:0 6px;border-radius:999px;background:var(--sq-crit);color:#fff;font:700 12px/1 var(--sq-head); }
+    /* แผง "ต้องจัดการ" = แผ่นป้ายเตือน (แถบเหลืองบน) แถวละคลัง แตะเพื่อเข้าไปทำงาน */
+    .home-todo { margin-top:20px;text-align:left;background:#fff;border:2px solid var(--sq-green);border-top:6px solid var(--sq-band);padding:12px 16px 8px; }
+    .home-todo-head { display:flex;align-items:center;gap:10px;font:700 18px/1.3 var(--sq-head);color:var(--sq-ink);margin-bottom:6px; }
+    .home-todo-row { display:flex;align-items:center;gap:10px;width:100%;text-align:left;padding:10px 8px;border-top:1.5px solid var(--sq-line);font-size:14px;color:var(--sq-ink);background:none;min-height:48px; }
+    .home-todo-row:hover { background:var(--sq-raised); }
+    .home-todo-row .ic { width:22px;height:22px; }
     .home-todo-bits { color:var(--sq-ink2);font-weight:600;flex:1; }
-    .home-todo-go { font-size:20px;font-weight:800;color:var(--sq-muted); }
-    .home-todo-all { margin-top:8px;font-weight:800;font-size:13px;color:var(--sq-accent);background:none;border:none;padding:8px 4px;min-height:44px; }
-    .home-links { margin-top:34px;display:flex;justify-content:center;gap:10px;flex-wrap:wrap; }
+    .home-todo-go { font-size:22px;font-weight:800;color:var(--sq-ink2); }
+    .home-todo-all { margin-top:2px;font-weight:800;font-size:13.5px;color:var(--sq-accent);background:none;border:none;padding:8px 4px;min-height:44px;text-decoration:underline;text-underline-offset:3px; }
+    .home-links { margin-top:30px;display:flex;justify-content:center;gap:8px;flex-wrap:wrap; }
     .home-links button, .home-links a {
-      background:var(--sq-surface);border:1px solid var(--sq-line);border-radius:999px;
-      padding:7px 18px;font-size:13px;font-weight:800;color:var(--sq-ink2);cursor:pointer;
-      font-family:inherit;text-decoration:none;transition:.15s;
+      display:inline-flex;align-items:center;gap:6px;min-height:40px;
+      background:var(--sq-surface);border:1.5px solid var(--sq-line2);border-radius:6px;
+      padding:6px 14px;font-size:13.5px;font-weight:800;color:var(--sq-ink);cursor:pointer;
+      font-family:inherit;text-decoration:none;transition:background .12s;
     }
-    .home-links button:hover, .home-links a:hover { border-color:var(--sq-accent);color:var(--sq-accent); }
+    .home-links button:hover, .home-links a:hover { border-color:var(--sq-green);background:var(--sq-raised); }
     .home-links .is-out { color:var(--sq-crit); }
     .home-links .is-out:hover { border-color:var(--sq-crit);background:var(--sq-crit-bg);color:var(--sq-crit); }
 
     /* ── Alert Modal ── */
     .alert-item { display:flex;justify-content:space-between;align-items:center;padding:12px 0;border-bottom:1px solid #f1f5f9;gap:8px; }
     .alert-item:last-child { border-bottom:none; }
-    .alert-pulse { animation:pulse 2s infinite; }
-    @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.6} }
 
     /* ── Autocomplete Dropdown ── */
     /* สีตาม token ของแอป (เดิมม่วงครามจากธีมเก่า + ตัวรองจาง 2.6:1 · audit 2026-10-19) */
@@ -214,8 +225,8 @@
       --text:var(--sq-ink);  --muted:var(--sq-muted);
       --primary:var(--sq-accent); --primary-dark:var(--sq-accent);
       --ok:var(--sq-accent); --warn:var(--sq-high); --danger:var(--sq-crit);
-      --radius:12px; --radius-sm:8px;
-      --shadow:0 1px 2px rgba(22,36,27,.06),0 4px 12px rgba(22,36,27,.05);
+      --radius:6px; --radius-sm:6px;
+      --shadow:none;
     }
     #module-COLDROOM { background:var(--bg);color:var(--sq-ink); }
     #module-COLDROOM .cr-wrap { max-width:1400px;margin:0 auto;padding:18px 16px 60px; }
@@ -260,10 +271,10 @@
     #module-COLDROOM .cr-status.ok  { display:flex;background:var(--sq-accent-2);color:var(--sq-accent);border-color:#b8dcc6; }
     #module-COLDROOM .cr-status.warn{ display:flex;background:var(--sq-high-bg);color:var(--sq-high);border-color:#f3d2ad; }
     #module-COLDROOM .cr-status.err { display:flex;background:var(--sq-crit-bg);color:var(--sq-crit);border-color:#f0c4c0; }
-    #module-COLDROOM .big-stat-box { background:var(--primary);color:#fff;padding:25px;border-radius:20px;margin-bottom:20px;text-align:center;box-shadow:0 8px 20px rgba(79,70,229,.25); }
-    #module-COLDROOM .big-stat-label { font-size:14px;opacity:.9;margin-bottom:8px;display:block; }
+    #module-COLDROOM .big-stat-box { background:var(--primary);color:#fff;padding:25px;border-radius:6px;margin-bottom:20px;text-align:center; }
+    #module-COLDROOM .big-stat-label { font-size:14px;margin-bottom:8px;display:block; }   /* ตัวขาวทึบบนเขียว (จาง .9 = 4.2:1 ไม่ผ่าน) */
     #module-COLDROOM .big-stat-value { font-size:56px;font-weight:800;line-height:1; }
-    #module-COLDROOM .big-stat-unit { font-size:20px;margin-left:10px;opacity:.8; }
+    #module-COLDROOM .big-stat-unit { font-size:20px;margin-left:10px; }
     #module-COLDROOM .lot-breakdown-box { background:rgba(0,0,0,.15);border-radius:12px;padding:12px;margin-top:15px;text-align:left;font-size:14px;line-height:1.6;display:none; }
     #module-COLDROOM .scanner-box { border-radius:16px;overflow:hidden;background:#000;position:relative;min-height:240px;margin:10px 0; }
     #module-COLDROOM .scanner-video { width:100%;height:240px;object-fit:cover; }
@@ -276,7 +287,7 @@
     #module-COLDROOM .pill-danger { background:var(--sq-crit-bg);color:var(--sq-crit); }   /* สีสถานะของแอป (เดิม 3.0–4.0:1 · audit 2026-10-19) */
     #module-COLDROOM .pill-ok    { background:var(--sq-accent-2);color:var(--sq-accent); }
     #module-COLDROOM .pill-warn  { background:var(--sq-warn-bg);color:var(--sq-warn); }   /* ใกล้หมดอายุ = สี "ควรดู" ตาม DESIGN.md (เดิมแดงเท่าหมดอายุ) */
-    #module-COLDROOM .pill-stale { background:var(--sq-high-bg);color:var(--sq-high);white-space:nowrap; }   /* ⏰ ล็อตไม่มีการอัปเดตเกินกำหนด */
+    #module-COLDROOM .pill-stale { display:inline-flex;align-items:center;gap:4px;background:var(--sq-must-bg);color:var(--sq-must);white-space:nowrap; }   /* ล็อตไม่มีการอัปเดตเกินกำหนด = ป้ายน้ำเงิน "ต้องนับ" แบบตารางวัตถุดิบ */
     #module-COLDROOM .sticky-actions { position:fixed;bottom:0;left:0;right:0;background:#fff;padding:16px;display:flex;gap:10px;border-top:1px solid var(--line);z-index:100;box-shadow:0 -5px 15px rgba(0,0,0,.05); }
 
     /* ═══════════════════════════════════════════════════════
@@ -284,22 +295,76 @@
        เพื่อไม่ให้ชนกับตัวแปรเดิมของหน้าคลังสินค้า (--line, --muted, ฯลฯ)
        ส้มสงวนไว้ให้โลโก้/ป้ายชื่อโรงงาน ไม่เอามาใช้เป็นสีเตือน
        ═══════════════════════════════════════════════════════ */
+    /* ══ ป้ายความปลอดภัยโรงงาน (ISO 7010) — โลกเดียวกับมือถือ (--m-* ใน mobile.html) · เจ้าของเลือก 2026-10-20 · กติกาใน DESIGN.md
+       พื้นเทาผนังโรงงาน · แผ่นป้ายขาวขอบบาง มุม 6px · หัวเขียวเซฟตี้แถบเหลือง · รูปทรงป้าย (uiSign ใน js/utils.js) บอกสถานะ ══ */
     :root {
-      --sq-green:#0e7a3f; --sq-orange:#f2951c;
-      --sq-ground:#f4f7f4; --sq-surface:#ffffff; --sq-raised:#fafbfa;
-      --sq-line:#dfe6e0;   --sq-line-soft:#ebf0ec;
-      /* --sq-muted เดิม #6c8074 ไม่ผ่าน AA (3.9–4.2) → #5b6e63 (5.0+) · QA M5 2026-10-10 */
-      --sq-ink:#16241b;    --sq-ink2:#435349;  --sq-muted:#5b6e63;
+      --sq-green:#00843d;  --sq-band:#f2951c;  --sq-orange:#f2951c;   /* ธีม เขียว-ส้ม-ขาว ตามสีโรงงาน (เจ้าของสั่ง 2026-10-20): เขียว = แถบเมนู ปุ่มหลัก กรอบแผ่นป้าย (ตัวขาว 4.8:1) · ส้ม = แถบสัญญาณ (ตกแต่ง ไม่ใช้เป็นตัวหนังสือ — บนขาวได้แค่ 2.3:1) */
+      --sq-ground:#f2f2ef; --sq-surface:#ffffff; --sq-raised:#f7f7f4;
+      --sq-line:#d6d6d0;   --sq-line-soft:#e6e6e1; --sq-line2:#8a8a84;
+      --sq-ink:#111111;    --sq-ink2:#3d3d3d;  --sq-muted:#5c5c57;      /* muted บนพื้นเทา 5.9:1 */
       /* สีประจำโรงงาน (ใช้ทุกหน้า + มือถือ): SQF ส้ม · MLM เขียว · ห้องเย็น ฟ้าเข้ม (เจ้าของเลือก 2026-10-10) — ตัวขาวบนพื้นนี้ผ่าน AA · QA M18 */
       --sq-fac-sqf:#c2410c; --sq-fac-mlm:#15803d; --sq-fac-cr:#0e7490;
-      --sq-accent:#0e7a3f; --sq-accent-2:#e8f4ec; --sq-accent-ink:#ffffff;
-      --sq-crit:#c0362c;   --sq-crit-bg:#fbeceb;
+      --sq-accent:#006b31; --sq-accent-2:#e3f1e8; --sq-accent-ink:#ffffff;   /* #00843d บนพื้นเทาได้แค่ 4.3:1 → ตัวหนังสือ/ปุ่มใช้เขียวเข้ม */
+      --sq-crit:#c8102e;   --sq-crit-bg:#fbe9ec;
       --sq-high:#a8560a;   --sq-high-bg:#fdf0e2;
-      --sq-warn:#7d6407;   --sq-warn-bg:#faf3d9;
-      --sq-none:#5b6e63;   --sq-none-bg:#eef1ef;
-      --sq-shadow:0 1px 2px rgba(22,36,27,.06),0 4px 12px rgba(22,36,27,.05);
+      --sq-warn:#8a5a00;   --sq-warn-bg:#fff6cc;
+      --sq-must:#005a9c;   --sq-must-bg:#e5eff8;
+      --sq-none:#5c5c57;   --sq-none-bg:#ecece8;
+      --sq-shadow:none;    /* แผ่นป้ายแบน — แยกชั้นด้วยขอบ ไม่ใช้เงา */
       --sq-mono:ui-monospace,"Cascadia Mono","SF Mono",Consolas,"Liberation Mono",monospace;
+      --sq-head:'Kanit','Sarabun',system-ui,sans-serif;
     }
+    /* ── ไอคอนเส้นชุดเดียวทั้งแอป (แทน emoji · วาดแบบเดียวกับป้าย) — สร้างจาก scratchpad make-icons.mjs
+       ใช้: <i class="ic ic-out"></i> หรือ class="icb ic-out" = ไอคอนหน้าข้อความ (ใช้กับปุ่มที่ JS เปลี่ยน textContent) ── */
+    :root{
+      --ic-stock:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='5' y='4' width='14' height='17' rx='2'/%3E%3Cpath d='M9 4V2.8h6V4M9 10h6M9 14h6M9 18h3'/%3E%3C/svg%3E");
+      --ic-scan:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4 8V4h4M16 4h4v4M20 16v4h-4M8 20H4v-4M4 12h16'/%3E%3C/svg%3E");
+      --ic-order:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M2.5 3.5h3l2.2 11h10.6l2.2-8H6.6'/%3E%3Ccircle cx='9.5' cy='19.5' r='1.6'/%3E%3Ccircle cx='17' cy='19.5' r='1.6'/%3E%3C/svg%3E");
+      --ic-mine:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='8' r='4'/%3E%3Cpath d='M4 21c0-4.4 3.6-7 8-7s8 2.6 8 7'/%3E%3C/svg%3E");
+      --ic-out:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12 15V3M7 8l5-5 5 5M4 14v5a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-5'/%3E%3C/svg%3E");
+      --ic-in:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12 3v12M7 10l5 5 5-5M4 14v5a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-5'/%3E%3C/svg%3E");
+      --ic-ret:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M9 14 4 9l5-5M4 9h10.5a5.5 5.5 0 0 1 0 11H11'/%3E%3C/svg%3E");
+      --ic-count:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 5v14M10 5v14M14 5v14M18 5v14M3.5 15.5l17-7'/%3E%3C/svg%3E");
+      --ic-factory:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3 21V10l5 3.5V10l5 3.5V10l5 3.5V4h3v17zM2 21h20'/%3E%3C/svg%3E");
+      --ic-snow:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12 2.5v19M3.8 7.25l16.4 9.5M20.2 7.25 3.8 16.75M9.5 4.5 12 6.5l2.5-2M9.5 19.5l2.5-2 2.5 2'/%3E%3C/svg%3E");
+      --ic-share:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='18' cy='5.5' r='2.5'/%3E%3Ccircle cx='6' cy='12' r='2.5'/%3E%3Ccircle cx='18' cy='18.5' r='2.5'/%3E%3Cpath d='M8.3 10.8l7.4-4M8.3 13.2l7.4 4'/%3E%3C/svg%3E");
+      --ic-book:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4 4.5A1.5 1.5 0 0 1 5.5 3H20v15H5.5A1.5 1.5 0 0 0 4 19.5zM4 19.5A1.5 1.5 0 0 0 5.5 21H20M8 7h8'/%3E%3C/svg%3E");
+      --ic-desktop:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='3' y='4' width='18' height='12' rx='1.5'/%3E%3Cpath d='M8 21h8M12 16v5'/%3E%3C/svg%3E");
+      --ic-refresh:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M20 12a8 8 0 1 1-2.3-5.7M20 4v5h-5'/%3E%3C/svg%3E");
+      --ic-logout:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M10 4H5v16h5M14 8l4 4-4 4M18 12H9'/%3E%3C/svg%3E");
+      --ic-calc:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='5' y='3' width='14' height='18' rx='2'/%3E%3Cpath d='M8.5 7h7M8.5 11.5h.01M12 11.5h.01M15.5 11.5h.01M8.5 15.5h.01M12 15.5h.01M15.5 15.5h.01'/%3E%3C/svg%3E");
+      --ic-copy:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='8' y='8' width='12' height='13' rx='2'/%3E%3Cpath d='M16 8V5a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h2'/%3E%3C/svg%3E");
+      --ic-send:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M21 3 10 14M21 3l-7 18-4-7-7-4z'/%3E%3C/svg%3E");
+      --ic-doc:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M14 3H6v18h12V7zM14 3v4h4M9 12h6M9 16h6'/%3E%3C/svg%3E");
+      --ic-new:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='4' y='4' width='16' height='16' rx='2'/%3E%3Cpath d='M12 8v8M8 12h8'/%3E%3C/svg%3E");
+      --ic-search:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='11' cy='11' r='7'/%3E%3Cpath d='M20.5 20.5 16 16'/%3E%3C/svg%3E");
+      --ic-star:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12 3l2.7 5.6 6.1.9-4.4 4.3 1 6.1L12 17l-5.4 2.9 1-6.1L3.2 9.5l6.1-.9z'/%3E%3C/svg%3E");
+      --ic-list:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M8 6h12M8 12h12M8 18h12M4 6h.01M4 12h.01M4 18h.01'/%3E%3C/svg%3E");
+      --ic-phone:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='7' y='2.5' width='10' height='19' rx='2'/%3E%3Cpath d='M11 18.5h2'/%3E%3C/svg%3E");
+      --ic-bell:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 16v-5a6 6 0 0 1 12 0v5l1.5 2h-15zM10 20.5a2 2 0 0 0 4 0'/%3E%3C/svg%3E");
+      --ic-chart:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4 3.5V20h16.5M8.5 16v-5M13 16V7.5M17.5 16v-3.5'/%3E%3C/svg%3E");
+      --ic-trend:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3 17l6-6 4 4 8-8M15 7h6v6'/%3E%3C/svg%3E");
+      --ic-users:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='9' cy='8' r='3.5'/%3E%3Cpath d='M2.5 20c0-3.6 2.9-6 6.5-6s6.5 2.4 6.5 6M16 4.8a3.5 3.5 0 0 1 0 6.4M18 14.3c2.2.7 3.5 2.6 3.5 5.7'/%3E%3C/svg%3E");
+      --ic-plus:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M12 5v14M5 12h14'/%3E%3C/svg%3E");
+      --ic-edit:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4 20h4L19 9l-4-4L4 16zM13.5 6.5l4 4'/%3E%3C/svg%3E");
+      --ic-trash:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4 7h16M10 3h4M6 7l1 14h10l1-14M10 11v6M14 11v6'/%3E%3C/svg%3E");
+      --ic-more:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='5' cy='12' r='2' fill='black' stroke='none'/%3E%3Ccircle cx='12' cy='12' r='2' fill='black' stroke='none'/%3E%3Ccircle cx='19' cy='12' r='2' fill='black' stroke='none'/%3E%3C/svg%3E");
+      --ic-print:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M7 9V3h10v6M7 17H4v-7h16v7h-3'/%3E%3Cpath d='M7 14h10v7H7z'/%3E%3C/svg%3E");
+      --ic-clock:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='12' cy='12' r='8.5'/%3E%3Cpath d='M12 7.5V12l3 2'/%3E%3C/svg%3E");
+      --ic-qr:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 14h2.5v2.5H14zM17.5 17.5H20V20h-2.5zM14 20h1M20 14v1'/%3E%3C/svg%3E");
+      --ic-check:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M5 12.5l4.5 4.5L19 7.5'/%3E%3C/svg%3E");
+      --ic-cloud:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M7 18h10a4 4 0 0 0 .6-8A6 6 0 0 0 6.2 9.6 4.2 4.2 0 0 0 7 18z'/%3E%3C/svg%3E");
+      --ic-x:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 6l12 12M18 6 6 18'/%3E%3C/svg%3E");
+      --ic-home:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3 11 12 3l9 8M5 9.5V21h14V9.5'/%3E%3C/svg%3E");
+      --ic-offline:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M2 8.5a15 15 0 0 1 20 0M5.5 12a10 10 0 0 1 13 0M9 15.5a5 5 0 0 1 6 0M12 19.5h.01M3 3l18 18'/%3E%3C/svg%3E");
+    }
+    .ic-stock{--i:var(--ic-stock)} .ic-scan{--i:var(--ic-scan)} .ic-order{--i:var(--ic-order)} .ic-mine{--i:var(--ic-mine)} .ic-out{--i:var(--ic-out)} .ic-in{--i:var(--ic-in)} .ic-ret{--i:var(--ic-ret)} .ic-count{--i:var(--ic-count)} .ic-factory{--i:var(--ic-factory)} .ic-snow{--i:var(--ic-snow)} .ic-share{--i:var(--ic-share)} .ic-book{--i:var(--ic-book)} .ic-desktop{--i:var(--ic-desktop)} .ic-refresh{--i:var(--ic-refresh)} .ic-logout{--i:var(--ic-logout)} .ic-calc{--i:var(--ic-calc)} .ic-copy{--i:var(--ic-copy)} .ic-send{--i:var(--ic-send)} .ic-doc{--i:var(--ic-doc)} .ic-new{--i:var(--ic-new)} .ic-search{--i:var(--ic-search)} .ic-star{--i:var(--ic-star)} .ic-list{--i:var(--ic-list)} .ic-phone{--i:var(--ic-phone)} .ic-bell{--i:var(--ic-bell)} .ic-chart{--i:var(--ic-chart)} .ic-trend{--i:var(--ic-trend)} .ic-users{--i:var(--ic-users)} .ic-plus{--i:var(--ic-plus)} .ic-edit{--i:var(--ic-edit)} .ic-trash{--i:var(--ic-trash)} .ic-more{--i:var(--ic-more)} .ic-print{--i:var(--ic-print)} .ic-clock{--i:var(--ic-clock)} .ic-qr{--i:var(--ic-qr)} .ic-check{--i:var(--ic-check)} .ic-cloud{--i:var(--ic-cloud)} .ic-x{--i:var(--ic-x)} .ic-home{--i:var(--ic-home)} .ic-offline{--i:var(--ic-offline)}
+    .ic{display:inline-block;flex:none;width:1.25em;height:1.25em;vertical-align:-.25em;background:currentColor;-webkit-mask:var(--i) center/contain no-repeat;mask:var(--i) center/contain no-repeat}
+    .icb::before{content:"";display:inline-block;width:1.15em;height:1.15em;margin-right:.4em;vertical-align:-.2em;background:currentColor;-webkit-mask:var(--i) center/contain no-repeat;mask:var(--i) center/contain no-repeat}
+
+    /* ── ป้ายรูปทรง / ปุ่มสีตามงาน (ชุดเดียวกับมือถือ) ── */
+    .ui-sign { flex:none;display:inline-block;vertical-align:middle; }
+    .t-out{background:#c2410c;--i:var(--ic-out)} .t-ret{background:#0369a1;--i:var(--ic-ret)} .t-in{background:#047857;--i:var(--ic-in)} .t-cnt{background:#0e7490;--i:var(--ic-count)} .t-new{background:#6d28d9;--i:var(--ic-new)}
 
     /* ── หน้าวัตถุดิบ (SQF/MLM) ── */
     #module-RAW { background:var(--sq-ground);color:var(--sq-ink); }
@@ -386,8 +451,8 @@
     #module-RAW .rm-search input::placeholder { color:var(--sq-muted);font-weight:400; }
     #module-RAW .rm-search input:focus { outline:2px solid var(--sq-accent);outline-offset:-1px;border-color:transparent; }
     #module-RAW .rm-search::before {
-      content:"🔍";position:absolute;left:10px;top:50%;transform:translateY(-50%);
-      font-size:12px;opacity:.55;pointer-events:none;
+      content:"";position:absolute;left:10px;top:50%;transform:translateY(-50%);width:16px;height:16px;
+      background:var(--sq-ink2);-webkit-mask:var(--ic-search) center/contain no-repeat;mask:var(--ic-search) center/contain no-repeat;pointer-events:none;
     }
     #module-RAW .rm-chips { display:flex;gap:5px;flex-wrap:wrap; }
     #module-RAW .rm-chip {
@@ -397,7 +462,7 @@
     #module-RAW .rm-chip:hover { border-color:var(--sq-muted); }
     #module-RAW .rm-chip:focus-visible { outline:2px solid var(--sq-accent);outline-offset:1px; }
     /* ปุ่มกรองที่เลือกอยู่ — raw.js สลับ class นี้ */
-    #module-RAW .rm-chip.filter-active { background:var(--sq-ink);border-color:var(--sq-ink);color:var(--sq-surface); }
+    #module-RAW .rm-chip.filter-active { background:var(--sq-green);border-color:var(--sq-green);color:var(--sq-surface); }
     #module-RAW .rm-alertdays { display:flex;align-items:center;gap:7px;font-size:12px;color:var(--sq-muted);font-weight:600; }
     #module-RAW .rm-alertdays input {
       width:56px;font:700 13px/1 var(--sq-mono);text-align:center;padding:6px 4px;
@@ -420,11 +485,6 @@
     #module-RAW .rm-table tbody tr:last-child { border-bottom:0; }
     #module-RAW .rm-table tbody tr:hover { background:var(--sq-raised); }
     #module-RAW .rm-table td { padding:8px 12px;vertical-align:middle; }
-    /* แถบสีบอกความเร่งด่วนที่ขอบซ้ายของแถว */
-    #module-RAW .rm-table td.rm-rail { padding:0;width:3px;border-left:3px solid transparent; }
-    #module-RAW .rm-table tr.sev-crit td.rm-rail { border-left-color:var(--sq-crit); }
-    #module-RAW .rm-table tr.sev-high td.rm-rail { border-left-color:var(--sq-high); }
-    #module-RAW .rm-table tr.sev-warn td.rm-rail { border-left-color:var(--sq-warn); }
 
     #module-RAW .rm-name { font-weight:700;font-size:13.5px;line-height:1.35;color:var(--sq-ink);
       max-width:280px;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical; }
@@ -439,7 +499,7 @@
     #module-RAW .rm-min { font:600 13px/1.2 var(--sq-mono);font-variant-numeric:tabular-nums;color:var(--sq-muted); }
     #module-RAW .rm-runout { font:600 12px/1.4 var(--sq-mono);color:var(--sq-muted);margin-top:1px;white-space:nowrap; }
     /* ⏰ ไม่มีการอัปเดตสต๊อกเกินกำหนด — ป้ายในบรรทัดรายละเอียดของแถว */
-    #module-RAW .rm-stale { color:var(--sq-high);font-weight:700;background:var(--sq-high-bg);border-radius:4px;padding:0 5px; }
+    #module-RAW .rm-stale { display:inline-flex;align-items:center;gap:4px;color:var(--sq-must);font-weight:700;background:var(--sq-must-bg);border-radius:4px;padding:0 5px;font-family:'Sarabun',sans-serif; }
     #module-RAW .rm-runout.crit { color:var(--sq-crit);font-weight:700; }
     #module-RAW .rm-runout.high { color:var(--sq-high);font-weight:700; }
     #module-RAW .rm-runout.warn { color:var(--sq-warn);font-weight:700; }
@@ -687,9 +747,16 @@
       #module-COLDROOM td::before { content:attr(data-label);font-weight:700;color:var(--muted);font-size:12px;text-transform:uppercase;float:left;text-align:left; }
     }
     /* หน้าเข้าระบบ: สีแบรนด์ (เดิมม่วงคราม ไม่เหมือนแอป) · ลิงก์ท้ายการ์ดอ่านออกและกดได้ (เดิม #cbd5e1 = 1.48:1, สูง 17px) · QA M20/M5/L1 */
-    .login-btn { background:var(--sq-accent); }
-    .login-btn:hover, .login-btn:focus-visible { background:#0b5c30; }
-    .login-link { font-size:12.5px;font-weight:800;color:var(--sq-ink2);background:none;border:0;padding:8px 4px;min-height:44px;cursor:pointer;font-family:inherit;text-decoration:underline;text-underline-offset:3px; }
+    .login-btn { background:var(--sq-green);border-radius:6px;min-height:56px;font-family:var(--sq-head);font-weight:700; }
+    .login-btn:hover, .login-btn:focus-visible { background:var(--sq-accent); }
+    .login-btn:disabled { opacity:.6; }
+    /* การ์ดเข้าระบบ = แผ่นป้าย: ขอบหมึก แถบเขียวเซฟตี้บน + แถบเหลืองใต้ (หัวจอแอปย่อส่วน) */
+    .ui-login { border:2px solid var(--sq-green);border-top:10px solid var(--sq-green);box-shadow:inset 0 6px 0 var(--sq-band); }
+    .ui-mode-btn { background:#fff;border:2px solid var(--sq-line2);color:var(--sq-ink);border-radius:6px;cursor:pointer;transition:background .12s; }
+    .ui-mode-btn:hover { background:var(--sq-raised);border-color:var(--sq-green); }
+    .ui-mode-btn.is-rec { border-color:var(--sq-green);box-shadow:inset 0 6px 0 var(--sq-band); }
+    .ui-mode-btn .ic { width:44px;height:44px;color:var(--sq-green); }
+    .login-link { display:inline-flex;align-items:center;gap:4px;font-size:13px;font-weight:800;color:var(--sq-ink2);background:none;border:0;padding:8px 4px;min-height:44px;cursor:pointer;font-family:inherit;text-decoration:underline;text-underline-offset:3px; }
     .login-link:hover { color:var(--sq-accent); }
     /* หน้าคอมบนจอแคบ (≤900px): ตารางวัตถุดิบเป็นการ์ด ปุ่มอยู่ในจอ กดง่าย (QA L2 2026-10-10)
        เดิมปุ่ม รับ/เบิก · นับ · แก้ไข · ลบ อยู่นอกจอ ต้องเลื่อนตาราง และ "ลบ" ติด "แก้ไข"
@@ -700,14 +767,13 @@
       #module-RAW .rm-table tr { display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:4px 10px;padding:12px;margin:0 0 10px;
                                   border:1px solid var(--sq-line);border-radius:12px;background:var(--sq-surface); }
       #module-RAW .rm-table td { display:block;padding:0 !important;border:0 !important;text-align:left !important; }
-      #module-RAW .rm-table td.rm-rail, #module-RAW .rm-table td:nth-child(2) { display:none; }
+      #module-RAW .rm-table td:nth-child(1) { display:none; }
       #module-RAW .rm-table td[data-label="วัตถุดิบ"] { grid-column:1 / -1;order:-1; }
       #module-RAW .rm-table td[data-label]::before { content:attr(data-label);display:block;font-size:12px;font-weight:700;color:var(--sq-muted); }
       #module-RAW .rm-table td[data-label="วัตถุดิบ"]::before { display:none; }
       #module-RAW .rm-table td.rm-actcell { grid-column:1 / -1;margin-top:6px; }
-      #module-RAW .rm-table .rm-rowacts { display:flex;flex-wrap:wrap;gap:8px; }
-      #module-RAW .rm-table .rm-rowacts .rm-mini { min-height:40px;flex:1 1 auto; }
-      #module-RAW .rm-table .rm-rowacts .rm-mini.danger { flex:0 0 auto;margin-left:auto; }
+      #module-RAW .rm-table .rm-rowacts { display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px; }
+      #module-RAW .rm-table .rm-rowacts .rm-mini { min-height:44px; }
       #module-RAW .rm-tablewrap { overflow:visible !important; }
     }
     /* ช่องติ๊กในตารางวัตถุดิบ 13px → 18px (กดง่ายขึ้น · QA L1) */
@@ -724,8 +790,8 @@
     .ntf-lbl{font-size:12px;font-weight:900;color:var(--sq-ink2);margin:12px 0 5px;}
     .ntf-days{display:flex;gap:6px;flex-wrap:wrap;}
     .ntf-day input{position:absolute;opacity:0;pointer-events:none;}
-    .ntf-day span{display:inline-flex;align-items:center;justify-content:center;min-width:40px;height:36px;padding:0 6px;border-radius:12px;border:2px solid #cbd5e1;background:#fff;font-weight:900;font-size:13px;color:#64748b;cursor:pointer;user-select:none;}
-    .ntf-day input:checked + span{background:#0f172a;border-color:#0f172a;color:#fff;}
+    .ntf-day span{display:inline-flex;align-items:center;justify-content:center;min-width:40px;height:36px;padding:0 6px;border-radius:12px;border:2px solid #cbd5e1;background:#fff;font-weight:900;font-size:13px;color:var(--sq-ink2);cursor:pointer;user-select:none;}
+    .ntf-day input:checked + span{background:var(--sq-green);border-color:var(--sq-green);color:#fff;}
     .ntf-day input:focus-visible + span{outline:3px solid var(--sq-accent);}
     .ntf-quick{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px;}
     .ntf-quick button{font-size:12px;font-weight:900;color:#475569;background:#fff;border:1px solid #cbd5e1;border-radius:999px;padding:3px 10px;}
@@ -735,15 +801,157 @@
     .ntf-dim{font-size:12px;font-weight:700;color:var(--sq-muted);}
     .ntf-hint{font-size:12px;color:#475569;margin-top:10px;line-height:1.55;display:flex;flex-direction:column;gap:3px;}
     .ntf-btn{margin-top:10px;width:100%;background:#fff;border:2px solid #cbd5e1;border-radius:16px;padding:8px;font-size:13px;font-weight:900;color:#334155;}
-    .ntf-btn:hover{border-color:#64748b;}
-    .ntf-pre{white-space:pre-wrap;word-break:break-word;background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:10px;margin-top:6px;font-size:12px;line-height:1.5;max-height:260px;overflow:auto;font-family:inherit;color:#1e293b;}
+    .ntf-btn:hover{border-color:var(--sq-green);}
+    .ntf-pre{white-space:pre-wrap;word-break:break-word;background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:10px;margin-top:6px;font-size:12px;line-height:1.5;max-height:260px;overflow:auto;font-family:inherit;color:var(--sq-ink);}
+
+    /* ═══ ชั้นแผ่นป้าย (P2 2026-10-20) — โลกเดียวกับมือถือ · วางท้ายสุดให้ชนะกฎเดิมที่เท่ากัน ═══ */
+    /* ป้ายรูปทรงใน HTML นิ่ง (ชิปกรอง ฯลฯ) — รูปเดียวกับ UI_SIGN ใน js/utils.js: <i class="ui-sg sg-warn"></i> */
+    .ui-sg { display:inline-block;flex:none;width:16px;height:16px;vertical-align:-3px;background:center/contain no-repeat; }
+    .sg-no { background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 34 34'%3E%3Ccircle cx='17' cy='17' r='13.5' fill='%23fff' stroke='%23c8102e' stroke-width='5'/%3E%3Cpath d='M7.5 7.5 26.5 26.5' stroke='%23c8102e' stroke-width='5'/%3E%3C/svg%3E"); }
+    .sg-warn { background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 34 34'%3E%3Cpath d='M17 2.5 32.5 30.5H1.5Z' fill='%23ffd100' stroke='%23111' stroke-width='2.5' stroke-linejoin='round'/%3E%3Cpath d='M17 11v10' stroke='%23111' stroke-width='3.5' stroke-linecap='round'/%3E%3Ccircle cx='17' cy='25.6' r='2' fill='%23111'/%3E%3C/svg%3E"); }
+    .sg-must { background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 34 34'%3E%3Ccircle cx='17' cy='17' r='16' fill='%23005a9c'/%3E%3Cpath d='M17 8.5v11' stroke='%23fff' stroke-width='3.5' stroke-linecap='round'/%3E%3Ccircle cx='17' cy='25' r='2.2' fill='%23fff'/%3E%3C/svg%3E"); }
+    .sg-ok { background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 34 34'%3E%3Crect x='1' y='1' width='32' height='32' rx='4' fill='%2300843d'/%3E%3Cpath d='M9 17.5l5.5 5.5L25.5 11' fill='none' stroke='%23fff' stroke-width='4' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E"); }
+    .ui-k { font-family:var(--sq-head);font-weight:700;letter-spacing:0; }
+    .ui-tag { display:inline-flex;align-items:center;gap:5px;font-size:12.5px;font-weight:800;padding:3px 9px;border:1.5px solid;border-radius:4px;background:#fff; }
+    .ui-field { background:#fff;border:2px solid var(--sq-line2);border-radius:6px;color:var(--sq-ink);outline:none; }
+    .ui-field:focus { border-color:var(--sq-green);box-shadow:0 0 0 3px #fde0bd; }
+    /* หัวข้อ + ตัวเลขเดี่ยวตัวใหญ่ = Kanit (เหมือนมือถือ) · ตารางตัวเลขหลายคอลัมน์ยังใช้ตัวพิมพ์ดีด (หลักตรงกัน) */
+    .sq-h1, #module-RAW .rm-title, #module-COLDROOM h1, #module-COLDROOM h2 { font-family:var(--sq-head);font-weight:700;letter-spacing:0; }
+    .sq-h1, #module-RAW .rm-title { font-size:26px; }
+    #module-RAW .rm-tile-num, .sq-tile-num, #module-COLDROOM .stat .v, .xm-kpi-n, .xm-days, #module-RAW .rm-qty, #module-COLDROOM .big-stat-value { font-family:var(--sq-head);font-weight:700;letter-spacing:0; }
+    #module-RAW .rm-qty { font-size:19px; }
+    #module-RAW .rm-tile-num, .sq-tile-num { font-size:28px; }
+    #module-RAW .rm-tile-label, .sq-tile-label { font-size:13px;color:var(--sq-ink2);font-weight:700;gap:6px; }
+
+    /* แผ่นป้าย: การ์ด / ช่องสรุป / ตาราง — ขอบ 1.5px สีเส้น มุม 6px ไม่มีเงา */
+    #module-RAW .rm-card, #module-RAW .rm-tiles, .sq-card, .sq-tiles, .sq-row, #module-COLDROOM .card, .xm-kpi, .xm-card, .xm-chart { border:1.5px solid var(--sq-line);border-radius:6px;box-shadow:none; }
+    .sq-card.rail-cold, .sq-card.rail-sqf, .sq-card.rail-mlm { border-left-width:1.5px;border-top:6px solid;border-radius:0; }   /* สีคลังย้ายจากขอบซ้ายขึ้นแถบบน (แบบป้าย) */
+    .sq-card.rail-cold { border-top-color:var(--sq-fac-cr); } .sq-card.rail-sqf { border-top-color:var(--sq-fac-sqf); } .sq-card.rail-mlm { border-top-color:var(--sq-fac-mlm); }
+    .xm-card, .xm-card.sev-crit, .xm-card.sev-high, .xm-card.sev-warn { border-left:1.5px solid var(--sq-line); }
+    #module-RAW .rm-table thead th, .sq-table thead th { color:var(--sq-ink2);font-size:12.5px;letter-spacing:0;border-bottom:2px solid var(--sq-green); }
+    #module-RAW .rm-table tbody tr, .sq-table tbody tr { border-bottom:1px solid var(--sq-line); }
+    .sq-table td.rail, .sq-table th.rail { display:none; }   /* แถบสีข้างแถว → สถานะบอกด้วยป้าย/คำในแถวแล้ว */
+    .badge-status, .sq-chip { gap:6px;padding:2px 2px;background:none !important;font-size:13px; }
+    .badge-status.crit, .sq-chip.crit { color:var(--sq-crit); } .badge-status.high, .sq-chip.high { color:var(--sq-high); }
+    .badge-status.warn, .sq-chip.warn { color:var(--sq-warn); } .badge-status:not(.crit):not(.high):not(.warn) { color:var(--sq-ink2);font-weight:600; }
+
+    /* ปุ่ม: หมึก / เส้น / เขียวไปต่อ — มุม 6px สูงพอกด */
+    .sq-btn, #module-RAW .rm-btn { display:inline-flex;align-items:center;justify-content:center;gap:6px;border:1.5px solid var(--sq-line2);border-radius:6px;min-height:38px;font-size:13.5px;font-weight:800; }
+    .sq-btn:hover, #module-RAW .rm-btn:hover { border-color:var(--sq-green);background:var(--sq-raised); }
+    .sq-btn-primary, #module-RAW .rm-btn-primary { background:var(--sq-green);border-color:var(--sq-green);color:#fff; }
+    .sq-btn-primary:hover, #module-RAW .rm-btn-primary:hover { background:var(--sq-accent);border-color:var(--sq-accent);filter:none; }
+    .sq-btn-sm { min-height:32px; }
+    #module-RAW .rm-mini { border:1.5px solid var(--sq-line2);border-radius:6px;color:var(--sq-ink);font-size:13px;min-height:34px;padding:4px 11px; }
+    #module-RAW .rm-mini:hover { background:var(--sq-raised);border-color:var(--sq-green);color:var(--sq-ink); }
+    #module-RAW .rm-mini.solid { background:var(--sq-green);border-color:var(--sq-green);color:#fff; }
+    #module-RAW .rm-mini.solid:hover { background:var(--sq-accent);filter:none;color:#fff; }
+    #module-RAW .rm-chip, .sq-tab { border-radius:6px; }
+    /* สมมาตร (เจ้าของสั่ง 2026-10-20): ปุ่มในแถวอยู่บรรทัดเดียวเสมอ ช่องจัดการกว้างพอดีปุ่ม (เดิม "แก้ไข" ตกบรรทัดล่างคนเดียว)
+       แถบเครื่องมือ: แถวบน ค้นหา + ค่าเตือน · แถวล่าง ชิปกรองเต็มแถว (เดิมตัดบรรทัดตามที่ว่าง) */
+    @media (min-width:901px) {   /* จอแคบเป็นการ์ด — กฎของการ์ดอยู่ใน @media (max-width:900px) */
+      #module-RAW .rm-rowacts { display:grid;grid-template-columns:repeat(3,auto);gap:6px;justify-content:end; }
+      #module-RAW .rm-table td.rm-actcell { width:1%;white-space:nowrap; }
+    }
+    #module-RAW .rm-toolbar { gap:10px 14px; }
+    #module-RAW .rm-search { flex:1 1 320px;order:0; }
+    #module-RAW .rm-alertdays { order:1; }
+    #module-RAW .rm-chips { order:2;flex:1 1 100%; }
+    #module-RAW .rm-chip { display:inline-flex;align-items:center;gap:6px;border:1.5px solid var(--sq-line2);color:var(--sq-ink);font-size:13px;min-height:34px;padding:4px 11px; }
+    #module-RAW .rm-chip.filter-active { background:var(--sq-green);border-color:var(--sq-green);color:#fff; }
+    #module-RAW .rm-search input, .sq-input, .sq-select, #module-RAW .rm-alertdays input { border:1.5px solid var(--sq-line2);border-radius:6px;background:#fff; }
+    #module-RAW .rm-factory { border-radius:4px;background:#fff;border:1.5px solid var(--sq-line2);color:var(--sq-ink); }
+    #module-RAW .rm-factory::before { border-radius:2px;width:9px;height:9px; }
+    .sq-tab.is-on { color:var(--sq-accent);border-bottom:3px solid var(--sq-green); }
+    .sq-tab-badge { font-family:var(--sq-head); }
+    .sq-note { border-radius:6px;background:#fff;border:1.5px solid var(--sq-line); }
+    .sq-note b { color:var(--sq-ink); }
+    .sq-note.warn { background:var(--sq-warn-bg);border-color:var(--sq-warn); }
+    /* เมนูเพิ่มเติม: หัวกลุ่มตัวเล็กหนา เส้นคั่น */
+    #module-RAW .rm-more-menu { border:2px solid var(--sq-green);border-radius:6px;box-shadow:0 10px 24px rgba(0,0,0,.18);min-width:250px;padding:4px 0; }
+    #module-RAW .rm-more-menu button { border-radius:0;padding:9px 14px;color:var(--sq-ink);font-weight:700;font-size:13.5px; }
+    #module-RAW .rm-more-menu button:hover { background:var(--sq-raised);color:var(--sq-ink); }
+    .rm-more-h { font-size:12px;font-weight:800;color:var(--sq-ink2);padding:8px 14px 3px;border-top:1.5px solid var(--sq-line); }
+    .rm-more-h:first-child { border-top:0; }
+    /* ปุ่มยืนยันในหน้าต่าง = แผ่นป้ายสีตามงาน ขอบขาวด้านใน (ชุดเดียวกับ .m-confirm มือถือ) */
+    .ui-confirm { color:#fff;border:2px solid rgba(0,0,0,.3);border-radius:8px;box-shadow:inset 0 0 0 3px #fff;padding:14px 12px;font-family:var(--sq-head);font-weight:700;font-size:20px;line-height:1.25;min-height:60px;cursor:pointer; }
+    .ui-confirm:hover { filter:brightness(1.1); }
+    .ui-cancel { display:block;width:100%;margin-top:10px;padding:10px;min-height:44px;background:none;border:0;color:var(--sq-ink2);font-weight:800;font-size:14px;cursor:pointer; }
+    .ui-cancel:hover { color:var(--sq-ink);text-decoration:underline;text-underline-offset:3px; }
+    .ui-x { display:inline-flex;align-items:center;justify-content:center;width:44px;height:44px;border:1.5px solid var(--sq-line2);border-radius:6px;background:#fff;color:var(--sq-ink);cursor:pointer; }
+    .ui-x:hover { border-color:var(--sq-green); }
+    .ui-danger-link { display:block;width:100%;margin-top:14px;padding:10px;min-height:44px;background:none;border:0;color:var(--sq-crit);font-weight:800;font-size:14px;text-decoration:underline;text-underline-offset:3px;cursor:pointer; }
+
+    /* หน้าต่างทุกบาน = แผ่นป้าย: ขอบหมึก 2px แถบเหลืองบน มุมเหลี่ยม หัวขาวตัวหมึก
+       (เดิมหัวสีต่างกันทุกบาน กรมท่า/ฟ้า/เขียว มุม 24px) — !important ชนะ class Tailwind และ style ในแท็ก */
+    .ui-modal { background:rgba(17,17,17,.6) !important;backdrop-filter:none !important; }
+    .ui-modal > div { border:2px solid var(--sq-green) !important;border-top:6px solid var(--sq-band) !important;border-radius:0 !important;box-shadow:0 18px 44px rgba(0,0,0,.35) !important; }
+    .ui-plate-head { background:#fff !important;color:var(--sq-ink) !important;border-bottom:1.5px solid var(--sq-line);padding:16px 20px !important; }
+    .ui-plate-head * { color:var(--sq-ink2) !important; }
+    .ui-plate-head span[style*="background"] { color:#fff !important; }   /* ชิปสีคลังในหัวตั้งค่าแจ้งเตือน = ตัวขาวบนพื้นสี */
+    .ui-plate-head h2, .ui-plate-head h2 *, .ui-plate-head .ui-title { font-family:var(--sq-head) !important;font-weight:700 !important;font-size:22px !important;letter-spacing:0 !important;text-transform:none !important;color:var(--sq-ink) !important; }
+    .ui-plate-head button { color:var(--sq-ink) !important;background:#fff !important;border:1.5px solid var(--sq-line2) !important;border-radius:6px !important;min-width:44px;min-height:44px;font-size:15px !important;padding:4px 12px !important; }
+    .ui-plate-head button:hover { border-color:var(--sq-green) !important; }
+    .ui-modal > div > div:first-child .sq-card-title { font:700 20px/1.3 var(--sq-head);letter-spacing:0; }
+    .ui-modal h2 { font-family:var(--sq-head);font-weight:700;letter-spacing:0; }
+    .ui-modal input.border-2:not([readonly]), .ui-modal select.border-2, .ui-modal textarea.border-2, .ui-modal input.border-4 { border-color:var(--sq-line2);background:#fff; }
+    .ui-modal input[readonly] { color:var(--sq-ink2); }   /* ช่องอ่านอย่างเดียว (รหัส) = พื้นเทา ไม่มีขอบ แยกจากช่องที่แก้ได้ */
+    .ui-modal input.border-2:focus, .ui-modal select.border-2:focus, .ui-modal textarea.border-2:focus, .ui-modal input.border-4:focus { border-color:var(--sq-green);box-shadow:0 0 0 3px #fde0bd; }
+    .ui-modal label { color:var(--sq-ink2); }
+    /* กล่องยืนยันของห้องเย็น (crModal) แบบเดียวกัน */
+    .cr-modal-box { border:2px solid var(--sq-green);border-top:6px solid var(--sq-band);border-radius:0; }
+    .cr-modal-box h3 { font:700 22px/1.3 var(--sq-head); }
+    .cr-modal-box p { color:var(--sq-ink2); }
+    /* หน้าต่างเลือกงาน เบิก/คืน/รับ (rawActionModal) — ปุ่มที่เลือก = สีงาน ตัวขาว (setRawType สลับ class) */
+    #rawActionModal [role="group"] > button { border:2px solid var(--sq-line2);border-radius:6px; }
+    #rawActionModal [role="group"] > button[aria-pressed="false"] { background:#fff;color:var(--sq-ink); }   /* ตัวที่เลือกได้พื้นจาก .t-out/.t-ret/.t-in */
+    #rawActionModal [role="group"] > button[aria-pressed="true"] { color:#fff;border-color:rgba(0,0,0,.3);box-shadow:none; }
+    #rawActionModal [role="group"] { background:none !important;padding:0 !important;gap:8px !important; }
+    /* toast = แผ่นป้ายเล็ก */
+    .toast-item { border-radius:6px;border:0;box-shadow:0 8px 20px rgba(0,0,0,.2); }
+    .toast-warn { background:var(--sq-band);color:#111; }
+    .toast-info { background:var(--sq-must); }
+    .loading-box { border-radius:6px;border:2px solid var(--sq-green);border-top:6px solid var(--sq-band);color:var(--sq-ink); }
+    .loading-overlay { background:rgba(17,17,17,.55);backdrop-filter:none; }
+    .spinner { border-color:var(--sq-line);border-top-color:var(--sq-ink); }
+    .ntf-card { border-radius:6px; }
+    .ntf-day span { border-radius:6px;border-color:var(--sq-line2);color:var(--sq-ink2); }
+    .ntf-day input:checked + span { background:var(--sq-green);border-color:var(--sq-green); }
+    .ntf-btn, .ntf-quick button { border-radius:6px; }
+    .ntf-hint, .ntf-opt { color:var(--sq-ink2); }
+    /* ตั้งค่าแจ้งเตือน: ส่วน Telegram / LINE / กำหนดการ เป็นหัวข้อคั่นเส้น ไม่ซ้อนกล่องในกล่อง */
+    #unifiedSettingsModal .space-y-5 > div { background:none !important;border:0 !important;border-top:2px solid var(--sq-green) !important;border-radius:0 !important;padding:16px 0 4px !important; }
+    #unifiedSettingsModal .space-y-5 > div:first-child { border-top:0 !important;padding-top:0 !important; }
+    #unifiedSettingsModal h3 { font:700 18px/1.3 var(--sq-head);letter-spacing:0;text-transform:none;color:var(--sq-ink); }
+    /* ตัวกรองความเคลื่อนไหว: ชิปเส้นบนแผ่นขาว ขึ้นบรรทัดใหม่ได้ (ไม่เลื่อนข้าง) */
+    .act-filter-btn { background:#fff;color:var(--sq-ink);border:1.5px solid var(--sq-line2);border-radius:6px;min-height:36px; }
+    .act-filter-btn.active { background:var(--sq-green);border-color:var(--sq-green);color:#fff; }
+    /* ภาพรวมบนมือถือ: แท็บขึ้นบรรทัดใหม่แทนเลื่อนข้าง (เจ้าของสั่ง 2026-10-20) */
+    .xm-tabs { flex-wrap:wrap;overflow:visible; }
+    .xm-tab { border-radius:6px; }
+    .xm-tab.on { background:var(--sq-green);border-color:var(--sq-green); }
+    /* ห้องเย็น: ปุ่มรองมีขอบให้เห็นว่ากดได้ · กล่องยอดรวม/ช่องสรุปเป็นแผ่นป้ายมุม 6px (เดิมมุม 20px เงาม่วงจากธีมเก่า) */
+    #module-COLDROOM button.cr-btn { border-radius:6px;min-height:38px; }
+    #module-COLDROOM .btn-light { border:1.5px solid var(--sq-line2);color:var(--sq-ink); }
+    #module-COLDROOM .btn-light:hover { border-color:var(--sq-green);background:var(--sq-raised); }
+    #module-COLDROOM .btn-primary { background:var(--sq-green);border-color:var(--sq-green); }
+    #module-COLDROOM .btn-primary:hover { background:var(--sq-accent);filter:none; }
+    #module-COLDROOM .big-stat-box { background:var(--sq-green); }
+    #module-COLDROOM .stat, #module-COLDROOM .table-wrap, #module-COLDROOM .cr-status, #module-COLDROOM .scanner-box { border-radius:6px; }
+    #module-COLDROOM .stat { background:#fff;border:1.5px solid var(--sq-line); }
+    #module-COLDROOM th { background:var(--sq-raised);color:var(--sq-ink2);border-bottom:2px solid var(--sq-green); }
+    #module-COLDROOM td { border-bottom-color:var(--sq-line); }
+    #module-COLDROOM .cr-tab-btn { font-size:14px;color:var(--sq-ink2); }
+    #module-COLDROOM .cr-tab-btn.active { color:var(--sq-accent);border-bottom:3px solid var(--sq-green); }
+    #module-COLDROOM input, #module-COLDROOM select, #module-COLDROOM textarea { border:1.5px solid var(--sq-line2);border-radius:6px; }
+    #module-COLDROOM .pill { border-radius:4px; }
+    .history-item { border-radius:6px;border-left-width:1.5px;border:1.5px solid var(--sq-line);background:#fff; }
   </style>
 </head>
 <body class="min-h-screen bg-slate-100">
 
   <!-- ═══ OFFLINE BANNER ═══ -->
   <div id="offlineBanner" class="hide" style="position:fixed;top:0;left:0;right:0;z-index:9999;background:var(--sq-high);color:#fff;text-align:center;font-weight:800;font-size:13px;padding:6px 12px;box-shadow:0 2px 8px rgba(0,0,0,.2);">
-    📴 ออฟไลน์ — แสดงข้อมูลล่าสุดที่บันทึกไว้ (การบันทึกจะทำได้เมื่อกลับมาออนไลน์)
+    ออฟไลน์ — แสดงข้อมูลล่าสุดที่บันทึกไว้ (การบันทึกจะทำได้เมื่อกลับมาออนไลน์)
   </div>
 
   <!-- ═══ LOADING OVERLAY ═══ -->
@@ -758,19 +966,19 @@
   <div id="toastContainer" class="toast-container"></div>
 
   <!-- ═══ UNIFIED NOTIFICATION SETTINGS ═══ -->
-  <div id="unifiedSettingsModal" class="hidden fixed inset-0 bg-black/80 backdrop-blur-md z-[400] flex items-center justify-center p-4">
+  <div id="unifiedSettingsModal" class="ui-modal hidden fixed inset-0 bg-black/80 backdrop-blur-md z-[400] flex items-center justify-center p-4">
     <div class="bg-white w-full max-w-lg rounded-2xl shadow-2xl overflow-hidden border-2 border-slate-800" style="max-height:92vh;display:flex;flex-direction:column;">
       <!-- Header -->
-      <div class="bg-slate-900 p-8 text-white flex-shrink-0">
+      <div class="ui-plate-head p-8 flex-shrink-0">
         <div class="flex justify-between items-center mb-2">
-          <h2 class="text-2xl font-black tracking-tight">⚙️ ตั้งค่าการแจ้งเตือน</h2>
-          <button onclick="closeUnifiedSettings()" class="text-3xl hover:text-red-400 transition-colors">✕</button>
+          <h2 class="text-2xl font-black tracking-tight">ตั้งค่าการแจ้งเตือน</h2>
+          <button onclick="closeUnifiedSettings()" aria-label="ปิด"><i class="ic ic-x" aria-hidden="true"></i></button>
         </div>
         <div class="flex gap-2 flex-wrap mt-3">
-          <span class="text-white text-xs font-black px-3 py-1 rounded-full" style="background:var(--sq-fac-cr);">❄️ ห้องเย็น</span>
-          <span class="text-white text-xs font-black px-3 py-1 rounded-full" style="background:var(--sq-fac-sqf);">🏭 SQF</span>
-          <span class="text-white text-xs font-black px-3 py-1 rounded-full" style="background:var(--sq-fac-mlm);">🏭 MLM</span>
-          <span class="text-white text-xs font-black px-3 py-1 rounded-full" style="background:var(--sq-accent);">✅ ใช้ร่วมกัน</span>
+          <span class="text-white text-xs font-black px-3 py-1 rounded-full" style="background:var(--sq-fac-cr);">ห้องเย็น</span>
+          <span class="text-white text-xs font-black px-3 py-1 rounded-full" style="background:var(--sq-fac-sqf);">SQF</span>
+          <span class="text-white text-xs font-black px-3 py-1 rounded-full" style="background:var(--sq-fac-mlm);">MLM</span>
+          <span class="text-white text-xs font-black px-3 py-1 rounded-full" style="background:var(--sq-accent);">ใช้ร่วมกัน</span>
         </div>
       </div>
 
@@ -779,11 +987,11 @@
 
         <!-- ─── TELEGRAM SECTION ─── -->
         <div class="bg-blue-50 border-2 border-blue-200 rounded-3xl p-5 space-y-4">
-          <h3 class="text-base font-black text-blue-800 uppercase tracking-wide">📲 Telegram</h3>
+          <h3 class="text-base font-black text-blue-800 uppercase tracking-wide">Telegram</h3>
 
           <div class="grid grid-cols-2 gap-4">
             <div>
-              <label for="uniTgBotName" class="text-xs font-black text-slate-600 mb-1 block">🤖 ชื่อบอท</label>
+              <label for="uniTgBotName" class="text-xs font-black text-slate-600 mb-1 block">ชื่อบอท</label>
               <input type="text" id="uniTgBotName"
                 class="w-full bg-white border-2 border-slate-200 p-3 rounded-2xl font-bold outline-none focus:border-blue-500 transition-colors text-sm"
                 placeholder="@MyStockBot">
@@ -792,21 +1000,21 @@
               <label for="uniTgEnable" class="text-xs font-black text-slate-600 mb-1 block">สถานะ</label>
               <select id="uniTgEnable"
                 class="w-full bg-white border-2 border-slate-200 p-3 rounded-2xl font-bold outline-none focus:border-blue-500 transition-colors text-sm">
-                <option value="true">✅ เปิดใช้งาน</option>
-                <option value="false">❌ ปิดใช้งาน</option>
+                <option value="true">เปิดใช้งาน</option>
+                <option value="false">ปิดใช้งาน</option>
               </select>
             </div>
           </div>
 
           <div>
-            <label for="uniTgToken" class="text-xs font-black text-slate-600 mb-1 block">🔑 Bot Token</label>
+            <label for="uniTgToken" class="text-xs font-black text-slate-600 mb-1 block">Bot Token</label>
             <input type="password" id="uniTgToken"
               class="w-full bg-white border-2 border-slate-200 p-3 rounded-2xl font-bold outline-none focus:border-blue-500 transition-colors text-sm"
               placeholder="1234567890:ABC-xxxxxxxxxxxxx">
           </div>
 
           <div>
-            <label for="uniTgChatIds" class="text-xs font-black text-slate-600 mb-1 block">💬 Chat ID
+            <label for="uniTgChatIds" class="text-xs font-black text-slate-600 mb-1 block">Chat ID
               <span class="text-slate-600 font-normal normal-case">(คั่นหลาย ID ด้วยคอมม่า)</span>
             </label>
             <textarea id="uniTgChatIds" rows="2"
@@ -815,38 +1023,38 @@
           </div>
 
           <div class="grid grid-cols-2 gap-2">
-            <button onclick="saveUnifiedSettings()" id="uniBtnSave" class="bg-blue-700 text-white py-3 rounded-2xl font-black hover:bg-blue-800 transition-all text-sm">💾 บันทึก Telegram</button>
-            <button onclick="testTelegram()" class="bg-blue-100 text-blue-800 py-3 rounded-2xl font-black hover:bg-blue-200 transition-all text-sm">📨 ทดสอบ Telegram</button>
+            <button onclick="saveUnifiedSettings()" id="uniBtnSave" class="text-white py-3 rounded-2xl font-black text-sm" style="background:var(--sq-green);">บันทึก Telegram</button>
+            <button onclick="testTelegram()" class="sq-btn justify-center py-3 text-sm">ทดสอบ Telegram</button>
           </div>
         </div>
 
         <!-- ─── LINE SECTION (js/line.js) — ส่งเฉพาะสรุปที่ต้องสั่งซื้อ เพราะ LINE นับโควตาตามจำนวนสมาชิก ─── -->
         <div class="bg-green-50 border-2 border-green-200 rounded-3xl p-5 space-y-4">
           <div class="flex items-center justify-between gap-2">
-            <h3 class="text-base font-black text-green-800 uppercase tracking-wide">💚 LINE กลุ่ม</h3>
+            <h3 class="text-base font-black text-green-800 uppercase tracking-wide">LINE กลุ่ม</h3>
             <span id="lineBadge" class="text-xs font-black px-3 py-1 rounded-full bg-amber-100 text-amber-800">กำลังตรวจ…</span>
           </div>
-          <p class="text-xs text-slate-500 font-bold leading-relaxed">ส่งเฉพาะ <b>สรุปสต๊อก</b> ตามวัน/เวลา/หัวข้อใน <b>🗓️ กำหนดการส่งสรุป</b> ด้านล่าง (+ ปุ่มส่งในหน้าวางแผนสั่งซื้อ) ·
+          <p class="text-xs text-slate-500 font-bold leading-relaxed">ส่งเฉพาะ <b>สรุปสต๊อก</b> ตามวัน/เวลา/หัวข้อใน <b>กำหนดการส่งสรุป</b> ด้านล่าง (+ ปุ่มส่งในหน้าวางแผนสั่งซื้อ) ·
             LINE นับโควตา<b>ตามจำนวนสมาชิกในกลุ่ม</b> — แพ็กเกจฟรี 300 ข้อความ/เดือน</p>
           <div id="lineInfo" class="text-sm space-y-1.5"></div>
           <div>
-            <label for="lineTokenIn" class="text-xs font-black text-slate-600 mb-1 block">🔑 Channel access token (long-lived)</label>
+            <label for="lineTokenIn" class="text-xs font-black text-slate-600 mb-1 block">Channel access token (long-lived)</label>
             <input type="password" id="lineTokenIn" autocomplete="off" class="w-full bg-white border-2 border-slate-200 p-3 rounded-2xl font-bold outline-none focus:border-green-500 transition-colors text-sm">
           </div>
           <div>
-            <label for="lineSecretIn" class="text-xs font-black text-slate-600 mb-1 block">🔐 Channel secret</label>
+            <label for="lineSecretIn" class="text-xs font-black text-slate-600 mb-1 block">Channel secret</label>
             <input type="password" id="lineSecretIn" autocomplete="off" class="w-full bg-white border-2 border-slate-200 p-3 rounded-2xl font-bold outline-none focus:border-green-500 transition-colors text-sm">
           </div>
           <div>
-            <label for="lineWebhookUrl" class="text-xs font-black text-slate-600 mb-1 block">🔗 Webhook URL — คัดลอกไปใส่ใน LINE Developers</label>
+            <label for="lineWebhookUrl" class="text-xs font-black text-slate-600 mb-1 block">Webhook URL — คัดลอกไปใส่ใน LINE Developers</label>
             <div class="flex gap-2">
               <input type="text" id="lineWebhookUrl" readonly class="w-full bg-white border-2 border-slate-200 p-3 rounded-2xl font-bold outline-none focus:border-green-500 transition-colors text-sm text-xs" onclick="this.select()">
               <button type="button" onclick="lineCopyWebhook()" class="bg-green-100 text-green-800 px-4 rounded-2xl font-black text-sm hover:bg-green-200">คัดลอก</button>
             </div>
           </div>
           <div class="grid grid-cols-2 gap-2">
-            <button type="button" onclick="lineSaveSettings(this)" class="bg-green-700 text-white py-3 rounded-2xl font-black hover:bg-green-800 transition-all text-sm">💾 บันทึก LINE</button>
-            <button type="button" onclick="lineTestSend(this)" class="bg-green-100 text-green-800 py-3 rounded-2xl font-black hover:bg-green-200 transition-all text-sm">📨 ทดสอบส่ง LINE</button>
+            <button type="button" onclick="lineSaveSettings(this)" class="text-white py-3 rounded-2xl font-black text-sm" style="background:var(--sq-green);">บันทึก LINE</button>
+            <button type="button" onclick="lineTestSend(this)" class="sq-btn justify-center py-3 text-sm">ทดสอบส่ง LINE</button>
           </div>
           <details class="text-xs text-slate-600 leading-relaxed">
             <summary class="font-black text-green-800 cursor-pointer">วิธีตั้งค่าครั้งแรก (ทำครั้งเดียว ~10 นาที)</summary>
@@ -864,11 +1072,11 @@
 
         <!-- ─── 🗓️ กำหนดการส่งสรุป (js/notify.js) — วัน / เวลา / หัวข้อ / รูปแบบ ตั้งแยก Telegram กับ LINE ─── -->
         <div class="bg-white border-2 border-slate-200 rounded-3xl p-5 space-y-4">
-          <h3 class="text-base font-black text-slate-800 uppercase tracking-wide">🗓️ กำหนดการส่งสรุป</h3>
+          <h3 class="text-base font-black text-slate-800 uppercase tracking-wide">กำหนดการส่งสรุป</h3>
           <p class="text-xs text-slate-500 font-bold leading-relaxed">เลือกวัน เวลา หัวข้อ และรูปแบบข้อความของแต่ละช่องแยกกัน —
-            LINE นับโควตาตามจำนวนสมาชิก จึงตั้งให้ส่งน้อยวันกว่า Telegram ได้ · กด 👁️ ดูตัวอย่างก่อนบันทึกได้ (ไม่ส่งจริง)</p>
+            LINE นับโควตาตามจำนวนสมาชิก จึงตั้งให้ส่งน้อยวันกว่า Telegram ได้ · กด ดูตัวอย่างก่อนบันทึกได้ (ไม่ส่งจริง)</p>
           <div id="ntfBox"></div>
-          <button type="button" onclick="ntfSave(this)" class="w-full bg-slate-900 text-white py-3 rounded-2xl font-black hover:bg-black transition-all text-sm">💾 บันทึกกำหนดการส่งสรุป</button>
+          <button type="button" onclick="ntfSave(this)" class="w-full text-white py-3 rounded-2xl font-black text-sm" style="background:var(--sq-green);">บันทึกกำหนดการส่งสรุป</button>
         </div>
 
         <!-- ปุ่มบันทึกแต่ละส่วนอยู่ในส่วนของตัวเอง (เดิมมีปุ่มใหญ่ "บันทึกการตั้งค่า" ท้ายหน้าที่บันทึกแค่ Telegram · QA M17) -->
@@ -876,54 +1084,53 @@
     </div>
   </div>
 
-  <!-- ═══ MODE PICKER ═══ (พื้นหลังใส่เป็น style ตรงๆ — class bg-slate-900/98 ไม่มีใน CSS ที่ build ไว้ เคยทำพื้นโปร่ง ตัวขาวทับการ์ดขาว · QA S9) -->
-  <div id="modePicker" style="display:none;background:rgba(15,23,42,.97);" class="fixed inset-0 z-[210] flex flex-col items-center justify-center p-6 backdrop-blur-md">
-    <div class="w-full max-w-sm">
-      <div class="text-center mb-8">
-        <div class="text-5xl mb-3">👋</div>
-        <h2 class="text-2xl font-black text-white">สวัสดี, <span id="modePickerUser" class="text-emerald-300"></span></h2>
-        <p class="text-slate-400 text-sm mt-2">เลือกประเภทอุปกรณ์ที่ใช้งาน</p>
+  <!-- ═══ MODE PICKER ═══ (พื้นหลังใส่เป็น style ตรงๆ ไม่พึ่ง class — เคยทำพื้นโปร่ง ตัวขาวทับการ์ดขาว · QA S9) -->
+  <div id="modePicker" style="display:none;background:var(--sq-ground);" class="fixed inset-0 z-[210] flex flex-col items-center justify-center p-6 overflow-y-auto">
+    <div class="w-full max-w-sm my-auto">
+      <div class="text-center mb-7">
+        <h2 class="ui-k" style="font-size:28px;color:var(--sq-ink);">สวัสดี <span id="modePickerUser" style="color:var(--sq-accent);"></span></h2>
+        <p class="text-sm mt-2 font-bold" style="color:var(--sq-ink2);">เลือกประเภทอุปกรณ์ที่ใช้งาน</p>
       </div>
 
       <!-- Mobile button -->
       <div id="modeRecommendEl" style="display:none" class="text-center mb-1">
-        <span id="modeRecommend" class="bg-emerald-700 text-white text-xs font-black px-3 py-1 rounded-full">แนะนำสำหรับอุปกรณ์นี้</span>
+        <span id="modeRecommend" class="text-xs font-black px-3 py-1" style="background:var(--sq-band);color:#111;border-radius:4px;">แนะนำสำหรับอุปกรณ์นี้</span>
       </div>
       <button id="modeBtnMobile" onclick="selectMode('mobile', document.getElementById('modeRemember').checked)"
-        class="w-full bg-slate-800 border-2 border-slate-700 text-white rounded-3xl p-6 text-left mb-3 active:brightness-75 transition-all">
+        class="ui-mode-btn w-full p-5 text-left mb-3">
         <div class="flex items-center gap-4">
-          <div class="text-5xl">📱</div>
+          <i class="ic ic-phone" aria-hidden="true"></i>
           <div>
-            <div class="text-xl font-black">โหมดมือถือ</div>
-            <div class="text-slate-400 text-sm mt-0.5">UI เรียบง่าย · สแกนบาร์โค้ด · เบิก/รับเร็ว</div>
+            <div class="ui-k" style="font-size:21px;">โหมดมือถือ</div>
+            <div class="text-sm mt-0.5 font-semibold" style="color:var(--sq-ink2);">ใช้ง่าย · สแกนบาร์โค้ด · เบิก/รับเร็ว</div>
           </div>
         </div>
       </button>
 
       <!-- Desktop button -->
       <button id="modeBtnDesktop" onclick="selectMode('desktop', document.getElementById('modeRemember').checked)"
-        class="w-full bg-slate-800 border-2 border-slate-700 text-white rounded-3xl p-6 text-left mb-5 active:brightness-75 transition-all">
+        class="ui-mode-btn w-full p-5 text-left mb-5">
         <div class="flex items-center gap-4">
-          <div class="text-5xl">💻</div>
+          <i class="ic ic-desktop" aria-hidden="true"></i>
           <div>
-            <div class="text-xl font-black">โหมดคอมพิวเตอร์</div>
-            <div class="text-slate-400 text-sm mt-0.5">ฟีเจอร์ครบ · จัดการระบบ · รายงาน</div>
+            <div class="ui-k" style="font-size:21px;">โหมดคอมพิวเตอร์</div>
+            <div class="text-sm mt-0.5 font-semibold" style="color:var(--sq-ink2);">ทำได้ครบ · จัดการระบบ · รายงาน</div>
           </div>
         </div>
       </button>
 
       <!-- Remember -->
-      <label class="flex items-center justify-center gap-3 cursor-pointer text-slate-300 text-sm font-bold py-2" style="min-height:44px;">
+      <label class="flex items-center justify-center gap-3 cursor-pointer text-sm font-bold py-2" style="min-height:44px;color:var(--sq-ink2);">
         <input type="checkbox" id="modeRemember" class="w-5 h-5 accent-emerald-600">
         <!-- เดิมบอก "เปลี่ยนได้ใน ⚙️ ตั้งค่า" แต่ผู้ใช้ทั่วไปไม่มีเมนูนั้น (QA L4) -->
-        จดจำการเลือกนี้ (เปลี่ยนภายหลังได้ที่ปุ่ม 📱 มือถือ / 💻 คอมพิวเตอร์)
+        จดจำการเลือกนี้ (เปลี่ยนภายหลังได้ที่ปุ่ม "มือถือ" บนแถบเมนู)
       </label>
     </div>
   </div>
 
   <!-- ═══ LOGIN ═══ -->
-  <div id="loginOverlay" class="fixed inset-0 bg-slate-900/95 z-[200] flex justify-center p-6 text-center backdrop-blur-md overflow-y-auto">
-    <div class="my-auto bg-white p-8 sm:p-10 rounded-3xl shadow-2xl w-full max-w-sm" style="border-top:12px solid var(--sq-accent);">
+  <div id="loginOverlay" class="fixed inset-0 z-[200] flex justify-center p-6 text-center overflow-y-auto" style="background:var(--sq-ground);">
+    <div class="ui-login my-auto bg-white p-8 sm:p-10 w-full max-w-sm">
 
       <!-- ── แผง Login ── -->
       <div id="loginPanel">
@@ -931,45 +1138,43 @@
         <img src="assets/logo.png" alt="แม่ละมาย · สุพรรณคิวฟู้ดส์" id="loginLogo"
              onerror="this.remove();document.getElementById('loginFallbackIcon').style.display='';"
              style="display:block;width:100%;max-width:250px;height:auto;margin:0 auto 14px;">
-        <div id="loginFallbackIcon" class="text-6xl mb-4" style="display:none;">🏭</div>
-        <h2 class="text-2xl font-black mb-1" style="color:var(--sq-ink);">SQF &amp; MLM</h2>
+        <div id="loginFallbackIcon" class="mb-4" style="display:none;color:var(--sq-green);"><i class="ic ic-factory" style="width:56px;height:56px;" aria-hidden="true"></i></div>
+        <h2 class="ui-k mb-1" style="font-size:26px;color:var(--sq-ink);">SQF &amp; MLM</h2>
         <p class="font-black mb-2 text-xs" style="color:var(--sq-accent);">ระบบจัดการสต๊อกรวม</p>
         <p class="font-bold mb-2 text-xs" style="color:var(--sq-muted);">สุพรรณคิวฟู้ดส์ | แม่ละมาย</p>
         <!-- บอกให้ชัดว่าใช้ทำอะไร ใครใช้ (QA M20 — เดิมคนได้ลิงก์มาใหม่ไม่รู้ว่าเว็บนี้คืออะไร) -->
         <p class="font-bold mb-5 text-sm" style="color:var(--sq-ink2);line-height:1.5;">สำหรับพนักงาน: เบิก · รับเข้า · นับสต๊อก<br>วัตถุดิบ SQF / MLM และคลังห้องเย็น</p>
         <!-- เหตุผลที่ถูกพากลับมาหน้านี้ (บัตรผ่านหมดอายุ) — js/app.js เติมให้ -->
-        <p id="loginNotice" role="alert" style="display:none;font-size:13px;font-weight:800;line-height:1.5;color:var(--sq-high);background:var(--sq-high-bg);border-radius:12px;padding:10px 12px;margin:0 0 12px;text-align:left;"></p>
+        <p id="loginNotice" role="alert" style="display:none;font-size:13px;font-weight:800;line-height:1.5;color:var(--sq-warn);background:var(--sq-warn-bg);border:1.5px solid var(--sq-warn);border-radius:6px;padding:10px 12px;margin:0 0 12px;text-align:left;"></p>
         <!-- ชื่อผู้ใช้ -->
-        <input type="text" id="usernameInput" placeholder="👤 ระบุชื่อพนักงาน"
-          class="w-full bg-slate-50 border-2 border-slate-200 p-5 rounded-2xl mb-3 text-center outline-none focus:border-emerald-600 font-black text-base"
+        <input type="text" id="usernameInput" placeholder="ระบุชื่อพนักงาน"
+          class="ui-field w-full p-5 mb-3 text-center font-black text-base"
           onkeydown="if(event.key==='Enter') login()" autocomplete="username" aria-label="ชื่อพนักงาน">
         <!-- ช่องรหัสผ่าน (ซ่อนไว้ แสดงเมื่อ GAS บอกว่าต้องใส่) -->
         <div id="passwordSection" style="display:none;margin-bottom:12px;">
-          <input aria-label="รหัสผ่าน" type="password" id="passwordInput" placeholder="🔑 รหัสผ่าน"
-            class="w-full bg-slate-50 border-2 border-slate-300 p-5 rounded-2xl text-center outline-none focus:border-emerald-600 font-black text-xl"
+          <input aria-label="รหัสผ่าน" type="password" id="passwordInput" placeholder="รหัสผ่าน"
+            class="ui-field w-full p-5 text-center font-black text-xl"
             onkeydown="if(event.key==='Enter') loginWithPassword()" autocomplete="current-password">
-          <p style="font-size:12px;color:var(--sq-muted);margin-top:6px;">🔒 บัญชีนี้มีการตั้งรหัสผ่าน</p>
+          <p style="font-size:12px;color:var(--sq-ink2);margin-top:6px;">บัญชีนี้มีการตั้งรหัสผ่าน</p>
         </div>
-        <button id="loginBtn" onclick="login()" class="login-btn w-full text-white py-5 rounded-2xl font-black transition-all shadow-xl text-lg">
-          เข้าสู่ระบบ 🚀
-        </button>
+        <button id="loginBtn" onclick="login()" class="login-btn w-full text-white py-5 font-black text-lg">เข้าสู่ระบบ</button>
         <!-- คนใหม่ต้องรู้ก่อนลองผิด (QA M20) -->
         <p style="font-size:12px;font-weight:600;color:var(--sq-ink2);margin:12px 2px 0;line-height:1.55;">
           พนักงานใหม่: พิมพ์ชื่อแล้วกด <b>เข้าสู่ระบบ</b> — ถ้ายังไม่มีชื่อในระบบ จะมีปุ่ม <b>ขอสิทธิ์จากแอดมิน</b> ให้กด</p>
 
         <!-- ── กล่องขอสิทธิ์ (แสดงเมื่อไม่พบชื่อ / รออนุมัติ / ถูกปฏิเสธ) ── -->
-        <div id="accessBox" style="display:none;margin-top:14px;border-radius:20px;padding:14px 16px;text-align:left;">
-          <p id="accessMsg" style="font-size:13px;font-weight:800;line-height:1.5;margin:0;"></p>
+        <div id="accessBox" style="display:none;margin-top:14px;border-radius:6px;padding:14px 16px;text-align:left;">
+          <p id="accessMsg" style="font-size:14px;font-weight:800;line-height:1.5;margin:0;display:flex;gap:10px;align-items:flex-start;"></p>
           <button id="accessBtn" onclick="submitAccessRequest()"
-            style="display:none;width:100%;margin-top:11px;background:var(--sq-accent);color:#fff;border:none;padding:13px;border-radius:14px;font-weight:900;font-size:15px;cursor:pointer;font-family:inherit;">
-            🙋 ขอสิทธิ์เข้าใช้งานจาก Admin
+            style="display:none;width:100%;margin-top:11px;background:var(--sq-accent);color:#fff;border:none;padding:13px;border-radius:6px;font-weight:900;font-size:15px;cursor:pointer;font-family:inherit;min-height:48px;">
+            ขอสิทธิ์เข้าใช้งานจากหัวหน้า
           </button>
-          <p id="accessHint" style="font-size:11px;font-weight:600;margin:9px 0 0;opacity:.8;"></p>
+          <p id="accessHint" style="font-size:12.5px;font-weight:700;margin:9px 0 0;"></p>
         </div>
 
         <div style="display:flex;justify-content:center;flex-wrap:wrap;gap:6px 14px;margin-top:16px;">
-          <a href="manual.html" target="_blank" rel="noopener" class="login-link">📖 คู่มือการใช้งาน</a>
-          <button type="button" onclick="forceRefresh()" class="login-link" title="ล้าง cache และโหลดแอปใหม่">🔄 อัปเดตแอป / แก้หน้าค้าง</button>
+          <a href="manual.html" target="_blank" rel="noopener" class="login-link"><i class="ic ic-book" aria-hidden="true"></i> คู่มือการใช้งาน</a>
+          <button type="button" onclick="forceRefresh()" class="login-link" title="ล้าง cache และโหลดแอปใหม่"><i class="ic ic-refresh" aria-hidden="true"></i> อัปเดตแอป / แก้หน้าค้าง</button>
         </div>
         <!-- รุ่นของแอป = เลขชุดไฟล์ใน sw.js (เดิม v.1020 ตายตัวไม่เคยเปลี่ยน ใช้ตอบว่า "ใช้รุ่นไหนอยู่" ไม่ได้ · QA L4) -->
         <p id="appVersion" style="font-size:12px;color:var(--sq-muted);margin-top:10px;font-weight:600;"></p>
@@ -980,39 +1185,40 @@
   </div>
 
   <!-- ═══ NAVIGATION BAR ═══ -->
-  <nav id="mainNav" class="fixed top-0 left-0 right-0 z-[150] bg-slate-900 shadow-2xl" style="display:none">
+  <nav id="mainNav" class="fixed top-0 left-0 right-0 z-[150]" style="display:none">
     <div class="max-w-7xl mx-auto px-4 py-2">
 
       <!-- แถวที่ 1 — ผู้ใช้ + เลือกคลังที่กำลังทำงาน -->
       <div class="nav-row">
-        <span class="text-white font-black text-sm shrink-0 mr-2" onclick="switchModule('HOME')" role="button" tabindex="0" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();this.click();}"
-              style="cursor:pointer;display:inline-flex;align-items:center;gap:4px;min-height:32px;padding:0 6px;border-radius:8px;" title="กลับหน้าแรก">
-          👤 <span id="navUser" style="color:#5cc98a;"></span>
+        <span class="nav-btn nav-user shrink-0 mr-1" onclick="switchModule('HOME')" role="button" tabindex="0" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();this.click();}" title="กลับหน้าแรก">
+          <i class="ic ic-home" aria-hidden="true"></i><span id="navUser"></span>
           <span id="navDevice" style="display:none;"></span>
         </span>
-        <button id="navBtn-COLDROOM" class="nav-btn" onclick="switchModule('COLDROOM')">❄️ คลังสินค้า<span id="badge-COLDROOM" class="nav-badge" style="display:none"></span></button>
-        <button id="navBtn-SQF"      class="nav-btn" onclick="switchModule('SQF')">🏭 วัตถุดิบ SQF<span id="badge-SQF" class="nav-badge" style="display:none"></span></button>
-        <button id="navBtn-MLM"      class="nav-btn" onclick="switchModule('MLM')">🏭 วัตถุดิบ MLM<span id="badge-MLM" class="nav-badge" style="display:none"></span></button>
-        <button onclick="logout()" class="nav-btn nav-logout shrink-0 ml-auto" title="ออกจากระบบ">🔴 ออกจากระบบ</button>
+        <button id="navBtn-COLDROOM" class="nav-btn nav-wh" onclick="switchModule('COLDROOM')"><i class="ic ic-snow" aria-hidden="true"></i>คลังสินค้า<span id="badge-COLDROOM" class="nav-badge" style="display:none"></span></button>
+        <button id="navBtn-SQF"      class="nav-btn nav-wh" onclick="switchModule('SQF')"><i class="ic ic-factory" aria-hidden="true"></i>วัตถุดิบ SQF<span id="badge-SQF" class="nav-badge" style="display:none"></span></button>
+        <button id="navBtn-MLM"      class="nav-btn nav-wh" onclick="switchModule('MLM')"><i class="ic ic-factory" aria-hidden="true"></i>วัตถุดิบ MLM<span id="badge-MLM" class="nav-badge" style="display:none"></span></button>
+        <button onclick="logout()" class="nav-btn nav-logout shrink-0 ml-auto" title="ออกจากระบบ"><i class="ic ic-logout" aria-hidden="true"></i>ออกจากระบบ</button>
       </div>
 
       <div class="nav-sep"></div>
 
       <!-- แถวที่ 2 — เครื่องมือ -->
       <div class="nav-row">
-        <button id="navBtn-EXEC"  onclick="switchModule('EXEC')"  class="nav-btn nav-tool" style="display:none;">📊 ภาพรวมทั้งระบบ</button>
+        <button id="navBtn-EXEC"  onclick="switchModule('EXEC')"  class="nav-btn nav-tool" style="display:none;"><i class="ic ic-chart" aria-hidden="true"></i>ภาพรวมทั้งระบบ</button>
         <!-- ชื่อปุ่มตั้งใจให้จืด ไม่บอกว่าข้างในคือสูตรการผลิต (เจ้าของสั่ง 2026-08-01 กลัวหลุด) -->
-        <button id="navBtn-BOMHEALTH" onclick="switchModule('BOMHEALTH')" class="nav-btn nav-tool" style="display:none;">🔍 ตรวจข้อมูล</button>
-        <button id="navBtn-ROLES" onclick="switchModule('ROLES')" class="nav-btn nav-tool" style="display:none;">👑 Admin<span id="adminNavBadge" class="nav-badge" style="display:none;background:#f59e0b;"></span></button>
-        <button id="telegramNavBtn" onclick="openUnifiedSettings()" class="nav-btn nav-tool" style="display:none;" title="ตั้งค่าการแจ้งเตือน Telegram / LINE / กำหนดการส่งสรุป">⚙️ แจ้งเตือน</button>
-        <button onclick="openMyHistory()" class="nav-btn nav-tool" title="ดูรายการที่ตัวเองทำ">📜 ของฉัน</button>
-        <button onclick="openShareApp()" class="nav-btn nav-tool" title="แชร์แอปให้พนักงาน (ลิงก์ + QR)">🔗 แชร์แอป</button>
-        <a href="manual.html" target="_blank" rel="noopener" class="nav-btn nav-tool" style="text-decoration:none;" title="คู่มือการใช้งาน">📖 คู่มือ</a>
+        <button id="navBtn-BOMHEALTH" onclick="switchModule('BOMHEALTH')" class="nav-btn nav-tool" style="display:none;"><i class="ic ic-search" aria-hidden="true"></i>ตรวจข้อมูล</button>
+        <button id="navBtn-ROLES" onclick="switchModule('ROLES')" class="nav-btn nav-tool" style="display:none;"><i class="ic ic-users" aria-hidden="true"></i>ผู้ใช้งาน<span id="adminNavBadge" class="nav-badge" style="display:none;"></span></button>
+        <button id="telegramNavBtn" onclick="openUnifiedSettings()" class="nav-btn nav-tool" style="display:none;" title="ตั้งค่าการแจ้งเตือน Telegram / LINE / กำหนดการส่งสรุป"><i class="ic ic-bell" aria-hidden="true"></i>แจ้งเตือน</button>
+        <span class="nav-gap" aria-hidden="true"></span>
+        <button onclick="openMyHistory()" class="nav-btn nav-tool" title="ดูรายการที่ตัวเองทำ"><i class="ic ic-mine" aria-hidden="true"></i>ของฉัน</button>
+        <button onclick="openShareApp()" class="nav-btn nav-tool" title="แชร์แอปให้พนักงาน (ลิงก์ + QR)"><i class="ic ic-share" aria-hidden="true"></i>แชร์แอป</button>
+        <a href="manual.html" target="_blank" rel="noopener" class="nav-btn nav-tool" title="คู่มือการใช้งาน"><i class="ic ic-book" aria-hidden="true"></i>คู่มือ</a>
         <!-- งานที่บันทึกไว้ตอนเน็ตล่ม ยังไม่ได้ส่งขึ้นระบบ — โผล่เฉพาะตอนมีของค้าง -->
-        <button id="offlineQueueBtn" onclick="rawShowOfflineDetail()" class="nav-btn"
-                style="display:none;background:rgba(234,88,12,.22);color:#fdba74;" title="กดเพื่อดูรายละเอียด / ลองส่งใหม่"></button>
-        <button onclick="switchToMobile()" class="nav-btn nav-tool" title="เปลี่ยนเป็นโหมดมือถือ" aria-label="เปลี่ยนเป็นโหมดมือถือ">📱 มือถือ</button>
-        <button onclick="forceRefresh()" title="อัปเดตแอปล่าสุด (ล้าง cache)" class="nav-btn nav-tool">🔄 อัปเดต</button>
+        <!-- งานค้าง = แผ่นเหลืองตัวดำ (สีเตือนของป้าย) · ไอคอนมาจาก .icb (JS เปลี่ยน textContent) -->
+        <button id="offlineQueueBtn" onclick="rawShowOfflineDetail()" class="nav-btn nav-tool icb ic-offline"
+                style="display:none;background:var(--sq-band);color:#111;" title="กดเพื่อดูรายละเอียด / ลองส่งใหม่"></button>
+        <button onclick="switchToMobile()" class="nav-btn nav-tool" title="เปลี่ยนเป็นโหมดมือถือ" aria-label="เปลี่ยนเป็นโหมดมือถือ"><i class="ic ic-phone" aria-hidden="true"></i>มือถือ</button>
+        <button onclick="forceRefresh()" title="อัปเดตแอปล่าสุด (ล้าง cache)" class="nav-btn nav-tool"><i class="ic ic-refresh" aria-hidden="true"></i>อัปเดต</button>
       </div>
 
     </div>
@@ -1034,17 +1240,17 @@
     <div class="sq-wrap">
       <header class="sq-head">
         <div>
-          <h1 class="sq-h1">📊 ภาพรวมทั้งระบบ</h1>
+          <h1 class="sq-h1">ภาพรวมทั้งระบบ</h1>
           <div class="sq-hsub" id="execDashTimestamp">—</div>
         </div>
         <div class="sq-head-actions">
           <!-- ลิงก์ผู้บริหาร (ไม่ต้องเข้าระบบ · ไม่มีแถบเมนู) → ปุ่มติดตั้งแอปอยู่ตรงนี้ -->
-          <button id="execInstallBtn" onclick="execInstallApp()" class="sq-btn" style="display:none;">📲 ติดตั้งเป็นแอป</button>
-          <button onclick="loadExecDashboard()" class="sq-btn sq-btn-primary">🔄 รีเฟรช</button>
+          <button id="execInstallBtn" onclick="execInstallApp()" class="sq-btn" style="display:none;">ติดตั้งเป็นแอป</button>
+          <button onclick="loadExecDashboard()" class="sq-btn sq-btn-primary">รีเฟรช</button>
         </div>
       </header>
       <div id="execDashContent">
-        <p class="sq-empty">⏳ กำลังโหลดข้อมูล...</p>
+        <p class="sq-empty">กำลังโหลดข้อมูล...</p>
       </div>
     </div>
   </div>
@@ -1054,15 +1260,15 @@
     <div class="sq-wrap sq-wrap-narrow">
       <header class="sq-head">
         <div>
-          <h1 class="sq-h1">🔍 ตรวจข้อมูล</h1>
+          <h1 class="sq-h1">ตรวจข้อมูล</h1>
           <div class="sq-hsub">เช็คว่าข้อมูลครบพอจะเทียบยอดใช้จริงหรือยัง — ชี้ที่ข้อมูลที่ขาด ไม่ใช่ตัวบุคคล</div>
         </div>
         <div class="sq-head-actions">
-          <button onclick="loadBomHealth()" class="sq-btn sq-btn-primary">🔄 ตรวจใหม่</button>
+          <button onclick="loadBomHealth()" class="sq-btn sq-btn-primary">ตรวจใหม่</button>
         </div>
       </header>
       <div id="bomHealthContent">
-        <p class="sq-empty">⏳ กำลังตรวจข้อมูล...</p>
+        <p class="sq-empty">กำลังตรวจข้อมูล...</p>
       </div>
     </div>
   </div>
@@ -1073,40 +1279,40 @@
 
       <header class="sq-head">
         <div>
-          <h1 class="sq-h1">👑 ผู้ใช้งานระบบ</h1>
+          <h1 class="sq-h1">ผู้ใช้งานระบบ</h1>
           <div class="sq-hsub">อนุมัติคนเข้าใช้งาน และกำหนดว่าใครทำอะไรได้บ้าง</div>
         </div>
         <div class="sq-head-actions">
           <!-- มุมมองเดียวที่เห็นข้ามทั้ง 3 คลัง + ชื่อเครื่อง — ย้ายมาจากแถบเมนู (เจ้าของสั่ง 2026-08-03) -->
-          <button id="adminActivityBtn" onclick="openActivityPanel()" class="sq-btn" style="display:none;">📈 ความเคลื่อนไหวข้ามคลัง</button>
+          <button id="adminActivityBtn" onclick="openActivityPanel()" class="sq-btn" style="display:none;">ความเคลื่อนไหวข้ามคลัง</button>
         </div>
       </header>
 
       <!-- แท็บ -->
       <div class="sq-tabs" role="tablist">
         <button onclick="adminSwitchTab('pending')" id="adminTab-pending" class="sq-tab is-on">
-          📝 คำขอเข้าใช้งาน<span id="adminPendingTabBadge" class="sq-tab-badge" style="display:none;"></span>
+          คำขอเข้าใช้งาน<span id="adminPendingTabBadge" class="sq-tab-badge" style="display:none;"></span>
         </button>
         <button onclick="adminSwitchTab('roles')" id="adminTab-roles" class="sq-tab">
-          🔖 สิทธิ์ผู้ใช้
+          สิทธิ์ผู้ใช้
         </button>
         <button onclick="adminSwitchTab('status')" id="adminTab-status" class="sq-tab">
-          🩺 สถานะระบบ
+          สถานะระบบ
         </button>
       </div>
 
       <!-- แท็บ: สถานะระบบ (ข้อ 22 รายงานปรับปรุง) -->
       <div id="adminTabContent-status" style="display:none;">
         <div id="adminStatusBody"><p class="sq-empty">กดแท็บเพื่อตรวจ</p></div>
-        <button onclick="adminLoadStatus()" class="sq-btn" style="margin-top:12px;width:100%;">🔄 ตรวจใหม่</button>
+        <button onclick="adminLoadStatus()" class="sq-btn" style="margin-top:12px;width:100%;">ตรวจใหม่</button>
       </div>
 
       <!-- แท็บ: คำขอเข้าใช้งาน -->
       <div id="adminTabContent-pending">
         <div id="adminPendingList" style="display:flex;flex-direction:column;gap:8px;">
-          <p class="sq-empty">⏳ กำลังโหลด...</p>
+          <p class="sq-empty">กำลังโหลด...</p>
         </div>
-        <button onclick="loadPendingUsers()" class="sq-btn" style="margin-top:12px;width:100%;">🔄 โหลดใหม่</button>
+        <button onclick="loadPendingUsers()" class="sq-btn" style="margin-top:12px;width:100%;">โหลดใหม่</button>
       </div>
 
       <!-- แท็บ: สิทธิ์ผู้ใช้ -->
@@ -1119,31 +1325,31 @@
         <div id="rolesPageList" style="display:flex;flex-direction:column;gap:8px;">
           <p class="sq-empty">กดโหลดเพื่อดูรายชื่อผู้ใช้</p>
         </div>
-        <button onclick="loadRolesPage()" class="sq-btn" style="margin-top:12px;width:100%;">🔄 โหลดรายชื่อผู้ใช้</button>
+        <button onclick="loadRolesPage()" class="sq-btn" style="margin-top:12px;width:100%;">โหลดรายชื่อผู้ใช้</button>
       </div>
 
     </div>
   </div>
 
   <!-- ═══ ACTIVITY PANEL ═══ -->
-  <div id="activityPanelModal" class="hidden fixed inset-0 bg-black/80 backdrop-blur-md z-[500] flex items-center justify-center p-4">
+  <div id="activityPanelModal" class="ui-modal hidden fixed inset-0 bg-black/80 backdrop-blur-md z-[500] flex items-center justify-center p-4">
     <div class="bg-white w-full max-w-2xl rounded-2xl shadow-2xl overflow-hidden border-2 border-emerald-500" style="max-height:90vh;display:flex;flex-direction:column;">
-      <div class="bg-slate-900 p-6 text-white flex justify-between items-center shrink-0">
+      <div class="ui-plate-head p-6 flex justify-between items-center shrink-0">
         <div>
-          <h2 class="text-xl font-black uppercase tracking-tight">📈 ความเคลื่อนไหว</h2>
-          <p class="text-emerald-300 text-xs font-bold mt-1">กิจกรรมล่าสุดทุก Module</p>
+          <h2 class="text-xl font-black uppercase tracking-tight">ความเคลื่อนไหว</h2>
+          <p class="text-xs font-bold mt-1">กิจกรรมล่าสุดทุกคลัง</p>
         </div>
         <div class="flex items-center gap-3">
-          <button onclick="loadActivityLog()" class="text-xs font-black text-emerald-300 hover:text-white transition-colors">🔄 โหลดใหม่</button>
-          <button onclick="closeActivityPanel()" class="text-3xl hover:text-red-400 transition-colors">✕</button>
+          <button onclick="loadActivityLog()" class="text-xs font-black"><i class="ic ic-refresh" aria-hidden="true"></i> โหลดใหม่</button>
+          <button onclick="closeActivityPanel()" aria-label="ปิด"><i class="ic ic-x" aria-hidden="true"></i></button>
         </div>
       </div>
       <!-- Filter bar -->
-      <div class="bg-slate-800 px-6 py-3 flex gap-2 shrink-0 overflow-x-auto">
+      <div class="px-6 py-3 flex flex-wrap gap-2 shrink-0" style="border-bottom:1.5px solid var(--sq-line);">
         <button onclick="filterActivity('ALL')"      id="actFilter-ALL"      class="act-filter-btn active">ทั้งหมด</button>
-        <button onclick="filterActivity('COLDROOM')" id="actFilter-COLDROOM" class="act-filter-btn">❄️ คลัง</button>
-        <button onclick="filterActivity('SQF')"      id="actFilter-SQF"      class="act-filter-btn">🏭 SQF</button>
-        <button onclick="filterActivity('MLM')"      id="actFilter-MLM"      class="act-filter-btn">🏭 MLM</button>
+        <button onclick="filterActivity('COLDROOM')" id="actFilter-COLDROOM" class="act-filter-btn">คลัง</button>
+        <button onclick="filterActivity('SQF')"      id="actFilter-SQF"      class="act-filter-btn">SQF</button>
+        <button onclick="filterActivity('MLM')"      id="actFilter-MLM"      class="act-filter-btn">MLM</button>
       </div>
       <div class="p-4 overflow-y-auto flex-1">
         <div id="activityList" class="space-y-2">
@@ -1173,23 +1379,23 @@
   <div id="module-HOME" class="module-section hide" style="padding-top:var(--nav-h);">
     <div class="home-wrap">
       <img src="assets/logo.png" alt="" class="home-logo" onerror="this.remove()">
-      <h1 class="home-hello">สวัสดี <b id="homeUser"></b> 👋</h1>
+      <h1 class="home-hello">สวัสดี <b id="homeUser"></b></h1>
       <p class="home-sub">วันนี้จะทำงานกับคลังไหน — สลับระหว่างทำงานได้ตลอดจากแถบเมนูด้านบน</p>
       <div class="home-cards">
         <button class="home-card is-cr" onclick="switchModule('COLDROOM')">
-          <span class="home-ic">❄️</span>
+          <i class="ic ic-snow" aria-hidden="true"></i>
           <span class="home-name">คลังสินค้าห้องเย็น</span>
           <span class="home-desc">สินค้าสำเร็จรูป · ใบสั่งผลิต</span>
           <span id="homeBadge-COLDROOM" class="home-badge" style="display:none"></span>
         </button>
         <button class="home-card is-sqf" onclick="switchModule('SQF')">
-          <span class="home-ic">🏭</span>
+          <i class="ic ic-factory" aria-hidden="true"></i>
           <span class="home-name">วัตถุดิบสุพรรณคิวฟู้ดส์</span>
           <span class="home-desc">SQF · เบิก / รับ / นับ</span>
           <span id="homeBadge-SQF" class="home-badge" style="display:none"></span>
         </button>
         <button class="home-card is-mlm" onclick="switchModule('MLM')">
-          <span class="home-ic">🏭</span>
+          <i class="ic ic-factory" aria-hidden="true"></i>
           <span class="home-name">วัตถุดิบแม่ละมาย</span>
           <span class="home-desc">MLM · เบิก / รับ / นับ</span>
           <span id="homeBadge-MLM" class="home-badge" style="display:none"></span>
@@ -1197,13 +1403,13 @@
       </div>
       <!-- ต้องจัดการ — แทนป๊อปอัปที่เคยเด้งเอง (js/alerts.js _alertRenderHome · critique 2026-10-20) -->
       <div id="homeTodo" class="home-todo" style="display:none" aria-live="polite"></div>
-      <p class="home-hint">🔴 ตัวเลขแดง = รายการที่ต้องจัดการ (หมดอายุ / ใกล้หมดอายุ / ต่ำกว่าจุดสั่งซื้อ / ต้องสั่ง)</p>
+      <p class="home-hint"><span class="home-hint-n" aria-hidden="true">3</span>ตัวเลขแดง = รายการที่ต้องจัดการ (หมดอายุ / ใกล้หมดอายุ / ต่ำกว่าจุดสั่งซื้อ / ต้องสั่ง)</p>
       <div class="home-links">
-        <button id="homeLink-EXEC" onclick="switchModule('EXEC')" style="display:none">📊 ภาพรวมทั้งระบบ</button>
-        <button id="homeLink-ROLES" onclick="switchModule('ROLES')" style="display:none">✅ อนุมัติผู้ใช้</button>
-        <button onclick="openMyHistory()">📜 ของฉัน</button>
-        <a href="manual.html" target="_blank" rel="noopener">📖 คู่มือ</a>
-        <button onclick="logout()" class="is-out">ออกจากระบบ</button>
+        <button id="homeLink-EXEC" onclick="switchModule('EXEC')" style="display:none"><i class="ic ic-chart" aria-hidden="true"></i>ภาพรวมทั้งระบบ</button>
+        <button id="homeLink-ROLES" onclick="switchModule('ROLES')" style="display:none"><i class="ic ic-users" aria-hidden="true"></i>อนุมัติผู้ใช้</button>
+        <button onclick="openMyHistory()"><i class="ic ic-mine" aria-hidden="true"></i>ของฉัน</button>
+        <a href="manual.html" target="_blank" rel="noopener"><i class="ic ic-book" aria-hidden="true"></i>คู่มือ</a>
+        <button onclick="logout()" class="is-out"><i class="ic ic-logout" aria-hidden="true"></i>ออกจากระบบ</button>
       </div>
     </div>
   </div>
@@ -1213,76 +1419,76 @@
 
     <div class="cr-wrap">
       <div class="cr-topbar">
-        <div><h1 style="margin:0;font-size:24px;">❄️ คลังสินค้า SQF</h1></div>
+        <div><h1 style="margin:0;font-size:24px;">คลังสินค้า SQF</h1></div>
       </div>
 
       <div class="cr-tabbar">
-        <button class="cr-tab-btn active" id="crTabBtn-report"      onclick="crSwitchTab('report')">📈 แดชบอร์ด</button>
-        <button class="cr-tab-btn"        id="crTabBtn-balance"    onclick="crSwitchTab('balance')">📊 คงเหลือ</button>
-        <button class="cr-tab-btn"        id="crTabBtn-stock"      onclick="crSwitchTab('stock')">📱 นับสต๊อก</button>
-        <button class="cr-tab-btn"        id="crTabBtn-workorder"  onclick="crSwitchTab('workorder')">📋 ใบสั่งผลิต</button>
-        <button class="cr-tab-btn"        id="crTabBtn-submit"     onclick="crSwitchTab('submit')">📤 ส่งยอดผลิต</button>
-        <button class="cr-tab-btn"        id="crTabBtn-receive"    onclick="crSwitchTab('receive')">📥 รับยอดผลิต</button>
-        <button class="cr-tab-btn"        id="crTabBtn-manage"     onclick="crSwitchTab('manage')">⚙️ จัดการสินค้า</button>
+        <button class="cr-tab-btn active" id="crTabBtn-report"      onclick="crSwitchTab('report')">แดชบอร์ด</button>
+        <button class="cr-tab-btn"        id="crTabBtn-balance"    onclick="crSwitchTab('balance')">คงเหลือ</button>
+        <button class="cr-tab-btn"        id="crTabBtn-stock"      onclick="crSwitchTab('stock')">นับสต๊อก</button>
+        <button class="cr-tab-btn"        id="crTabBtn-workorder"  onclick="crSwitchTab('workorder')">ใบสั่งผลิต</button>
+        <button class="cr-tab-btn"        id="crTabBtn-submit"     onclick="crSwitchTab('submit')">ส่งยอดผลิต</button>
+        <button class="cr-tab-btn"        id="crTabBtn-receive"    onclick="crSwitchTab('receive')">รับยอดผลิต</button>
+        <button class="cr-tab-btn"        id="crTabBtn-manage"     onclick="crSwitchTab('manage')">จัดการสินค้า</button>
       </div>
 
       <!-- Tab: จัดการ -->
       <div class="cr-tab-panel" id="cr-tab-stock">
         <div class="card">
-          <h2>🔍 ค้นหา / สแกนสินค้า</h2>
+          <h2>ค้นหา / สแกนสินค้า</h2>
           <div style="display:flex;gap:10px;flex-wrap:wrap;">
-            <button class="cr-btn btn-primary" onclick="crStartScanner('stock')">📷 เปิดกล้อง</button>
-            <button class="cr-btn btn-light"   onclick="crStopScanner()">❌ ปิด</button>
-            <button class="cr-btn btn-light viewer-hide" onclick="criOpen()" style="margin-left:auto;">📥 นำเข้าจากไฟล์</button>
+            <button class="cr-btn btn-primary" onclick="crStartScanner('stock')">เปิดกล้อง</button>
+            <button class="cr-btn btn-light"   onclick="crStopScanner()">ปิด</button>
+            <button class="cr-btn btn-light viewer-hide" onclick="criOpen()" style="margin-left:auto;">นำเข้าจากไฟล์</button>
           </div>
           <div class="scanner-box hide" id="crScannerBoxStock"><video id="crVideoStock" class="scanner-video" playsinline muted></video><div class="scanner-frame"></div></div>
           <div class="cr-status" id="crScannerStatus"></div>
           <div style="display:flex;gap:10px;margin-top:15px;">
-            <input aria-label="สแกนบาร์โค้ด หรือพิมพ์ชื่อสินค้า" type="text" id="crBarcode" placeholder="🏷️ สแกนบาร์โค้ด หรือ พิมพ์ชื่อสินค้า..." style="flex:1;" autocomplete="off" onkeydown="if(event.key==='Enter') crLookupBarcode()">
-            <button class="cr-btn btn-primary" onclick="crLookupBarcode()">🔍 ค้นหา</button>
+            <input aria-label="สแกนบาร์โค้ด หรือพิมพ์ชื่อสินค้า" type="text" id="crBarcode" placeholder="สแกนบาร์โค้ด หรือ พิมพ์ชื่อสินค้า..." style="flex:1;" autocomplete="off" onkeydown="if(event.key==='Enter') crLookupBarcode()">
+            <button class="cr-btn btn-primary" onclick="crLookupBarcode()">ค้นหา</button>
           </div>
         </div>
 
         <div class="card">
           <div style="display:flex;justify-content:space-between;align-items:center;">
-            <h2>💾 รับเข้า / นับสต๊อก</h2>
-            <button class="cr-btn btn-light" onclick="crClearLotOnly()" style="padding:8px 12px;font-size:12px;">🧹 ล้างข้อมูล</button>
+            <h2>รับเข้า / นับสต๊อก</h2>
+            <button class="cr-btn btn-light" onclick="crClearLotOnly()" style="padding:8px 12px;font-size:12px;">ล้างข้อมูล</button>
           </div>
           <div class="big-stat-box">
-            <span class="big-stat-label">📉 ยอดคงเหลือในระบบ (ทุกรอบการผลิต)</span>
+            <span class="big-stat-label">ยอดคงเหลือในระบบ (ทุกรอบการผลิต)</span>
             <div><span class="big-stat-value" id="crTotalQty">0</span><span class="big-stat-unit" id="crMasterUnit">-</span></div>
             <div class="lot-breakdown-box" id="crLotBreakdown"></div>
           </div>
           <div class="cr-status" id="crMainStatus"></div>
-          <div class="row"><div class="field full"><label for="crEmployee">👤 ผู้บันทึก *</label><input type="text" id="crEmployee" placeholder="ชื่อพนักงาน" autocomplete="off"></div></div>
+          <div class="row"><div class="field full"><label for="crEmployee">ผู้บันทึก *</label><input type="text" id="crEmployee" placeholder="ชื่อพนักงาน" autocomplete="off"></div></div>
           <div class="row"><div class="field full">
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;">
-              <label for="crProductDropdown" style="margin:0;">📦 ชื่อสินค้า</label>
-              <button id="crBtnEditProductInline" class="cr-btn btn-light" style="display:none;padding:4px 10px;font-size:11px;" onclick="crOpenEditProductFromCurrent()">✏️ แก้ไขสินค้า</button>
+              <label for="crProductDropdown" style="margin:0;">ชื่อสินค้า</label>
+              <button id="crBtnEditProductInline" class="cr-btn btn-light" style="display:none;padding:4px 10px;font-size:11px;" onclick="crOpenEditProductFromCurrent()">แก้ไขสินค้า</button>
             </div>
             <select id="crProductDropdown" onchange="crSelectProductFromDropdown(this.value)"
-              style="width:100%;padding:10px 12px;border-radius:8px;border:2px solid var(--sq-line);font-family:inherit;font-size:14px;font-weight:700;background:#fff;color:#1e293b;margin-bottom:6px;outline:none;cursor:pointer;">
-              <option value="">🔍 หรือเลือกจากรายการสินค้าทั้งหมด...</option>
+              style="width:100%;padding:10px 12px;border-radius:8px;border:2px solid var(--sq-line);font-family:inherit;font-size:14px;font-weight:700;background:#fff;color:var(--sq-ink);margin-bottom:6px;outline:none;cursor:pointer;">
+              <option value="">หรือเลือกจากรายการสินค้าทั้งหมด...</option>
             </select>
             <input aria-label="ชื่อสินค้า (แสดงหลังค้นหา)" type="text" id="crProductName" readonly autocomplete="off" placeholder="(จะแสดงหลังค้นหา / เลือกสินค้า)" style="font-weight:700;color:var(--sq-accent);">
           </div></div>
           <div class="row">
-            <div class="field"><label for="crMfg">📅 วันผลิต (MFG) 6 หลัก *</label><input type="text" id="crMfg" placeholder="เช่น 170326" maxlength="6" inputmode="numeric" autocomplete="off" oninput="crQtyPreview()"></div>
-            <div class="field"><label for="crExp">⏳ วันหมดอายุ (EXP) *</label><input type="text" id="crExp" placeholder="คำนวณอัตโนมัติ" maxlength="6" inputmode="numeric" autocomplete="off"></div>
+            <div class="field"><label for="crMfg">วันผลิต (MFG) 6 หลัก *</label><input type="text" id="crMfg" placeholder="เช่น 170326" maxlength="6" inputmode="numeric" autocomplete="off" oninput="crQtyPreview()"></div>
+            <div class="field"><label for="crExp">วันหมดอายุ (EXP) *</label><input type="text" id="crExp" placeholder="คำนวณอัตโนมัติ" maxlength="6" inputmode="numeric" autocomplete="off"></div>
           </div>
           <div style="background:var(--sq-line-soft);padding:15px;border-radius:15px;">
             <!-- ต้องเลือกก่อนว่ารับเข้าหรือนับ — เดิมช่องเดียว "จำนวน" แทนที่ยอดทั้งล็อตเสมอ รับของซ้ำวันผลิตเดียวกันทับยอดเดิม (critique 2026-10-20) -->
             <div class="cr-mode-row" role="group" aria-label="บันทึกแบบไหน">
-              <button type="button" id="crModeIn" class="cr-btn btn-light" aria-pressed="false" onclick="crSetMode('in')">📥 รับเข้า<br><small>บวกเพิ่มเข้าล็อต</small></button>
-              <button type="button" id="crModeCount" class="cr-btn btn-light" aria-pressed="false" onclick="crSetMode('count')">📊 นับ<br><small>ยอดที่นับได้ทั้งล็อต</small></button>
+              <button type="button" id="crModeIn" class="cr-btn btn-light" aria-pressed="false" onclick="crSetMode('in')">รับเข้า<br><small>บวกเพิ่มเข้าล็อต</small></button>
+              <button type="button" id="crModeCount" class="cr-btn btn-light" aria-pressed="false" onclick="crSetMode('count')">นับ<br><small>ยอดที่นับได้ทั้งล็อต</small></button>
             </div>
-            <div class="field full"><label for="crNewQty" id="crNewQtyLabel">📦 จำนวน *</label><input type="text" id="crNewQty" placeholder="เช่น 16*48+5" oninput="crQtyPreview()" style="font-size:24px;height:60px;border:2px solid var(--primary);" autocomplete="off"></div>
+            <div class="field full"><label for="crNewQty" id="crNewQtyLabel">จำนวน *</label><input type="text" id="crNewQty" placeholder="เช่น 16*48+5" oninput="crQtyPreview()" style="font-size:24px;height:60px;border:2px solid var(--primary);" autocomplete="off"></div>
             <div id="crQtyPreview" class="cr-qty-preview" aria-live="polite"></div>
-            <div class="field full" style="margin-top:10px;"><label for="crNote">💬 หมายเหตุ</label><textarea id="crNote" placeholder="เช่น รับสินค้าใหม่, ส่งขายหมดแล้ว" autocomplete="off"></textarea></div>
+            <div class="field full" style="margin-top:10px;"><label for="crNote">หมายเหตุ</label><textarea id="crNote" placeholder="เช่น รับสินค้าใหม่, ส่งขายหมดแล้ว" autocomplete="off"></textarea></div>
           </div>
           <div class="sticky-actions">
-            <button class="cr-btn btn-primary" id="crSaveBtn" onclick="crSaveCount()" style="flex:2;">✅ บันทึกข้อมูล</button>
-            <button class="cr-btn btn-light"   onclick="crClearAll()"  style="flex:1;">🧹 เริ่มใหม่</button>
+            <button class="cr-btn btn-primary" id="crSaveBtn" onclick="crSaveCount()" style="flex:2;">บันทึกข้อมูล</button>
+            <button class="cr-btn btn-light"   onclick="crClearAll()"  style="flex:1;">เริ่มใหม่</button>
           </div>
         </div>
       </div>
@@ -1291,9 +1497,9 @@
       <div class="cr-tab-panel" id="cr-tab-balance">
         <div class="card">
           <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:15px;">
-            <h2 style="margin:0;">📊 สต๊อกคงเหลือรายสินค้า</h2>
+            <h2 style="margin:0;">สต๊อกคงเหลือรายสินค้า</h2>
             <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
-              <button class="cr-btn btn-light" onclick="crOpenLotHistory('')" style="padding:8px 12px;font-size:12px;">📜 ประวัติล็อต</button>
+              <button class="cr-btn btn-light" onclick="crOpenLotHistory('')" style="padding:8px 12px;font-size:12px;">ประวัติล็อต</button>
               <!-- Checkbox select all -->
               <label style="display:flex;align-items:center;gap:6px;font-size:13px;font-weight:700;cursor:pointer;color:var(--muted);white-space:nowrap;">
                 <input type="checkbox" id="crSelectAllChk" onchange="crToggleSelectAll(this.checked)"
@@ -1301,17 +1507,17 @@
                 <span id="crSelectedCount">เลือกทั้งหมด</span>
               </label>
               <!-- Action buttons (แสดงเมื่อเลือกแล้ว) -->
-              <button id="crBtnBulkEdit"   class="cr-btn btn-light"  style="padding:6px 12px;font-size:12px;display:none;" onclick="crBulkEdit()">✏️ แก้ไข</button>
-              <button id="crBtnBulkRemove" class="cr-btn btn-light"  style="padding:6px 12px;font-size:12px;color:var(--danger);border-color:var(--danger);display:none;" onclick="crBulkRemove()">🗑️ นำออก</button>
+              <button id="crBtnBulkEdit"   class="cr-btn btn-light"  style="padding:6px 12px;font-size:12px;display:none;" onclick="crBulkEdit()">แก้ไข</button>
+              <button id="crBtnBulkRemove" class="cr-btn btn-light"  style="padding:6px 12px;font-size:12px;color:var(--danger);border-color:var(--danger);display:none;" onclick="crBulkRemove()">นำออก</button>
               <!-- Divider -->
               <div style="width:1px;height:22px;background:var(--sq-line);margin:0 2px;"></div>
-              <button class="cr-btn btn-light"   style="padding:8px 12px;font-size:12px;" onclick="crExport('csv')">📄 CSV</button>
-              <button class="cr-btn btn-primary" style="padding:8px 12px;font-size:12px;background:#dc2626;" onclick="crExport('pdf')">🖨️ PDF</button>
+              <button class="cr-btn btn-light"   style="padding:8px 12px;font-size:12px;" onclick="crExport('csv')">CSV</button>
+              <button class="cr-btn btn-light" style="padding:8px 12px;font-size:12px;" onclick="crExport('pdf')">PDF</button>
             </div>
           </div>
           <div class="table-wrap">
             <table><thead><tr>
-              <th style="width:38px;text-align:center;">☑</th>
+              <th style="width:38px;text-align:center;"></th>
               <th>ชื่อสินค้า</th><th>MFG</th><th>EXP</th><th>จำนวน</th><th>เหลือ(วัน)</th><th>สถานะ</th><th>QC</th>
             </tr></thead>
             <tbody id="crBalanceBody"></tbody></table>
@@ -1325,54 +1531,54 @@
         <div style="display:flex;gap:8px;padding:16px 16px 0;border-bottom:2px solid var(--sq-line);margin-bottom:0;overflow-x:auto;">
           <button id="crMngBtn-newproduct"  onclick="crManageSubTab('newproduct')"
             style="flex-shrink:0;padding:8px 18px;border-radius:12px 12px 0 0;border:2px solid var(--sq-line);border-bottom:none;font-weight:900;font-size:13px;cursor:pointer;background:var(--sq-accent);color:#fff;font-family:inherit;">
-            ➕ สินค้าใหม่
+            สินค้าใหม่
           </button>
           <button id="crMngBtn-editproduct" onclick="crManageSubTab('editproduct')"
-            style="flex-shrink:0;padding:8px 18px;border-radius:12px 12px 0 0;border:2px solid var(--sq-line);border-bottom:none;font-weight:900;font-size:13px;cursor:pointer;background:var(--sq-raised);color:#64748b;font-family:inherit;">
-            ✏️ แก้ไขสินค้า
+            style="flex-shrink:0;padding:8px 18px;border-radius:12px 12px 0 0;border:2px solid var(--sq-line);border-bottom:none;font-weight:900;font-size:13px;cursor:pointer;background:var(--sq-raised);color:var(--sq-ink2);font-family:inherit;">
+            แก้ไขสินค้า
           </button>
           <button id="crMngBtn-bom"         onclick="crManageSubTab('bom')"
-            style="flex-shrink:0;padding:8px 18px;border-radius:12px 12px 0 0;border:2px solid var(--sq-line);border-bottom:none;font-weight:900;font-size:13px;cursor:pointer;background:var(--sq-raised);color:#64748b;font-family:inherit;">
-            📖 ข้อมูลอ้างอิง
+            style="flex-shrink:0;padding:8px 18px;border-radius:12px 12px 0 0;border:2px solid var(--sq-line);border-bottom:none;font-weight:900;font-size:13px;cursor:pointer;background:var(--sq-raised);color:var(--sq-ink2);font-family:inherit;">
+            ข้อมูลอ้างอิง
           </button>
         </div>
 
         <!-- Sub-section: สินค้าใหม่ -->
         <div id="crMngSub-newproduct">
         <div class="card">
-          <h2>➕ ขึ้นทะเบียนสินค้าใหม่</h2>
+          <h2>ขึ้นทะเบียนสินค้าใหม่</h2>
           <div style="display:flex;gap:10px;">
-            <button class="cr-btn btn-primary" onclick="crStartScanner('new')">📷 สแกนบาร์โค้ด</button>
-            <button class="cr-btn btn-light"   onclick="crStopScanner()">❌ ปิด</button>
+            <button class="cr-btn btn-primary" onclick="crStartScanner('new')">สแกนบาร์โค้ด</button>
+            <button class="cr-btn btn-light"   onclick="crStopScanner()">ปิด</button>
           </div>
           <div class="scanner-box hide" id="crScannerBoxNew"><video id="crVideoNew" class="scanner-video" playsinline muted></video><div class="scanner-frame"></div></div>
           <div class="cr-status" id="crNewProductStatus"></div>
-          <div class="row" style="margin-top:15px;"><div class="field full"><label for="crNewBarcode">🏷️ บาร์โค้ด *</label><input type="text" id="crNewBarcode" autocomplete="off"></div></div>
+          <div class="row" style="margin-top:15px;"><div class="field full"><label for="crNewBarcode">บาร์โค้ด *</label><input type="text" id="crNewBarcode" autocomplete="off"></div></div>
           <div class="row">
-            <div class="field"><label for="crNewName">📦 ชื่อสินค้า *</label><input type="text" id="crNewName" autocomplete="off"></div>
-            <div class="field"><label for="crNewSku">📌 SKU</label><input type="text" id="crNewSku" autocomplete="off"></div>
+            <div class="field"><label for="crNewName">ชื่อสินค้า *</label><input type="text" id="crNewName" autocomplete="off"></div>
+            <div class="field"><label for="crNewSku">SKU</label><input type="text" id="crNewSku" autocomplete="off"></div>
           </div>
           <div class="row">
-            <div class="field"><label for="crNewUnit">📏 หน่วยนับ *</label>
+            <div class="field"><label for="crNewUnit">หน่วยนับ *</label>
               <select id="crNewUnit"><option value="">--เลือก--</option><option value="ถ้วย">ถ้วย</option><option value="ถุง">ถุง</option><option value="ชิ้น">ชิ้น</option><option value="ลัง">ลัง</option><option value="กก.">กก.</option></select>
             </div>
-            <div class="field"><label for="crNewShelfLife">⏳ อายุมาตรฐาน (วัน)</label><input type="number" id="crNewShelfLife" value="10" autocomplete="off"></div>
+            <div class="field"><label for="crNewShelfLife">อายุมาตรฐาน (วัน)</label><input type="number" id="crNewShelfLife" value="10" autocomplete="off"></div>
           </div>
           <div class="row">
-            <div class="field"><label for="crNewWarnDays">🔔 แจ้งเตือนก่อนหมด (วัน)</label><input type="number" id="crNewWarnDays" placeholder="เช่น 7" autocomplete="off"></div>
+            <div class="field"><label for="crNewWarnDays">แจ้งเตือนก่อนหมด (วัน)</label><input type="number" id="crNewWarnDays" placeholder="เช่น 7" autocomplete="off"></div>
           </div>
           <div class="row">
-            <div class="field"><label for="crNewSetName">📦 ชื่อชุด / หน่วยสั่งผลิต</label>
+            <div class="field"><label for="crNewSetName">ชื่อชุด / หน่วยสั่งผลิต</label>
               <input type="text" id="crNewSetName" placeholder="เช่น ชุด, ลัง, แพ็ค" autocomplete="off"></div>
-            <div class="field"><label for="crNewUnitsPerSet">🔢 จำนวน <span id="crNewSetNamePreview">หน่วยนับ</span> ต่อ 1 ชุด</label>
+            <div class="field"><label for="crNewUnitsPerSet">จำนวน <span id="crNewSetNamePreview">หน่วยนับ</span> ต่อ 1 ชุด</label>
               <input type="number" id="crNewUnitsPerSet" placeholder="เช่น 10" min="1" autocomplete="off"
                 oninput="$$cr('crNewSetNamePreview').textContent = $$cr('crNewUnit').value || 'หน่วยนับ'">
             </div>
           </div>
           <div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;padding:10px 14px;font-size:12px;color:#1d4ed8;margin-bottom:10px;">
-            💡 ตัวอย่าง: ชุด = ตะกร้า, 1 ชุด = 10 ตะกร้า — ตอนสั่งผลิตพิมพ์ว่า "20 ชุด" ระบบจะคิด 200 ตะกร้าให้อัตโนมัติ
+            ตัวอย่าง: ชุด = ตะกร้า, 1 ชุด = 10 ตะกร้า — ตอนสั่งผลิตพิมพ์ว่า "20 ชุด" ระบบจะคิด 200 ตะกร้าให้อัตโนมัติ
           </div>
-          <button class="cr-btn btn-primary" onclick="crSaveNewProduct()" style="width:100%;">💾 บันทึกข้อมูลสินค้า</button>
+          <button class="cr-btn btn-primary" onclick="crSaveNewProduct()" style="width:100%;">บันทึกข้อมูลสินค้า</button>
         </div>
         </div><!-- /crMngSub-newproduct -->
 
@@ -1381,13 +1587,13 @@
         <div id="cr-tab-editproduct">
         <div class="card">
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
-            <h2 style="margin:0;">✏️ แก้ไขข้อมูลสินค้า</h2>
-            <button class="cr-btn btn-light" style="padding:8px 12px;font-size:12px;" onclick="crLoadEditProductList()">🔄 โหลดรายการ</button>
+            <h2 style="margin:0;">แก้ไขข้อมูลสินค้า</h2>
+            <button class="cr-btn btn-light" style="padding:8px 12px;font-size:12px;" onclick="crLoadEditProductList()">โหลดรายการ</button>
           </div>
 
           <!-- Dropdown เลือกสินค้า -->
           <div style="margin-bottom:16px;">
-            <label for="crEditProductSelect" style="font-size:13px;font-weight:600;color:#475569;display:block;margin-bottom:6px;">🔍 เลือกสินค้าที่ต้องการแก้ไข</label>
+            <label for="crEditProductSelect" style="font-size:13px;font-weight:600;color:#475569;display:block;margin-bottom:6px;">เลือกสินค้าที่ต้องการแก้ไข</label>
             <select id="crEditProductSelect" onchange="crSelectEditProduct()" style="width:100%;padding:12px;font-size:15px;border:2px solid var(--sq-line);border-radius:12px;background:#fff;cursor:pointer;">
               <option value="">-- กดโหลดรายการ หรือเปิด Tab นี้เพื่อโหลดอัตโนมัติ --</option>
             </select>
@@ -1399,15 +1605,15 @@
 
           <!-- ฟิลด์แก้ไข (ซ่อนจนกว่าจะเลือกสินค้า) -->
           <div id="crEditProductFields" style="display:none;">
-            <div style="background:var(--sq-raised);border:1px solid var(--sq-line);border-radius:12px;padding:12px 16px;margin-bottom:16px;font-size:13px;color:#64748b;">
-              🏷️ บาร์โค้ด: <strong id="crEditBarcodeDisplay" style="color:#1e293b;font-size:14px;letter-spacing:1px;"></strong>
+            <div style="background:var(--sq-raised);border:1px solid var(--sq-line);border-radius:12px;padding:12px 16px;margin-bottom:16px;font-size:13px;color:var(--sq-ink2);">
+              บาร์โค้ด: <strong id="crEditBarcodeDisplay" style="color:var(--sq-ink);font-size:14px;letter-spacing:1px;"></strong>
             </div>
             <div class="row">
-              <div class="field"><label for="crEditName">📦 ชื่อสินค้า *</label><input type="text" id="crEditName" autocomplete="off"></div>
-              <div class="field"><label for="crEditSku">📌 SKU</label><input type="text" id="crEditSku" autocomplete="off"></div>
+              <div class="field"><label for="crEditName">ชื่อสินค้า *</label><input type="text" id="crEditName" autocomplete="off"></div>
+              <div class="field"><label for="crEditSku">SKU</label><input type="text" id="crEditSku" autocomplete="off"></div>
             </div>
             <div class="row">
-              <div class="field"><label for="crEditUnit">📏 หน่วยนับ *</label>
+              <div class="field"><label for="crEditUnit">หน่วยนับ *</label>
                 <select id="crEditUnit">
                   <option value="">--เลือก--</option>
                   <option value="ถ้วย">ถ้วย</option>
@@ -1418,28 +1624,28 @@
                   <option value="อื่นๆ">อื่นๆ</option>
                 </select>
               </div>
-              <div class="field"><label for="crEditShelfLife">⏳ อายุมาตรฐาน (วัน)</label><input type="number" id="crEditShelfLife" autocomplete="off"></div>
+              <div class="field"><label for="crEditShelfLife">อายุมาตรฐาน (วัน)</label><input type="number" id="crEditShelfLife" autocomplete="off"></div>
             </div>
             <div class="row">
-              <div class="field"><label for="crEditWarnDays">🔔 แจ้งเตือนก่อนหมด (วัน)</label><input type="number" id="crEditWarnDays" placeholder="เช่น 7" autocomplete="off"></div>
+              <div class="field"><label for="crEditWarnDays">แจ้งเตือนก่อนหมด (วัน)</label><input type="number" id="crEditWarnDays" placeholder="เช่น 7" autocomplete="off"></div>
             </div>
             <div class="row">
               <div class="field">
-                <label for="crEditSetName">📦 ชื่อชุด / หน่วยสั่งผลิต</label>
+                <label for="crEditSetName">ชื่อชุด / หน่วยสั่งผลิต</label>
                 <input type="text" id="crEditSetName" placeholder="เช่น ชุด, ลัง, แพ็ค" autocomplete="off">
               </div>
               <div class="field">
-                <label for="crEditUnitsPerSet">🔢 จำนวน <span id="crEditSetNamePreview">หน่วยนับ</span> ต่อ 1 ชุด</label>
+                <label for="crEditUnitsPerSet">จำนวน <span id="crEditSetNamePreview">หน่วยนับ</span> ต่อ 1 ชุด</label>
                 <input type="number" id="crEditUnitsPerSet" placeholder="เช่น 10" min="1" step="0.5" autocomplete="off"
                   oninput="document.getElementById('crEditSetNamePreview').textContent = document.getElementById('crEditUnit').value || 'หน่วยนับ'">
               </div>
             </div>
             <div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;padding:10px 14px;font-size:12px;color:#1d4ed8;margin-bottom:16px;">
-              💡 SetName/UnitsPerSet ใช้สำหรับใบสั่งผลิต เช่น ชุด = ตะกร้า, 1 ชุด = 10 ตะกร้า
+              SetName/UnitsPerSet ใช้สำหรับใบสั่งผลิต เช่น ชุด = ตะกร้า, 1 ชุด = 10 ตะกร้า
             </div>
             <div class="sticky-actions">
-              <button class="cr-btn btn-primary" onclick="crSubmitEditProduct()" style="flex:2;">💾 บันทึกการแก้ไข</button>
-              <button class="cr-btn btn-light"   onclick="crResetEditProductForm()" style="flex:1;">🧹 ล้าง</button>
+              <button class="cr-btn btn-primary" onclick="crSubmitEditProduct()" style="flex:2;">บันทึกการแก้ไข</button>
+              <button class="cr-btn btn-light"   onclick="crResetEditProductForm()" style="flex:1;">ล้าง</button>
             </div>
           </div>
         </div>
@@ -1451,20 +1657,20 @@
           <div id="cr-tab-bom">
             <!-- ── Step 1+2+3 Form ── -->
             <div class="card">
-              <h2 style="margin:0 0 4px;">📖 กำหนดข้อมูลอ้างอิง</h2>
-              <p style="margin:0 0 18px;font-size:12px;color:#64748b;font-weight:600;">เลือกโรงงาน → เลือกสินค้า → ใส่รายละเอียดวัตถุดิบ</p>
+              <h2 style="margin:0 0 4px;">กำหนดข้อมูลอ้างอิง</h2>
+              <p style="margin:0 0 18px;font-size:12px;color:var(--sq-ink2);font-weight:600;">เลือกโรงงาน → เลือกสินค้า → ใส่รายละเอียดวัตถุดิบ</p>
               <div class="row" style="margin-bottom:4px;">
                 <div class="field">
-                  <label>① 🏭 โรงงานวัตถุดิบ</label>
+                  <label>① โรงงานวัตถุดิบ</label>
                   <div style="display:flex;gap:8px;">
                     <button id="crBomBtnSQF" onclick="crBomSelectFactory('SQF')"
-                      style="flex:1;padding:12px;border-radius:10px;border:2px solid var(--sq-line);background:var(--sq-raised);font-weight:800;font-size:13px;cursor:pointer;font-family:inherit;transition:.15s;">🏭 SQF</button>
+                      style="flex:1;padding:12px;border-radius:10px;border:2px solid var(--sq-line);background:var(--sq-raised);font-weight:800;font-size:13px;cursor:pointer;font-family:inherit;transition:.15s;">SQF</button>
                     <button id="crBomBtnMLM" onclick="crBomSelectFactory('MLM')"
-                      style="flex:1;padding:12px;border-radius:10px;border:2px solid var(--sq-line);background:var(--sq-raised);font-weight:800;font-size:13px;cursor:pointer;font-family:inherit;transition:.15s;">🏭 MLM</button>
+                      style="flex:1;padding:12px;border-radius:10px;border:2px solid var(--sq-line);background:var(--sq-raised);font-weight:800;font-size:13px;cursor:pointer;font-family:inherit;transition:.15s;">MLM</button>
                   </div>
                 </div>
                 <div class="field">
-                  <label for="crBomProductSel">② 📦 สินค้าที่ผลิต</label>
+                  <label for="crBomProductSel">② สินค้าที่ผลิต</label>
                   <select id="crBomProductSel" onchange="crBomOnProductChange()"
                     style="width:100%;padding:11px;border-radius:8px;border:2px solid var(--sq-line);font-family:inherit;font-weight:700;background:var(--sq-raised);">
                     <option value="">— เลือกสินค้าก่อน —</option>
@@ -1473,12 +1679,12 @@
               </div>
               <div id="crBomMatSection" style="display:none;margin-top:8px;">
                 <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
-                  <div style="font-size:12px;font-weight:800;color:#64748b;text-transform:uppercase;">③ ⚗️ วัตถุดิบที่ใช้ <span style="font-weight:600;text-transform:none;">(ต่อสินค้า 1 หน่วย)</span></div>
-                  <span id="crBomStatusBadge" style="font-size:11px;font-weight:800;padding:2px 10px;border-radius:999px;background:var(--sq-line);color:#64748b;"></span>
+                  <div style="font-size:12px;font-weight:800;color:var(--sq-ink2);text-transform:uppercase;">③ วัตถุดิบที่ใช้ <span style="font-weight:600;text-transform:none;">(ต่อสินค้า 1 หน่วย)</span></div>
+                  <span id="crBomStatusBadge" style="font-size:11px;font-weight:800;padding:2px 10px;border-radius:999px;background:var(--sq-line);color:var(--sq-ink2);"></span>
                 </div>
                 <div style="overflow-x:auto;">
                   <table style="width:100%;border-collapse:collapse;min-width:520px;">
-                    <thead><tr style="background:#1e293b;color:#fff;font-size:11px;font-weight:700;text-transform:uppercase;">
+                    <thead><tr style="background:var(--sq-raised);color:var(--sq-ink2);font-size:12px;font-weight:700;border-bottom:2px solid var(--sq-green);">
                       <th style="padding:10px 8px;text-align:left;width:32px;">#</th>
                       <th style="padding:10px 8px;text-align:left;">วัตถุดิบ</th>
                       <th style="padding:10px 8px;text-align:right;width:130px;">ปริมาณ / หน่วย</th>
@@ -1489,10 +1695,10 @@
                   </table>
                 </div>
                 <button class="cr-btn btn-light" onclick="crBomAddRow()"
-                  style="margin-top:10px;width:100%;border:2px dashed var(--sq-line);background:var(--sq-accent-2);color:var(--sq-accent);font-weight:900;">➕ เพิ่มวัตถุดิบ</button>
+                  style="margin-top:10px;width:100%;border:2px dashed var(--sq-line);background:var(--sq-accent-2);color:var(--sq-accent);font-weight:900;">เพิ่มวัตถุดิบ</button>
                 <div style="display:flex;gap:10px;margin-top:14px;flex-wrap:wrap;">
-                  <button class="cr-btn btn-primary" onclick="crSaveBom()" style="flex:1;">💾 บันทึก BOM</button>
-                  <button class="cr-btn btn-light" onclick="crDeleteBom()" style="background:var(--sq-crit-bg);color:var(--sq-crit);border:2px solid #f0c4c0;">🗑️ ลบ BOM นี้</button>
+                  <button class="cr-btn btn-primary" onclick="crSaveBom()" style="flex:1;">บันทึก BOM</button>
+                  <button class="cr-btn btn-light" onclick="crDeleteBom()" style="background:var(--sq-crit-bg);color:var(--sq-crit);border:2px solid #f0c4c0;">ลบ BOM นี้</button>
                 </div>
               </div>
               <div id="crBomPlaceholder" style="text-align:center;padding:28px 0;color:var(--sq-muted);font-size:13px;font-weight:700;">เลือกโรงงานและสินค้าเพื่อเริ่มกำหนดข้อมูล</div>
@@ -1500,8 +1706,8 @@
             <!-- รายการ BOM ที่มีอยู่ -->
             <div class="card">
               <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;">
-                <h2 style="margin:0;">📋 BOM ทั้งหมด</h2>
-                <button class="cr-btn btn-light" onclick="crLoadBomList()" style="padding:8px 14px;font-size:12px;">🔄 โหลด</button>
+                <h2 style="margin:0;">BOM ทั้งหมด</h2>
+                <button class="cr-btn btn-light" onclick="crLoadBomList()" style="padding:8px 14px;font-size:12px;">โหลด</button>
               </div>
               <div id="crBomProductList">
                 <p style="color:var(--sq-muted);text-align:center;font-weight:700;padding:24px 0;">กด "โหลด" เพื่อดู BOM ที่กำหนดไว้</p>
@@ -1516,27 +1722,27 @@
         <div class="card">
           <!-- หัวใบ -->
           <div style="margin-bottom:16px;">
-            <h2 style="margin:0;">📋 สร้างใบสั่งผลิต</h2>
+            <h2 style="margin:0;">สร้างใบสั่งผลิต</h2>
           </div>
           <div class="cr-status" id="crWoStatus"></div>
 
           <!-- เลขที่ + วันที่ + ผู้สั่ง + โรงงาน -->
           <div class="row">
-            <div class="field"><label for="crWoOrderId">🏷️ เลขที่ใบสั่งผลิต</label>
+            <div class="field"><label for="crWoOrderId">เลขที่ใบสั่งผลิต</label>
               <input type="text" id="crWoOrderId" readonly style="background:var(--sq-line-soft);color:var(--sq-accent);font-weight:900;font-size:18px;"></div>
-            <div class="field"><label for="crWoDate">📅 วันที่สั่งผลิต</label><input type="date" id="crWoDate"></div>
-            <div class="field"><label for="crWoCreatedBy">👤 ผู้สั่งผลิต</label><input type="text" id="crWoCreatedBy" readonly style="background:var(--sq-line-soft);"></div>
-            <div class="field"><label for="crWoFactory">🏭 โรงงานวัตถุดิบ</label>
+            <div class="field"><label for="crWoDate">วันที่สั่งผลิต</label><input type="date" id="crWoDate"></div>
+            <div class="field"><label for="crWoCreatedBy">ผู้สั่งผลิต</label><input type="text" id="crWoCreatedBy" readonly style="background:var(--sq-line-soft);"></div>
+            <div class="field"><label for="crWoFactory">โรงงานวัตถุดิบ</label>
               <select id="crWoFactory" onchange="crCheckBomMaterials()" style="width:100%;padding:10px;border-radius:8px;border:2px solid var(--sq-line);font-family:inherit;font-weight:700;background:var(--sq-raised);">
                 <option value="">— เลือกโรงงาน —</option>
-                <option value="SQF">🏭 SQF (สุพรรณคิวฟู้ดส์)</option>
-                <option value="MLM">🏭 MLM (แม่ละมาย)</option>
+                <option value="SQF">SQF (สุพรรณคิวฟู้ดส์)</option>
+                <option value="MLM">MLM (แม่ละมาย)</option>
               </select>
             </div>
           </div>
 
           <!-- ตารางรายการ SKU -->
-          <div style="margin:16px 0 8px;font-size:12px;font-weight:700;color:#64748b;text-transform:uppercase;">📦 รายการสินค้าที่สั่งผลิต</div>
+          <div style="margin:16px 0 8px;font-size:12px;font-weight:700;color:var(--sq-ink2);text-transform:uppercase;">รายการสินค้าที่สั่งผลิต</div>
           <div class="table-wrap" style="overflow-x:auto;">
             <table id="crWoItemsTable" style="width:100%;border-collapse:collapse;min-width:820px;table-layout:fixed;">
               <colgroup>
@@ -1549,7 +1755,7 @@
                 <col style="width:40px">
               </colgroup>
               <thead>
-                <tr style="background:#1e293b;color:#fff;font-size:11px;font-weight:700;text-transform:uppercase;">
+                <tr style="background:var(--sq-raised);color:var(--sq-ink2);font-size:12px;font-weight:700;border-bottom:2px solid var(--sq-green);">
                   <th style="padding:10px 8px;text-align:left;">#</th>
                   <th style="padding:10px 8px;text-align:left;">สินค้า</th>
                   <th style="padding:10px 8px;text-align:center;">MFG (6 หลัก)</th>
@@ -1563,27 +1769,27 @@
             </table>
           </div>
           <button class="cr-btn btn-light" onclick="crWoAddRow()" style="margin-top:10px;width:100%;border:2px dashed var(--sq-line);background:var(--sq-raised);color:var(--sq-accent);font-weight:900;">
-            ➕ เพิ่มสินค้า
+            เพิ่มสินค้า
           </button>
 
           <!-- ตรวจสอบวัตถุดิบ BOM -->
           <div style="margin-top:14px;">
             <button class="cr-btn btn-light" onclick="crCheckBomMaterials()" style="width:100%;border:2px dashed var(--sq-accent);background:var(--sq-accent-2);color:var(--sq-accent);font-weight:900;">
-              🔬 ตรวจสอบวัตถุดิบที่ต้องใช้
+              ตรวจสอบวัตถุดิบที่ต้องใช้
             </button>
             <div id="crWoBomResult" style="display:none;margin-top:10px;"></div>
             <div id="crWoActionBtns" style="display:none;margin-top:12px;gap:10px;">
               <button class="cr-btn btn-primary" onclick="crPrintWorkOrder()" id="crWoBtnPrint"
-                style="flex:1;padding:14px;font-size:15px;font-weight:900;background:var(--sq-accent);">🖨️ พิมพ์ใบสั่งผลิต</button>
+                style="flex:1;padding:14px;font-size:15px;font-weight:900;background:var(--sq-accent);">พิมพ์ใบสั่งผลิต</button>
               <button class="cr-btn btn-light" onclick="crClearWorkOrder()"
-                style="padding:14px;font-size:15px;font-weight:900;">🧹 ใหม่</button>
+                style="padding:14px;font-size:15px;font-weight:900;">ใหม่</button>
             </div>
           </div>
 
           <!-- หมายเหตุ -->
           <div class="row" style="margin-top:14px;">
             <div class="field full">
-              <label for="crWoNote">💬 หมายเหตุ / คำสั่งพิเศษ</label>
+              <label for="crWoNote">หมายเหตุ / คำสั่งพิเศษ</label>
               <textarea id="crWoNote" rows="2" placeholder="ระบุคำสั่งพิเศษหรือรายละเอียดเพิ่มเติม" style="width:100%;padding:10px;border-radius:8px;border:2px solid var(--sq-line);font-family:inherit;resize:vertical;box-sizing:border-box;"></textarea>
             </div>
           </div>
@@ -1594,24 +1800,24 @@
       <!-- Tab: ส่งยอดผลิต (ฝ่ายผลิตบันทึก) -->
       <div class="cr-tab-panel" id="cr-tab-submit">
         <div class="card" id="crSiFormCard">
-          <h2 style="margin-bottom:4px;">📦 บันทึกยอดผลิต</h2>
-          <p style="font-size:12px;color:#64748b;margin-bottom:16px;">ฝ่ายผลิตกรอกสินค้าที่ผลิตได้ → ส่งให้คนสั่งผลิตตรวจยอด</p>
+          <h2 style="margin-bottom:4px;">บันทึกยอดผลิต</h2>
+          <p style="font-size:12px;color:var(--sq-ink2);margin-bottom:16px;">ฝ่ายผลิตกรอกสินค้าที่ผลิตได้ → ส่งให้คนสั่งผลิตตรวจยอด</p>
           <div class="cr-status" id="crSiFormStatus"></div>
 
           <!-- รายการสินค้า -->
           <div id="crSiRows" style="display:flex;flex-direction:column;gap:14px;margin-bottom:16px;"></div>
 
           <button class="cr-btn btn-light" onclick="crSiAddRow()" style="width:100%;padding:12px;font-size:14px;border:2px dashed #94a3b8;margin-bottom:12px;">
-            ➕ เพิ่มสินค้า
+            เพิ่มสินค้า
           </button>
 
           <div style="margin-bottom:12px;">
-            <label for="crSiNote" style="font-size:12px;color:#64748b;font-weight:700;display:block;margin-bottom:4px;">หมายเหตุ (ถ้ามี)</label>
+            <label for="crSiNote" style="font-size:12px;color:var(--sq-ink2);font-weight:700;display:block;margin-bottom:4px;">หมายเหตุ (ถ้ามี)</label>
             <input id="crSiNote" type="text" placeholder="เช่น รุ่นการผลิต, กะ, เลขที่ใบสั่งผลิต..." style="width:100%;padding:10px 12px;border:1.5px solid var(--sq-line);border-radius:10px;font-size:14px;box-sizing:border-box;">
           </div>
 
           <button class="cr-btn btn-primary" onclick="crSiSubmit()" style="width:100%;padding:16px;font-size:16px;font-weight:900;letter-spacing:0.5px;">
-            📤 ส่งยอดผลิต
+            ส่งยอดผลิต
           </button>
         </div>
       </div>
@@ -1620,13 +1826,13 @@
       <div class="cr-tab-panel" id="cr-tab-receive">
         <div class="card" id="crSiReviewCard">
           <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px;">
-            <h2 style="margin:0;">📥 รับยอดผลิตเข้าคลัง</h2>
+            <h2 style="margin:0;">รับยอดผลิตเข้าคลัง</h2>
             <div style="display:flex;gap:8px;flex-wrap:wrap;">
-              <button class="cr-btn btn-light" onclick="crSiLoadReviewList('รอตรวจยอด')" style="padding:8px 12px;font-size:12px;">⏳ รอตรวจ</button>
-              <button class="cr-btn btn-light" onclick="crSiLoadReviewList('')" style="padding:8px 12px;font-size:12px;">📋 ทั้งหมด</button>
+              <button class="cr-btn btn-light" onclick="crSiLoadReviewList('รอตรวจยอด')" style="padding:8px 12px;font-size:12px;">รอตรวจ</button>
+              <button class="cr-btn btn-light" onclick="crSiLoadReviewList('')" style="padding:8px 12px;font-size:12px;">ทั้งหมด</button>
             </div>
           </div>
-          <p style="font-size:12px;color:#64748b;margin-bottom:12px;">ตรวจยอดจริง → แก้ไขจำนวนได้ → กดยืนยันเข้าคลัง</p>
+          <p style="font-size:12px;color:var(--sq-ink2);margin-bottom:12px;">ตรวจยอดจริง → แก้ไขจำนวนได้ → กดยืนยันเข้าคลัง</p>
           <div class="cr-status" id="crSiReviewStatus"></div>
           <div id="crSiReviewList"><p style="text-align:center;color:var(--sq-muted);padding:20px;font-size:13px;">กดโหลดรายการ</p></div>
         </div>
@@ -1637,8 +1843,8 @@
       <div class="cr-tab-panel active" id="cr-tab-report">
         <div class="card">
           <div style="display:flex;justify-content:space-between;">
-            <h2>📈 สรุปภาพรวมคลังสินค้า</h2>
-            <button class="cr-btn btn-light" onclick="crLoadOverview()">🔄 อัปเดต</button>
+            <h2>สรุปภาพรวมคลังสินค้า</h2>
+            <button class="cr-btn btn-light" onclick="crLoadOverview()">อัปเดต</button>
           </div>
           <div class="mini-stats">
             <div class="stat"><div class="v" id="crSumProducts">0</div><div>ชนิดสินค้า</div></div>
@@ -1647,21 +1853,21 @@
             <div class="stat"><div class="v" id="crSumExpired"  style="color:var(--danger)">0</div><div>หมดอายุแล้ว</div></div>
             <div class="stat" id="crStatStale" style="display:none;"><div class="v" id="crSumStale" style="color:var(--sq-high)">0</div><div id="crSumStaleLbl">ไม่อัปเดต</div></div>
           </div>
-          <h3>📦 ยอดรวมตามสินค้า</h3>
+          <h3>ยอดรวมตามสินค้า</h3>
           <div class="table-wrap"><table><thead><tr><th>ชื่อสินค้า</th><th>ยอดรวม</th><th>หน่วย</th><th>รอบผลิต</th></tr></thead><tbody id="crTotalBody"></tbody></table></div>
-          <h3>⚠️ ใกล้หมดอายุ (FEFO)</h3>
+          <h3>ใกล้หมดอายุ (FEFO)</h3>
           <div class="table-wrap"><table><thead><tr><th>ชื่อสินค้า</th><th>MFG</th><th>EXP</th><th>เหลือ(วัน)</th><th>จำนวน</th></tr></thead><tbody id="crExpiringBody"></tbody></table></div>
-          <h3>❌ หมดอายุตกค้าง</h3>
+          <h3>หมดอายุตกค้าง</h3>
           <div class="table-wrap"><table><thead><tr><th>ชื่อสินค้า</th><th>MFG</th><th>EXP</th><th>เลย(วัน)</th><th>จำนวน</th></tr></thead><tbody id="crExpiredBody"></tbody></table></div>
           <!-- ⏰ ล็อตที่ไม่มีใครนับ/เบิก/รับ เกินจำนวนวันที่ตั้ง (ค่าเดียวกับหน้าวัตถุดิบ) -->
           <div id="crStaleWrap" style="display:none;">
             <div style="display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;">
-              <h3 id="crStaleTitle">⏰ ไม่มีการอัปเดต</h3>
-              <button class="cr-btn btn-light" id="crStaleSendBtn" onclick="crSendStale(this)" style="display:none;">⏰ ส่งเตือนให้ช่วยนับ</button>
+              <h3 id="crStaleTitle">ไม่มีการอัปเดต</h3>
+              <button class="cr-btn btn-light" id="crStaleSendBtn" onclick="crSendStale(this)" style="display:none;">ส่งเตือนให้ช่วยนับ</button>
             </div>
             <div class="table-wrap"><table><thead><tr><th>ชื่อสินค้า</th><th>MFG</th><th>อัปเดตล่าสุด</th><th>ไม่อัปเดต(วัน)</th><th>จำนวน</th></tr></thead><tbody id="crStaleBody"></tbody></table></div>
-            <p style="font-size:12px;color:var(--muted);margin-top:6px;">ช่วยกันนับยืนยัน: แท็บ 📱 นับสต๊อก → เลือกสินค้า → นับที่ล็อตนั้น (ยอดตรงอยู่แล้วก็ใส่ตัวเลขเดิมแล้วบันทึก) ·
-              จำนวนวันใช้ค่าเดียวกับหน้าวัตถุดิบ (ช่อง "⏰ เตือนไม่อัปเดตเกิน")</p>
+            <p style="font-size:12px;color:var(--muted);margin-top:6px;">ช่วยกันนับยืนยัน: แท็บ นับสต๊อก → เลือกสินค้า → นับที่ล็อตนั้น (ยอดตรงอยู่แล้วก็ใส่ตัวเลขเดิมแล้วบันทึก) ·
+              จำนวนวันใช้ค่าเดียวกับหน้าวัตถุดิบ (ช่อง "เตือนไม่อัปเดตเกิน")</p>
           </div>
         </div>
       </div>
@@ -1670,17 +1876,17 @@
       <!-- Tab: ตั้งค่า -->
       <div class="cr-tab-panel" id="cr-tab-settings">
         <div class="card">
-          <h2>⚙️ ตั้งค่าการแจ้งเตือน Telegram</h2>
+          <h2>ตั้งค่าการแจ้งเตือน Telegram</h2>
           <div class="cr-status" id="crSettingsStatus"></div>
           <div class="row">
-            <div class="field"><label for="crTgBotName">🤖 ชื่อบอท</label><input type="text" id="crTgBotName" autocomplete="off"></div>
-            <div class="field"><label for="crTgEnable">📲 สถานะ</label>
+            <div class="field"><label for="crTgBotName">ชื่อบอท</label><input type="text" id="crTgBotName" autocomplete="off"></div>
+            <div class="field"><label for="crTgEnable">สถานะ</label>
               <select id="crTgEnable"><option value="true">เปิดใช้งาน</option><option value="false">ปิดใช้งาน</option></select>
             </div>
           </div>
-          <div class="row"><div class="field full"><label for="crTgToken">🔑 Bot Token</label><input type="password" id="crTgToken" autocomplete="off"></div></div>
-          <div class="row"><div class="field full"><label for="crTgChatIds">💬 Chat ID</label><textarea id="crTgChatIds" placeholder="คั่นด้วยคอมม่า" autocomplete="off"></textarea></div></div>
-          <button class="cr-btn btn-primary" onclick="crSaveSettings()">💾 บันทึกการตั้งค่า</button>
+          <div class="row"><div class="field full"><label for="crTgToken">Bot Token</label><input type="password" id="crTgToken" autocomplete="off"></div></div>
+          <div class="row"><div class="field full"><label for="crTgChatIds">Chat ID</label><textarea id="crTgChatIds" placeholder="คั่นด้วยคอมม่า" autocomplete="off"></textarea></div></div>
+          <button class="cr-btn btn-primary" onclick="crSaveSettings()">บันทึกการตั้งค่า</button>
         </div>
       </div>
     </div><!-- /cr-wrap -->
@@ -1695,54 +1901,54 @@
     <div id="rawAlertModal" class="hidden"></div>
 
     <!-- QR Modal -->
-    <div id="rawQrModal" class="hidden fixed inset-0 bg-black/80 z-[280] flex justify-center p-4 overflow-y-auto">
+    <div id="rawQrModal" class="ui-modal hidden fixed inset-0 bg-black/80 z-[280] flex justify-center p-4 overflow-y-auto">
       <div class="bg-white w-full max-w-md my-auto rounded-2xl shadow-2xl overflow-hidden border-2 border-slate-900">
-        <div class="bg-slate-900 p-8 text-white flex justify-between items-center">
-          <h2 class="text-2xl font-black">🧾 QR Code</h2>
-          <button onclick="closeRawQr()" class="text-4xl">✕</button>
+        <div class="ui-plate-head p-8 flex justify-between items-center">
+          <h2 class="text-2xl font-black">QR Code</h2>
+          <button onclick="closeRawQr()" aria-label="ปิด"><i class="ic ic-x" aria-hidden="true"></i></button>
         </div>
         <div class="p-8 text-center">
           <p id="rawQrTitle" class="font-black text-slate-700 text-xl mb-6"></p>
           <div id="rawQrcode" class="qr-box flex justify-center mb-8"></div>
-          <button onclick="downloadRawQr()" style="background:var(--sq-accent);" class="text-white px-8 py-4 rounded-2xl font-black shadow-lg hover:bg-black transition-all text-sm uppercase">ดาวน์โหลด QR</button>
+          <button onclick="downloadRawQr()" style="background:var(--sq-accent);" class="text-white px-8 py-4 rounded-2xl font-black text-sm">ดาวน์โหลด QR</button>
         </div>
       </div>
     </div>
 
     <!-- Verify Modal -->
-    <div id="rawVerifyModal" class="hidden fixed inset-0 bg-black/80 z-[260] flex justify-center p-4 overflow-y-auto">
+    <div id="rawVerifyModal" class="ui-modal hidden fixed inset-0 bg-black/80 z-[260] flex justify-center p-4 overflow-y-auto">
       <!-- สีนับ = cyan เดียวกับปุ่ม "📊 นับ" บนมือถือ · ปุ่มยืนยันเขียวแบรนด์ตาม DESIGN.md (เดิมม่วงทั้งชุด · audit 2026-10-19) -->
-      <div class="my-auto bg-white p-8 rounded-2xl w-full max-w-sm shadow-2xl text-center border-t-8 border-cyan-700">
-        <h2 class="text-2xl font-black mb-2">⚖️ นับสต๊อก</h2>
-        <p id="rawVerifyTitle" class="text-cyan-800 font-black mb-10 text-sm"></p>
-        <input type="number" id="rawVerifyQty" aria-label="ยอดที่นับได้" class="w-full border-4 border-slate-200 p-4 text-4xl font-black rounded-2xl text-center outline-none bg-slate-50 focus:border-cyan-700 mb-6" placeholder="เช่น 16*48+5">
-        <button onclick="rawSubmitVerify()" id="rawBtnVerify" class="w-full text-white py-5 rounded-2xl font-black text-xl shadow-xl active:brightness-75 transition-all" style="background:var(--sq-accent);">ยืนยันยอดจริง ✅</button>
-        <button onclick="closeRawVerify()" class="w-full text-slate-600 hover:text-slate-800 font-black text-sm mt-3 py-2">ยกเลิก ✕</button>
+      <div class="my-auto bg-white p-8 w-full max-w-sm text-center">
+        <h2 class="text-2xl mb-2 flex items-center justify-center gap-2" style="color:var(--sq-ink);"><i class="ic ic-count" style="color:#0e7490;" aria-hidden="true"></i>นับสต๊อก</h2>
+        <p id="rawVerifyTitle" class="font-black mb-8 text-sm" style="color:var(--sq-ink2);"></p>
+        <input type="number" id="rawVerifyQty" aria-label="ยอดที่นับได้" class="ui-field ui-k w-full p-4 text-4xl text-center mb-6" placeholder="เช่น 16*48+5">
+        <button onclick="rawSubmitVerify()" id="rawBtnVerify" class="ui-confirm icb t-cnt w-full">ยืนยันยอดที่นับได้</button>
+        <button onclick="closeRawVerify()" class="ui-cancel">ยกเลิก</button>
       </div>
     </div>
 
     <!-- Action Modal -->
-    <div id="rawActionModal" class="hidden fixed inset-0 bg-black/80 z-[250] flex justify-center p-4 overflow-y-auto">
-      <div class="relative my-auto bg-white p-6 sm:p-8 rounded-2xl shadow-2xl text-center border-b-8 border-orange-500 w-full max-w-sm">
+    <div id="rawActionModal" class="ui-modal hidden fixed inset-0 bg-black/80 z-[250] flex justify-center p-4 overflow-y-auto">
+      <div class="relative my-auto bg-white p-6 sm:p-8 text-center w-full max-w-sm">
         <button type="button" onclick="closeRawAction()" aria-label="ปิดหน้าต่าง" title="ปิด (Esc)"
-          class="absolute top-3 right-3 w-11 h-11 rounded-full bg-slate-100 text-slate-600 text-xl font-black hover:bg-slate-200">✕</button>
-        <h2 id="rawModalTitle" class="text-2xl font-black mb-2 text-slate-800 px-10">📥 รับ/เบิก</h2>
+          class="ui-x absolute top-3 right-3"><i class="ic ic-x" aria-hidden="true"></i></button>
+        <h2 id="rawModalTitle" class="text-2xl mb-2 px-10" style="color:var(--sq-ink);">รับ/เบิก</h2>
         <p id="rawModalSku"  class="text-sm text-slate-600 font-black mb-2"></p>
-        <p id="rawModalUnit" class="text-sm text-emerald-700 font-black mb-2"></p>
-        <div id="rawModalStockBox" class="bg-slate-100 rounded-2xl px-4 py-2 mb-6 text-sm font-black">
-          คงเหลือ: <span id="rawModalStock" class="text-blue-700">-</span>
+        <p id="rawModalUnit" class="text-sm font-black mb-2" style="color:var(--sq-ink2);"></p>
+        <div id="rawModalStockBox" class="px-4 py-2 mb-6 text-sm font-black" style="border:1.5px solid var(--sq-line);border-radius:6px;background:var(--sq-raised);">
+          คงเหลือ: <span id="rawModalStock" class="ui-k" style="font-size:18px;">-</span>
         </div>
         <input type="hidden" id="rawModalSkuVal">
         <input type="hidden" id="rawModalType" value="OUT">
         <input type="hidden" id="rawModalCurrentQty" value="0">
         <div class="space-y-6">
-          <div class="flex p-1.5 bg-slate-100 rounded-2xl gap-1" role="group" aria-label="ประเภทรายการ">
-            <button onclick="setRawType('OUT')"    id="rawBtnOut" aria-pressed="true"  class="flex-1 py-3 rounded-xl font-black text-base bg-white shadow-xl text-orange-700">เบิก 📤</button>
-            <button onclick="setRawType('RETURN')" id="rawBtnRet" aria-pressed="false" class="flex-1 py-3 rounded-xl font-black text-base text-slate-600 hover:bg-slate-200">คืน ↩️</button>
-            <button onclick="setRawType('IN')"     id="rawBtnIn"  aria-pressed="false" class="flex-1 py-3 rounded-xl font-black text-base text-slate-600 hover:bg-slate-200">รับ 📥</button>
+          <div class="flex gap-2" role="group" aria-label="ประเภทรายการ">
+            <button onclick="setRawType('OUT')"    id="rawBtnOut" aria-pressed="true"  class="flex-1 py-3 font-black text-base icb t-out">เบิก</button>
+            <button onclick="setRawType('RETURN')" id="rawBtnRet" aria-pressed="false" class="flex-1 py-3 font-black text-base icb ic-ret">คืน</button>
+            <button onclick="setRawType('IN')"     id="rawBtnIn"  aria-pressed="false" class="flex-1 py-3 font-black text-base icb ic-in">รับ</button>
           </div>
           <div>
-            <input type="number" id="rawModalQty" aria-label="จำนวน" oninput="rawUpdateAfter()" class="w-full border-4 border-slate-200 p-5 text-5xl font-black rounded-2xl text-center outline-none bg-stone-50 focus:border-emerald-600" value="1" min="1" placeholder="เช่น 16*48+5">
+            <input type="number" id="rawModalQty" aria-label="จำนวน" oninput="rawUpdateAfter()" class="ui-field ui-k w-full p-4 text-5xl text-center" value="1" min="1" placeholder="เช่น 16*48+5">
             <div id="rawModalAfter" style="margin-top:10px;font-size:14px;font-weight:800;color:var(--sq-ink2);min-height:21px;"></div>
           </div>
           <!-- ใช้กับงานอะไร — บังคับกรอกตอนเบิก ข้อมูลนี้ขึ้นบนใบเบิกและออดิเตอร์ใช้ตรวจ -->
@@ -1767,28 +1973,28 @@
               <option value="">— ไม่อ้างอิงใบสั่งผลิต —</option>
             </select>
           </div>
-          <button onclick="rawSubmitAction()" id="rawBtnSubmit" class="w-full text-white py-5 rounded-2xl font-black text-xl shadow-xl active:brightness-75 transition-all" style="background:var(--sq-accent);">✔️ บันทึกรายการ</button>
-          <button onclick="closeRawAction()" class="w-full text-slate-500 hover:text-slate-800 font-black text-sm mt-3 py-2">ปิดหน้าต่าง ✕</button>
+          <button onclick="rawSubmitAction()" id="rawBtnSubmit" class="ui-confirm icb w-full t-out">บันทึกรายการ</button>
+          <button onclick="closeRawAction()" class="ui-cancel">ปิดหน้าต่าง</button>
         </div>
       </div>
     </div>
 
     <!-- Edit Modal -->
-    <div id="rawEditModal" class="hidden fixed inset-0 bg-black/80 z-[240] flex items-center justify-center p-4">
+    <div id="rawEditModal" class="ui-modal hidden fixed inset-0 bg-black/80 z-[240] flex items-center justify-center p-4">
       <div class="bg-white w-full max-w-md my-auto rounded-2xl shadow-2xl overflow-hidden border-2 border-sky-600 flex flex-col" style="max-height:90dvh;">
-        <div class="bg-sky-600 p-8 text-white flex justify-between items-center shrink-0">
-          <h2 class="text-2xl font-black">✏️ แก้ไขสินค้า</h2>
-          <button onclick="closeRawEdit()" class="text-4xl">✕</button>
+        <div class="ui-plate-head p-8 flex justify-between items-center shrink-0">
+          <h2 class="text-2xl font-black">แก้ไขวัตถุดิบ</h2>
+          <button onclick="closeRawEdit()" aria-label="ปิด"><i class="ic ic-x" aria-hidden="true"></i></button>
         </div>
         <div class="p-8 space-y-6 overflow-y-auto">
-          <div><label for="rawEditSku" class="text-xs font-black uppercase ml-1">SKU</label><input type="text" id="rawEditSku" class="w-full bg-slate-100 border-2 border-slate-100 p-4 rounded-xl font-black text-sky-700 text-xl" readonly></div>
+          <div><label for="rawEditSku" class="text-xs font-black uppercase ml-1">SKU</label><input type="text" id="rawEditSku" class="w-full bg-slate-100 border-2 border-slate-100 p-4 rounded-xl font-black text-xl" style="font-family:var(--sq-mono);" readonly></div>
           <div><label for="rawEditName" class="text-xs font-black uppercase ml-1">ชื่อวัตถุดิบ</label><input type="text" id="rawEditName" class="w-full bg-slate-50 border-2 border-slate-200 p-4 rounded-xl font-black text-xl focus:border-sky-600 outline-none"></div>
           <div class="grid grid-cols-2 gap-4">
             <div><label for="rawEditUnit" class="text-xs font-black uppercase ml-1">หน่วยนับ</label><input type="text" id="rawEditUnit" list="unitDatalist" class="w-full bg-slate-50 border-2 border-slate-200 p-4 rounded-xl font-black text-xl outline-none focus:border-slate-600"></div>
             <div><label for="rawEditMin" class="text-xs font-black uppercase ml-1">จุดสั่งซื้อเพิ่ม</label><input type="number" id="rawEditMin" class="w-full bg-slate-50 border-2 border-slate-200 p-4 rounded-xl font-black text-xl outline-none focus:border-slate-600" min="0"></div>
           </div>
           <div class="grid grid-cols-2 gap-4">
-            <div><label for="rawEditDailyUsage" class="text-xs font-black uppercase ml-1">ใช้ต่อวัน 📊</label><input type="number" id="rawEditDailyUsage" class="w-full bg-slate-50 border-2 border-slate-200 p-4 rounded-xl font-black text-xl outline-none focus:border-slate-600" value="0" min="0" step="0.01"></div>
+            <div><label for="rawEditDailyUsage" class="text-xs font-black uppercase ml-1">ใช้ต่อวัน</label><input type="number" id="rawEditDailyUsage" class="w-full bg-slate-50 border-2 border-slate-200 p-4 rounded-xl font-black text-xl outline-none focus:border-slate-600" value="0" min="0" step="0.01"></div>
             <div><label for="rawEditExpiry" class="text-xs font-black uppercase ml-1">วันหมดอายุ (ค.ศ.)</label><input type="date" id="rawEditExpiry" lang="en-GB" class="w-full bg-slate-50 border-2 border-slate-200 p-4 rounded-xl font-black text-xl outline-none focus:border-slate-600"></div>
           </div>
           <!-- ข้อ 20: ค่าจัดซื้อรายตัว — จุดสั่งซื้อแนะนำใช้ค่าพวกนี้ (ว่าง = ใช้ค่ารวม/ไม่ปัด) -->
@@ -1797,78 +2003,80 @@
             <div><label for="rawEditMoq" class="text-xs font-black uppercase ml-1">สั่งขั้นต่ำ</label><input type="number" id="rawEditMoq" class="w-full bg-slate-50 border-2 border-slate-200 p-4 rounded-xl font-black text-xl outline-none focus:border-slate-600" min="0" placeholder="—"></div>
             <div><label for="rawEditPackSize" class="text-xs font-black uppercase ml-1">ขนาดบรรจุ</label><input type="number" id="rawEditPackSize" class="w-full bg-slate-50 border-2 border-slate-200 p-4 rounded-xl font-black text-xl outline-none focus:border-slate-600" min="0" placeholder="—"></div>
           </div>
-          <div><label for="rawEditAlertDays" class="text-xs font-black uppercase ml-1">⏰ เตือนล่วงหน้า (วัน)</label>
+          <div><label for="rawEditAlertDays" class="text-xs font-black uppercase ml-1">เตือนล่วงหน้า (วัน)</label>
             <input type="number" id="rawEditAlertDays" class="w-full bg-amber-50 border-2 border-amber-200 p-4 rounded-xl font-black text-xl outline-none focus:border-amber-500" value="7" min="1" max="365" placeholder="7">
             <p class="text-xs text-slate-600 mt-1 ml-1">เตือนก่อนหมดอายุกี่วัน (ว่างไว้ = ใช้ค่าส่วนกลาง)</p>
           </div>
-          <button onclick="rawSubmitEdit()" id="rawBtnEdit" class="w-full bg-sky-700 text-white py-5 mt-4 rounded-2xl font-black text-xl shadow-xl hover:bg-black transition-all">💾 บันทึกการแก้ไข</button>
+          <button onclick="rawSubmitEdit()" id="rawBtnEdit" class="ui-confirm w-full mt-4" style="background:var(--sq-green);">บันทึกการแก้ไข</button>
+          <!-- ยกเลิกการใช้อยู่ท้ายหน้าต่างแก้ไข ไม่อยู่ในแถว (เดิม "ลบ" ติดปุ่ม "นับ" กดพลาดง่าย · critique P2) -->
+          <button type="button" onclick="rawDelete(document.getElementById('rawEditSku').value, document.getElementById('rawEditName').value)" class="ui-danger-link viewer-hide">ยกเลิกการใช้วัตถุดิบนี้</button>
         </div>
       </div>
     </div>
 
     <!-- Create Modal -->
-    <div id="rawCreateModal" class="hidden fixed inset-0 bg-black/80 z-[230] flex justify-center p-4 overflow-y-auto">
+    <div id="rawCreateModal" class="ui-modal hidden fixed inset-0 bg-black/80 z-[230] flex justify-center p-4 overflow-y-auto">
       <div class="bg-white w-full max-w-md my-auto rounded-2xl shadow-2xl overflow-hidden border-2 border-emerald-600 flex flex-col" style="max-height:90dvh;">
-        <div class="bg-emerald-600 p-8 text-white flex justify-between items-center shrink-0">
-          <h2 class="text-2xl font-black">📦 ลงทะเบียนวัตถุดิบ</h2>
-          <button onclick="closeRawCreate()" class="text-4xl">✕</button>
+        <div class="ui-plate-head p-8 flex justify-between items-center shrink-0">
+          <h2 class="text-2xl font-black">ลงทะเบียนวัตถุดิบ</h2>
+          <button onclick="closeRawCreate()" aria-label="ปิด"><i class="ic ic-x" aria-hidden="true"></i></button>
         </div>
         <div class="p-8 space-y-6 overflow-y-auto">
-          <div><label for="rawNewSku" class="text-xs font-black uppercase ml-1">รหัสอัตโนมัติ 🆔</label><input type="text" id="rawNewSku" class="w-full bg-slate-100 border-2 border-slate-100 p-4 rounded-xl font-black text-emerald-700 text-xl" readonly></div>
-          <div><label for="rawNewName" class="text-xs font-black uppercase ml-1">ชื่อวัตถุดิบ 📝</label><input type="text" id="rawNewName" class="w-full bg-slate-50 border-2 border-slate-200 p-4 rounded-xl font-black text-xl focus:border-emerald-600 outline-none"></div>
+          <div><label for="rawNewSku" class="text-xs font-black uppercase ml-1">รหัสอัตโนมัติ</label><input type="text" id="rawNewSku" class="w-full bg-slate-100 border-2 border-slate-100 p-4 rounded-xl font-black text-xl" style="font-family:var(--sq-mono);" readonly></div>
+          <div><label for="rawNewName" class="text-xs font-black uppercase ml-1">ชื่อวัตถุดิบ</label><input type="text" id="rawNewName" class="w-full bg-slate-50 border-2 border-slate-200 p-4 rounded-xl font-black text-xl focus:border-emerald-600 outline-none"></div>
           <div class="grid grid-cols-2 gap-4">
-            <div><label for="rawNewQty" class="text-xs font-black uppercase ml-1">ยอดเริ่มต้น 🔢</label><input type="number" id="rawNewQty" class="w-full bg-slate-50 border-2 border-slate-200 p-4 rounded-xl font-black text-xl outline-none focus:border-slate-600" value="0" min="0"></div>
-            <div><label for="rawNewUnit" class="text-xs font-black uppercase ml-1">หน่วยนับ 📏</label><input type="text" id="rawNewUnit" list="unitDatalist" class="w-full bg-slate-50 border-2 border-slate-200 p-4 rounded-xl font-black text-xl outline-none focus:border-slate-600" placeholder="กก."></div>
+            <div><label for="rawNewQty" class="text-xs font-black uppercase ml-1">ยอดเริ่มต้น</label><input type="number" id="rawNewQty" class="w-full bg-slate-50 border-2 border-slate-200 p-4 rounded-xl font-black text-xl outline-none focus:border-slate-600" value="0" min="0"></div>
+            <div><label for="rawNewUnit" class="text-xs font-black uppercase ml-1">หน่วยนับ</label><input type="text" id="rawNewUnit" list="unitDatalist" class="w-full bg-slate-50 border-2 border-slate-200 p-4 rounded-xl font-black text-xl outline-none focus:border-slate-600" placeholder="กก."></div>
           </div>
-          <div><label for="rawNewMin" class="text-xs font-black uppercase ml-1">จุดสั่งซื้อเพิ่ม ⚠️</label><input type="number" id="rawNewMin" class="w-full bg-slate-50 border-2 border-slate-200 p-4 rounded-xl font-black text-xl outline-none focus:border-slate-600" value="0" min="0"></div>
+          <div><label for="rawNewMin" class="text-xs font-black uppercase ml-1">จุดสั่งซื้อเพิ่ม</label><input type="number" id="rawNewMin" class="w-full bg-slate-50 border-2 border-slate-200 p-4 rounded-xl font-black text-xl outline-none focus:border-slate-600" value="0" min="0"></div>
           <div class="grid grid-cols-2 gap-4">
-            <div><label for="rawNewDailyUsage" class="text-xs font-black uppercase ml-1">ใช้ต่อวัน 📊</label><input type="number" id="rawNewDailyUsage" class="w-full bg-slate-50 border-2 border-slate-200 p-4 rounded-xl font-black text-xl outline-none focus:border-slate-600" value="0" min="0" step="0.01" placeholder="เช่น 16*48+5"></div>
+            <div><label for="rawNewDailyUsage" class="text-xs font-black uppercase ml-1">ใช้ต่อวัน</label><input type="number" id="rawNewDailyUsage" class="w-full bg-slate-50 border-2 border-slate-200 p-4 rounded-xl font-black text-xl outline-none focus:border-slate-600" value="0" min="0" step="0.01" placeholder="เช่น 16*48+5"></div>
             <div class="flex items-end pb-1"><span class="text-xs font-black text-slate-600">หน่วยนับ/วัน<br><span class="text-slate-500">ใช้คำนวณวันหมดสต๊อก</span></span></div>
           </div>
-          <div><label for="rawNewExpiry" class="text-xs font-black uppercase ml-1">วันหมดอายุ (ค.ศ.) 📅</label><input type="date" id="rawNewExpiry" lang="en-GB" class="w-full bg-slate-50 border-2 border-slate-200 p-4 rounded-xl font-black text-xl outline-none focus:border-slate-600"></div>
-          <div><label for="rawNewAlertDays" class="text-xs font-black uppercase ml-1">⏰ เตือนล่วงหน้า (วัน)</label>
+          <div><label for="rawNewExpiry" class="text-xs font-black uppercase ml-1">วันหมดอายุ (ค.ศ.)</label><input type="date" id="rawNewExpiry" lang="en-GB" class="w-full bg-slate-50 border-2 border-slate-200 p-4 rounded-xl font-black text-xl outline-none focus:border-slate-600"></div>
+          <div><label for="rawNewAlertDays" class="text-xs font-black uppercase ml-1">เตือนล่วงหน้า (วัน)</label>
             <input type="number" id="rawNewAlertDays" class="w-full bg-amber-50 border-2 border-amber-200 p-4 rounded-xl font-black text-xl outline-none focus:border-amber-500" value="7" min="1" max="365" placeholder="7">
             <p class="text-xs text-slate-600 mt-1 ml-1">เตือนก่อนหมดอายุกี่วัน (ว่างไว้ = ใช้ค่าส่วนกลาง)</p>
           </div>
-          <button onclick="rawSubmitNew()" id="rawBtnCreate" class="w-full bg-emerald-700 text-white py-5 mt-4 rounded-2xl font-black text-xl shadow-xl hover:bg-black transition-all">✅ ยืนยันบันทึก</button>
+          <button onclick="rawSubmitNew()" id="rawBtnCreate" class="ui-confirm w-full mt-4" style="background:var(--sq-green);">ลงทะเบียนวัตถุดิบ</button>
         </div>
       </div>
     </div>
 
     <!-- Settings Modal -->
-    <div id="rawSettingsModal" class="hidden fixed inset-0 bg-black/80 backdrop-blur-md z-[290] flex justify-center p-4 overflow-y-auto">
+    <div id="rawSettingsModal" class="ui-modal hidden fixed inset-0 bg-black/80 backdrop-blur-md z-[290] flex justify-center p-4 overflow-y-auto">
       <div class="bg-white w-full max-w-lg my-auto rounded-2xl shadow-2xl overflow-hidden border-2 border-slate-700">
-        <div class="bg-slate-800 p-8 text-white flex justify-between items-center">
-          <h2 class="text-2xl font-black">⚙️ ตั้งค่า Telegram</h2>
-          <button onclick="closeRawSettings()" class="text-4xl hover:text-red-400">✕</button>
+        <div class="ui-plate-head p-8 flex justify-between items-center">
+          <h2 class="text-2xl font-black">ตั้งค่า Telegram</h2>
+          <button onclick="closeRawSettings()" aria-label="ปิด"><i class="ic ic-x" aria-hidden="true"></i></button>
         </div>
         <div class="p-8 space-y-5">
           <p class="text-xs font-black text-slate-400 uppercase tracking-widest bg-slate-50 rounded-2xl p-3 text-center">
-            ⚠️ การตั้งค่านี้ใช้ร่วมกันทุกโรงงาน (Cold Room / SQF / MLM)
+            การตั้งค่านี้ใช้ร่วมกันทุกโรงงาน (Cold Room / SQF / MLM)
           </p>
           <div class="grid grid-cols-2 gap-4">
             <div>
-              <label for="rawTgBotName" class="text-xs font-black uppercase text-slate-400 mb-1 block">🤖 ชื่อบอท</label>
+              <label for="rawTgBotName" class="text-xs font-black uppercase text-slate-400 mb-1 block">ชื่อบอท</label>
               <input type="text" id="rawTgBotName" class="w-full bg-slate-50 border-2 border-slate-200 p-4 rounded-2xl font-bold outline-none focus:border-slate-700">
             </div>
             <div>
-              <label for="rawTgEnable" class="text-xs font-black uppercase text-slate-400 mb-1 block">📲 สถานะ</label>
+              <label for="rawTgEnable" class="text-xs font-black uppercase text-slate-400 mb-1 block">สถานะ</label>
               <select id="rawTgEnable" class="w-full bg-slate-50 border-2 border-slate-200 p-4 rounded-2xl font-bold outline-none focus:border-slate-700">
-                <option value="true">✅ เปิดใช้งาน</option>
-                <option value="false">❌ ปิดใช้งาน</option>
+                <option value="true">เปิดใช้งาน</option>
+                <option value="false">ปิดใช้งาน</option>
               </select>
             </div>
           </div>
           <div>
-            <label for="rawTgToken" class="text-xs font-black uppercase text-slate-400 mb-1 block">🔑 Bot Token</label>
+            <label for="rawTgToken" class="text-xs font-black uppercase text-slate-400 mb-1 block">Bot Token</label>
             <input type="password" id="rawTgToken" class="w-full bg-slate-50 border-2 border-slate-200 p-4 rounded-2xl font-bold outline-none focus:border-slate-700">
           </div>
           <div>
-            <label for="rawTgChatIds" class="text-xs font-black uppercase text-slate-400 mb-1 block">💬 Chat ID (คั่นด้วย ,)</label>
+            <label for="rawTgChatIds" class="text-xs font-black uppercase text-slate-400 mb-1 block">Chat ID (คั่นด้วย ,)</label>
             <textarea id="rawTgChatIds" rows="3" class="w-full bg-slate-50 border-2 border-slate-200 p-4 rounded-2xl font-bold outline-none focus:border-slate-700 resize-none" placeholder="-100xxxxxxxxx, -100yyyyyyyyy"></textarea>
           </div>
-          <button onclick="saveRawSettings()" id="rawBtnSaveSettings" class="w-full bg-slate-900 text-white py-6 rounded-3xl font-black text-xl shadow-xl hover:bg-blue-700 transition-all uppercase">
-            💾 บันทึกการตั้งค่า
+          <button onclick="saveRawSettings()" id="rawBtnSaveSettings" class="ui-confirm w-full" style="background:var(--sq-green);">
+            บันทึกการตั้งค่า
           </button>
         </div>
       </div>
@@ -1877,7 +2085,7 @@
     <!-- Scanner Modal -->
     <div id="rawScannerModal" class="hidden fixed inset-0 bg-slate-900 z-[220] flex flex-col items-center justify-center p-6 text-white text-center">
       <div id="rawReader" class="w-full max-w-sm rounded-2xl bg-white overflow-hidden shadow-2xl border-8 border-white/10"></div>
-      <p class="mt-8 font-black animate-pulse text-lg">📷 จ่อ QR Code ในกรอบ</p>
+      <p class="mt-8 font-black animate-pulse text-lg">จ่อ QR Code ในกรอบ</p>
       <button onclick="closeRawScanner()" class="mt-12 bg-white/10 border border-white/20 px-16 py-5 rounded-full font-black uppercase text-xs">ปิดกล้อง</button>
     </div>
 
@@ -1896,22 +2104,26 @@
         </div>
 
         <div class="rm-head-actions" id="rawActionBtns">
-          <button onclick="openRawHistory()" class="rm-btn">📜 ประวัติการใช้งาน</button>
-          <button id="rawPlanBtn" onclick="openPlanModal()" class="rm-btn">📈 วางแผนสั่งซื้อ</button>
-          <button onclick="openRawScanner()" class="rm-btn">📷 สแกน QR</button>
-          <button onclick="openRawCreate()" class="rm-btn rm-btn-primary viewer-hide">+ เพิ่มวัตถุดิบ</button>
+          <button onclick="openRawHistory()" class="rm-btn"><i class="ic ic-clock" aria-hidden="true"></i>ประวัติการใช้งาน</button>
+          <button id="rawPlanBtn" onclick="openPlanModal()" class="rm-btn"><i class="ic ic-trend" aria-hidden="true"></i>วางแผนสั่งซื้อ</button>
+          <button onclick="openRawScanner()" class="rm-btn"><i class="ic ic-qr" aria-hidden="true"></i>สแกน QR</button>
+          <button onclick="openRawCreate()" class="rm-btn rm-btn-primary viewer-hide"><i class="ic ic-plus" aria-hidden="true"></i>เพิ่มวัตถุดิบ</button>
+          <!-- เมนูเพิ่มเติมแบ่ง 3 กลุ่มตามงาน (เดิม 9 ปุ่มเรียงยาว ชื่อคล้ายกัน "รายงานใบเบิกรายเดือน" / "ใบรายงาน" · critique P2) -->
           <details class="rm-more" id="rawMoreMenu">
-            <summary class="rm-btn">⋯ เพิ่มเติม</summary>
+            <summary class="rm-btn"><i class="ic ic-more" aria-hidden="true"></i>เพิ่มเติม</summary>
             <div class="rm-more-menu">
-              <button onclick="rawExportSelected()">📊 ส่งออก CSV (ที่เลือกไว้)</button>
-              <button onclick="rawExportPdf()">📄 ส่งออก PDF</button>
-              <button onclick="openRawImport()" class="viewer-hide">📥 นำเข้าจากไฟล์</button>
-              <button onclick="openPurchaseRequest()" class="viewer-hide">📋 ใบขอซื้อ</button>
-              <button onclick="openDocReport()" class="viewer-hide">📋 รายงานใบเบิกรายเดือน</button>
-              <button onclick="openRopModal()" class="viewer-hide">📐 จุดสั่งซื้อแนะนำ</button>
-              <button onclick="openStockReport()" class="viewer-hide">📑 ใบรายงาน</button>
-              <button onclick="rawPrintQrAll()" class="viewer-hide">🔲 พิมพ์ QR ทั้งหมด</button>
-              <button onclick="rawRunBackup()" id="rawBackupBtn" style="display:none;">☁️ สำรองข้อมูล</button>
+              <div class="rm-more-h">ส่งออก</div>
+              <button onclick="rawExportSelected()">CSV — เฉพาะรายการที่ติ๊กเลือก</button>
+              <button onclick="rawExportPdf()">PDF — ทั้งคลัง</button>
+              <div class="rm-more-h viewer-hide">เอกสาร / พิมพ์</div>
+              <button onclick="openPurchaseRequest()" class="viewer-hide">ใบขอซื้อ</button>
+              <button onclick="openStockReport()" class="viewer-hide">ใบรายงานสต๊อกคงเหลือ</button>
+              <button onclick="openDocReport()" class="viewer-hide">ตรวจใบเบิกรายเดือน</button>
+              <button onclick="rawPrintQrAll()" class="viewer-hide">พิมพ์ QR ทั้งหมด</button>
+              <div class="rm-more-h viewer-hide">ข้อมูล</div>
+              <button onclick="openRawImport()" class="viewer-hide">นำเข้าจากไฟล์</button>
+              <button onclick="openRopModal()" class="viewer-hide">จุดสั่งซื้อแนะนำ</button>
+              <button onclick="rawRunBackup()" id="rawBackupBtn" style="display:none;">สำรองข้อมูล</button>
             </div>
           </details>
         </div>
@@ -1931,10 +2143,10 @@
             </div>
             <div class="rm-chips" role="group" aria-label="กรองรายการ">
               <button id="rawFilter-all"  onclick="setRawFilter('all')"  class="rm-chip filter-active">ทั้งหมด</button>
-              <button id="rawFilter-low"  onclick="setRawFilter('low')"  class="rm-chip">🟠 ต่ำกว่าจุดสั่งซื้อ</button>
-              <button id="rawFilter-exp"  onclick="setRawFilter('exp')"  class="rm-chip">⛔ หมดอายุ</button>
-              <button id="rawFilter-near" onclick="setRawFilter('near')" class="rm-chip">⏳ ใกล้หมดอายุ</button>
-              <button id="rawFilter-stale" onclick="setRawFilter('stale')" class="rm-chip" style="display:none;">⏰ ไม่อัปเดต</button>
+              <button id="rawFilter-low"  onclick="setRawFilter('low')"  class="rm-chip"><i class="ui-sg sg-warn" aria-hidden="true"></i>ต่ำกว่าจุดสั่งซื้อ</button>
+              <button id="rawFilter-exp"  onclick="setRawFilter('exp')"  class="rm-chip"><i class="ui-sg sg-no" aria-hidden="true"></i>หมดอายุ</button>
+              <button id="rawFilter-near" onclick="setRawFilter('near')" class="rm-chip"><i class="ui-sg sg-warn" aria-hidden="true"></i>ใกล้หมดอายุ</button>
+              <button id="rawFilter-stale" onclick="setRawFilter('stale')" class="rm-chip" style="display:none;"><i class="ui-sg sg-must" aria-hidden="true"></i>ไม่อัปเดต</button>
             </div>
             <div class="rm-alertdays">
               <label for="rawAlertDaysInput">เตือนล่วงหน้า</label>
@@ -1943,7 +2155,7 @@
             </div>
             <!-- ⏰ เตือนเมื่อไม่มีการอัปเดตสต๊อก (เบิก/รับ/คืน/นับ) เกินกี่วัน — ค่ากลางของทุกคน (หัวหน้า/แอดมินแก้ได้ · 0 = ปิด) -->
             <div class="rm-alertdays" title="รายการที่ไม่มีใครเบิก/รับ/คืน/นับ เกินจำนวนวันนี้ จะขึ้นเตือน และสรุปเข้ากลุ่มตอนเช้า · 0 = ปิด">
-              <label for="rawStaleDaysInput">⏰ เตือนไม่อัปเดตเกิน</label>
+              <label for="rawStaleDaysInput">เตือนไม่อัปเดตเกิน</label>
               <input type="number" id="rawStaleDaysInput" min="0" max="365" value="7" onchange="rawSetStaleDays(this.value)">
               <span>วัน</span>
             </div>
@@ -1953,7 +2165,6 @@
             <table class="rm-table">
               <thead>
                 <tr>
-                  <th class="rm-rail" aria-hidden="true"></th>
                   <th><input type="checkbox" id="rawSelectAll" onclick="rawToggleAll()" aria-label="เลือกทั้งหมด"></th>
                   <th class="s" onclick="rawSetSort('status')" tabindex="0" role="button" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();this.click();}">สถานะ <span id="rawSortIcon-status" style="opacity:.4">↕</span></th>
                   <th class="s" onclick="rawSetSort('name')" tabindex="0" role="button" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();this.click();}">วัตถุดิบ <span id="rawSortIcon-name" style="opacity:.4">↕</span></th>
@@ -1997,14 +2208,14 @@
   <script src="js/notify.js"></script>
 
   <!-- ═══ 📜 ประวัติของฉัน (ทุก role เห็นได้ — เฉพาะรายการของตัวเอง) ═══ -->
-  <div id="myHistModal" class="hidden fixed inset-0 bg-black/70 backdrop-blur-sm z-[600] flex items-center justify-center p-4">
+  <div id="myHistModal" class="ui-modal hidden fixed inset-0 bg-black/70 backdrop-blur-sm z-[600] flex items-center justify-center p-4">
     <div class="bg-white w-full max-w-2xl rounded-2xl shadow-2xl overflow-hidden flex flex-col" style="max-height:85vh;">
-      <div style="background:var(--sq-ink);padding:18px 22px;display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;">
+      <div class="ui-plate-head" style="display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;">
         <div>
-          <div style="font-size:18px;font-weight:900;color:#fff;">📜 ประวัติของฉัน</div>
-          <div id="myHistWhoDesk" style="font-size:12px;color:#b9d3c2;font-weight:700;margin-top:2px;"></div>
+          <div class="ui-title">ประวัติของฉัน</div>
+          <div id="myHistWhoDesk" style="font-size:12.5px;font-weight:700;margin-top:2px;"></div>
         </div>
-        <button onclick="closeMyHistory()" style="background:rgba(255,255,255,.15);color:#fff;border:none;padding:9px 18px;border-radius:12px;font-weight:800;font-size:13px;cursor:pointer;font-family:inherit;">ปิด</button>
+        <button onclick="closeMyHistory()">ปิด</button>
       </div>
       <div id="myHistSummaryDesk" style="display:flex;gap:8px;padding:14px 22px 0;flex-wrap:wrap;"></div>
       <div id="myHistListDesk" style="padding:14px 22px 22px;overflow-y:auto;"></div>
@@ -2014,7 +2225,7 @@
   <!-- ═══ 📋 รายงานใบเบิกรายเดือน ═══
        เอาไว้เทียบกับแฟ้มกระดาษเดือนละครั้ง จะได้รู้ว่าใบไหนขาดภายใน 30 วัน -->
   <!-- ═══ จุดสั่งซื้อแนะนำ (คำนวณจากประวัติเบิกจริง) ═══ -->
-  <div id="ropModal" class="hidden fixed inset-0 z-[630] flex items-center justify-center p-4"
+  <div id="ropModal" class="ui-modal hidden fixed inset-0 z-[630] flex items-center justify-center p-4"
        style="background:rgba(22,36,27,.55);backdrop-filter:blur(3px);">
     <div class="sq-page" style="width:100%;max-width:1080px;border-radius:14px;overflow:hidden;
                 box-shadow:0 20px 50px rgba(0,0,0,.3);display:flex;flex-direction:column;max-height:94vh;">
@@ -2022,7 +2233,7 @@
       <div style="background:var(--sq-surface);border-bottom:1px solid var(--sq-line);
                   padding:13px 16px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
         <div style="flex:1;min-width:190px;">
-          <div class="sq-card-title">📐 จุดสั่งซื้อแนะนำ</div>
+          <div class="sq-card-title">จุดสั่งซื้อแนะนำ</div>
           <div class="sq-card-note"><b id="ropTarget">—</b> · คำนวณจากประวัติการเบิกจริง — ตัดสินใจเองทีละตัว</div>
         </div>
         <label style="font-size:12px;font-weight:800;color:var(--sq-ink2);display:flex;align-items:center;gap:6px;">
@@ -2047,7 +2258,7 @@
   </div>
 
   <!-- ═══ 📈 วางแผนสั่งซื้อ — วิเคราะห์การเบิก กันของหมด/สั่งไม่ทัน (js/plan.js) ═══ -->
-  <div id="planModal" class="hidden fixed inset-0 z-[630] flex items-center justify-center p-4"
+  <div id="planModal" class="ui-modal hidden fixed inset-0 z-[630] flex items-center justify-center p-4"
        style="background:rgba(22,36,27,.55);backdrop-filter:blur(3px);">
     <div class="sq-page" style="width:100%;max-width:1240px;border-radius:14px;overflow:hidden;
                 box-shadow:0 20px 50px rgba(0,0,0,.3);display:flex;flex-direction:column;max-height:94vh;">
@@ -2055,7 +2266,7 @@
       <div style="background:var(--sq-surface);border-bottom:1px solid var(--sq-line);
                   padding:13px 16px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
         <div style="flex:1;min-width:190px;">
-          <div class="sq-card-title">📈 วางแผนสั่งซื้อ</div>
+          <div class="sq-card-title">วางแผนสั่งซื้อ</div>
           <div class="sq-card-note"><b id="planTarget">—</b> · ตัวไหนจะหมดก่อนของมาถึง — ดูจากการเบิกจริง</div>
         </div>
         <label style="font-size:12px;font-weight:800;color:var(--sq-ink2);display:flex;align-items:center;gap:6px;">
@@ -2082,7 +2293,7 @@
     </div>
   </div>
 
-  <div id="drModal" class="hidden fixed inset-0 z-[630] flex items-center justify-center p-4"
+  <div id="drModal" class="ui-modal hidden fixed inset-0 z-[630] flex items-center justify-center p-4"
        style="background:rgba(22,36,27,.55);backdrop-filter:blur(3px);">
     <div class="sq-page" style="width:100%;max-width:1080px;border-radius:14px;overflow:hidden;
                 box-shadow:0 20px 50px rgba(0,0,0,.3);display:flex;flex-direction:column;max-height:94vh;">
@@ -2090,12 +2301,12 @@
       <div style="background:var(--sq-surface);border-bottom:1px solid var(--sq-line);
                   padding:13px 16px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
         <div style="flex:1;min-width:190px;">
-          <div class="sq-card-title">📋 รายงานใบเบิกรายเดือน</div>
+          <div class="sq-card-title">รายงานใบเบิกรายเดือน</div>
           <div class="sq-card-note"><b id="drTarget">—</b> · เทียบกับแฟ้มกระดาษ แล้วกดรับทราบ</div>
         </div>
         <select aria-label="เลือกเดือน" id="drMonthSel" onchange="drOnMonthChange()" class="sq-select"></select>
-        <button onclick="drPrint()" class="sq-btn">🖨️ พิมพ์</button>
-        <button onclick="drAckAll(event)" id="drAckAllBtn" class="sq-btn sq-btn-primary" style="display:none;">✅ รับทราบทั้งหมด</button>
+        <button onclick="drPrint()" class="sq-btn">พิมพ์</button>
+        <button onclick="drAckAll(event)" id="drAckAllBtn" class="sq-btn sq-btn-primary" style="display:none;">รับทราบทั้งหมด</button>
         <button onclick="closeDocReport()" class="sq-btn">ปิด</button>
       </div>
 
@@ -2106,7 +2317,7 @@
   <!-- ═══ 🧾 ใบเบิก / ใบรับ / ใบคืน ═══
        ใบถูกวาดลง canvas แล้วแปลงเป็นรูป — ทั้งดูบนจอ พิมพ์ และดาวน์โหลด
        ใช้รูปเดียวกันทั้งหมด จึงตรงกันแน่นอน -->
-  <div id="slipModal" class="hidden fixed inset-0 z-[640] flex items-center justify-center p-4"
+  <div id="slipModal" class="ui-modal hidden fixed inset-0 z-[640] flex items-center justify-center p-4"
        style="background:rgba(22,36,27,.6);backdrop-filter:blur(3px);">
     <div class="sq-page" style="width:100%;max-width:620px;border-radius:14px;overflow:hidden;
                 box-shadow:0 20px 50px rgba(0,0,0,.3);display:flex;flex-direction:column;max-height:94vh;">
@@ -2114,7 +2325,7 @@
       <div style="background:var(--sq-surface);border-bottom:1px solid var(--sq-line);
                   padding:13px 16px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
         <div style="flex:1;min-width:0;">
-          <div class="sq-card-title">🧾 เอกสารพร้อมพิมพ์</div>
+          <div class="sq-card-title">เอกสารพร้อมพิมพ์</div>
           <div class="sq-card-note">เลขที่ <b id="slipDocNo">—</b></div>
         </div>
         <button onclick="closeWithdrawSlip()" class="sq-btn">ปิด</button>
@@ -2124,8 +2335,8 @@
 
       <div style="background:var(--sq-surface);border-top:1px solid var(--sq-line);
                   padding:11px 16px;display:flex;gap:7px;flex-wrap:wrap;justify-content:flex-end;">
-        <button onclick="slipDownload()" class="sq-btn">🖼️ บันทึกเป็นรูป</button>
-        <button onclick="slipPrint()" class="sq-btn sq-btn-primary">🖨️ พิมพ์</button>
+        <button onclick="slipDownload()" class="sq-btn">บันทึกเป็นรูป</button>
+        <button onclick="slipPrint()" class="sq-btn sq-btn-primary">พิมพ์</button>
       </div>
     </div>
   </div>
@@ -2133,7 +2344,7 @@
   <!-- ═══ 📜 ประวัติการใช้งานของคลังนี้ ═══
        ต่างจาก "📜 ของฉัน" บนแถบเมนู — อันนั้นเห็นเฉพาะรายการที่ตัวเองทำ
        อันนี้เห็นของทุกคนในคลังที่กำลังเปิดอยู่ -->
-  <div id="rawHistModal" class="hidden fixed inset-0 z-[610] flex items-center justify-center p-4"
+  <div id="rawHistModal" class="ui-modal hidden fixed inset-0 z-[610] flex items-center justify-center p-4"
        style="background:rgba(22,36,27,.55);backdrop-filter:blur(3px);">
     <div class="sq-page" style="width:100%;max-width:620px;border-radius:14px;overflow:hidden;
                 box-shadow:0 20px 50px rgba(0,0,0,.3);display:flex;flex-direction:column;max-height:92vh;">
@@ -2141,7 +2352,7 @@
       <div style="background:var(--sq-surface);border-bottom:1px solid var(--sq-line);
                   padding:13px 16px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
         <div style="flex:1;min-width:0;">
-          <div class="sq-card-title">📜 ประวัติการใช้งาน</div>
+          <div class="sq-card-title">ประวัติการใช้งาน</div>
           <div class="sq-card-note" id="rawHistSub">—</div>
         </div>
         <button onclick="closeRawHistory()" class="sq-btn">ปิด</button>
@@ -2153,7 +2364,7 @@
   </div>
 
   <!-- ═══ 📥 นำเข้าวัตถุดิบจากไฟล์ ═══ -->
-  <div id="impModal" class="hidden fixed inset-0 z-[620] flex items-center justify-center p-4"
+  <div id="impModal" class="ui-modal hidden fixed inset-0 z-[620] flex items-center justify-center p-4"
        style="background:rgba(22,36,27,.55);backdrop-filter:blur(3px);">
     <div class="sq-page" style="width:100%;max-width:900px;border-radius:14px;overflow:hidden;
                 box-shadow:0 20px 50px rgba(0,0,0,.3);display:flex;flex-direction:column;max-height:92vh;">
@@ -2161,7 +2372,7 @@
       <div style="background:var(--sq-surface);border-bottom:1px solid var(--sq-line);
                   padding:13px 16px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
         <div style="flex:1;min-width:0;">
-          <div class="sq-card-title">📥 นำเข้าวัตถุดิบจากไฟล์</div>
+          <div class="sq-card-title">นำเข้าวัตถุดิบจากไฟล์</div>
           <div class="sq-card-note">นำเข้าเข้า <b id="impTargetName">—</b> · เห็นตารางตรวจทานก่อนบันทึกทุกครั้ง</div>
         </div>
         <button onclick="closeRawImport()" class="sq-btn">ปิด</button>
@@ -2174,7 +2385,7 @@
         </div>
 
         <div style="display:flex;gap:7px;flex-wrap:wrap;margin-bottom:12px;">
-          <button onclick="impDownloadTemplate()" class="sq-btn sq-btn-primary">⬇️ ดาวน์โหลดไฟล์ตัวอย่าง</button>
+          <button onclick="impDownloadTemplate()" class="sq-btn sq-btn-primary">ดาวน์โหลดไฟล์ตัวอย่าง</button>
         </div>
 
         <div id="impResult"></div>
@@ -2182,7 +2393,7 @@
         <div id="impDropZone" class="imp-drop" tabindex="0" role="button" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();this.click();}"
              onclick="document.getElementById('impFileInput').click()"
              ondrop="impOnDrop(event)" ondragover="impOnDragOver(event)" ondragleave="impOnDragLeave()">
-          <div class="imp-drop-icon">📄</div>
+          <div class="imp-drop-icon"></div>
           <div class="imp-drop-main">ลากไฟล์ .csv มาวางที่นี่ หรือคลิกเพื่อเลือกไฟล์</div>
           <div class="imp-drop-sub">นำเข้าได้ครั้งละไม่เกิน 500 รายการ</div>
           <input type="file" id="impFileInput" accept=".csv,text/csv" style="display:none"
@@ -2195,7 +2406,7 @@
   </div>
 
   <!-- ═══ 📥 นำเข้าล็อตห้องเย็นจากไฟล์ (js/crimport.js) ═══ -->
-  <div id="criModal" class="hidden fixed inset-0 z-[620] flex items-center justify-center p-4"
+  <div id="criModal" class="ui-modal hidden fixed inset-0 z-[620] flex items-center justify-center p-4"
        style="background:rgba(22,36,27,.55);backdrop-filter:blur(3px);">
     <div class="sq-page" style="width:100%;max-width:900px;border-radius:14px;overflow:hidden;
                 box-shadow:0 20px 50px rgba(0,0,0,.3);display:flex;flex-direction:column;max-height:92vh;">
@@ -2203,7 +2414,7 @@
       <div style="background:var(--sq-surface);border-bottom:1px solid var(--sq-line);
                   padding:13px 16px;display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
         <div style="flex:1;min-width:0;">
-          <div class="sq-card-title">📥 นำเข้าล็อตห้องเย็นจากไฟล์</div>
+          <div class="sq-card-title">นำเข้าล็อตห้องเย็นจากไฟล์</div>
           <div class="sq-card-note">1 แถวในไฟล์ = 1 ล็อต (สินค้า + วันผลิต + วันหมดอายุ + จำนวน) · เห็นผลตรวจก่อนบันทึกทุกครั้ง</div>
         </div>
         <button onclick="criClose()" class="sq-btn">ปิด</button>
@@ -2213,11 +2424,11 @@
         <div class="sq-note">
           <b>ขั้นตอน</b> &nbsp;1. ดาวน์โหลดไฟล์ตัวอย่าง (มีรายชื่อสินค้าให้แล้ว) &nbsp;→&nbsp;
           2. เติมจำนวนกับวันที่ใน Excel &nbsp;→&nbsp; 3. <b>Save As → CSV UTF-8</b> &nbsp;→&nbsp; 4. เลือกไฟล์ข้างล่าง<br>
-          สินค้าต้องมีในระบบก่อน (สร้างที่แท็บ ⚙️ จัดการสินค้า) · วันที่ใส่ได้ทั้ง พ.ศ. และ ค.ศ.
+          สินค้าต้องมีในระบบก่อน (สร้างที่แท็บ จัดการสินค้า) · วันที่ใส่ได้ทั้ง พ.ศ. และ ค.ศ.
         </div>
 
         <div style="display:flex;gap:7px;flex-wrap:wrap;align-items:center;margin-bottom:12px;">
-          <button onclick="criTemplate()" class="sq-btn sq-btn-primary">⬇️ ดาวน์โหลดไฟล์ตัวอย่าง</button>
+          <button onclick="criTemplate()" class="sq-btn sq-btn-primary">ดาวน์โหลดไฟล์ตัวอย่าง</button>
           <label style="font-size:12.5px;font-weight:700;color:var(--sq-ink2);margin-left:auto;">
             <input type="radio" name="criMode" value="skip" checked onchange="criPreview()"> ล็อตที่มีอยู่แล้ว: ข้าม
           </label>
@@ -2227,7 +2438,7 @@
         </div>
 
         <div class="imp-drop" tabindex="0" role="button" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();this.click();}" onclick="document.getElementById('criFile').click()">
-          <div class="imp-drop-icon">📄</div>
+          <div class="imp-drop-icon"></div>
           <div class="imp-drop-main">คลิกเพื่อเลือกไฟล์ .csv</div>
           <div class="imp-drop-sub">นำเข้าได้ครั้งละไม่เกิน 500 ล็อต</div>
           <input type="file" id="criFile" accept=".csv,text/csv" style="display:none" onchange="criFilePicked(this)">
@@ -2244,13 +2455,13 @@
   </div>
 
   <!-- ═══ 📴 งานที่ค้างส่ง / ส่งไม่ผ่าน (ข้อ 17) ═══ -->
-  <div id="offlineModal" class="hidden fixed inset-0 z-[640] flex items-center justify-center p-4"
+  <div id="offlineModal" class="ui-modal hidden fixed inset-0 z-[640] flex items-center justify-center p-4"
        style="background:rgba(22,36,27,.55);backdrop-filter:blur(3px);">
     <div class="sq-page" style="width:100%;max-width:900px;border-radius:14px;overflow:hidden;
                 box-shadow:0 20px 50px rgba(0,0,0,.3);display:flex;flex-direction:column;max-height:92vh;">
       <div style="background:var(--sq-surface);border-bottom:1px solid var(--sq-line);padding:13px 16px;display:flex;align-items:center;gap:10px;">
         <div style="flex:1;min-width:0;">
-          <div class="sq-card-title">📴 งานที่บันทึกไว้ตอนเน็ตล่ม</div>
+          <div class="sq-card-title">งานที่บันทึกไว้ตอนเน็ตล่ม</div>
           <div class="sq-card-note">รายการเหล่านี้ยังไม่อยู่ในยอดจริง — ระบบส่งให้เองเมื่อเน็ตกลับมา</div>
         </div>
         <button onclick="closeOfflinePanel()" class="sq-btn">ปิด</button>
@@ -2260,13 +2471,13 @@
   </div>
 
   <!-- ═══ 📜 ประวัติล็อตห้องเย็น (ข้อ 21) ═══ -->
-  <div id="crLotHistModal" class="hidden fixed inset-0 z-[640] flex items-center justify-center p-4"
+  <div id="crLotHistModal" class="ui-modal hidden fixed inset-0 z-[640] flex items-center justify-center p-4"
        style="background:rgba(22,36,27,.55);backdrop-filter:blur(3px);">
     <div class="sq-page" style="width:100%;max-width:1000px;border-radius:14px;overflow:hidden;
                 box-shadow:0 20px 50px rgba(0,0,0,.3);display:flex;flex-direction:column;max-height:92vh;">
       <div style="background:var(--sq-surface);border-bottom:1px solid var(--sq-line);padding:13px 16px;display:flex;align-items:center;gap:10px;">
         <div style="flex:1;min-width:0;">
-          <div class="sq-card-title">📜 ประวัติล็อตห้องเย็น</div>
+          <div class="sq-card-title">ประวัติล็อตห้องเย็น</div>
           <div class="sq-card-note">ทุกครั้งที่ยอดล็อตเปลี่ยน: ก่อน → หลัง ใคร เมื่อไหร่ เพราะอะไร</div>
         </div>
         <button onclick="crCloseLotHistory()" class="sq-btn">ปิด</button>
@@ -2276,44 +2487,44 @@
   </div>
 
   <!-- ═══ แชร์แอปให้พนักงาน (ลิงก์ + QR) ═══ -->
-  <div id="shareAppModal" class="hidden fixed inset-0 bg-black/70 backdrop-blur-sm z-[600] flex items-center justify-center p-4">
+  <div id="shareAppModal" class="ui-modal hidden fixed inset-0 bg-black/70 backdrop-blur-sm z-[600] flex items-center justify-center p-4">
     <div class="bg-white w-full max-w-md rounded-2xl shadow-2xl overflow-hidden">
-      <div style="background:var(--sq-ink);padding:18px 22px;">
-        <div style="font-size:18px;font-weight:900;color:#fff;">🔗 แชร์แอปให้พนักงาน</div>
-        <div style="font-size:12px;color:#b9d3c2;font-weight:600;margin-top:2px;">ให้พนักงานสแกน QR หรือส่งลิงก์เข้าใช้งาน</div>
+      <div class="ui-plate-head">
+        <div class="ui-title">แชร์แอปให้พนักงาน</div>
+        <div style="font-size:12.5px;font-weight:600;margin-top:2px;">ให้พนักงานสแกน QR หรือส่งลิงก์เข้าใช้งาน</div>
       </div>
 
       <div style="padding:18px 22px 22px;">
         <div id="shareModeRow" style="display:none;grid-template-columns:1fr 1fr;gap:6px;margin:0 0 12px;">
-          <button id="shareModeStaff" onclick="shareSetMode('staff')" style="border:2px solid #0f172a;background:#0f172a;color:#fff;padding:8px;border-radius:10px;font-weight:800;font-size:13px;cursor:pointer;font-family:inherit;">👷 พนักงาน (แอปหลัก)</button>
-          <button id="shareModeExec"  onclick="shareSetMode('exec')"  style="border:2px solid #0e7a3f;background:#fff;color:#0e7a3f;padding:8px;border-radius:10px;font-weight:800;font-size:13px;cursor:pointer;font-family:inherit;">📊 ผู้บริหาร</button>
+          <button id="shareModeStaff" onclick="shareSetMode('staff')" style="border:2px solid #111;background:#111;color:#fff;padding:8px;border-radius:6px;font-weight:800;font-size:13px;cursor:pointer;font-family:inherit;min-height:40px;">พนักงาน (แอปหลัก)</button>
+          <button id="shareModeExec"  onclick="shareSetMode('exec')"  style="border:2px solid #111;background:#fff;color:#111;padding:8px;border-radius:6px;font-weight:800;font-size:13px;cursor:pointer;font-family:inherit;min-height:40px;">ผู้บริหาร</button>
         </div>
-        <p id="shareModeNote" style="display:none;font-size:12px;color:#435349;font-weight:700;margin:0 0 10px;text-align:center;line-height:1.6;"></p>
+        <p id="shareModeNote" style="display:none;font-size:12.5px;color:#3d3d3d;font-weight:700;margin:0 0 10px;text-align:center;line-height:1.6;"></p>
         <div style="display:flex;justify-content:center;margin:4px 0 0;">
-          <div id="shareQrBox" style="padding:12px;background:#fff;border:3px solid #0f172a;border-radius:16px;line-height:0;"></div>
+          <div id="shareQrBox" style="padding:12px;background:#fff;border:3px solid #111;border-radius:0;line-height:0;"></div>
         </div>
 
         <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:18px;">
-          <button onclick="shareCopyLink()"    style="background:#0e7a3f;color:#fff;border:none;padding:11px;border-radius:12px;font-weight:800;font-size:13px;cursor:pointer;font-family:inherit;">📋 คัดลอกลิงก์</button>
-          <button onclick="shareNative()"      style="background:#fff;color:#16241b;border:1.5px solid #dfe6e0;padding:11px;border-radius:12px;font-weight:800;font-size:13px;cursor:pointer;font-family:inherit;">📤 ส่งต่อ</button>
-          <button onclick="shareDownloadQr()"  style="background:#fff;color:#16241b;border:1.5px solid #dfe6e0;padding:11px;border-radius:12px;font-weight:800;font-size:13px;cursor:pointer;font-family:inherit;">⬇️ บันทึก QR</button>
-          <button onclick="sharePrintQr()"     style="background:#fff;color:#16241b;border:1.5px solid #dfe6e0;padding:11px;border-radius:12px;font-weight:800;font-size:13px;cursor:pointer;font-family:inherit;">🖨️ พิมพ์ติดบอร์ด</button>
+          <button onclick="shareCopyLink()"    class="icb ic-copy" style="background:#111;color:#fff;border:2px solid #111;padding:11px;border-radius:6px;font-weight:800;font-size:13px;cursor:pointer;font-family:inherit;min-height:44px;">คัดลอกลิงก์</button>
+          <button onclick="shareNative()"      class="icb ic-send" style="background:#fff;color:#111;border:1.5px solid #8a8a84;padding:11px;border-radius:6px;font-weight:800;font-size:13px;cursor:pointer;font-family:inherit;min-height:44px;">ส่งต่อ</button>
+          <button onclick="shareDownloadQr()"  class="icb ic-in" style="background:#fff;color:#111;border:1.5px solid #8a8a84;padding:11px;border-radius:6px;font-weight:800;font-size:13px;cursor:pointer;font-family:inherit;min-height:44px;">บันทึก QR</button>
+          <button onclick="sharePrintQr()"     class="icb ic-print" style="background:#fff;color:#111;border:1.5px solid #8a8a84;padding:11px;border-radius:6px;font-weight:800;font-size:13px;cursor:pointer;font-family:inherit;min-height:44px;">พิมพ์ติดบอร์ด</button>
         </div>
 
-        <button onclick="closeShareApp()" style="width:100%;margin-top:10px;background:#e2e8f0;color:#475569;border:none;padding:11px;border-radius:12px;font-weight:800;font-size:13px;cursor:pointer;font-family:inherit;">ปิด</button>
+        <button onclick="closeShareApp()" class="ui-cancel">ปิด</button>
       </div>
     </div>
   </div>
 
   <!-- ═══ UNIFIED STOCK ALERT MODAL (global — outside all module-section) ═══ -->
-  <div id="stockAlertModal" class="hidden fixed inset-0 bg-black/85 backdrop-blur-md z-[500] flex items-center justify-center p-4">
+  <div id="stockAlertModal" class="ui-modal hidden fixed inset-0 bg-black/85 backdrop-blur-md z-[500] flex items-center justify-center p-4">
     <div class="bg-white w-full max-w-lg rounded-2xl shadow-2xl overflow-hidden">
-      <div id="alertModalHeader" class="p-6 text-white">
+      <div id="alertModalHeader" class="ui-plate-head p-6">
         <div class="flex items-center gap-4">
-          <div class="text-5xl alert-pulse" id="alertModalIcon">🚨</div>
+          <div id="alertModalIcon" style="line-height:0;"></div>
           <div>
             <div class="font-black text-2xl uppercase tracking-tight" id="alertModalTitle">แจ้งเตือนสต๊อก</div>
-            <div class="text-sm font-bold mt-1" id="alertModalSubtitle"></div>
+            <div class="text-sm font-bold mt-1 text-slate-600" id="alertModalSubtitle"></div>
           </div>
         </div>
         <div class="flex gap-2 mt-4 flex-wrap" id="alertModalChips"></div>
@@ -2322,7 +2533,7 @@
       <div class="p-6 bg-slate-50 border-t">
         <div class="flex gap-3">
           <!-- เปิดจาก "ดูรายการทั้งหมด" บนหน้าแรกเท่านั้น (ไม่เด้งเองแล้ว · critique 2026-10-20) -->
-          <button onclick="closeStockAlert()" class="flex-1 bg-slate-900 text-white py-4 rounded-2xl font-black text-lg hover:bg-emerald-700 transition-all">ปิด</button>
+          <button onclick="closeStockAlert()" class="flex-1 text-white py-4 rounded-2xl font-black text-lg" style="background:var(--sq-green);">ปิด</button>
         </div>
         <p class="text-xs font-bold text-slate-600 mt-3 text-center">แตะคลังในแผง "ต้องจัดการ" บนหน้าแรกเพื่อเข้าไปจัดการ · ตัวเลขบนเมนูบอกจำนวนเสมอ</p>
       </div>

@@ -46,7 +46,7 @@ function rawUpdateStaleUi() {
   if (chip) {
     const k = (rawLastData || []).filter(rawIsStale).length;
     chip.style.display = n ? "" : "none";
-    chip.textContent = "⏰ ไม่อัปเดตเกิน " + n + " วัน" + (k ? " (" + k + ")" : "");
+    chip.innerHTML = '<i class="ui-sg sg-must" aria-hidden="true"></i>ไม่อัปเดตเกิน ' + n + " วัน" + (k ? " (" + k + ")" : "");
     if (!n && rawCurrentFilter === "stale") setRawFilter("all");
   }
 }
@@ -63,7 +63,7 @@ async function rawSetStaleDays(v) {
     const r = await rawFetch({ action: "PLANSET", staleDays: n, user: currentUser });
     if (r.status !== "success") throw new Error(r.message || "บันทึกไม่สำเร็จ");
     window._rawStaleDays = r.settings.staleDays;
-    showToast(n ? "เตือนเมื่อไม่มีการอัปเดตเกิน " + n + " วัน — ใช้กับทุกคนแล้ว ✅" : "ปิดการเตือนไม่อัปเดตแล้ว", "success");
+    showToast(n ? "เตือนเมื่อไม่มีการอัปเดตเกิน " + n + " วัน — ใช้กับทุกคนแล้ว " : "ปิดการเตือนไม่อัปเดตแล้ว", "success");
     rawLoadData(false, 0, { silent: true });   // ดึงใหม่ให้ตัวเลขทุกแถวตรงกับค่าใหม่
   } catch (e) { showToast("บันทึกไม่สำเร็จ: " + (e.message || ""), "error"); }
   rawUpdateStaleUi();
@@ -162,7 +162,7 @@ async function _rawLoadDataRun(startup, retry, opts, mod) {
     if (mod !== rawCurrentModule) return;
     // Google สะดุดชั่วคราว (ตอบเป็นหน้า HTML / ยิงไม่ออก) → ลองใหม่อีกครั้งเดียวก่อนถอยไปใช้ข้อมูลเก่า
     if (retry < 1 && navigator.onLine) {
-      showToast("⏳ เซิร์ฟเวอร์ตอบไม่ปกติ กำลังลองใหม่...", "warn", 4000);
+      showToast("เซิร์ฟเวอร์ตอบไม่ปกติ กำลังลองใหม่...", "warn", 4000);
       await new Promise(r => setTimeout(r, 4000));
       if (mod !== rawCurrentModule) return;
       return _rawLoadDataRun(startup, retry + 1, { silent: quiet }, mod);
@@ -170,18 +170,18 @@ async function _rawLoadDataRun(startup, retry, opts, mod) {
     if (quiet && rawLastData.length) {
       // มีข้อมูลบนจออยู่แล้ว (ของเดิม/จากเครื่อง) → คงไว้ แค่บอกว่าตรวจไม่ได้ — ไม่วาดซ้ำ ไม่เด้งแจ้งเตือนซ้ำ
       rawSetDataAge("stale", window._rawDataAt);
-      showToast(err.gasHtml ? "⚠️ ตรวจข้อมูลล่าสุดไม่ได้ (เซิร์ฟเวอร์ตอบไม่ปกติ) — แสดงข้อมูลเดิมไว้ก่อน" : "⚠️ ตรวจข้อมูลล่าสุดไม่ได้ (เชื่อมต่อไม่ได้) — แสดงข้อมูลเดิมไว้ก่อน", "warn", 5000);
+      showToast(err.gasHtml ? "ตรวจข้อมูลล่าสุดไม่ได้ (เซิร์ฟเวอร์ตอบไม่ปกติ) — แสดงข้อมูลเดิมไว้ก่อน" : "ตรวจข้อมูลล่าสุดไม่ได้ (เชื่อมต่อไม่ได้) — แสดงข้อมูลเดิมไว้ก่อน", "warn", 5000);
       return;
     }
     // fetch fail → ลองใช้ข้อมูลเก่าจาก cache
     const cachedRaw = (() => { try { return JSON.parse(localStorage.getItem("cache_raw_" + mod) || "null"); } catch (e) { return null; } })();
     if (cachedRaw && cachedRaw.d) {
       _rawApplyData(cachedRaw.d, startup, "cache", cachedRaw.t);
-      showToast(err.gasHtml ? "⏳ แสดงข้อมูลเก่า — เซิร์ฟเวอร์ตอบไม่ปกติ ลองรีเฟรชอีกสักครู่" : "⏳ แสดงข้อมูลเก่า (เชื่อมต่อไม่ได้)", "warn", 5000);
+      showToast(err.gasHtml ? "แสดงข้อมูลเก่า — เซิร์ฟเวอร์ตอบไม่ปกติ ลองรีเฟรชอีกสักครู่" : "แสดงข้อมูลเก่า (เชื่อมต่อไม่ได้)", "warn", 5000);
     } else if (_rawShownModule !== mod) {
       _rawShowLoadError(err.gasHtml ? err.message : "เชื่อมต่อไม่ได้ — ตรวจสัญญาณเน็ตแล้วกดลองใหม่");
     } else {
-      showToast(err.gasHtml ? err.message : "เชื่อมต่อฐานข้อมูลล้มเหลว ❌", "error", 6000);
+      showToast(err.gasHtml ? err.message : "เชื่อมต่อฐานข้อมูลล้มเหลว ", "error", 6000);
     }
   }
 }
@@ -194,10 +194,10 @@ function _rawShowLoadError(msg) {
   try { renderRawStats([], []); } catch (e) {}
   const list = document.getElementById("rawInventoryList");
   if (list) list.innerHTML = `<tr><td colspan="${RAW_TABLE_COLS}"><div class="rm-empty" role="alert">
-      <b>⚠️ โหลดรายการของคลังนี้ไม่สำเร็จ</b><br>${escapeHtml(msg || "")}<br>
+      <b>โหลดรายการของคลังนี้ไม่สำเร็จ</b><br>${escapeHtml(msg || "")}<br>
       <button class="rm-mini solid" style="margin-top:10px;" onclick="rawLoadData()">↻ ลองใหม่</button></div></td></tr>`;
   const age = document.getElementById("rawDataAge");
-  if (age) age.innerHTML = `<span style="color:var(--sq-crit);font-weight:800;">⚠️ ยังไม่มีข้อมูลของคลังนี้ — กดลองใหม่</span>`;
+  if (age) age.innerHTML = `<span style="color:var(--sq-crit);font-weight:800;">ยังไม่มีข้อมูลของคลังนี้ — กดลองใหม่</span>`;
 }
 
 // ข้อ 18: บอกอายุข้อมูลค้างไว้บนหน้า ไม่พึ่ง toast ที่หายใน 4 วิ
@@ -206,13 +206,13 @@ function rawSetDataAge(source, at) {
   if (!el) return;
   const t = new Date(at || Date.now()).toLocaleTimeString("th-TH", { hour: "2-digit", minute: "2-digit" });
   const pend = (typeof offlineCount === "function") ? offlineCount() : 0;
-  const pendTxt = pend ? ` · <span style="color:var(--sq-high);font-weight:800;">⏳ รอส่ง ${pend} รายการ (ยอดบนจอยังไม่รวม)</span>` : "";
+  const pendTxt = pend ? ` · <span style="color:var(--sq-high);font-weight:800;">รอส่ง ${pend} รายการ (ยอดบนจอยังไม่รวม)</span>` : "";
   el.innerHTML = source === "cache"
-    ? `<span style="color:var(--sq-high);font-weight:800;">⚠️ ข้อมูลเก่าจาก ${t} (ออฟไลน์)</span>${pendTxt}`
+    ? `<span style="color:var(--sq-high);font-weight:800;">ข้อมูลเก่าจาก ${t} (ออฟไลน์)</span>${pendTxt}`
     : source === "refreshing"
-    ? `ข้อมูลเมื่อ ${t} · <span style="color:var(--sq-ink2);">⏳ กำลังตรวจข้อมูลล่าสุด…</span>${pendTxt}`
+    ? `ข้อมูลเมื่อ ${t} · <span style="color:var(--sq-ink2);">กำลังตรวจข้อมูลล่าสุด…</span>${pendTxt}`
     : source === "stale"
-    ? `ข้อมูลเมื่อ ${t} · <span style="color:var(--sq-high);font-weight:800;">⚠️ ตรวจข้อมูลล่าสุดไม่ได้ — แสดงของเดิมไว้ก่อน</span>${pendTxt}`
+    ? `ข้อมูลเมื่อ ${t} · <span style="color:var(--sq-high);font-weight:800;">ตรวจข้อมูลล่าสุดไม่ได้ — แสดงของเดิมไว้ก่อน</span>${pendTxt}`
     : `อัปเดตล่าสุด ${t}${pendTxt}`;
 }
 
@@ -251,11 +251,11 @@ function _rawApplyData(data, startup, source, at, opts = {}) {
           const tod = new Date(); tod.setHours(0,0,0,0);
           return Math.round((ed - tod) / 86400000);
         })() : null;
-        const expBadge = daysLeft !== null && daysLeft <= 7  ? "⚠️ " + daysLeft + "วัน"
-                       : daysLeft !== null && daysLeft <= 30 ? "🗓️ " + daysLeft + "วัน" : "";
+        const expBadge = daysLeft !== null && daysLeft <= 7  ? "" + daysLeft + "วัน"
+                       : daysLeft !== null && daysLeft <= 30 ? "" + daysLeft + "วัน" : "";
         return {
           label: m.Name || m.SKU,
-          sub:   `${m.SKU} · คงเหลือ: ${m.Qty} ${m.Unit || ""}${m.Qty <= m.Min && m.Min > 0 ? " 🔴ต่ำ" : ""}`,
+          sub:   `${m.SKU} · คงเหลือ: ${m.Qty} ${m.Unit || ""}${m.Qty <= m.Min && m.Min > 0 ? " ต่ำ" : ""}`,
           badge: expBadge,
           value: m.SKU
         };
@@ -322,14 +322,15 @@ function rawIsLow(i) { const min = Number(i.Min); return min > 0 && Number(i.Qty
 // เดิมคิดเองจาก "ใช้ต่อวัน" ("วิกฤต/เร่งด่วน/ควรสั่ง") → ไม่ตรงจอต้องสั่งที่ใช้ยอดเบิกจริง และของใกล้หมดอายุถูกเรียก "ควรสั่ง" (critique 2026-10-20)
 function rawStatusOf(item) {
   const ps = item.PlanStatus || "";
-  if (item.ExpStatus === "expired") return { pri: 0, sev: "sev-crit", bg: "crit", bi: "⛔", bt: "หมดอายุ" };
-  if (Number(item.Qty || 0) <= 0)   return { pri: 1, sev: "sev-crit", bg: "crit", bi: "⛔", bt: "หมดแล้ว" };
-  if (ps === "late")                return { pri: 2, sev: "sev-crit", bg: "crit", bi: "🔴", bt: "สั่งวันนี้ก็ไม่ทัน" };
-  if (ps === "now")                 return { pri: 3, sev: "sev-high", bg: "high", bi: "🟠", bt: "ต้องสั่งวันนี้" };
-  if (rawIsLow(item))               return { pri: 4, sev: "sev-high", bg: "high", bi: "🟠", bt: "ต่ำกว่าจุดสั่งซื้อ" };
-  if (item.ExpStatus === "near")    return { pri: 5, sev: "sev-warn", bg: "warn", bi: "⏳", bt: "ใกล้หมดอายุ" };
-  if (ps === "soon")                return { pri: 6, sev: "sev-warn", bg: "warn", bi: "🟡", bt: "ใกล้ถึงเวลาสั่ง" };
-  return { pri: 7, sev: "", bg: "", bi: "✓", bt: "ปกติ" };
+  // sg = รูปทรงป้าย (uiSign) ชุดเดียวกับมือถือ: หมด/หมดอายุ = ห้าม · ต้องสั่ง/ต่ำ/ใกล้หมดอายุ = เตือน · ปกติ = เขียว
+  if (item.ExpStatus === "expired") return { pri: 0, bg: "crit", sg: "no",   bt: "หมดอายุ" };
+  if (Number(item.Qty || 0) <= 0)   return { pri: 1, bg: "crit", sg: "no",   bt: "หมดแล้ว" };
+  if (ps === "late")                return { pri: 2, bg: "crit", sg: "warn", bt: "สั่งวันนี้ก็ไม่ทัน" };
+  if (ps === "now")                 return { pri: 3, bg: "high", sg: "warn", bt: "ต้องสั่งวันนี้" };
+  if (rawIsLow(item))               return { pri: 4, bg: "high", sg: "warn", bt: "ต่ำกว่าจุดสั่งซื้อ" };
+  if (item.ExpStatus === "near")    return { pri: 5, bg: "warn", sg: "warn", bt: "ใกล้หมดอายุ" };
+  if (ps === "soon")                return { pri: 6, bg: "warn", sg: "warn", bt: "ใกล้ถึงเวลาสั่ง" };
+  return { pri: 7, bg: "", sg: "ok", bt: "ปกติ" };
 }
 // วันพอใช้จากหลังบ้าน (ทศนิยม 1 ตำแหน่งเหมือนจอต้องสั่ง) · cls/hex = สีตามสถานะการสั่ง (hex ใช้ในหน้าต่างพิมพ์ — CSS var ไม่ติดไป)
 const RAW_RUNOUT = { late: ["crit", "#c8102e"], now: ["high", "#c2410c"], soon: ["warn", "#8a5a00"] };
@@ -418,20 +419,19 @@ const RAW_ITEMS_PER_PAGE = 50;
 
 function rawRenderItemRow(item) {
   const qty = Number(item.Qty||0);
-  // sev = แถบสีขอบซ้ายแถว · bg = สีป้าย · bi + bt = ไอคอนกับคำ (ไม่ได้ใช้สีอย่างเดียว) — คำชุดเดียวกับมือถือ/จอต้องสั่ง
-  const { sev, bg, bi, bt } = rawStatusOf(item), ro = rawRunout(item);
+  // bg = สีคำ · sg + bt = รูปทรงป้ายกับคำ (ไม่ได้ใช้สีอย่างเดียว) — คำชุดเดียวกับมือถือ/จอต้องสั่ง
+  const { bg, sg, bt } = rawStatusOf(item), ro = rawRunout(item);
 
-  return `<tr class="${sev}">
-    <td class="rm-rail"></td>
+  return `<tr>
     <td><input type="checkbox" class="raw-checkbox" data-sku="${escapeAttr(item.SKU)}" aria-label="เลือก ${escapeAttr(item.Name||item.SKU)}"></td>
-    <td data-label="สถานะ"><span class="badge-status ${bg}"><span>${bi}</span><span>${bt}</span></span></td>
+    <td data-label="สถานะ"><span class="badge-status ${bg}">${uiSign(sg, 20)}<span>${bt}</span></span></td>
     <td data-label="วัตถุดิบ">
       <div class="rm-name" title="${escapeAttr(item.Name||"-")}">${escapeHtml(item.Name||"-")}</div>
       <div class="rm-meta">
         <span>${escapeHtml(item.SKU||"-")}</span>
         <span>หมดอายุ ${rawForceThaiDate(item.ExpiryDate)}</span>
         <span>นับล่าสุด ${rawForceThaiDate(item.LastVerified)}</span>
-        ${rawIsStale(item) ? `<span class="rm-stale" title="ไม่มีใครเบิก/รับ/คืน/นับ เกิน ${window._rawStaleDays} วัน — ยอดในระบบอาจไม่ตรงของจริง กด นับ เพื่อยืนยัน">⏰ ${item.IdleDays == null ? "ไม่เคยบันทึกยอด" : "ไม่อัปเดต " + item.IdleDays + " วัน"}</span>` : ""}
+        ${rawIsStale(item) ? `<span class="rm-stale" title="ไม่มีใครเบิก/รับ/คืน/นับ เกิน ${window._rawStaleDays} วัน — ยอดในระบบอาจไม่ตรงของจริง กด นับ เพื่อยืนยัน">${uiSign("must", 14)}${item.IdleDays == null ? "ไม่เคยบันทึกยอด" : "ไม่อัปเดต " + item.IdleDays + " วัน"}</span>` : ""}
       </div>
       <div class="rm-trend" data-sku="${escapeAttr(item.SKU)}"></div>
     </td>
@@ -441,17 +441,16 @@ function rawRenderItemRow(item) {
     </td>
     <td class="n" data-label="จุดสั่งซื้อ"><span class="rm-min">${Number(item.Min||0).toLocaleString()}</span></td>
     <td class="n rm-actcell">
-      ${window._appIsViewer ? `<span class="rm-meta" title="บัญชีนี้ดูได้อย่างเดียว — ขอสิทธิ์เพิ่มจากหัวหน้า">👁️ ดูอย่างเดียว</span>` : `<div class="rm-rowacts">
+      ${window._appIsViewer ? `<span class="rm-meta" title="บัญชีนี้ดูได้อย่างเดียว — ขอสิทธิ์เพิ่มจากหัวหน้า">ดูอย่างเดียว</span>` : `<div class="rm-rowacts">
         <button onclick="openRawAction('${escapeJsAttr(item.SKU)}','${escapeJsAttr(item.Name)}','${escapeJsAttr(item.Unit)}',${Number(item.Qty)||0})" class="rm-mini solid">รับ / เบิก</button>
         <button onclick="openRawVerify('${escapeJsAttr(item.SKU)}','${escapeJsAttr(item.Name)}')" class="rm-mini">นับ</button>
         <button onclick="openRawEdit('${escapeJsAttr(item.SKU)}')" class="rm-mini">แก้ไข</button>
-        <button onclick="rawDelete('${escapeJsAttr(item.SKU)}','${escapeJsAttr(item.Name)}')" class="rm-mini danger">ลบ</button>
       </div>`}
     </td>
   </tr>`;
 }
 
-const RAW_TABLE_COLS = 7;   // จำนวนช่องในตาราง — ใช้กับ colspan ต้องตรงกับ thead
+const RAW_TABLE_COLS = 6;   // จำนวนช่องในตาราง — ใช้กับ colspan ต้องตรงกับ thead
 
 function rawLoadMoreItems() {
   const items = window._rawFiltered || [];
@@ -514,15 +513,16 @@ function renderRawHistory(h) {
   if (!(h||[]).length) { list.innerHTML = `<p class="rm-empty">ยังไม่มีความเคลื่อนไหว</p>`; return; }
   list.innerHTML = (h||[]).map(x => {
     const act=String(x[2]||"");
-    let color="var(--sq-muted)", emj="ℹ️";
-    if(act.includes("เบิก"))  {color="var(--sq-high)";  emj="📤";}
-    else if(act.includes("รับ"))   {color="var(--sq-accent)"; emj="📥";}
-    else if(act.includes("คืน"))   {color="var(--sq-accent)"; emj="↩️";}
-    else if(act.includes("สร้าง")) {color="var(--sq-accent)"; emj="🆕";}
-    else if(act.includes("นับ")||act.includes("ตรวจ")){color="var(--sq-ink2)"; emj="⚖️";}
-    else if(act.includes("ลบ")||act.includes("ยกเลิก")){color="var(--sq-crit)";emj="🗑️";}
-    else if(act.includes("สำรอง")){color="var(--sq-muted)";emj="☁️";}
-    else if(act.includes("แก้ไข")){color="var(--sq-ink2)"; emj="✏️";}
+    // สี/ไอคอนตามงาน ชุดเดียวกับปุ่มเบิก(ส้ม) คืน(ฟ้า) รับ(เขียว) นับ(ฟ้าเขียว)
+    let color="var(--sq-ink2)", ic="doc";
+    if(act.includes("เบิก"))  {color="#c2410c"; ic="out";}
+    else if(act.includes("รับ"))   {color="#047857"; ic="in";}
+    else if(act.includes("คืน"))   {color="#0369a1"; ic="ret";}
+    else if(act.includes("สร้าง")) {color="#6d28d9"; ic="new";}
+    else if(act.includes("นับ")||act.includes("ตรวจ")){color="#0e7490"; ic="count";}
+    else if(act.includes("ลบ")||act.includes("ยกเลิก")){color="var(--sq-crit)";ic="trash";}
+    else if(act.includes("สำรอง")){color="var(--sq-ink2)";ic="cloud";}
+    else if(act.includes("แก้ไข")){color="var(--sq-ink2)"; ic="edit";}
     // แถวที่เป็นการเบิก/รับ/คืน กดออกใบเอกสารซ้ำได้ (ออดิเตอร์ขอใบที่หาย)
     const canSlip = /เบิก|รับ|คืน/.test(act);
     const slipArg = canSlip ? encodeURIComponent(JSON.stringify({
@@ -532,13 +532,13 @@ function renderRawHistory(h) {
       type: act.includes("เบิก") ? "OUT" : act.includes("คืน") ? "RETURN" : "IN",
       module: rawCurrentModule
     })) : "";
-    return `<div class="history-item" style="border-left-color:${color}">
-      <div class="history-text-main">${emj} ${escapeHtml(x[1]||"-")}</div>
+    return `<div class="history-item">
+      <div class="history-text-main"><i class="ic ic-${ic}" style="color:${color}" aria-hidden="true"></i> ${escapeHtml(x[1]||"-")}</div>
       <div class="history-text-act" style="color:${color}">${escapeHtml(act)}: ${escapeHtml(String(x[3]||"-"))}</div>
       ${x[8] ? `<div class="history-text-sub" style="color:var(--sq-ink2);">ใช้กับงาน: ${escapeHtml(String(x[8]))}</div>` : ""}
       <div class="history-text-sub">${rawForceThaiDate(x[0])} · โดย ${escapeHtml(personName(x[4]))}</div>
       ${canSlip ? `<button onclick="rawSlipFromHistory('${slipArg}')" class="rm-mini" style="margin-top:6px;">
-        🧾 ออกใบ${x[5] ? " (" + escapeHtml(String(x[5])) + ")" : "ย้อนหลัง"}</button>` : ""}
+        ออกใบ${x[5] ? " (" + escapeHtml(String(x[5])) + ")" : "ย้อนหลัง"}</button>` : ""}
     </div>`;
   }).join("");
 }
@@ -549,18 +549,18 @@ function renderRawStats(items, discontinued) {
   const low = items.filter(i=>rawIsLow(i)).length;
   const exp = items.filter(i => i.ExpStatus === "expired").length;
   const stop = Array.isArray(discontinued) ? discontinued.length : 0;
-  const tile = (dot, label, num, note, color) => `
+  const tile = (sg, label, num, note, color) => `
     <div class="rm-tile">
-      <div class="rm-tile-label"><span class="rm-dot" style="background:${dot}"></span>${label}</div>
+      <div class="rm-tile-label">${uiSign(sg, 16)}${label}</div>
       <div class="rm-tile-num"${color ? ` style="color:${color}"` : ""}>${num.toLocaleString()}</div>
       <div class="rm-tile-note">${note}</div>
     </div>`;
   document.getElementById("rawStatCards").innerHTML =
-      tile("var(--sq-muted)", "รายการทั้งหมด", items.length, "ในคลังนี้", "")
-    + tile("var(--sq-high)",  "ต่ำกว่าจุดสั่งซื้อ", low,  "ควรสั่งเพิ่ม",   low  ? "var(--sq-high)" : "")
-    + tile("var(--sq-crit)",  "หมดอายุแล้ว",       exp,  "ต้องจัดการด่วน", exp  ? "var(--sq-crit)" : "")
-    + (Number(window._rawStaleDays) ? tile("var(--sq-high)", "⏰ ไม่อัปเดตเกิน " + window._rawStaleDays + " วัน", items.filter(rawIsStale).length, "ช่วยกันนับยืนยัน", items.some(rawIsStale) ? "var(--sq-high)" : "") : "")
-    + tile("var(--sq-muted)", "ยกเลิกการใช้",      stop, "ไม่นับรวมข้างบน", "");
+      tile("",     "รายการทั้งหมด", items.length, "ในคลังนี้", "")
+    + tile("warn", "ต่ำกว่าจุดสั่งซื้อ", low,  "ควรสั่งเพิ่ม",   low  ? "var(--sq-high)" : "")
+    + tile("no",   "หมดอายุแล้ว",       exp,  "ต้องจัดการด่วน", exp  ? "var(--sq-crit)" : "")
+    + (Number(window._rawStaleDays) ? tile("must", "ไม่อัปเดตเกิน " + window._rawStaleDays + " วัน", items.filter(rawIsStale).length, "ช่วยกันนับยืนยัน", items.some(rawIsStale) ? "var(--sq-must)" : "") : "")
+    + tile("",     "ยกเลิกการใช้",      stop, "ไม่นับรวมข้างบน", "");
 }
 
 // ── Filter ──
@@ -629,8 +629,8 @@ function rawExportPdf() {
   <div class="doc-head">
     ${logoImgTag(46)}
     <div>
-      <h1 style="margin:0 0 2px;">📦 รายงานสต๊อกวัตถุดิบ</h1>
-      <h2 style="margin:0;">🏭 โรงงาน: ${factoryName} &nbsp;|&nbsp; 📅 วันที่พิมพ์: ${dateStr} &nbsp;|&nbsp; 👤 ผู้พิมพ์: ${personName(currentUser)}</h2>
+      <h1 style="margin:0 0 2px;">รายงานสต๊อกวัตถุดิบ</h1>
+      <h2 style="margin:0;">โรงงาน: ${factoryName} &nbsp;|&nbsp; วันที่พิมพ์: ${dateStr} &nbsp;|&nbsp; ผู้พิมพ์: ${personName(currentUser)}</h2>
     </div>
   </div>
   <table>
@@ -655,7 +655,7 @@ function openPurchaseRequest() {
         const ed = rawParseDate(item.ExpiryDate); const isExp = ed && ed < today;
         return isLow || isExp;
       });
-  if (!lowItems.length) { showToast("ไม่มีรายการที่ต้องสั่งซื้อ ✅","success"); return; }
+  if (!lowItems.length) { showToast("ไม่มีรายการที่ต้องสั่งซื้อ ","success"); return; }
 
   const factoryName = rawCurrentModule === "SQF" ? "สุพรรณคิวฟู้ดส์ (SQF)" : "แม่ละมาย (MLM)";
   const dateStr = new Date().toLocaleDateString("th-TH",{year:"numeric",month:"long",day:"numeric"});
@@ -722,15 +722,15 @@ function openPurchaseRequest() {
     }
   </style></head><body>
   <div class="no-print" style="margin-bottom:12px;display:flex;gap:10px;align-items:center;">
-    <button class="print-btn" onclick="window.print()">🖨️ พิมพ์ใบขอซื้อ</button>
-    <span style="font-size:12px;color:#64748b;">✏️ แก้ไขช่อง <b style="color:#0e7a3f;">สั่งจริง</b> ได้ก่อนพิมพ์ — ระบบจะคำนวณ <b style="color:#059669;">ใช้ได้กี่วัน</b> ให้อัตโนมัติ</span>
+    <button class="print-btn" onclick="window.print()">พิมพ์ใบขอซื้อ</button>
+    <span style="font-size:12px;color:#64748b;">แก้ไขช่อง <b style="color:#0e7a3f;">สั่งจริง</b> ได้ก่อนพิมพ์ — ระบบจะคำนวณ <b style="color:#059669;">ใช้ได้กี่วัน</b> ให้อัตโนมัติ</span>
   </div>
   <div class="header">
     <div style="display:flex;align-items:center;gap:14px;">
       ${logoImgTag(44)}
       <div>
-        <h1>📋 ใบขอซื้อวัตถุดิบ</h1>
-        <div class="sub">🏭 โรงงาน: <b>${factoryName}</b></div>
+        <h1>ใบขอซื้อวัตถุดิบ</h1>
+        <div class="sub">โรงงาน: <b>${factoryName}</b></div>
       </div>
     </div>
     <div class="doc-no">
@@ -740,7 +740,7 @@ function openPurchaseRequest() {
     </div>
   </div>
   <div class="formula-note no-print">
-    💡 <b>วิธีคำนวณ "สั่งจริง" ที่ pre-fill ให้:</b>
+    <b>วิธีคำนวณ "สั่งจริง" ที่ pre-fill ให้:</b>
     &nbsp;&nbsp;• ถ้ามีข้อมูล <b>ใช้/วัน</b> → สั่งจริง (เริ่มต้น) = <b>ใช้/วัน × 30 วัน</b>
     &nbsp;&nbsp;• ถ้าไม่มีข้อมูลใช้/วัน → สั่งจริง (เริ่มต้น) = <b>Stock ขั้นต่ำ − คงเหลือ</b>
     &nbsp;&nbsp;• <b>ใช้ได้กี่วัน (หลังสั่ง)</b> = สั่งจริง ÷ ใช้/วัน (ปัดลง — ไม่นับวันที่ใช้ไม่เต็ม)
@@ -753,7 +753,7 @@ function openPurchaseRequest() {
       <th style="text-align:right;width:75px">คงเหลือ</th>
       <th style="text-align:right;width:65px">ใช้/วัน</th>
       <th style="text-align:center;width:70px">วันคงเหลือ</th>
-      <th style="text-align:right;width:90px">สั่งจริง ✏️</th>
+      <th style="text-align:right;width:90px">สั่งจริง </th>
       <th style="text-align:center;width:85px">ใช้ได้กี่วัน<br>(หลังสั่ง)</th>
       <th style="width:50px">หน่วย</th>
       <th style="width:90px">เหตุผล</th>
@@ -870,29 +870,29 @@ function openStockReport() {
     <div style="display:flex;align-items:center;gap:14px;">
       ${logoImgTag(46)}
       <div>
-        <h1>📑 ใบรายงานสต๊อกวัตถุดิบ</h1>
-        <div class="sub">🏭 โรงงาน: <b>${factoryName}</b> &nbsp;|&nbsp; 📅 <b>${dateStr}</b> เวลา <b>${timeStr} น.</b></div>
-        <div class="sub" style="margin-top:4px;">👤 ผู้จัดทำ: <b>${personName(currentUser)}</b> &nbsp;|&nbsp; 📋 ขอบเขต: <b>${scopeLabel}</b></div>
+        <h1>ใบรายงานสต๊อกวัตถุดิบ</h1>
+        <div class="sub">โรงงาน: <b>${factoryName}</b> &nbsp;|&nbsp; <b>${dateStr}</b> เวลา <b>${timeStr} น.</b></div>
+        <div class="sub" style="margin-top:4px;">ผู้จัดทำ: <b>${personName(currentUser)}</b> &nbsp;|&nbsp; ขอบเขต: <b>${scopeLabel}</b></div>
       </div>
     </div>
     <div style="text-align:right;">
-      <button class="no-print" onclick="window.print()" style="background:#1e293b;color:#fff;border:none;padding:10px 24px;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;">🖨️ พิมพ์</button>
+      <button class="no-print" onclick="window.print()" style="background:#1e293b;color:#fff;border:none;padding:10px 24px;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;">พิมพ์</button>
     </div>
   </div>
 
   <div class="summary">
     <div class="sum-card"><div class="num" style="color:#1e293b">${total}</div><div class="lbl">รายการทั้งหมด</div></div>
-    <div class="sum-card"><div class="num" style="color:#dc2626">${expItems.length}</div><div class="lbl">🔴 หมดอายุ</div></div>
-    <div class="sum-card"><div class="num" style="color:#ea580c">${lowItems.length}</div><div class="lbl">🟠 สต๊อกต่ำ</div></div>
-    <div class="sum-card"><div class="num" style="color:#d97706">${near7.length}</div><div class="lbl">⏳ ใกล้หมด 7 วัน</div></div>
-    <div class="sum-card"><div class="num" style="color:#0284c7">${near30.length}</div><div class="lbl">🗓️ ใกล้หมด 30 วัน</div></div>
-    <div class="sum-card"><div class="num" style="color:#059669">${okItems.length}</div><div class="lbl">✅ ปกติ</div></div>
+    <div class="sum-card"><div class="num" style="color:#dc2626">${expItems.length}</div><div class="lbl">หมดอายุ</div></div>
+    <div class="sum-card"><div class="num" style="color:#ea580c">${lowItems.length}</div><div class="lbl">สต๊อกต่ำ</div></div>
+    <div class="sum-card"><div class="num" style="color:#d97706">${near7.length}</div><div class="lbl">ใกล้หมด 7 วัน</div></div>
+    <div class="sum-card"><div class="num" style="color:#0284c7">${near30.length}</div><div class="lbl">ใกล้หมด 30 วัน</div></div>
+    <div class="sum-card"><div class="num" style="color:#059669">${okItems.length}</div><div class="lbl">ปกติ</div></div>
   </div>
 
-  ${buildSection("🔴 หมดอายุ — ต้องดำเนินการทันที","#dc2626","#fee2e2",expItems)}
-  ${buildSection("🟠 สต๊อกต่ำกว่าจุดสั่งซื้อ","#ea580c","#fff7ed",lowItems)}
-  ${buildSection(`⏳ ใกล้หมดอายุ ภายใน ${rawAlertDays} วัน`,"#d97706","#fefce8",near7)}
-  ${buildSection("✅ สต๊อกปกติ","#059669","#f0fdf4",okItems)}
+  ${buildSection("หมดอายุ — ต้องดำเนินการทันที","#dc2626","#fee2e2",expItems)}
+  ${buildSection("สต๊อกต่ำกว่าจุดสั่งซื้อ","#ea580c","#fff7ed",lowItems)}
+  ${buildSection(`ใกล้หมดอายุ ภายใน ${rawAlertDays} วัน`,"#d97706","#fefce8",near7)}
+  ${buildSection("สต๊อกปกติ","#059669","#f0fdf4",okItems)}
 
   <div class="sign-section">
     <div class="sign-box">ผู้จัดทำรายงาน<br><br>( ${personName(currentUser)} )</div>
@@ -906,11 +906,11 @@ function openStockReport() {
 
 // ── Backup ──
 async function rawRunBackup() {
-  if (!confirm("สำรองข้อมูลทั้งระบบตอนนี้? ☁️\n\n(ระบบสำรองให้เองทุกเช้า 08:00 อยู่แล้ว — กดเมื่อต้องการสำรองเพิ่มก่อนแก้ข้อมูลจำนวนมาก)")) return;
+  if (!confirm("สำรองข้อมูลทั้งระบบตอนนี้? \n\n(ระบบสำรองให้เองทุกเช้า 08:00 อยู่แล้ว — กดเมื่อต้องการสำรองเพิ่มก่อนแก้ข้อมูลจำนวนมาก)")) return;
   showLoading("กำลังสำรองข้อมูล...");
   const r = await rawFetch({ action:"BACKUP", user:currentUser });
   hideLoading();
-  if (r.status==="success") { showToast("Backup สำเร็จ ☁️","success"); rawLoadData(); }
+  if (r.status==="success") { showToast("Backup สำเร็จ ","success"); rawLoadData(); }
   else showToast(r.message||"Backup ไม่สำเร็จ","error");
 }
 
@@ -995,12 +995,17 @@ function rawUpdateAfter() {
   // ปุ่มบันทึกบอกประเภท + จำนวน ให้อ่านทวนก่อนกด (เหมือนมือถือ "📤 เบิก 500 ใบ")
   const btn = document.getElementById("rawBtnSubmit");
   const ok = raw && !/[+\-*\/()]/.test(raw) && !isNaN(q) && q > 0;
-  if (btn && !btn.disabled) btn.textContent = ok ? ({ OUT: "📤 เบิก", RETURN: "↩️ คืน", IN: "📥 รับ" }[type] || "✔️ บันทึก") + " " + f(q) + " " + unit : "✔️ บันทึกรายการ";
+  const after = ok ? Math.round((type === "OUT" ? cur - q : cur + q) * 1000) / 1000 : 0;
+  // เบิกเกินยอด → ปุ่มบอกเหตุผลและกดไม่ได้ (เดิมข้อความแดงขึ้นแต่ปุ่มยัง "เบิก 12 ขวด" พร้อมกด) · rawBusy = กำลังบันทึก ไม่ไปยุ่ง
+  if (btn && !rawIsBusy("rawBtnSubmit")) {
+    const over = ok && after < 0;
+    btn.disabled = over;
+    btn.textContent = over ? "เกินยอดที่มี" : ok ? ({ OUT: "เบิก", RETURN: "คืน", IN: "รับ" }[type] || "บันทึก") + " " + f(q) + " " + unit : "บันทึกรายการ";
+  }
   if (!ok) { el.textContent = ""; return; }   // กำลังพิมพ์โจทย์คำนวณ — รอผลก่อน
-  const after = Math.round((type === "OUT" ? cur - q : cur + q) * 1000) / 1000;
   if (after < 0) {
     el.style.color = "var(--sq-crit)";
-    el.textContent = "⚠️ เกินยอดที่มี (" + f(cur) + " " + unit + ")";
+    el.textContent = "เกินยอดที่มี (" + f(cur) + " " + unit + ")";
   } else {
     el.style.color = after === 0 ? "var(--sq-high)" : "var(--sq-ink2)";
     el.textContent = "หลังบันทึก: คงเหลือ " + f(after) + " " + unit + (after === 0 ? " (หมดพอดี)" : "");
@@ -1038,14 +1043,15 @@ async function rawFillWorkOrders() {
 
 function setRawType(t) {
   document.getElementById("rawModalType").value = t;
-  const base = "flex-1 py-3 rounded-xl font-black text-base";
-  // สีตัวหนังสือ -700 ผ่าน AA ทั้งตอนเลือก/ไม่เลือก (เดิม slate-400 = 2.3:1 แทบมองไม่เห็นว่ากดได้ · audit 2026-10-19)
-  const on   = c => `${base} bg-white shadow-xl ${c}`;
-  const off  = `${base} text-slate-600 hover:bg-slate-200`;
-  ["rawBtnOut", "rawBtnRet", "rawBtnIn"].forEach((id, i) => document.getElementById(id).setAttribute("aria-pressed", String(t === ["OUT", "RETURN", "IN"][i])));
-  document.getElementById("rawBtnOut").className = t==="OUT"    ? on("text-orange-700")  : off;
-  document.getElementById("rawBtnRet").className = t==="RETURN" ? on("text-sky-700")     : off;
-  document.getElementById("rawBtnIn").className  = t==="IN"     ? on("text-emerald-700") : off;
+  // ปุ่มที่เลือก = พื้นสีงาน ตัวขาว (เบิกส้ม คืนฟ้า รับเขียว — ชุดเดียวกับมือถือ) · ปุ่มยืนยันสีเดียวกัน มองปุ่มก็รู้ว่ากำลังเบิกหรือรับ
+  const base = "flex-1 py-3 font-black text-base icb", tc = { OUT: "t-out", RETURN: "t-ret", IN: "t-in" };
+  ["rawBtnOut", "rawBtnRet", "rawBtnIn"].forEach((id, i) => {
+    const k = ["OUT", "RETURN", "IN"][i], el = document.getElementById(id);
+    el.setAttribute("aria-pressed", String(t === k));
+    el.className = base + (t === k ? " " + tc[k] : " ic-" + { OUT: "out", RETURN: "ret", IN: "in" }[k]);
+  });
+  const sb = document.getElementById("rawBtnSubmit");
+  if (sb) sb.className = "ui-confirm icb w-full " + (tc[t] || "t-out");
   // เบิกออกบังคับกรอก "ใช้กับงาน" ส่วนรับ/คืน กรอกก็ได้ไม่กรอกก็ได้
   const _req = document.getElementById("rawPurposeReq");
   const _pin = document.getElementById("rawModalPurpose");
@@ -1152,12 +1158,12 @@ async function rawPrintQrAll() {
   </style>
   </head><body>
   <div class="no-print" style="text-align:center;margin-bottom:16px;">
-    <button onclick="window.print()" style="background:#1e293b;color:#fff;border:none;padding:10px 28px;border-radius:10px;font-size:14px;font-weight:900;cursor:pointer;margin-right:8px;">🖨️ พิมพ์</button>
+    <button onclick="window.print()" style="background:#1e293b;color:#fff;border:none;padding:10px 28px;border-radius:10px;font-size:14px;font-weight:900;cursor:pointer;margin-right:8px;">พิมพ์</button>
     <button onclick="window.close()" style="background:#64748b;color:#fff;border:none;padding:10px 20px;border-radius:10px;font-size:14px;font-weight:900;cursor:pointer;">✕ ปิด</button>
   </div>
   <div style="display:flex;align-items:center;justify-content:center;gap:14px;margin-bottom:6px;">
     ${logoImgTag(40)}
-    <h1 style="margin:0;">🔲 QR Code วัตถุดิบ — ${factoryLabel}</h1>
+    <h1 style="margin:0;">QR Code วัตถุดิบ — ${factoryLabel}</h1>
   </div>
   <div class="sub">พิมพ์วันที่ ${dateStr} &nbsp;|&nbsp; ${source.length} รายการ</div>
   <div class="grid">${cards}</div>
@@ -1187,7 +1193,7 @@ async function rawSubmitNew() {
   hideLoading(); setRawBusy("rawBtnCreate",false);
   if (r.status==="success") {
     closeRawCreate();
-    showToast("สร้างรายการสำเร็จ ✅","success");
+    showToast("สร้างรายการสำเร็จ ","success");
     rawLoadData();
     // แสดง QR ทันที
     openRawQrByItem(sku, name);
@@ -1215,7 +1221,7 @@ async function rawSubmitEdit() {
   const r = await rawFetch({ action:"EDIT", sku, name, unit, min, dailyUsage, expiryDate:expiry, alertDays:alertDaysEdit,
                              leadDays, moq, packSize, user:currentUser });
   hideLoading(); setRawBusy("rawBtnEdit",false);
-  if (r.status==="success") { closeRawEdit(); showToast("แก้ไขเรียบร้อย ✏️","success"); rawLoadData(); }
+  if (r.status==="success") { closeRawEdit(); showToast("แก้ไขเรียบร้อย ","success"); rawLoadData(); }
   else showToast(r.message||"ไม่สำเร็จ","error");
 }
 
@@ -1257,7 +1263,7 @@ async function rawSubmitAction() {
   const _busyText = { IN:"กำลังบันทึกรับเข้า...", RETURN:"กำลังบันทึกการคืน...", OUT:"กำลังบันทึกการเบิก..." };
   showLoading(_busyText[type] || "กำลังบันทึก...");
   const name = (rawLastData||[]).find(m => String(m.SKU) === String(sku))?.Name || sku;
-  const LBL = { OUT:"📤 เบิก", IN:"📥 รับเข้า", RETURN:"↩️ คืน" };
+  const LBL = { OUT:"เบิก", IN:"รับเข้า", RETURN:"↩️ คืน" };
   // ผ่านคิวออฟไลน์เสมอ — ออนไลน์อยู่ก็ยิงตรงเหมือนเดิม เน็ตล่มถึงจะเก็บไว้ส่งทีหลัง
   const workOrderId = (document.getElementById("rawModalWorkOrder")?.value || "").trim();   // ข้อ 19
   const r = await offlineSend(
@@ -1265,19 +1271,19 @@ async function rawSubmitAction() {
     `${LBL[type]||type} ${name} ${qty}`);
   hideLoading(); setRawBusy("rawBtnSubmit",false);
   if (r.storeFailed) {   // ข้อ 2: เน็ตล่มและเก็บลงเครื่องไม่ได้ — ต้องบอกตรงๆ ไม่ปิดหน้าต่าง
-    alert("❌ เน็ตล่ม และเก็บรายการไว้ในเครื่องไม่ได้\n(พื้นที่เต็มหรือเบราว์เซอร์ไม่อนุญาต)\n\nกรุณาจดไว้: " + `${LBL[type]||type} ${name} ${qty}` + "\nแล้วบันทึกใหม่เมื่อเน็ตกลับมา");
+    alert("เน็ตล่ม และเก็บรายการไว้ในเครื่องไม่ได้\n(พื้นที่เต็มหรือเบราว์เซอร์ไม่อนุญาต)\n\nกรุณาจดไว้: " + `${LBL[type]||type} ${name} ${qty}` + "\nแล้วบันทึกใหม่เมื่อเน็ตกลับมา");
     return;
   }
   if (r.needLogin) { if (r.queued) { closeRawAction(); closeRawVerify(); } handleTokenExpired(r); return; }
   if (r.queued) {
     closeRawAction();
-    showToast("📴 เน็ตล่ม — บันทึกไว้ในเครื่องแล้ว จะส่งขึ้นระบบให้เองเมื่อเน็ตกลับมา", "warn", 6000);
+    showToast("เน็ตล่ม — บันทึกไว้ในเครื่องแล้ว จะส่งขึ้นระบบให้เองเมื่อเน็ตกลับมา", "warn", 6000);
     rawUpdateOfflineBadge();
     return;
   }
   if (r.status==="success") {
     closeRawAction();
-    showToast("บันทึกสำเร็จ ✔️","success");
+    showToast("บันทึกสำเร็จ ","success");
     if (r.timing) window._gasLastWriteTiming = r.timing;
     const s = r.slip || {};
     rawApplyLocalWrite(sku, s.balance, { at: s.at || new Date().toISOString(), name: s.name || name, action: s.action || (LBL[type] || type),
@@ -1315,14 +1321,14 @@ function rawRenderOfflinePanel() {
       <td>${t(j.at)}</td>
       <td><span class="sq-chip crit">${escapeHtml(j.error || "")}</span></td>
       <td style="white-space:nowrap;">
-        <button class="rm-mini solid" onclick="if(offlineResend('${escapeJsAttr(j.opId)}')){showToast('ส่งซ้ำแล้ว','success');}rawRenderOfflinePanel();rawUpdateOfflineBadge();">🔁 ส่งซ้ำ</button>
+        <button class="rm-mini solid" onclick="if(offlineResend('${escapeJsAttr(j.opId)}')){showToast('ส่งซ้ำแล้ว','success');}rawRenderOfflinePanel();rawUpdateOfflineBadge();">ส่งซ้ำ</button>
         <button class="rm-mini danger" onclick="offlineDropFailure('${escapeJsAttr(j.opId)}');rawRenderOfflinePanel();rawUpdateOfflineBadge();">ลบ</button>
       </td></tr>`).join("");
   body.innerHTML = `
-    <div class="sq-card-note" style="margin-bottom:8px;">⏳ รอส่งเมื่อเน็ตกลับมา — ${q.length} รายการ
+    <div class="sq-card-note" style="margin-bottom:8px;">รอส่งเมื่อเน็ตกลับมา — ${q.length} รายการ
       ${q.length ? `<button class="rm-mini" style="margin-left:8px;" onclick="offlineSync(true)">ลองส่งตอนนี้</button>` : ""}</div>
     ${q.length ? `<div class="sq-tablewrap"><table class="sq-table"><thead><tr><th>รายการ</th><th>เวลาที่ทำ</th><th>สถานะ</th></tr></thead><tbody>${qRows}</tbody></table></div>` : '<p class="sq-empty">ไม่มี</p>'}
-    <div class="sq-card-note" style="margin:14px 0 8px;">⚠️ ส่งไม่ผ่าน — เซิร์ฟเวอร์ปฏิเสธ (ยอดในระบบไม่ถูกแตะ) — ${f.length} รายการ</div>
+    <div class="sq-card-note" style="margin:14px 0 8px;">ส่งไม่ผ่าน — เซิร์ฟเวอร์ปฏิเสธ (ยอดในระบบไม่ถูกแตะ) — ${f.length} รายการ</div>
     ${f.length ? `<div class="sq-tablewrap"><table class="sq-table"><thead><tr><th>รายการ</th><th>เวลาที่ทำ</th><th>เหตุผล</th><th></th></tr></thead><tbody>${fRows}</tbody></table></div>
       <p class="sq-note" style="margin-top:8px;">แก้ต้นเหตุก่อน (เช่น รับของเข้าแล้ว) ค่อยกด "ส่งซ้ำ" · ถ้าทำรายการใหม่ไปแล้วให้กด "ลบ" กันซ้ำ</p>` : '<p class="sq-empty">ไม่มี</p>'}`;
 }
@@ -1338,30 +1344,30 @@ async function rawSubmitVerify() {
   const curItem = (rawLastData || []).find(it => String(it.SKU) === String(rawVerifyTarget));
   const curQty = curItem ? Number(curItem.Qty || 0) : 0;
   if (curQty > 0 && (q > curQty * 5 || q < curQty / 5)) {
-    if (!confirm(`⚠️ ยอดใหม่ (${q}) ต่างจากยอดปัจจุบัน (${curQty}) มาก\n\nแน่ใจว่าถูกต้อง?`)) return;
+    if (!confirm(`ยอดใหม่ (${q}) ต่างจากยอดปัจจุบัน (${curQty}) มาก\n\nแน่ใจว่าถูกต้อง?`)) return;
   }
   setRawBusy("rawBtnVerify",true,"กำลังบันทึก...");
   showLoading("กำลังบันทึกยอดตรวจนับ...");
   const vName = (rawLastData||[]).find(m => String(m.SKU) === String(rawVerifyTarget))?.Name || rawVerifyTarget;
   const r = await offlineSend(
     { module: rawCurrentModule, action:"VERIFY", sku:rawVerifyTarget, qty:q, user:currentUser },
-    `📊 นับ ${vName} → ${q}`);
+    `นับ ${vName} → ${q}`);
   hideLoading(); setRawBusy("rawBtnVerify",false);
   if (r.storeFailed) {
-    alert("❌ เน็ตล่ม และเก็บรายการไว้ในเครื่องไม่ได้\n\nกรุณาจดไว้: นับ " + vName + " → " + q + "\nแล้วบันทึกใหม่เมื่อเน็ตกลับมา");
+    alert("เน็ตล่ม และเก็บรายการไว้ในเครื่องไม่ได้\n\nกรุณาจดไว้: นับ " + vName + " → " + q + "\nแล้วบันทึกใหม่เมื่อเน็ตกลับมา");
     return;
   }
   if (r.needLogin) { if (r.queued) { closeRawAction(); closeRawVerify(); } handleTokenExpired(r); return; }
   if (r.queued) {
     closeRawVerify();
-    showToast("📴 เน็ตล่ม — บันทึกไว้ในเครื่องแล้ว จะส่งขึ้นระบบให้เองเมื่อเน็ตกลับมา", "warn", 6000);
+    showToast("เน็ตล่ม — บันทึกไว้ในเครื่องแล้ว จะส่งขึ้นระบบให้เองเมื่อเน็ตกลับมา", "warn", 6000);
     rawUpdateOfflineBadge();
     return;
   }
   if (r.status==="success") {
     closeRawVerify();
     // ข้อ 5: ถ้าเซิร์ฟเวอร์ปรับตามความเคลื่อนไหวหลังเวลานับ บอกให้รู้
-    showToast(r.movementsAfter ? `บันทึกยอดแล้ว ✅ นับได้ ${r.counted} → ใช้ ${r.applied} (ปรับตาม ${r.movementsAfter} รายการที่เกิดหลังนับ)` : "บันทึกยอดจริงสำเร็จ ✅", "success", 6000);
+    showToast(r.movementsAfter ? `บันทึกยอดแล้ว นับได้ ${r.counted} → ใช้ ${r.applied} (ปรับตาม ${r.movementsAfter} รายการที่เกิดหลังนับ)` : "บันทึกยอดจริงสำเร็จ ", "success", 6000);
     if (r.timing) window._gasLastWriteTiming = r.timing;
     rawApplyLocalWrite(rawVerifyTarget, r.applied, { at: new Date().toISOString(), name: vName, action: "ตรวจนับ/ปรับยอด", qty: r.applied,
       user: currentUser, unit: curItem ? curItem.Unit : "", verified: true });
@@ -1370,12 +1376,12 @@ async function rawSubmitVerify() {
 }
 
 async function rawDelete(sku, name) {
-  if (!confirm(`ยกเลิกการใช้ "${name}" ?`)) return;
-  showLoading("กำลังลบ...");
+  if (!confirm(`ยกเลิกการใช้ "${name}" ?\n\nรายการจะไม่แสดงในคลังและไม่นับรวมยอด (ข้อมูลเก่ายังอยู่)`)) return;
+  showLoading("กำลังยกเลิกการใช้...");
   const r = await rawFetch({ action:"DELETE", sku, user:currentUser });
   hideLoading();
-  if (r.status==="success") { showToast("ลบสำเร็จ 🗑️","success"); rawLoadData(); }
-  else showToast(r.message||"ลบไม่สำเร็จ","error");
+  if (r.status==="success") { closeRawEdit(); showToast("ยกเลิกการใช้แล้ว","success"); rawLoadData(); }
+  else showToast(r.message||"ยกเลิกการใช้ไม่สำเร็จ","error");
 }
 
 // ── Scanner ──
@@ -1389,9 +1395,9 @@ async function openRawScanner() {
       const item = rawLastData.find(i=>String(i.SKU)===val);
       closeRawScanner();
       if (item) openRawAction(item.SKU, item.Name, item.Unit, item.Qty);
-      else showToast("ไม่พบรหัสนี้ ❌","error");
+      else showToast("ไม่พบรหัสนี้ ","error");
     });
-  } catch(err) { showToast("เปิดกล้องไม่สำเร็จ ❌","error"); closeRawScanner(true); }
+  } catch(err) { showToast("เปิดกล้องไม่สำเร็จ ","error"); closeRawScanner(true); }
 }
 
 async function closeRawScanner(forceHide=false) {
@@ -1411,7 +1417,7 @@ function rawFieldError(id, msg) {
     tip.id = id + "__err"; tip.className = "rm-field-err"; tip.setAttribute("role", "alert");
     el.insertAdjacentElement("afterend", tip);
   }
-  tip.textContent = "⚠️ " + msg; tip.style.display = "";
+  tip.textContent = "" + msg; tip.style.display = "";
   el.classList.add("rm-input-err"); el.setAttribute("aria-invalid", "true");
   try { el.focus(); if (el.select && el.type !== "date") el.select(); } catch (e) {}
   const clear = () => { tip.style.display = "none"; el.classList.remove("rm-input-err"); el.removeAttribute("aria-invalid"); el.removeEventListener("input", clear); };

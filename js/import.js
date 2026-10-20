@@ -182,7 +182,7 @@ function impShowError(title, hint) {
   document.getElementById("impPreviewWrap").style.display = "none";
   document.getElementById("impDropZone").style.display = "";
   document.getElementById("impResult").innerHTML =
-    `<div class="sq-note warn"><b>⚠️ ${escapeHtml(title)}</b><br>${hint || ""}</div>`;
+    `<div class="sq-note warn"><b>${escapeHtml(title)}</b><br>${hint || ""}</div>`;
 }
 
 // ─────────────────────────────────────────────
@@ -282,7 +282,7 @@ function impBuildPreview(text) {
       <td class="rail"></td>
       <td class="c sq-dim" style="font-family:var(--sq-mono);font-size:12px;">${v.line}</td>
       <td>${v.ok ? '<span class="sq-chip ok">✓ พร้อม</span>'
-                 : `<span class="sq-chip crit">⚠️ ${escapeHtml(v.errs[0])}</span>`}</td>
+                 : `<span class="sq-chip crit">${escapeHtml(v.errs[0])}</span>`}</td>
       <td><span class="sq-name">${escapeHtml(v.name || "—")}</span>
           ${v.sku ? `<div class="sq-meta"><span>${escapeHtml(v.sku)}</span></div>` : ""}</td>
       <td class="n">${fmt(v.qty)}<span class="sq-unit">${escapeHtml(v.unit || "")}</span></td>
@@ -296,7 +296,7 @@ function impBuildPreview(text) {
   document.getElementById("impPreviewWrap").innerHTML = `
     <div class="sq-card" style="margin-bottom:10px;">
       <div class="sq-card-head">
-        <span class="sq-card-title">📄 ${escapeHtml(_impFileName)}</span>
+        <span class="sq-card-title">${escapeHtml(_impFileName)}</span>
         <span class="sq-card-note">${view.length} บรรทัด</span>
       </div>
       <div class="sq-tiles" style="margin:0;border:0;border-radius:0;box-shadow:none;border-top:1px solid var(--sq-line);">
@@ -342,7 +342,7 @@ function impBuildPreview(text) {
       <button onclick="openRawImport()" class="sq-btn">เลือกไฟล์อื่น</button>
       <button onclick="impConfirm(event)" id="impConfirmBtn" class="sq-btn sq-btn-primary"
               ${nOk ? "" : "disabled style=\"opacity:.5;cursor:not-allowed\""}>
-        ✅ ยืนยันนำเข้า ${nOk} รายการ
+        ยืนยันนำเข้า ${nOk} รายการ
       </button>
     </div>`;
 }
@@ -356,7 +356,7 @@ async function impConfirm(evt) {
   const mode = modeEl ? modeEl.value : "skip";
   const label = rawCurrentModule === "SQF" ? "วัตถุดิบ SQF" : "วัตถุดิบ MLM";
   const warn = mode === "overwrite"
-    ? "\n\n⚠️ โหมดอัปเดตทับ: ยอดของรายการที่มีอยู่แล้วจะถูกเขียนใหม่ตามไฟล์"
+    ? "\n\nโหมดอัปเดตทับ: ยอดของรายการที่มีอยู่แล้วจะถูกเขียนใหม่ตามไฟล์"
     : "";
   if (!confirm(`นำเข้า ${_impRows.length} รายการ เข้า ${label}?${warn}`)) return;
 
@@ -393,7 +393,7 @@ function impShowServerResult(res) {
 
   document.getElementById("impPreviewWrap").innerHTML = `
     <div class="sq-card" style="margin-bottom:10px;">
-      <div class="sq-card-head"><span class="sq-card-title">✅ นำเข้าเสร็จแล้ว</span></div>
+      <div class="sq-card-head"><span class="sq-card-title">นำเข้าเสร็จแล้ว</span></div>
       <div class="sq-tiles" style="margin:0;border:0;border-radius:0;box-shadow:none;border-top:1px solid var(--sq-line);">
         <div class="sq-tile"><div class="sq-tile-label"><span class="sq-dot" style="background:var(--sq-accent)"></span>เพิ่มใหม่</div>
           <div class="sq-tile-num" style="color:var(--sq-accent)">${s.created || 0}</div></div>

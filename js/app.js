@@ -82,8 +82,8 @@ function _updateOnlineStatus() {
   if (navigator.onLine) banner.classList.add("hide");
   else banner.classList.remove("hide");
 }
-window.addEventListener("online",  () => { _updateOnlineStatus(); showToast("กลับมาออนไลน์แล้ว ✅", "success"); });
-window.addEventListener("offline", () => { _updateOnlineStatus(); showToast("เน็ตหลุด — บันทึกงานไว้ในเครื่องได้ ส่งให้เองเมื่อเน็ตกลับมา ⏳", "warn", 5000); });
+window.addEventListener("online",  () => { _updateOnlineStatus(); showToast("กลับมาออนไลน์แล้ว ", "success"); });
+window.addEventListener("offline", () => { _updateOnlineStatus(); showToast("เน็ตหลุด — บันทึกงานไว้ในเครื่องได้ ส่งให้เองเมื่อเน็ตกลับมา ", "warn", 5000); });
 
 // ── ผูกระบบคิวออฟไลน์เข้ากับหน้าจอฝั่งคอม (js/offline.js เป็นตัวกลาง ใช้ร่วมกับ mobile) ──
 if (typeof offlineConfig === "function") {
@@ -125,7 +125,7 @@ function showToast(msg, type = "info", timeout = 2800) {
   const t = typeMap[type] || type;
   const el = document.createElement("div");
   el.className = `toast-item toast-${t}`;
-  el.textContent = msg;
+  el.textContent = uiNoEmoji(msg);   // สีบอกชนิดแล้ว ไม่ต้องมี emoji นำหน้า
   document.getElementById("toastContainer").appendChild(el);
   setTimeout(() => {
     el.style.opacity = "0"; el.style.transform = "translateX(20px)";
@@ -164,7 +164,7 @@ function _forceRelogin(reason) {
 
 // ── Force Refresh — ล้าง SW cache + reload ──
 async function forceRefresh() {
-  if (!confirm("🔄 อัปเดตแอปใหม่?\n\nจะล้าง cache ทั้งหมดและโหลดหน้าใหม่\n(ข้อมูลที่กรอกไว้จะหาย)")) return;
+  if (!confirm("อัปเดตแอปใหม่?\n\nจะล้าง cache ทั้งหมดและโหลดหน้าใหม่\n(ข้อมูลที่กรอกไว้จะหาย)")) return;
   try {
     // ยกเลิก Service Worker ทุกตัว
     if ("serviceWorker" in navigator) {
@@ -223,7 +223,7 @@ function checkAuth() {
     }
     const why = sessionStorage.getItem("appstock_relogin_reason");
     const note = document.getElementById("loginNotice");
-    if (why && note) { sessionStorage.removeItem("appstock_relogin_reason"); note.textContent = "⚠️ " + why; note.style.display = ""; }
+    if (why && note) { sessionStorage.removeItem("appstock_relogin_reason"); note.textContent = why; note.style.display = ""; }
   } catch (e) {}
   const saved = localStorage.getItem("unified_stock_user");
   if (saved) {
@@ -257,7 +257,7 @@ function checkAuth() {
     const hlRoles = document.getElementById("homeLink-ROLES");
     if (hlRoles) {
       hlRoles.style.display = (isAdmin || roleLower === "manager") ? "" : "none";
-      hlRoles.textContent = isAdmin ? "👑 Admin" : "✅ อนุมัติผู้ใช้";
+      hlRoles.innerHTML = '<i class="ic ic-users" aria-hidden="true"></i>' + (isAdmin ? "ผู้ใช้งาน" : "อนุมัติผู้ใช้");
     }
     // 👑 Admin เห็นทุกแท็บ · manager เห็นเฉพาะแท็บ "คำขอ" (อนุมัติ user/viewer ได้)
     const isManager = roleLower === "manager";
@@ -266,8 +266,8 @@ function checkAuth() {
     if (rolesBtn) {
       rolesBtn.style.display = (isAdmin || isManager) ? "" : "none";
       // ตั้งป้ายให้ชัดทุกกรณี (ไม่ใช่แค่ตอน manager ไม่งั้นค้างจากรอบก่อน)
-      const label = isAdmin ? "👑 Admin" : "✅ อนุมัติผู้ใช้";
-      rolesBtn.innerHTML = label + '<span id="adminNavBadge" class="nav-badge" style="display:none;background:var(--sq-high);"></span>';
+      const label = isAdmin ? "ผู้ใช้งาน" : "อนุมัติผู้ใช้";
+      rolesBtn.innerHTML = '<i class="ic ic-users" aria-hidden="true"></i>' + label + '<span id="adminNavBadge" class="nav-badge" style="display:none;"></span>';
     }
     // แท็บข้อมูลอ้างอิง (BOM) ในห้องเย็น — เห็นเฉพาะ admin/manager (เจ้าของสั่งปิด 2026-08-01)
     window._appCanSeeBom = isAdmin || isManager;
@@ -297,7 +297,7 @@ function checkAuth() {
     const bkBtn = document.getElementById("rawBackupBtn");
     if (bkBtn) bkBtn.style.display = (isAdmin || isManager) ? "" : "none";
     // viewer: บอกบนแถบเมนูว่าดูได้อย่างเดียว (เดิมปุ่มหายเฉยๆ ไม่รู้ว่าทำไม)
-    if (isViewer) { const nu = document.getElementById("navUser"); if (nu && !/ดูอย่างเดียว/.test(nu.innerText)) nu.innerText = nu.innerText + " · 👁️ ดูอย่างเดียว"; }
+    if (isViewer) { const nu = document.getElementById("navUser"); if (nu && !/ดูอย่างเดียว/.test(nu.innerText)) nu.innerText = nu.innerText + " · ดูอย่างเดียว"; }
     _watchNavHeight();   // ปุ่มถูกซ่อน/แสดงตาม role ครบแล้ว ค่อยวัดความสูงเมนู
     // นับตัวเลขที่ต้องจัดการทุกครั้งที่เปิดแอป (เดิมนับแค่ตอนเลือกโหมดหลังเข้าระบบ → รีโหลดแล้วตัวเลขบนการ์ดหาย)
     if (typeof checkRawAlertsOnLogin === "function") checkRawAlertsOnLogin();
@@ -312,7 +312,7 @@ function checkAuth() {
 // ชื่อแท็บตามหน้าที่เปิด — เปิดหลายแท็บแล้วแยกออก (เดิม "ระบบ" ทุกหน้า · QA M21)
 // ชื่อแอปบนหน้าจอโฮม (manifest / apple-mobile-web-app-title) ยังเป็น "ระบบ" ตามเดิม
 const MODULE_TITLE = { HOME: "เลือกคลัง", COLDROOM: "คลังห้องเย็น", SQF: "วัตถุดิบ SQF", MLM: "วัตถุดิบ MLM",
-                       EXEC: "ภาพรวมทั้งระบบ", ROLES: "Admin", BOMHEALTH: "ตรวจข้อมูล" };
+                       EXEC: "ภาพรวมทั้งระบบ", ROLES: "ผู้ใช้งาน", BOMHEALTH: "ตรวจข้อมูล" };
 function switchModule(mod) {
   if (window.APP_EXEC_ONLY) mod = "EXEC";   // ลิงก์ผู้บริหาร: มีหน้าเดียว
   activeModule = mod;
@@ -441,7 +441,7 @@ if ("serviceWorker" in navigator) {
       "padding:12px 16px;border-radius:10px;font-weight:700;font-size:13px;" +
       "box-shadow:0 8px 24px rgba(0,0,0,.25);font-family:inherit;";
     bar.innerHTML =
-      '<span>🔄 มีเวอร์ชันใหม่พร้อมใช้งานแล้ว</span>' +
+      '<span>มีเวอร์ชันใหม่พร้อมใช้งานแล้ว</span>' +
       '<button onclick="location.reload()" style="background:#fff;color:#0e7a3f;border:none;' +
       'padding:7px 16px;border-radius:7px;font-weight:800;font-size:13px;cursor:pointer;font-family:inherit;">' +
       'โหลดเลย</button>';

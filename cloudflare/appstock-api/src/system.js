@@ -1,6 +1,6 @@
 // งานระบบ: สถานะ · ความเคลื่อนไหวข้ามคลัง · ประวัติของฉัน · สำรองข้อมูล · ส่งออกไปชีต · งานตามเวลา
 // (วิเคราะห์การเบิก/วางแผนสั่งซื้ออยู่ที่ plan.js)
-import { all, first, run, kvGet, kvPut, kvDel, claim, sysLogOnce, nowIso, fmtTH, dayTH, formatCellDate, superAdminName,
+import { all, first, run, kvGet, kvPut, claim, release, sysLogOnce, nowIso, fmtTH, dayTH, formatCellDate, superAdminName,
          tgFlushQueue, tgPendingCount, sysLog, sysLast, TZ_MS, DAY_MS } from "./lib.js";
 import { getTokenData, verifyAdminToken } from "./auth.js";
 import { archiveOldStock } from "./cold.js";
@@ -177,6 +177,32 @@ async function mirrorSig(c) {
 async function mirrorLast(c) {
   try { const v = await kvGet(c, "mirror_last"); return v ? JSON.parse(v) : null; } catch (e) { return null; }
 }
+/**
+ * สั่งสคริปต์ฝั่ง Google 1 รอบ — พลาดแบบชั่วคราวลองซ้ำอีก 1 ครั้ง
+ *   mirror-error ที่เจอจริง (29/09–20/10) มี 2 แบบ แล้วรอบถัดไปผ่านเอง:
+ *   · "HTTP 404" = Google ตอบหน้า HTML ไม่ใช่ผลของสคริปต์ (ฝั่ง Google สะดุดชั่วคราว)
+ *   · "ระบบย้ายไปเซิร์ฟเวอร์ใหม่แล้ว" (migrated) = สคริปต์ไม่เห็น action MIRRORNOW — คำขอไปถึงในรูป GET / ไม่มี body
+ *     (น่าจะเป็น POST ที่โดน redirect ก่อนสคริปต์รัน → fetch เปลี่ยนเป็น GET และทิ้ง body ตามมาตรฐาน → เข้า doGet ของสคริปต์)
+ *   ลองซ้ำปลอดภัย: สคริปต์เขียนชีตทับทั้งแผ่น (ทำซ้ำได้ผลเดิม) และมีล็อกกันรันซ้อน · ข้อความผิดพลาดอื่น (เช่นกุญแจผิด) ไม่ลองซ้ำ
+ */
+export async function mirrorCall(url, key, pauseMs) {
+  let res;
+  for (let i = 0; i < 2; i++) {
+    if (i) await new Promise((ok) => setTimeout(ok, pauseMs === undefined ? 3000 : pauseMs));
+    try {
+      const resp = await fetch(url, { method: "POST", redirect: "follow", headers: { "content-type": "text/plain;charset=utf-8" }, body: JSON.stringify({ action: "MIRRORNOW", key }) });
+      const txt = await resp.text();
+      const hop = resp.redirected ? " · ปลายทาง " + (String(resp.url || "").split("/")[2] || "?") : "";
+      try {
+        res = JSON.parse(txt);
+        if (!res || !res.migrated) return res;
+        res = { ok: false, message: String(res.message || "") + " (สคริปต์ไม่เห็น MIRRORNOW" + hop + ")" };
+      } catch (e) { res = { ok: false, message: "Google ตอบไม่ใช่ข้อมูล (HTTP " + resp.status + hop + ")" }; }
+    } catch (e) { res = { ok: false, message: String((e && e.message) || e) }; }
+    if (i) res.message += " · ลองซ้ำแล้ว";
+  }
+  return res;
+}
 export async function mirrorPush(c, opts) {
   const o = opts || {};
   const url = String(c.env.MIRROR_URL || "").trim(), key = String(c.env.MIRROR_KEY || "").trim();
@@ -186,15 +212,12 @@ export async function mirrorPush(c, opts) {
   const last = await mirrorLast(c);
   if (!o.force && last && last.ok && sig && last.sig === sig && Date.now() - Number(last.atMs || 0) < MIRROR_MAX_AGE_MS)
     return { ok: true, status: "success", skipped: true, reason: "unchanged", last };
-  if (!(await claim(c, "mirror_running", 300))) return { ok: true, status: "success", skipped: true, reason: "running", last };
+  const lock = await claim(c, "mirror_running", 300);
+  if (!lock) return { ok: true, status: "success", skipped: true, reason: "running", last };
   const t0 = Date.now();
   let res;
-  try {
-    const resp = await fetch(url, { method: "POST", redirect: "follow", headers: { "content-type": "text/plain;charset=utf-8" }, body: JSON.stringify({ action: "MIRRORNOW", key }) });
-    const txt = await resp.text();
-    try { res = JSON.parse(txt); } catch (e) { res = { ok: false, message: "Google ตอบไม่ใช่ข้อมูล (HTTP " + resp.status + ")" }; }
-  } catch (e) { res = { ok: false, message: String((e && e.message) || e) }; }
-  finally { try { await kvDel(c, "mirror_running"); } catch (e2) {} }
+  try { res = await mirrorCall(url, key); }
+  finally { try { await release(c, "mirror_running", lock); } catch (e2) {} }
   // สคริปต์ฝั่ง Google กำลังทำรอบก่อนหน้าอยู่ = ไม่ใช่ความผิดพลาด แค่ยังไม่ได้เขียนรอบนี้
   const busy = !!(res && res.ok && res.skipped);
   const rec = { atMs: Date.now(), at: nowIso(), ok: !!(res && res.ok) && !busy, busy, ms: Date.now() - t0, sig: busy ? "" : sig, via: o.via || "",
@@ -219,8 +242,13 @@ export async function ticks(c, via) {
   // สรุปเข้ากลุ่มตามวัน/เวลาที่ตั้งไว้ แยก Telegram / LINE (⚙️ ตั้งค่าการแจ้งเตือน → กำหนดการส่งสรุป · notify.js) — ช่องละครั้งต่อวัน
   try {
     for (const ch of channelsDue(await notifySchedule(c), dow, hh)) {
-      if (!(await claim(c, "tick_digest_" + ch + "_" + day, 2 * 86400))) continue;
-      try { await planDigest(c, { channels: [ch] }); } catch (e) { await sysLog(c, "cron-error", "planDigest(" + ch + "): " + e, "-", "error"); }
+      const ck = "tick_digest_" + ch + "_" + day, tok = await claim(c, ck, 2 * 86400);
+      if (!tok) continue;
+      try {
+        const r = await planDigest(c, { channels: [ch], day });
+        // พลาดแบบชั่วคราว (เครือข่าย/หมดเวลา/5xx) → คืนสิทธิ์ ให้ cron รอบถัดไปในชั่วโมงเดียวกันลองใหม่ · 429/4xx ไม่คืน (ลองซ้ำก็ไม่ผ่าน + LINE กินโควตา)
+        if (r && r.retry && r.retry.indexOf(ch) >= 0) await release(c, ck, tok);
+      } catch (e) { await sysLog(c, "cron-error", "planDigest(" + ch + "): " + e, "-", "error"); }
     }
   } catch (e) { await sysLogOnce(c, "cron-error", "notifySchedule: " + e, 3600); }
   // อาทิตย์ 02:00–02:59: เก็บถาวรล็อตที่หมดแล้ว
@@ -236,6 +264,8 @@ export async function ticks(c, via) {
     try {
       await run(c, "DELETE FROM kv WHERE exp > 0 AND exp < ?", Date.now());
       await run(c, "DELETE FROM sessions WHERE exp < ?", Date.now());
+      // บันทึกงานระบบเก็บ 20,000 แถวล่าสุด (ของเก่ากว่านั้นยังอยู่ในไฟล์สำรองรายวัน R2)
+      await run(c, "DELETE FROM system_log WHERE id < (SELECT COALESCE(MAX(id), 0) - 20000 FROM system_log)");
     } catch (e) {}
   }
 }

@@ -46,7 +46,7 @@ async function slipDraw(s) {
   const x = c.getContext("2d");
   const F = '"Leelawadee UI","Noto Sans Thai","Sarabun",system-ui,sans-serif';
   const M = 90;                       // ระยะขอบกระดาษ
-  const INK = "#16241b", MUTED = "#5b6e63", LINE = "#c9d4cc", GREEN = "#0e7a3f";
+  const INK = "#111", MUTED = "#5c5c57", LINE = "#d6d6d0", GREEN = "#006b31";
 
   x.fillStyle = "#ffffff"; x.fillRect(0, 0, SLIP_W, SLIP_H);
 
@@ -74,11 +74,11 @@ async function slipDraw(s) {
   // กล่องเลขที่เอกสาร มุมขวาบน
   const bw = 400, bh = 108, bx = SLIP_W - M - bw, by = M;
   const noDoc = !s.docNo;
-  x.strokeStyle = noDoc ? "#c0362c" : GREEN; x.lineWidth = 3;
+  x.strokeStyle = noDoc ? "#c8102e" : GREEN; x.lineWidth = 3;
   x.strokeRect(bx, by, bw, bh);
   x.fillStyle = MUTED; x.font = "24px " + F;
   x.fillText("เลขที่เอกสาร", bx + 18, by + 34);
-  x.fillStyle = noDoc ? "#c0362c" : GREEN; x.font = "bold 38px " + F;
+  x.fillStyle = noDoc ? "#c8102e" : GREEN; x.font = "bold 38px " + F;
   x.fillText(s.docNo || "ไม่มีเลขที่", bx + 18, by + 80);
 
   y += 78;
@@ -113,7 +113,7 @@ async function slipDraw(s) {
   const tW = cols.reduce((a, b) => a + b.w, 0);
   const rowH = 76;
 
-  x.fillStyle = "#eef3ef"; x.fillRect(M, y, tW, 58);
+  x.fillStyle = "#f2f2ef"; x.fillRect(M, y, tW, 58);
   x.strokeStyle = LINE; x.lineWidth = 2; x.strokeRect(M, y, tW, 58);
   x.fillStyle = MUTED; x.font = "bold 24px " + F;
   let cx = M;
@@ -159,7 +159,7 @@ async function slipDraw(s) {
   // ── ยอดคงเหลือหลังทำรายการ ──
   // ใบย้อนหลังจากประวัติไม่มีตัวเลขนี้ (ประวัติไม่ได้เก็บยอด ณ ตอนนั้นไว้)
   if (s.balance !== null && s.balance !== undefined) {
-    x.fillStyle = "#f4f7f4"; x.fillRect(M, y, tW, 74);
+    x.fillStyle = "#f7f7f4"; x.fillRect(M, y, tW, 74);
     x.strokeStyle = LINE; x.strokeRect(M, y, tW, 74);
     x.fillStyle = MUTED; x.font = "26px " + F;
     x.fillText(KIND.bal, M + 20, y + 46);

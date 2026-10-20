@@ -8,14 +8,14 @@
 <link rel="stylesheet" href="fonts/sarabun.css">
 <style>
   :root{
-    --green:#0e7a3f; --orange:#f2951c;
-    --ground:#f4f7f4; --surface:#fff; --raised:#fafbfa;
-    --line:#dfe6e0; --line-soft:#ebf0ec;
-    --ink:#16241b; --ink2:#435349; --muted:#5b6e63;
-    --accent-2:#e8f4ec;
-    --crit:#c0362c; --crit-bg:#fbeceb;
+    --green:#006b31; --orange:#f2951c;
+    --ground:#f7f7f4; --surface:#fff; --raised:#f7f7f4;
+    --line:#d6d6d0; --line-soft:#f2f2ef;
+    --ink:#111; --ink2:#3d3d3d; --muted:#5c5c57;
+    --accent-2:#e3f1e8;
+    --crit:#c8102e; --crit-bg:#fbe9ec;
     --high:#a8560a; --high-bg:#fdf0e2;
-    --warn:#7d6407; --warn-bg:#faf3d9;
+    --warn:#8a5a00; --warn-bg:#fff6cc;
     --shadow:0 1px 2px rgba(22,36,27,.06),0 4px 12px rgba(22,36,27,.05);
     --mono:ui-monospace,"Cascadia Mono","SF Mono",Consolas,monospace;
   }
@@ -28,14 +28,14 @@
   .wrap{max-width:860px;margin:0 auto;padding:0 16px 80px}
 
   /* ── หัวเรื่อง ── */
-  header.top{background:linear-gradient(135deg,#0e7a3f,#0a5c30);color:#fff;padding:30px 0 26px;margin-bottom:22px}
+  header.top{background:linear-gradient(135deg,#006b31,#006b31);color:#fff;padding:30px 0 26px;margin-bottom:22px}
   header.top .wrap{padding-bottom:0}
-  header.top img{width:100%;max-width:230px;height:auto;background:#fff;border-radius:14px;padding:9px;display:block;margin-bottom:16px}
+  header.top img{width:100%;max-width:230px;height:auto;background:#fff;border-radius:6px;padding:9px;display:block;margin-bottom:16px}
   header.top h1{font-size:29px;font-weight:800;margin:0 0 4px;line-height:1.25}
-  header.top p{margin:0;color:#e3f5e9;font-weight:600;font-size:14px}
+  header.top p{margin:0;color:#e3f1e8;font-weight:600;font-size:14px}
 
   /* ── สารบัญ ── */
-  nav.toc{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:18px 20px;box-shadow:var(--shadow);margin-bottom:26px}
+  nav.toc{background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:18px 20px;box-shadow:var(--shadow);margin-bottom:26px}
   nav.toc h2{font-size:13px;letter-spacing:.09em;text-transform:uppercase;color:var(--muted);margin:0 0 12px;font-weight:800}
   nav.toc ol{margin:0;padding-left:22px;columns:2;column-gap:26px}
   nav.toc li{margin-bottom:6px;break-inside:avoid}
@@ -44,14 +44,14 @@
   @media(max-width:620px){nav.toc ol{columns:1}}
 
   /* ── ส่วนเนื้อหา ── */
-  section{background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:24px 26px;margin-bottom:20px;box-shadow:var(--shadow)}
+  section{background:var(--surface);border:1px solid var(--line);border-radius:6px;padding:24px 26px;margin-bottom:20px;box-shadow:var(--shadow)}
   section>h2{
     font-size:23px;font-weight:800;margin:0 0 6px;padding-bottom:12px;
     border-bottom:3px solid var(--accent-2);line-height:1.3;
   }
   section>h2 .n{
     display:inline-block;min-width:31px;height:31px;line-height:31px;text-align:center;
-    background:var(--green);color:#fff;border-radius:9px;font-size:15px;margin-right:9px;vertical-align:2px;
+    background:var(--green);color:#fff;border-radius:6px;font-size:15px;margin-right:9px;vertical-align:2px;
   }
   h3{font-size:18px;font-weight:800;margin:26px 0 8px;color:var(--ink)}
   h3:first-of-type{margin-top:18px}
@@ -66,19 +66,19 @@
   /* ── ปุ่มจำลอง ── */
   .btn{
     display:inline-block;background:var(--raised);border:1.5px solid var(--line);
-    border-radius:9px;padding:2px 10px;font-weight:800;font-size:14px;
+    border-radius:6px;padding:2px 10px;font-weight:800;font-size:14px;
     white-space:nowrap;color:var(--ink);line-height:1.6;
   }
   .btn.go{background:var(--green);border-color:var(--green);color:#fff}
-  .btn.stop{background:var(--crit-bg);border-color:#f0c4c0;color:var(--crit)}
+  .btn.stop{background:var(--crit-bg);border-color:#c8102e;color:var(--crit)}
 
   /* ── กล่องข้อความ ── */
-  .box{border-radius:13px;padding:14px 17px;margin:16px 0;border-left:5px solid}
+  .box{border-radius:0;padding:14px 17px;margin:16px 0;border:1.5px solid;border-top-width:6px}
   .box p:last-child{margin-bottom:0}
   .box .lbl{font-weight:800;display:block;margin-bottom:4px;font-size:14px;letter-spacing:.02em}
   .tip{background:var(--accent-2);border-color:var(--green)}
   .tip .lbl{color:var(--green)}
-  .warn{background:var(--warn-bg);border-color:#c9a90b}
+  .warn{background:var(--warn-bg);border-color:#8a5a00}
   .warn .lbl{color:var(--warn)}
   .stop-box{background:var(--crit-bg);border-color:var(--crit)}
   .stop-box .lbl{color:var(--crit)}
@@ -108,9 +108,9 @@
   }
 
   /* ── แถบอุปกรณ์ ── */
-  .dev{display:inline-block;font-size:12px;font-weight:800;padding:2px 11px;border-radius:20px;vertical-align:3px;margin-left:8px}
-  .dev.pc{background:#e4ecfb;color:#1c4b9c}
-  .dev.mb{background:#fbe9d6;color:#a8560a}
+  .dev{display:inline-block;font-size:12px;font-weight:800;padding:2px 11px;border-radius:6px;vertical-align:3px;margin-left:8px}
+  .dev.pc{background:#e5eff8;color:#005a9c}
+  .dev.mb{background:#fdf0e2;color:#a8560a}
   .dev.both{background:var(--accent-2);color:var(--green)}
 
   hr{border:none;border-top:1px solid var(--line-soft);margin:26px 0}
@@ -122,7 +122,7 @@
   @media print{
     body{background:#fff;font-size:11.5pt;line-height:1.6}
     .wrap{max-width:100%;padding:0}
-    header.top{background:#0e7a3f !important;-webkit-print-color-adjust:exact;print-color-adjust:exact;padding:16px 0}
+    header.top{background:#006b31 !important;-webkit-print-color-adjust:exact;print-color-adjust:exact;padding:16px 0}
     nav.toc,.noprint{display:none}
     section{box-shadow:none;border:none;padding:0;margin:0 0 16px;break-inside:avoid-page}
     section>h2{break-after:avoid}
@@ -132,6 +132,12 @@
     .tw{overflow:visible}
     a{color:inherit;text-decoration:none}
   }
+    /* ป้ายรูปทรงใน HTML นิ่ง (ชิปกรอง ฯลฯ) — รูปเดียวกับ UI_SIGN ใน js/utils.js: <i class="ui-sg sg-warn"></i> */
+    .ui-sg { display:inline-block;flex:none;width:18px;height:18px;vertical-align:-4px;margin-right:4px;background:center/contain no-repeat; }
+    .sg-no { background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 34 34'%3E%3Ccircle cx='17' cy='17' r='13.5' fill='%23fff' stroke='%23c8102e' stroke-width='5'/%3E%3Cpath d='M7.5 7.5 26.5 26.5' stroke='%23c8102e' stroke-width='5'/%3E%3C/svg%3E"); }
+    .sg-warn { background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 34 34'%3E%3Cpath d='M17 2.5 32.5 30.5H1.5Z' fill='%23ffd100' stroke='%23111' stroke-width='2.5' stroke-linejoin='round'/%3E%3Cpath d='M17 11v10' stroke='%23111' stroke-width='3.5' stroke-linecap='round'/%3E%3Ccircle cx='17' cy='25.6' r='2' fill='%23111'/%3E%3C/svg%3E"); }
+    .sg-must { background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 34 34'%3E%3Ccircle cx='17' cy='17' r='16' fill='%23005a9c'/%3E%3Cpath d='M17 8.5v11' stroke='%23fff' stroke-width='3.5' stroke-linecap='round'/%3E%3Ccircle cx='17' cy='25' r='2.2' fill='%23fff'/%3E%3C/svg%3E"); }
+    .sg-ok { background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 34 34'%3E%3Crect x='1' y='1' width='32' height='32' rx='4' fill='%2300843d'/%3E%3Cpath d='M9 17.5l5.5 5.5L25.5 11' fill='none' stroke='%23fff' stroke-width='4' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E"); }
 </style>
 </head>
 <body>
@@ -142,7 +148,7 @@
     <h1>คู่มือการใช้งานระบบจัดการสต๊อก</h1>
     <p>สุพรรณคิวฟู้ดส์ (SQF) · แม่ละมาย (MLM) · ห้องเย็น — ใช้ได้ทั้งคอมพิวเตอร์และมือถือ</p>
     <!-- ลิงก์กลับไว้บนสุดด้วย (เดิมมีแค่ท้ายหน้า ลึก ~24,000px บนมือถือ · QA L6) -->
-    <p class="noprint" style="margin-top:12px;"><a href="index.html" style="display:inline-block;background:#fff;color:#0e7a3f;font-weight:800;padding:10px 16px;border-radius:12px;text-decoration:none;min-height:44px;">← กลับเข้าระบบ</a></p>
+    <p class="noprint" style="margin-top:12px;"><a href="index.html" style="display:inline-block;background:#fff;color:#006b31;font-weight:800;padding:10px 16px;border-radius:6px;text-decoration:none;min-height:44px;">← กลับเข้าระบบ</a></p>
   </div>
 </header>
 
@@ -159,7 +165,7 @@
     <li><a href="#pc-cold">คอม: หน้าคลังสินค้า</a></li>
     <li><a href="#pc-exec">คอม: หน้าภาพรวมทั้งระบบ</a></li>
     <li><a href="#doc">ใบเบิกและงานออดิต</a></li>
-    <li><a href="#admin">หน้า Admin — ดูแลผู้ใช้</a></li>
+    <li><a href="#admin">หน้าผู้ใช้งาน — ดูแลผู้ใช้</a></li>
     <li><a href="#roles">สิทธิ์ 4 ระดับ</a></li>
     <li><a href="#tips">เคล็ดลับที่ควรรู้</a></li>
     <li><a href="#trouble">แก้ปัญหาที่เจอบ่อย</a></li>
@@ -175,12 +181,12 @@
 
   <ol class="steps">
     <li>พิมพ์ <strong>ชื่อพนักงาน</strong> ของตัวเองลงในช่อง (ชื่อที่หัวหน้าลงทะเบียนไว้ให้)</li>
-    <li>กด <span class="btn go">เข้าสู่ระบบ 🚀</span></li>
+    <li>กด <span class="btn go">เข้าสู่ระบบ </span></li>
     <li>ถ้าบัญชีมีการตั้งรหัสผ่านไว้ ระบบจะขึ้นช่องรหัสผ่านให้ใส่เพิ่ม — ถ้าไม่มี ก็เข้าได้เลย</li>
   </ol>
 
   <h3>ถ้าระบบบอกว่าไม่พบชื่อ</h3>
-  <p>จะมีกล่องขึ้นมาพร้อมปุ่ม <span class="btn">🙋 ขอสิทธิ์เข้าใช้งานจาก Admin</span> กดปุ่มนั้นได้เลย ระบบจะส่งเรื่องถึงหัวหน้าให้อัตโนมัติ แล้วรอหัวหน้าอนุมัติ</p>
+  <p>จะมีกล่องขึ้นมาพร้อมปุ่ม <span class="btn">ขอสิทธิ์เข้าใช้งานจากหัวหน้า</span> กดปุ่มนั้นได้เลย ระบบจะส่งเรื่องถึงหัวหน้าให้อัตโนมัติ แล้วรอหัวหน้าอนุมัติ</p>
 
   <div class="box tip">
     <span class="lbl">ไม่ต้องกรอกชื่อทุกครั้ง</span>
@@ -195,7 +201,7 @@
 
   <div class="box tip">
     <span class="lbl">ถ้าอยู่ๆ ระบบพากลับมาหน้าเข้าสู่ระบบ</span>
-    <p>บัตรผ่านของแต่ละคนอยู่ได้ 30 วัน หมดแล้วระบบจะพากลับมาหน้านี้พร้อมเติมชื่อเดิมไว้ให้ กด <span class="btn go">เข้าสู่ระบบ 🚀</span> อีกครั้งก็ใช้ต่อได้ — งานที่ทำค้างไว้ตอนเน็ตล่มไม่หาย ระบบส่งต่อให้เองหลังเข้าระบบ</p>
+    <p>บัตรผ่านของแต่ละคนอยู่ได้ 30 วัน หมดแล้วระบบจะพากลับมาหน้านี้พร้อมเติมชื่อเดิมไว้ให้ กด <span class="btn go">เข้าสู่ระบบ </span> อีกครั้งก็ใช้ต่อได้ — งานที่ทำค้างไว้ตอนเน็ตล่มไม่หาย ระบบส่งต่อให้เองหลังเข้าระบบ</p>
   </div>
 </section>
 
@@ -206,25 +212,25 @@
 
   <p>ทำครั้งเดียว แล้วเปิดแอปได้จากไอคอนเหมือนแอปทั่วไป ไม่ต้องเปิดเบราว์เซอร์แล้วหาลิงก์ใหม่ทุกครั้ง</p>
 
-  <h4>📱 Android</h4>
+  <h3>Android</h3>
   <p>กดเมนู <strong>⋮</strong> มุมขวาบนของเบราว์เซอร์ → เลือก <strong>"เพิ่มลงในหน้าจอหลัก"</strong></p>
 
-  <h4>📱 iPhone / iPad</h4>
-  <p>กดปุ่มแชร์ <strong>⬆️</strong> ด้านล่างจอ → เลื่อนหา <strong>"เพิ่มไปยังหน้าจอโฮม"</strong></p>
+  <h3>iPhone / iPad</h3>
+  <p>กดปุ่ม <strong>แชร์</strong> (สี่เหลี่ยมมีลูกศรชี้ขึ้น) ด้านล่างจอ → เลื่อนหา <strong>"เพิ่มไปยังหน้าจอโฮม"</strong></p>
 
-  <h4>💻 คอมพิวเตอร์ (Chrome / Edge)</h4>
+  <h3>คอมพิวเตอร์ (Chrome / Edge)</h3>
   <p>กดไอคอน <strong>⊕</strong> หรือรูปจอคอมเล็กๆ ที่ท้ายช่องที่อยู่เว็บ → <strong>"ติดตั้ง"</strong></p>
 
   <div class="box tip">
     <span class="lbl">เน็ตหลุดก็ทำงานต่อได้</span>
     <p><strong>เบิก / รับ / คืน / นับ ได้ตามปกติแม้เน็ตล่ม</strong> — ระบบเก็บรายการไว้ในเครื่องก่อน แล้ว<strong>ส่งขึ้นระบบให้เองอัตโนมัติเมื่อเน็ตกลับมา</strong> ไม่ต้องจำแล้วมาคีย์ใหม่</p>
-    <p>ตอนที่ยังส่งไม่ได้จะมีแถบสีส้มบอกว่า <em>"⏳ รอส่ง N รายการ"</em> — แตะดูได้ว่าค้างอะไรอยู่บ้าง · เวลาที่บันทึกจะเป็น<strong>เวลาที่กดยืนยันจริง</strong> ไม่ใช่เวลาที่ส่งขึ้นระบบ ใบเบิกกับรายงานจึงตรงกับหน้างานเสมอ</p>
+    <p>ตอนที่ยังส่งไม่ได้จะมีแถบสีส้มบอกว่า <em>"รอส่ง N รายการ"</em> — แตะดูได้ว่าค้างอะไรอยู่บ้าง · เวลาที่บันทึกจะเป็น<strong>เวลาที่กดยืนยันจริง</strong> ไม่ใช่เวลาที่ส่งขึ้นระบบ ใบเบิกกับรายงานจึงตรงกับหน้างานเสมอ</p>
     <p>สิ่งที่ยัง<strong>ต้องมีเน็ต</strong>: ดูยอดล่าสุด (จะเห็นยอดค้างจากครั้งล่าสุดแทน) · เพิ่ม/แก้/ลบรายการ · รายงานและกราฟ</p>
   </div>
 
   <div class="box warn">
     <span class="lbl">ถ้ารายการที่ค้างส่งไม่ผ่าน</span>
-    <p>บางกรณีระบบรับไม่ได้จริงๆ เช่นเบิกของที่คนอื่นเบิกไปหมดก่อนแล้วระหว่างที่เน็ตเราล่ม — รายการนั้นจะขึ้นเป็น <em>"⚠️ ส่งไม่ผ่าน"</em> พร้อมเหตุผล <strong>ต้องทำรายการใหม่เอง</strong> ระบบจะไม่บันทึกให้เงียบๆ และจะไม่ทำให้ยอดเพี้ยน</p>
+    <p>บางกรณีระบบรับไม่ได้จริงๆ เช่นเบิกของที่คนอื่นเบิกไปหมดก่อนแล้วระหว่างที่เน็ตเราล่ม — รายการนั้นจะขึ้นเป็น <em>"ส่งไม่ผ่าน"</em> พร้อมเหตุผล <strong>ต้องทำรายการใหม่เอง</strong> ระบบจะไม่บันทึกให้เงียบๆ และจะไม่ทำให้ยอดเพี้ยน</p>
   </div>
 </section>
 
@@ -239,21 +245,21 @@
   <table class="wide">
     <thead><tr><th style="width:32%">อยากทำอะไร</th><th class="c" style="width:17%">มือถือ</th><th class="c" style="width:17%">คอม</th><th>หมายเหตุ</th></tr></thead>
     <tbody>
-      <tr><td>เบิก / รับ / คืน ของหน้างาน</td><td class="c yes">✔ เหมาะสุด</td><td class="c">ทำได้</td><td>มือถือสแกน QR ได้ เร็วกว่ามาก</td></tr>
-      <tr><td>นับสต๊อก</td><td class="c yes">✔ เหมาะสุด</td><td class="c">ทำได้</td><td>ถือเดินนับได้เลย</td></tr>
-      <tr><td>เพิ่ม / แก้ไข / ลบวัตถุดิบ</td><td class="c no">—</td><td class="c yes">✔</td><td>ต้องใช้คอม</td></tr>
-      <tr><td>ดูกราฟ · รายงาน · ภาพรวม</td><td class="c no">—</td><td class="c yes">✔</td><td>ต้องใช้คอม</td></tr>
-      <tr><td>ใบเบิก · รายงานรายเดือน</td><td class="c no">—</td><td class="c yes">✔</td><td>ต้องใช้คอม</td></tr>
-      <tr><td>ห้องเย็น: ใบสั่งผลิต · ส่ง/รับยอด</td><td class="c">ดูได้</td><td class="c yes">✔</td><td>งานเต็มรูปแบบอยู่บนคอม</td></tr>
-      <tr><td>ดูแลผู้ใช้ · ให้สิทธิ์</td><td class="c no">—</td><td class="c yes">✔</td><td>เฉพาะ admin</td></tr>
+      <tr><td>เบิก / รับ / คืน ของหน้างาน</td><td class="c yes">เหมาะสุด</td><td class="c">ทำได้</td><td>มือถือสแกน QR ได้ เร็วกว่ามาก</td></tr>
+      <tr><td>นับสต๊อก</td><td class="c yes">เหมาะสุด</td><td class="c">ทำได้</td><td>ถือเดินนับได้เลย</td></tr>
+      <tr><td>เพิ่ม / แก้ไข / ลบวัตถุดิบ</td><td class="c no">—</td><td class="c yes"><i class="ui-sg sg-ok" aria-hidden="true"></i>ได้</td><td>ต้องใช้คอม</td></tr>
+      <tr><td>ดูกราฟ · รายงาน · ภาพรวม</td><td class="c no">—</td><td class="c yes"><i class="ui-sg sg-ok" aria-hidden="true"></i>ได้</td><td>ต้องใช้คอม</td></tr>
+      <tr><td>ใบเบิก · รายงานรายเดือน</td><td class="c no">—</td><td class="c yes"><i class="ui-sg sg-ok" aria-hidden="true"></i>ได้</td><td>ต้องใช้คอม</td></tr>
+      <tr><td>ห้องเย็น: ใบสั่งผลิต · ส่ง/รับยอด</td><td class="c">ดูได้</td><td class="c yes"><i class="ui-sg sg-ok" aria-hidden="true"></i>ได้</td><td>งานเต็มรูปแบบอยู่บนคอม</td></tr>
+      <tr><td>ดูแลผู้ใช้ · ให้สิทธิ์</td><td class="c no">—</td><td class="c yes"><i class="ui-sg sg-ok" aria-hidden="true"></i>ได้</td><td>เฉพาะ admin</td></tr>
     </tbody>
   </table>
   </div>
 
   <h3>สลับหน้าตายังไง</h3>
   <ul>
-    <li>อยู่ในมือถือ อยากไปคอม → กด <span class="btn">💻 คอมพิวเตอร์</span> มุมขวาบน</li>
-    <li>อยู่ในคอม อยากไปมือถือ → กด <span class="btn">📱</span> บนแถบเมนู</li>
+    <li>อยู่ในมือถือ อยากไปคอม → กด <span class="btn">คอมพิวเตอร์</span> มุมขวาบน</li>
+    <li>อยู่ในคอม อยากไปมือถือ → กด <span class="btn">มือถือ</span> บนแถบเมนู</li>
   </ul>
   <p>ระบบจะจำไว้ว่าชอบแบบไหน ครั้งหน้าเปิดมาให้แบบนั้นเลย</p>
 </section>
@@ -266,24 +272,24 @@
   <h3>4.1 เลือกคลัง</h3>
   <p>พอเข้าระบบมาจะเห็น 3 ปุ่มใหญ่ กดเลือกคลังที่จะทำงานด้วย</p>
   <ul>
-    <li><strong>🏭 วัตถุดิบ SQF</strong> — สุพรรณคิวฟู้ดส์</li>
-    <li><strong>🏭 วัตถุดิบ MLM</strong> — แม่ละมาย</li>
-    <li><strong>❄️ ห้องเย็น</strong> — สินค้าสำเร็จรูป</li>
+    <li><strong>วัตถุดิบ SQF</strong> — สุพรรณคิวฟู้ดส์</li>
+    <li><strong>วัตถุดิบ MLM</strong> — แม่ละมาย</li>
+    <li><strong>ห้องเย็น</strong> — สินค้าสำเร็จรูป</li>
   </ul>
   <p>ครั้งต่อไปจะมีแถบทางลัดของคลังที่ใช้ล่าสุดขึ้นให้กดเข้าตรงได้เลย</p>
 
   <h3>4.2 หาของที่ต้องการ — มี 3 วิธี</h3>
   <ol class="steps">
-    <li><strong>สแกน QR</strong> — กด <span class="btn go">📷 สแกน Barcode / QR Code</span> แล้วจ่อกล้องที่ป้าย QR บนถังหรือชั้นวาง ระบบจะเปิดรายการนั้นให้ทันที <em>เร็วที่สุด แนะนำวิธีนี้</em></li>
+    <li><strong>สแกน QR</strong> — กด <span class="btn go">สแกน Barcode / QR Code</span> แล้วจ่อกล้องที่ป้าย QR บนถังหรือชั้นวาง ระบบจะเปิดรายการนั้นให้ทันที <em>เร็วที่สุด แนะนำวิธีนี้</em></li>
     <li><strong>เลือกจากรายการ</strong> — กดช่อง <span class="btn">เลือกสินค้า / วัตถุดิบ...</span> แล้วเลือกจากลิสต์</li>
-    <li><strong>ค้นหา</strong> — พิมพ์ชื่อหรือรหัสลงช่อง <span class="btn">🔍 ค้นหา</span></li>
+    <li><strong>ค้นหา</strong> — พิมพ์ชื่อหรือรหัสลงช่อง <span class="btn">ค้นหา</span></li>
   </ol>
   <p>แต่ละรายการมี<strong>ป้ายรูปทรงแบบป้ายเซฟตี้ในโรงงาน</strong> และตัวที่ต้องจัดการจะอยู่บนสุด:
-     🚫 วงกลมขีดแดง = หมดแล้ว หรือหมดอายุ · ⚠️ สามเหลี่ยมเหลือง = ต่ำกว่าจุดสั่งซื้อ หรือใกล้หมดอายุ ·
-     🔵 วงกลมน้ำเงิน = ไม่อัปเดตเกินกำหนด ช่วยนับ · ✅ สี่เหลี่ยมเขียว = ปกติ</p>
-  <p>ใต้ช่องค้นหามีปุ่มกรองเร็ว ตรงกับป้ายในรายการ (ขึ้นเฉพาะกลุ่มที่มีของ): <span class="btn">🚫 หมด/หมดอายุ</span> ·
-     <span class="btn">⚠️ ต้องสั่ง/ใกล้หมดอายุ</span> ของที่ต่ำกว่าจุดสั่งซื้อหรือใกล้หมดอายุ ·
-     <span class="btn">⭐ ใช้บ่อย</span> ของที่เครื่องนี้ทำรายการบ่อย เรียงจากบ่อยสุด (ระบบจำให้เองหลังทำรายการ)</p>
+     <i class="ui-sg sg-no" aria-hidden="true"></i>วงกลมขีดแดง = หมดแล้ว หรือหมดอายุ · <i class="ui-sg sg-warn" aria-hidden="true"></i>สามเหลี่ยมเหลือง = ต่ำกว่าจุดสั่งซื้อ หรือใกล้หมดอายุ ·
+     <i class="ui-sg sg-must" aria-hidden="true"></i>วงกลมน้ำเงิน = ไม่อัปเดตเกินกำหนด ช่วยนับ · <i class="ui-sg sg-ok" aria-hidden="true"></i>สี่เหลี่ยมเขียว = ปกติ</p>
+  <p>ใต้ช่องค้นหามีปุ่มกรองเร็ว ตรงกับป้ายในรายการ (ขึ้นเฉพาะกลุ่มที่มีของ): <span class="btn"><i class="ui-sg sg-no" aria-hidden="true"></i>หมด/หมดอายุ</span> ·
+     <span class="btn"><i class="ui-sg sg-warn" aria-hidden="true"></i>ต้องสั่ง/ใกล้หมดอายุ</span> ของที่ต่ำกว่าจุดสั่งซื้อหรือใกล้หมดอายุ ·
+     <span class="btn">ใช้บ่อย</span> ของที่เครื่องนี้ทำรายการบ่อย เรียงจากบ่อยสุด (ระบบจำให้เองหลังทำรายการ)</p>
   <p>ห้องเย็น: ล็อตของสินค้าเรียง <strong>ตัวที่หมดอายุก่อนอยู่บนสุด</strong> (เข้าก่อน-หมดก่อน ใช้ก่อน) ล็อตแรกมีป้าย "เบิกล็อตนี้ก่อน" ·
      กดปุ่มย้อนกลับของมือถือ = ปิดแผ่นที่เปิดอยู่ / กลับหน้าเลือกคลัง (ตัวเลขที่กรอกค้างไม่หายเพราะออกจากแอปผิดจังหวะ)</p>
 
@@ -293,10 +299,10 @@
   <ol class="steps">
     <li>เลือกประเภทงานจาก 4 ปุ่มบนสุด
       <ul>
-        <li><span class="btn">📤 เบิก</span> เอาของออกไปใช้</li>
+        <li><span class="btn">เบิก</span> เอาของออกไปใช้</li>
         <li><span class="btn">↩️ คืน</span> เบิกเกินแล้วเอากลับมาคืน</li>
-        <li><span class="btn">📥 รับ</span> ของเข้าใหม่</li>
-        <li><span class="btn">📊 นับ</span> นับสต๊อกจริง แล้วพิมพ์ยอดที่นับได้ — ช่องจะว่างไว้ ไม่เติมยอดในระบบให้ (กันกดบันทึกทั้งที่ยังไม่ได้นับ) ·
+        <li><span class="btn">รับ</span> ของเข้าใหม่</li>
+        <li><span class="btn">นับ</span> นับสต๊อกจริง แล้วพิมพ์ยอดที่นับได้ — ช่องจะว่างไว้ ไม่เติมยอดในระบบให้ (กันกดบันทึกทั้งที่ยังไม่ได้นับ) ·
           นับแล้วตรงกับระบบ แตะ <span class="btn">✓ ตรงกับระบบ</span> ได้เลย · ของหมดให้ใส่ 0</li>
       </ul>
     </li>
@@ -306,7 +312,7 @@
     <li>ช่อง <strong>"ใช้กับงานอะไร"</strong> — <strong>ตอนเบิกต้องกรอก</strong> เช่น <em>ผลิตวุ้นมะพร้าว ล็อต 3</em><br>
         ใต้ช่องมีปุ่มของงานที่เคยเบิก <strong>แตะเลือกได้เลยไม่ต้องพิมพ์</strong></li>
     <li>ช่อง <strong>"ใบสั่งผลิต"</strong> (ถ้ามีใบสั่งผลิตที่ยังไม่เสร็จ) — เลือกได้ว่าเบิกไปใช้กับใบไหน ยอดเบิกจะผูกกับงานนั้นให้ดูย้อนหลังได้ ไม่เลือกก็ได้</li>
-    <li>อ่านปุ่มยืนยันทวนอีกครั้ง — ปุ่มจะบอกทั้งประเภทและจำนวน เช่น <span class="btn go">📤 เบิก 500 ใบ</span> แล้วค่อยกด</li>
+    <li>อ่านปุ่มยืนยันทวนอีกครั้ง — ปุ่มจะบอกทั้งประเภทและจำนวน เช่น <span class="btn go">เบิก 500 ใบ</span> แล้วค่อยกด</li>
   </ol>
 
   <div class="box warn">
@@ -315,7 +321,7 @@
   </div>
 
   <h3>4.4 คิดเลขในช่องจำนวนได้เลย</h3>
-  <p>ไม่ต้องเปิดเครื่องคิดเลข — กด <span class="btn">🧮 คิดเลข</span> ใต้ช่องจำนวน แป้นพิมพ์จะเปลี่ยนเป็นแบบเต็ม พิมพ์โจทย์ลงไปได้ตรงๆ ระบบจะขึ้นผลลัพธ์ให้เห็นขณะพิมพ์</p>
+  <p>ไม่ต้องเปิดเครื่องคิดเลข — กด <span class="btn">คิดเลข</span> ใต้ช่องจำนวน แป้นพิมพ์จะเปลี่ยนเป็นแบบเต็ม พิมพ์โจทย์ลงไปได้ตรงๆ ระบบจะขึ้นผลลัพธ์ให้เห็นขณะพิมพ์</p>
   <ul>
     <li><code>16*48</code> → 768 &nbsp; <em>(16 ลัง ลังละ 48)</em></li>
     <li><code>12*20+5</code> → 245</li>
@@ -324,21 +330,21 @@
   <p>ผลลัพธ์จะขึ้นบนปุ่มยืนยันให้อ่านทวนก่อนกด</p>
 
   <h3>4.5 ป้าย QR</h3>
-  <p>ป้าย QR สำหรับติดถัง/ชั้นวาง พิมพ์จาก<strong>หน้าคอม</strong>: เข้าหน้าวัตถุดิบ → <span class="btn">⋯ เพิ่มเติม</span> → <strong>🔲 พิมพ์ QR ทั้งหมด</strong> — มือถือมีหน้าที่สแกนอย่างเดียว</p>
+  <p>ป้าย QR สำหรับติดถัง/ชั้นวาง พิมพ์จาก<strong>หน้าคอม</strong>: เข้าหน้าวัตถุดิบ → <span class="btn">เพิ่มเติม</span> → <strong>พิมพ์ QR ทั้งหมด</strong> — มือถือมีหน้าที่สแกนอย่างเดียว</p>
 
   <h3>4.6 ดูงานที่ตัวเองทำ</h3>
-  <p>กด <span class="btn">📜 ของฉัน</span> ที่แถบล่าง (หรือหน้าเลือกคลัง) จะเห็นเฉพาะรายการที่ตัวเองทำ พร้อมยอดสรุป ใช้ตรวจทานตอนสิ้นวันว่าลงครบมั้ย</p>
+  <p>กด <span class="btn">ของฉัน</span> ที่แถบล่าง (หรือหน้าเลือกคลัง) จะเห็นเฉพาะรายการที่ตัวเองทำ พร้อมยอดสรุป ใช้ตรวจทานตอนสิ้นวันว่าลงครบมั้ย</p>
 
-  <h3>4.7 📈 ต้องสั่ง — ของตัวไหนจะหมดก่อนของมาถึง</h3>
-  <p class="box tip" style="margin-top:0;">ในรายการสต๊อกมีตัวกรอง <span class="btn">🔵 ไม่อัปเดต</span> — ของที่ไม่มีใครเบิก/รับ/นับเกินกำหนด แตะรายการแล้วกด <span class="btn">📊 นับ</span> ยืนยันยอดได้เลย</p>
-  <p>ปุ่ม <span class="btn">📈 ต้องสั่ง</span> ที่แถบล่างของคลังวัตถุดิบ — <strong>ตัวเลขแดงบนปุ่ม = จำนวนรายการที่ต้องสั่งวันนี้</strong> ทุกคนเปิดดูได้</p>
+  <h3>4.7 ต้องสั่ง — ของตัวไหนจะหมดก่อนของมาถึง</h3>
+  <p class="box tip" style="margin-top:0;">ในรายการสต๊อกมีตัวกรอง <span class="btn"><i class="ui-sg sg-must" aria-hidden="true"></i>ไม่อัปเดต</span> — ของที่ไม่มีใครเบิก/รับ/นับเกินกำหนด แตะรายการแล้วกด <span class="btn">นับ</span> ยืนยันยอดได้เลย</p>
+  <p>ปุ่ม <span class="btn">ต้องสั่ง</span> ที่แถบล่างของคลังวัตถุดิบ — <strong>ตัวเลขแดงบนปุ่ม = จำนวนรายการที่ต้องสั่งวันนี้</strong> ทุกคนเปิดดูได้</p>
   <ul>
-    <li>🚫 <strong>สั่งวันนี้ก็ไม่ทัน</strong> (กรอบแดง) — ของจะหมดก่อนของใหม่มาถึง ต้องเร่ง/หาทางอื่น</li>
-    <li>⚠️ <strong>ต้องสั่งวันนี้</strong> (กรอบส้ม) — สั่งเลยถึงจะทัน</li>
-    <li>⚠️ <strong>ใกล้ถึงเวลาสั่ง</strong> — ต้องสั่งภายใน 7 วัน</li>
+    <li><i class="ui-sg sg-no" aria-hidden="true"></i><strong>สั่งวันนี้ก็ไม่ทัน</strong> (กรอบแดง) — ของจะหมดก่อนของใหม่มาถึง ต้องเร่ง/หาทางอื่น</li>
+    <li><i class="ui-sg sg-warn" aria-hidden="true"></i><strong>ต้องสั่งวันนี้</strong> (กรอบส้ม) — สั่งเลยถึงจะทัน</li>
+    <li><i class="ui-sg sg-warn" aria-hidden="true"></i><strong>ใกล้ถึงเวลาสั่ง</strong> — ต้องสั่งภายใน 7 วัน</li>
   </ul>
   <p>แต่ละรายการบอก <strong>พอใช้อีกกี่วัน · ต้องสั่งภายในวันไหน · แนะนำสั่งเท่าไร</strong> · แตะรายการเพื่อรับเข้า/เบิก/นับได้เลย ·
-     กด <span class="btn go">📋 คัดลอกรายการสั่ง</span> เพื่อส่งต่อในแชตให้คนสั่งซื้อ</p>
+     กด <span class="btn go">คัดลอกรายการสั่ง</span> เพื่อส่งต่อในแชตให้คนสั่งซื้อ</p>
   <div class="box tip">
     <span class="lbl">เห็นของที่ควรสั่งแล้วทำยังไง</span>
     <p>บอกคนที่ดูแลการสั่งซื้อ หรือส่งรายการเข้ากลุ่มได้เลย — ระบบ<strong>ไม่สั่งซื้อเองและไม่ห้ามเบิก</strong> เป็นข้อมูลให้ทุกคนช่วยกันดู ไม่ให้ตกอยู่ที่คนเดียว</p>
@@ -350,7 +356,7 @@
 <section id="pc-raw">
   <h2><span class="n">5</span>คอม: หน้าวัตถุดิบ<span class="dev pc">คอม</span></h2>
 
-  <p>กด <span class="btn">🏭 วัตถุดิบ SQF</span> หรือ <span class="btn">🏭 วัตถุดิบ MLM</span> บนแถบเมนูด้านบน</p>
+  <p>กด <span class="btn">วัตถุดิบ SQF</span> หรือ <span class="btn">วัตถุดิบ MLM</span> บนแถบเมนูด้านบน</p>
 
   <h3>5.1 อ่านหน้าจอ</h3>
   <p>บนสุดเป็นตัวเลขสรุป — จำนวนรายการทั้งหมด, ต่ำกว่าจุดสั่งซื้อ, ใกล้หมดอายุ, หมดอายุแล้ว</p>
@@ -360,9 +366,9 @@
   <table>
     <thead><tr><th style="width:24%">สถานะ</th><th>แปลว่า</th><th style="width:30%">ต้องทำอะไร</th></tr></thead>
     <tbody>
-      <tr><td><strong style="color:var(--crit)">⛔ หมดอายุ</strong></td><td>เลยวันหมดอายุไปแล้ว</td><td>เอาออกจากคลังทันที</td></tr>
-      <tr><td><strong style="color:var(--high)">🟠 ต่ำกว่าจุดสั่งซื้อ</strong></td><td>ของเหลือน้อยกว่าที่ตั้งไว้</td><td>สั่งซื้อเพิ่ม</td></tr>
-      <tr><td><strong style="color:var(--warn)">⏳ ใกล้หมดอายุ</strong></td><td>จะหมดอายุภายในกี่วันตามที่ตั้ง</td><td>เร่งใช้ก่อนของอื่น</td></tr>
+      <tr><td><strong style="color:var(--crit)"><i class="ui-sg sg-no" aria-hidden="true"></i>หมดอายุ</strong></td><td>เลยวันหมดอายุไปแล้ว</td><td>เอาออกจากคลังทันที</td></tr>
+      <tr><td><strong style="color:var(--high)"><i class="ui-sg sg-warn" aria-hidden="true"></i>ต่ำกว่าจุดสั่งซื้อ</strong></td><td>ของเหลือน้อยกว่าที่ตั้งไว้</td><td>สั่งซื้อเพิ่ม</td></tr>
+      <tr><td><strong style="color:var(--warn)">ใกล้หมดอายุ</strong></td><td>จะหมดอายุภายในกี่วันตามที่ตั้ง</td><td>เร่งใช้ก่อนของอื่น</td></tr>
       <tr><td><span class="no">ปกติ</span></td><td>ของพอ ยังไม่ใกล้หมดอายุ</td><td>ไม่ต้องทำอะไร</td></tr>
     </tbody>
   </table>
@@ -375,35 +381,30 @@
   <ul>
     <li><span class="btn go">รับ / เบิก</span> — บันทึกของเข้า-ออก และคืนของ</li>
     <li><span class="btn">นับ</span> — นับสต๊อกจริงแล้วใส่ยอดที่นับได้</li>
-    <li><span class="btn">แก้ไข</span> — แก้ชื่อ หน่วย จุดสั่งซื้อ วันหมดอายุ และค่าประจำตัวสำหรับ <strong>จุดสั่งซื้อแนะนำ</strong>: วันรอของ (สั่งแล้วกี่วันถึง) / ขั้นต่ำที่ผู้ขายรับ / ขนาดแพ็ก — ใส่แค่ตัวที่ต่างจากค่ากลาง ที่เหลือเว้นว่างได้</li>
-    <li><span class="btn stop">ลบ</span> — ลบรายการออกจากระบบ</li>
+    <li><span class="btn">แก้ไข</span> — แก้ชื่อ หน่วย จุดสั่งซื้อ วันหมดอายุ และค่าประจำตัวสำหรับ <strong>จุดสั่งซื้อแนะนำ</strong>: วันรอของ (สั่งแล้วกี่วันถึง) / ขั้นต่ำที่ผู้ขายรับ / ขนาดแพ็ก — ใส่แค่ตัวที่ต่างจากค่ากลาง ที่เหลือเว้นว่างได้
+      · เลิกใช้รายการไหน กด <span class="btn stop">ยกเลิกการใช้วัตถุดิบนี้</span> ท้ายหน้าต่างแก้ไข (รายการหายจากคลัง ไม่นับรวมยอด แต่ประวัติเก่ายังอยู่)</li>
   </ul>
 
   <h3>5.3 แถบเครื่องมือด้านบน</h3>
   <ul>
-    <li><span class="btn">📜 ประวัติการใช้งาน</span> — ดูว่าใครทำอะไรไปบ้าง และกดสร้างใบเบิกย้อนหลังได้</li>
-    <li><span class="btn">📈 วางแผนสั่งซื้อ</span> — ตัวไหนจะหมดก่อนของมาถึง ต้องสั่งภายในวันไหน ควรสั่งเท่าไร (ดูข้อ 5.5) · ตัวเลขแดงบนปุ่ม = จำนวนที่ต้องสั่งวันนี้</li>
-    <li><span class="btn">📷 สแกน QR</span> — สแกนด้วยกล้องคอม (ถ้ามี)</li>
+    <li><span class="btn">ประวัติการใช้งาน</span> — ดูว่าใครทำอะไรไปบ้าง และกดสร้างใบเบิกย้อนหลังได้</li>
+    <li><span class="btn">วางแผนสั่งซื้อ</span> — ตัวไหนจะหมดก่อนของมาถึง ต้องสั่งภายในวันไหน ควรสั่งเท่าไร (ดูข้อ 5.5) · ตัวเลขแดงบนปุ่ม = จำนวนที่ต้องสั่งวันนี้</li>
+    <li><span class="btn">สแกน QR</span> — สแกนด้วยกล้องคอม (ถ้ามี)</li>
     <li><span class="btn go">+ เพิ่มวัตถุดิบ</span> — เพิ่มรายการใหม่</li>
   </ul>
 
-  <h4>ในเมนู <span class="btn">⋯ เพิ่มเติม</span></h4>
+  <h4>ในเมนู <span class="btn">เพิ่มเติม</span> (แบ่ง 3 กลุ่ม)</h4>
   <ul>
-    <li><strong>📊 ส่งออก CSV</strong> — ติ๊กเลือกรายการที่ต้องการก่อน แล้วส่งออกไปเปิดใน Excel</li>
-    <li><strong>📄 ส่งออก PDF</strong> — ทั้งตารางเป็นไฟล์ PDF</li>
-    <li><strong>📥 นำเข้าจากไฟล์</strong> — ดูข้อ 5.4</li>
-    <li><strong>📋 ใบขอซื้อ</strong> — สร้างใบขอซื้อจากรายการที่ของใกล้หมด</li>
-    <li><strong>📋 รายงานใบเบิกรายเดือน</strong> — ดูข้อ 8</li>
-    <li><strong>📑 ใบรายงาน</strong> — ใบสรุปสต๊อกสำหรับพิมพ์</li>
-    <li><strong>🔲 พิมพ์ QR ทั้งหมด</strong> — พิมพ์ป้าย QR ทุกรายการทีเดียว</li>
-    <li><strong>☁️ สำรองข้อมูล</strong> — สำรองข้อมูลเก็บไว้</li>
+    <li><strong>ส่งออก</strong> — <strong>CSV</strong> (ติ๊กเลือกรายการก่อน แล้วเปิดใน Excel) · <strong>PDF</strong> ทั้งคลัง</li>
+    <li><strong>เอกสาร / พิมพ์</strong> — <strong>ใบขอซื้อ</strong> (จากรายการที่ของใกล้หมด) · <strong>ใบรายงานสต๊อกคงเหลือ</strong> (ใบสรุปสำหรับพิมพ์) · <strong>ตรวจใบเบิกรายเดือน</strong> (ดูข้อ 8) · <strong>พิมพ์ QR ทั้งหมด</strong></li>
+    <li><strong>ข้อมูล</strong> — <strong>นำเข้าจากไฟล์</strong> (ดูข้อ 5.4) · <strong>จุดสั่งซื้อแนะนำ</strong> · <strong>สำรองข้อมูล</strong> (หัวหน้าขึ้นไป)</li>
   </ul>
 
   <h3>5.4 นำเข้าสต๊อกจากไฟล์ Excel</h3>
   <p>ใช้ตอนเริ่มระบบใหม่ หรือจะเพิ่มรายการทีละเยอะๆ</p>
   <ol class="steps">
     <li>ใน Excel กด <strong>บันทึกเป็น → CSV UTF-8</strong> (ต้องเป็น UTF-8 ไม่งั้นภาษาไทยจะเพี้ยน)</li>
-    <li>เปิด <span class="btn">⋯ เพิ่มเติม</span> → <strong>📥 นำเข้าจากไฟล์</strong> แล้วเลือกไฟล์</li>
+    <li>เปิด <span class="btn">เพิ่มเติม</span> → <strong>นำเข้าจากไฟล์</strong> แล้วเลือกไฟล์</li>
     <li>ระบบจะขึ้น<strong>ตารางให้ตรวจทานก่อน</strong> — แถวไหนผิดจะขึ้นสีแดงพร้อมบอกเหตุผล</li>
     <li>เลือกว่ารายการที่มีอยู่แล้วจะ <strong>ข้าม</strong> หรือ <strong>เขียนทับ</strong></li>
     <li>ตรวจแล้วค่อยกดยืนยัน — <strong>ยังไม่มีอะไรถูกบันทึกจนกว่าจะกดยืนยัน</strong></li>
@@ -413,7 +414,7 @@
     <p>ระบบอ่านได้ทั้ง พ.ศ. และ ค.ศ. ทั้ง <code>31/12/2569</code> <code>2026-12-31</code> และรูปแบบวันที่ของ Excel เอง ไม่ต้องแปลงเอง · นำเข้าได้ครั้งละไม่เกิน 500 แถว</p>
   </div>
 
-  <h3 id="pc-plan">5.5 📈 วางแผนสั่งซื้อ — กันของหมด / สั่งเข้าไม่ทัน</h3>
+  <h3 id="pc-plan">5.5 วางแผนสั่งซื้อ — กันของหมด / สั่งเข้าไม่ทัน</h3>
   <p>ระบบดูจาก<strong>การเบิกจริง</strong>แล้วบอกล่วงหน้าว่าของแต่ละตัวต้องสั่งเมื่อไร ทุกคนเปิดดูได้ (รวมสิทธิ์ดูอย่างเดียว)</p>
   <div class="tw">
   <table>
@@ -433,32 +434,32 @@
     <li><strong>กันชน (วัน)</strong> — เผื่อของมาช้าหรือใช้มากกว่าปกติ</li>
     <li><strong>สั่งให้พอใช้ (วัน)</strong> — สั่งแต่ละครั้งอยากให้ใช้ได้นานเท่าไร</li>
   </ul>
-  <p>พิมพ์ค่าใหม่แล้วตารางเปลี่ยนทันที — เป็นการ<strong>ลองดู</strong>ยังไม่บันทึก · หัวหน้า/แอดมินกด <span class="btn go">💾 ใช้ค่านี้กับทุกคน</span> เมื่อต้องการให้เป็นค่ากลาง</p>
+  <p>พิมพ์ค่าใหม่แล้วตารางเปลี่ยนทันที — เป็นการ<strong>ลองดู</strong>ยังไม่บันทึก · หัวหน้า/แอดมินกด <span class="btn go">ใช้ค่านี้กับทุกคน</span> เมื่อต้องการให้เป็นค่ากลาง</p>
   <h4>ส่งต่อให้คนสั่งซื้อ</h4>
   <ul>
-    <li><span class="btn">📋 คัดลอกรายการสั่ง</span> — ได้ข้อความพร้อมวางในแชต</li>
-    <li><span class="btn">🖨️ พิมพ์</span> — ใบรายการมีช่อง "สั่งจริง" ให้เขียนจำนวนที่ตกลงกับผู้ขาย</li>
-    <li><span class="btn">📨 ส่งเข้ากลุ่มแชต</span> (หัวหน้า/แอดมิน) — ส่งเข้า Telegram และ LINE (ถ้าตั้งไว้) · ดูข้อความและโควตา LINE ที่จะใช้ก่อนแล้วค่อยยืนยันส่ง</li>
+    <li><span class="btn">คัดลอกรายการสั่ง</span> — ได้ข้อความพร้อมวางในแชต</li>
+    <li><span class="btn">พิมพ์</span> — ใบรายการมีช่อง "สั่งจริง" ให้เขียนจำนวนที่ตกลงกับผู้ขาย</li>
+    <li><span class="btn">ส่งเข้ากลุ่มแชต</span> (หัวหน้า/แอดมิน) — ส่งเข้า Telegram และ LINE (ถ้าตั้งไว้) · ดูข้อความและโควตา LINE ที่จะใช้ก่อนแล้วค่อยยืนยันส่ง</li>
   </ul>
   <div class="box tip">
     <span class="lbl">สรุปอัตโนมัติเข้า Telegram / LINE</span>
-    <p>ระบบส่งสรุปเข้ากลุ่มให้เองตาม <strong>🗓️ กำหนดการส่งสรุป</strong> — แอดมินตั้งที่ปุ่ม <span class="btn">⚙️ แจ้งเตือน</span> แยก Telegram กับ LINE ได้:</p>
+    <p>ระบบส่งสรุปเข้ากลุ่มให้เองตาม <strong>กำหนดการส่งสรุป</strong> — แอดมินตั้งที่ปุ่ม <span class="btn">แจ้งเตือน</span> แยก Telegram กับ LINE ได้:</p>
     <ul>
       <li><strong>วันที่ส่ง + เวลา</strong> — เช่น ทุกวัน 08:00 หรือ จ–ศ 07:00 หรือจันทร์อย่างเดียว</li>
       <li><strong>หัวข้อ</strong> — ที่ต้องสั่งซื้อ · ต่ำกว่าจุดสั่งซื้อ · ไม่อัปเดตสต๊อกเกินกำหนด · ใกล้หมดอายุ/หมดอายุ (ส่งเฉพาะหัวข้อที่มีรายการ)</li>
       <li><strong>รูปแบบ</strong> — ละเอียด (ทุกรายการพร้อมตัวเลข) หรือ ย่อ (จำนวน + 5 รายการแรก)</li>
       <li><strong>ส่งเมื่อไร</strong> — เฉพาะเมื่อรายการเปลี่ยนจากที่เคยแจ้ง (ทวนซ้ำวันแรกของสัปดาห์ที่เลือก) หรือ ทุกครั้งตามวันที่เลือก</li>
     </ul>
-    <p>กด <span class="btn">👁️ ดูตัวอย่างข้อความ</span> เพื่อดูว่าจะส่งอะไรก่อนบันทึก (ไม่ส่งจริง) ·
+    <p>กด <span class="btn">ดูตัวอย่างข้อความ</span> เพื่อดูว่าจะส่งอะไรก่อนบันทึก (ไม่ส่งจริง) ·
        <strong>LINE คิดโควตาตามจำนวนสมาชิกในกลุ่ม</strong> (ฟรี 300 ข้อความ/เดือน) — หน้านั้นคำนวณให้ว่าเดือนหนึ่งจะใช้ประมาณเท่าไร ·
-       ตั้ง LINE ครั้งแรกที่ส่วน 💚 LINE กลุ่ม (มีวิธีทีละขั้นในหน้านั้น)</p>
+       ตั้ง LINE ครั้งแรกที่ส่วน LINE กลุ่ม (มีวิธีทีละขั้นในหน้านั้น)</p>
   </div>
-  <h4>⏰ เตือนเมื่อไม่มีการอัปเดตสต๊อกเกินกำหนด</h4>
-  <p>รายการที่ไม่มีใคร <strong>เบิก / รับ / คืน / นับ</strong> เกินจำนวนวันที่ตั้ง (ค่าเริ่มต้น 7 วัน) จะขึ้นป้าย <span class="btn">⏰ ไม่อัปเดต … วัน</span>
-     ในตารางวัตถุดิบ มีการ์ดนับจำนวน และกดตัวกรอง <span class="btn">⏰ ไม่อัปเดตเกิน … วัน</span> เพื่อดูเฉพาะรายการนั้นได้ · ตอนเช้าระบบสรุปเข้ากลุ่ม Telegram / LINE ให้ด้วย</p>
+  <h4>เตือนเมื่อไม่มีการอัปเดตสต๊อกเกินกำหนด</h4>
+  <p>รายการที่ไม่มีใคร <strong>เบิก / รับ / คืน / นับ</strong> เกินจำนวนวันที่ตั้ง (ค่าเริ่มต้น 7 วัน) จะขึ้นป้าย <span class="btn">ไม่อัปเดต … วัน</span>
+     ในตารางวัตถุดิบ มีการ์ดนับจำนวน และกดตัวกรอง <span class="btn">ไม่อัปเดตเกิน … วัน</span> เพื่อดูเฉพาะรายการนั้นได้ · ตอนเช้าระบบสรุปเข้ากลุ่ม Telegram / LINE ให้ด้วย</p>
   <ul>
     <li><strong>ทำยังไงให้หาย</strong> — กด <span class="btn">นับ</span> ใส่ยอดที่นับได้ (ยอดตรงอยู่แล้ว มือถือแตะ <span class="btn">✓ ตรงกับระบบ</span> · คอมพิมพ์ตัวเลขเดิม แล้วบันทึก) ป้ายจะหายทันที</li>
-    <li><strong>เปลี่ยนจำนวนวัน</strong> — หัวหน้า/แอดมินแก้ช่อง "⏰ เตือนไม่อัปเดตเกิน [ ] วัน" ใต้ช่องค้นหา · ใส่ <strong>0</strong> = ปิดการเตือน · ใช้กับทุกคน</li>
+    <li><strong>เปลี่ยนจำนวนวัน</strong> — หัวหน้า/แอดมินแก้ช่อง "เตือนไม่อัปเดตเกิน [ ] วัน" ใต้ช่องค้นหา · ใส่ <strong>0</strong> = ปิดการเตือน · ใช้กับทุกคน</li>
     <li>แก้ชื่อ แก้จุดสั่งซื้อ ไม่นับว่าเป็นการอัปเดตยอด</li>
   </ul>
 
@@ -473,33 +474,33 @@
 <section id="pc-cold">
   <h2><span class="n">6</span>คอม: หน้าคลังสินค้า (ห้องเย็น)<span class="dev pc">คอม</span></h2>
 
-  <p>กด <span class="btn">❄️ คลังสินค้า</span> บนแถบเมนู หน้านี้ต่างจากวัตถุดิบตรงที่นับเป็น <strong>ล็อต</strong> — ของชนิดเดียวกันแต่คนละวันผลิต แยกกันคนละล็อต</p>
+  <p>กด <span class="btn">คลังสินค้า</span> บนแถบเมนู หน้านี้ต่างจากวัตถุดิบตรงที่นับเป็น <strong>ล็อต</strong> — ของชนิดเดียวกันแต่คนละวันผลิต แยกกันคนละล็อต</p>
 
   <div class="tw">
   <table>
     <thead><tr><th style="width:26%">แท็บ</th><th>ใช้ทำอะไร</th></tr></thead>
     <tbody>
-      <tr><td><strong>📈 แดชบอร์ด</strong></td><td>ภาพรวมของทั้งห้องเย็น</td></tr>
-      <tr><td><strong>📊 คงเหลือ</strong></td><td>ยอดคงเหลือแยกตามล็อต พร้อมวันผลิต/วันหมดอายุ</td></tr>
-      <tr><td><strong>📦 นับสต๊อก</strong></td><td>นับของจริงแล้วบันทึกยอด</td></tr>
-      <tr><td><strong>📋 ใบสั่งผลิต</strong></td><td>สร้างและติดตามใบสั่งผลิต</td></tr>
-      <tr><td><strong>📦 ส่งยอดผลิต</strong></td><td>ฝ่ายผลิตส่งยอดที่ผลิตเสร็จ</td></tr>
-      <tr><td><strong>📥 รับยอดผลิต</strong></td><td>ห้องเย็นรับของเข้าคลัง</td></tr>
-      <tr><td><strong>⚙️ จัดการสินค้า</strong></td><td>เพิ่ม/แก้ไขรายการสินค้า</td></tr>
+      <tr><td><strong>แดชบอร์ด</strong></td><td>ภาพรวมของทั้งห้องเย็น</td></tr>
+      <tr><td><strong>คงเหลือ</strong></td><td>ยอดคงเหลือแยกตามล็อต พร้อมวันผลิต/วันหมดอายุ</td></tr>
+      <tr><td><strong>นับสต๊อก</strong></td><td>นับของจริงแล้วบันทึกยอด</td></tr>
+      <tr><td><strong>ใบสั่งผลิต</strong></td><td>สร้างและติดตามใบสั่งผลิต</td></tr>
+      <tr><td><strong>ส่งยอดผลิต</strong></td><td>ฝ่ายผลิตส่งยอดที่ผลิตเสร็จ</td></tr>
+      <tr><td><strong>รับยอดผลิต</strong></td><td>ห้องเย็นรับของเข้าคลัง</td></tr>
+      <tr><td><strong>จัดการสินค้า</strong></td><td>เพิ่ม/แก้ไขรายการสินค้า</td></tr>
     </tbody>
   </table>
   </div>
 
-  <h3>⏰ ล็อตที่ไม่มีการอัปเดตเกินกำหนด</h3>
-  <p>ล็อตที่ไม่มีใคร นับ / เบิก / รับ เกินจำนวนวันที่ตั้ง (ค่าเดียวกับหน้าวัตถุดิบ — ค่าเริ่มต้น 7 วัน) จะขึ้นในแดชบอร์ดหัวข้อ <strong>⏰ ไม่มีการอัปเดต</strong>
-     มีป้าย <span class="btn">⏰ ไม่อัปเดต … วัน</span> ในตารางคงเหลือ และในมือถือมีตัวกรอง <span class="btn">🔵 ไม่อัปเดต</span> ·
-     ตอนเช้าสรุปเข้ากลุ่มให้เอง · หัวหน้า/แอดมินกด <span class="btn">⏰ ส่งเตือนให้ช่วยนับ</span> ได้ · <strong>ทำให้หาย:</strong> นับที่ล็อตนั้น (ยอดตรงก็ใส่ตัวเลขเดิม)</p>
+  <h3>ล็อตที่ไม่มีการอัปเดตเกินกำหนด</h3>
+  <p>ล็อตที่ไม่มีใคร นับ / เบิก / รับ เกินจำนวนวันที่ตั้ง (ค่าเดียวกับหน้าวัตถุดิบ — ค่าเริ่มต้น 7 วัน) จะขึ้นในแดชบอร์ดหัวข้อ <strong>ไม่มีการอัปเดต</strong>
+     มีป้าย <span class="btn">ไม่อัปเดต … วัน</span> ในตารางคงเหลือ และในมือถือมีตัวกรอง <span class="btn"><i class="ui-sg sg-must" aria-hidden="true"></i>ไม่อัปเดต</span> ·
+     ตอนเช้าสรุปเข้ากลุ่มให้เอง · หัวหน้า/แอดมินกด <span class="btn">ส่งเตือนให้ช่วยนับ</span> ได้ · <strong>ทำให้หาย:</strong> นับที่ล็อตนั้น (ยอดตรงก็ใส่ตัวเลขเดิม)</p>
 
   <h3>ดูประวัติของแต่ละล็อต</h3>
-  <p>ในแท็บ <strong>📊 คงเหลือ</strong> กด <span class="btn">📜 ประวัติล็อต</span> ที่แถวของล็อตนั้น จะเห็นทุกครั้งที่ล็อตนี้ถูกนับ ล้าง หรือนำเข้า — ยอดก่อน/หลัง ใครทำ เมื่อไหร่ ใช้ตอบคำถาม "ทำไมยอดเปลี่ยน" ได้โดยไม่ต้องไปเปิดชีต</p>
+  <p>ในแท็บ <strong>คงเหลือ</strong> กด <span class="btn">ประวัติล็อต</span> ที่แถวของล็อตนั้น จะเห็นทุกครั้งที่ล็อตนี้ถูกนับ ล้าง หรือนำเข้า — ยอดก่อน/หลัง ใครทำ เมื่อไหร่ ใช้ตอบคำถาม "ทำไมยอดเปลี่ยน" ได้โดยไม่ต้องไปเปิดชีต</p>
 
   <h3>นำเข้าสต๊อกจากไฟล์ Excel</h3>
-  <p>ยกยอดเข้าห้องเย็นทีละหลายล็อตได้จากแท็บ <strong>📦 นับสต๊อก</strong> → <span class="btn">📥 นำเข้าจากไฟล์</span> — 1 แถวในไฟล์ = 1 ล็อต (สินค้า + วันผลิต + วันหมดอายุ + จำนวน) กดดาวน์โหลดไฟล์ตัวอย่างจะได้รายชื่อสินค้าที่มีในระบบมาให้เลย เติมแค่ตัวเลขกับวันที่ แล้วบันทึกเป็น <strong>CSV UTF-8</strong> ก่อนนำเข้า — ระบบตรวจและโชว์ผลทุกแถวก่อน ยังไม่บันทึกจนกว่าจะกดยืนยัน (สินค้าต้องสร้างไว้ในแท็บจัดการสินค้าก่อน)</p>
+  <p>ยกยอดเข้าห้องเย็นทีละหลายล็อตได้จากแท็บ <strong>นับสต๊อก</strong> → <span class="btn">นำเข้าจากไฟล์</span> — 1 แถวในไฟล์ = 1 ล็อต (สินค้า + วันผลิต + วันหมดอายุ + จำนวน) กดดาวน์โหลดไฟล์ตัวอย่างจะได้รายชื่อสินค้าที่มีในระบบมาให้เลย เติมแค่ตัวเลขกับวันที่ แล้วบันทึกเป็น <strong>CSV UTF-8</strong> ก่อนนำเข้า — ระบบตรวจและโชว์ผลทุกแถวก่อน ยังไม่บันทึกจนกว่าจะกดยืนยัน (สินค้าต้องสร้างไว้ในแท็บจัดการสินค้าก่อน)</p>
 
   <div class="box tip">
     <span class="lbl">ส่งยอด → รับยอด คือการส่งไม้ต่อ</span>
@@ -512,22 +513,22 @@
 <section id="pc-exec">
   <h2><span class="n">7</span>คอม: หน้าภาพรวมทั้งระบบ<span class="dev pc">คอม</span></h2>
 
-  <p>ปุ่ม <span class="btn">📊 ภาพรวม</span> — เห็นเฉพาะระดับ <strong>viewer / manager / admin</strong></p>
+  <p>ปุ่ม <span class="btn">ภาพรวม</span> — เห็นเฉพาะระดับ <strong>viewer / manager / admin</strong></p>
   <p>รวมตัวเลขของทุกคลัง (SQF + MLM + ห้องเย็น) ไว้หน้าเดียว ใช้ดูสถานการณ์รวมโดยไม่ต้องเข้าทีละคลัง — มีรายการที่ต้องรีบจัดการขึ้นให้เห็นก่อน</p>
-  <p><strong>📈 กราฟวิเคราะห์</strong>อยู่ในหน้านี้ด้วย เห็นทั้ง 3 คลังพร้อมกันไม่ต้องกดสลับ — วันที่ใช้งานได้คงเหลือของวัตถุดิบทั้งสองโรงงาน และยอดคงเหลือต่อสินค้าของห้องเย็น (สีแท่งบอกความเร่งด่วนของวันหมดอายุ)</p>
+  <p><strong>กราฟวิเคราะห์</strong>อยู่ในหน้านี้ด้วย เห็นทั้ง 3 คลังพร้อมกันไม่ต้องกดสลับ — วันที่ใช้งานได้คงเหลือของวัตถุดิบทั้งสองโรงงาน และยอดคงเหลือต่อสินค้าของห้องเย็น (สีแท่งบอกความเร่งด่วนของวันหมดอายุ)</p>
 
-  <h3>📊 ลิงก์สำหรับผู้บริหาร (ติดตั้งเป็นแอปชื่อ "ผู้บริหาร")</h3>
+  <h3>ลิงก์สำหรับผู้บริหาร (ติดตั้งเป็นแอปชื่อ "ผู้บริหาร")</h3>
   <p>ลิงก์ <code>https://kungrckmk.github.io/appstock/?view=exec</code> เปิดเฉพาะหน้าภาพรวมทั้งระบบ ไม่มีเมนูอื่น — ส่งให้ผู้บริหารได้เลย</p>
   <ul>
-    <li><strong>ส่งลิงก์ / QR</strong> — หัวหน้า/แอดมินกด <span class="btn">🔗 แชร์แอป</span> → เลือก <span class="btn">📊 ผู้บริหาร</span> แล้วคัดลอก ส่งต่อ หรือพิมพ์ QR</li>
-    <li><strong>อัปเดตล่าสุด</strong> — ทุกตารางบอกว่าแต่ละรายการมีคนเบิก/รับ/นับครั้งล่าสุดกี่วันก่อน · ป้ายสีส้ม ⏰ = ไม่อัปเดตเกินจำนวนวันที่ตั้ง ยอดอาจไม่ตรงของจริง</li>
+    <li><strong>ส่งลิงก์ / QR</strong> — หัวหน้า/แอดมินกด <span class="btn">แชร์แอป</span> → เลือก <span class="btn">ผู้บริหาร</span> แล้วคัดลอก ส่งต่อ หรือพิมพ์ QR</li>
+    <li><strong>อัปเดตล่าสุด</strong> — ทุกตารางบอกว่าแต่ละรายการมีคนเบิก/รับ/นับครั้งล่าสุดกี่วันก่อน · ป้ายสีส้ม = ไม่อัปเดตเกินจำนวนวันที่ตั้ง ยอดอาจไม่ตรงของจริง</li>
     <li><strong>ไม่ต้องเข้าระบบ</strong> — เปิดแล้วเห็นภาพรวมทันที ดูอย่างเดียว แก้ไขอะไรไม่ได้ · ใครมีลิงก์ก็เปิดดูได้ จึงส่งเฉพาะผู้บริหาร อย่าโพสต์ในที่สาธารณะ</li>
-    <li><strong>ติดตั้งเป็นแอป</strong> — Android/คอม: กด <span class="btn">📲 ติดตั้งเป็นแอป</span> บนหน้าภาพรวม · iPhone: กดแชร์ ⬆️ → "เพิ่มไปยังหน้าจอโฮม" — ได้ไอคอนชื่อ <strong>"ผู้บริหาร"</strong> (มีป้ายกราฟ) แยกจากแอปของพนักงาน</li>
+    <li><strong>ติดตั้งเป็นแอป</strong> — Android/คอม: กด <span class="btn">ติดตั้งเป็นแอป</span> บนหน้าภาพรวม · iPhone: กดแชร์ → "เพิ่มไปยังหน้าจอโฮม" — ได้ไอคอนชื่อ <strong>"ผู้บริหาร"</strong> (มีป้ายกราฟ) แยกจากแอปของพนักงาน</li>
   </ul>
 
-  <h3>🔍 ตรวจข้อมูล</h3>
-  <p>ปุ่ม <span class="btn">🔍 ตรวจข้อมูล</span> — เห็นเฉพาะ <strong>admin</strong> และ <strong>manager</strong></p>
-  <p>ท้ายหน้าเดียวกันมีการ์ด <strong>🧾 ยอดตรงกับประวัติมั๊ย</strong> — เทียบยอดคงเหลือปัจจุบันของวัตถุดิบแต่ละตัวกับยอดหลังทำรายการล่าสุดในประวัติ ถ้าไม่ตรง จะขึ้นชื่อรายการนั้นให้ไปนับจริงแล้วกด "นับ" ปรับยอด</p>
+  <h3>ตรวจข้อมูล</h3>
+  <p>ปุ่ม <span class="btn">ตรวจข้อมูล</span> — เห็นเฉพาะ <strong>admin</strong> และ <strong>manager</strong></p>
+  <p>ท้ายหน้าเดียวกันมีการ์ด <strong>ยอดตรงกับประวัติมั๊ย</strong> — เทียบยอดคงเหลือปัจจุบันของวัตถุดิบแต่ละตัวกับยอดหลังทำรายการล่าสุดในประวัติ ถ้าไม่ตรง จะขึ้นชื่อรายการนั้นให้ไปนับจริงแล้วกด "นับ" ปรับยอด</p>
   <p>เครื่องมือของผู้ดูแลระบบ ไว้ตรวจว่าข้อมูลตั้งค่าครบถ้วนพร้อมใช้เทียบยอดหรือยัง</p>
 </section>
 
@@ -553,20 +554,20 @@
   <h3>8.1 พิมพ์ใบเบิก</h3>
   <p>พอกดยืนยันการเบิกเสร็จ ใบเบิกจะเด้งขึ้นมาให้ทันที เลือกได้ว่าจะ</p>
   <ul>
-    <li><strong>🖨️ พิมพ์</strong> — พิมพ์ออกกระดาษให้หัวหน้าเซ็นเลย</li>
-    <li><strong>⬇️ บันทึกเป็นรูป</strong> — เก็บไฟล์ไว้ในเครื่อง เอาไปพิมพ์และเซ็นทีหลังได้</li>
+    <li><strong>พิมพ์</strong> — พิมพ์ออกกระดาษให้หัวหน้าเซ็นเลย</li>
+    <li><strong>บันทึกเป็นรูป</strong> — เก็บไฟล์ไว้ในเครื่อง เอาไปพิมพ์และเซ็นทีหลังได้</li>
   </ul>
   <p>บนใบมีช่องลงชื่อ 3 ช่อง — <strong>ผู้เบิก · ผู้ตรวจสอบ · ผู้อนุมัติ</strong> ทุกช่องมีบรรทัด "ลงชื่อ" ให้เซ็น ช่องผู้เบิกระบบพิมพ์ชื่อคนเบิกไว้ให้ใต้ลายเซ็นแล้ว</p>
 
   <h3>8.2 พิมพ์ใบเก่าซ้ำ</h3>
-  <p>ทำใบหายหรือต้องการอีกใบ เปิด <span class="btn">📜 ประวัติการใช้งาน</span> หารายการที่ต้องการ แล้วกดปุ่มสร้างใบเบิกในแถวนั้นได้เลย — ได้ใบเดิม เลขที่เดิม</p>
+  <p>ทำใบหายหรือต้องการอีกใบ เปิด <span class="btn">ประวัติการใช้งาน</span> หารายการที่ต้องการ แล้วกดปุ่มสร้างใบเบิกในแถวนั้นได้เลย — ได้ใบเดิม เลขที่เดิม</p>
 
-  <h3>8.3 รายงานใบเบิกรายเดือน</h3>
-  <p>เปิดจาก <span class="btn">⋯ เพิ่มเติม</span> → <strong>📋 รายงานใบเบิกรายเดือน</strong></p>
+  <h3>8.3 ตรวจใบเบิกรายเดือน</h3>
+  <p>เปิดจาก <span class="btn">เพิ่มเติม</span> → <strong>ตรวจใบเบิกรายเดือน</strong></p>
   <ul>
     <li>เลือกเดือน เห็นเอกสารทุกใบของเดือนนั้น พร้อมสรุปว่า<strong>ทั้งหมดกี่ใบ รับทราบแล้วกี่ใบ ยังไม่รับทราบกี่ใบ</strong></li>
-    <li>กด 🧾 ในแถวไหน เปิดดูใบนั้นได้ทันที</li>
-    <li>ปุ่มพิมพ์ — ได้รายงานที่มีช่อง ☐ ให้ติ๊กเทียบกับแฟ้มกระดาษ และมีช่องเซ็นท้ายรายงาน</li>
+    <li>กด ในแถวไหน เปิดดูใบนั้นได้ทันที</li>
+    <li>ปุ่มพิมพ์ — ได้รายงานที่มีช่อง ให้ติ๊กเทียบกับแฟ้มกระดาษ และมีช่องเซ็นท้ายรายงาน</li>
   </ul>
 
   <div class="box tip">
@@ -575,7 +576,7 @@
   </div>
 
   <h3>8.4 หัวหน้ากดรับทราบ</h3>
-  <p>ในรายงานรายเดือน แต่ละแถวมีปุ่ม <span class="btn">รับทราบ</span> และมีปุ่ม <span class="btn go">✅ รับทราบทั้งหมด</span> สำหรับกดรวดเดียวทั้งเดือน</p>
+  <p>ในรายงานรายเดือน แต่ละแถวมีปุ่ม <span class="btn">รับทราบ</span> และมีปุ่ม <span class="btn go"><i class="ui-sg sg-ok" aria-hidden="true"></i>รับทราบทั้งหมด</span> สำหรับกดรวดเดียวทั้งเดือน</p>
   <ul>
     <li>ระบบบันทึก<strong>ชื่อคนกดและเวลา</strong>ไว้เสมอ</li>
     <li>นับเฉพาะ<strong>ครั้งแรก</strong> — กดซ้ำภายหลังไม่ทับของเดิม หลักฐานว่าใครรับทราบก่อนยังอยู่</li>
@@ -586,9 +587,9 @@
 
 <!-- ══════════════════════════════════════ -->
 <section id="admin">
-  <h2><span class="n">9</span>หน้า Admin — ดูแลผู้ใช้<span class="dev pc">คอม</span></h2>
+  <h2><span class="n">9</span>หน้าผู้ใช้งาน — ดูแลผู้ใช้<span class="dev pc">คอม</span></h2>
 
-  <p>ปุ่ม <span class="btn">👑 Admin</span> — เห็นเฉพาะ <strong>admin</strong> และ <strong>manager</strong> (manager จะเห็นชื่อปุ่มว่า "✅ อนุมัติผู้ใช้")</p>
+  <p>ปุ่ม <span class="btn">ผู้ใช้งาน</span> บนแถบเมนู — เห็นเฉพาะ <strong>admin</strong> และ <strong>manager</strong> (manager จะเห็นชื่อปุ่มว่า "อนุมัติผู้ใช้")</p>
 
   <h3>แท็บคำขอ</h3>
   <p>คนที่กดขอสิทธิ์เข้ามาจะมารออยู่ตรงนี้ กดอนุมัติแล้วเลือกระดับสิทธิ์ให้ · ถ้ามีคำขอค้างอยู่จะมีตัวเลขสีส้มขึ้นบนปุ่มบนแถบเมนู</p>
@@ -613,17 +614,17 @@
   <div class="tw">
   <table class="wide">
     <thead>
-      <tr><th style="width:23%">ทำอะไรได้</th><th class="c">👤 user</th><th class="c">👁️ viewer</th><th class="c">📋 manager</th><th class="c">🔧 admin</th></tr>
+      <tr><th style="width:23%">ทำอะไรได้</th><th class="c">user</th><th class="c">viewer</th><th class="c">manager</th><th class="c">admin</th></tr>
     </thead>
     <tbody>
-      <tr><td>ดูสต๊อกทุกคลัง</td><td class="c yes">✔</td><td class="c yes">✔</td><td class="c yes">✔</td><td class="c yes">✔</td></tr>
-      <tr><td>เบิก / รับ / คืน / นับ</td><td class="c yes">✔</td><td class="c no">—</td><td class="c yes">✔</td><td class="c yes">✔</td></tr>
-      <tr><td>เพิ่ม / แก้ไข / ลบรายการ</td><td class="c yes">✔</td><td class="c no">—</td><td class="c yes">✔</td><td class="c yes">✔</td></tr>
-      <tr><td>ใบเบิก · รายงานรายเดือน</td><td class="c yes">✔</td><td class="c no">—</td><td class="c yes">✔</td><td class="c yes">✔</td></tr>
-      <tr><td>📊 หน้าภาพรวมทั้งระบบ</td><td class="c no">—</td><td class="c yes">✔</td><td class="c yes">✔</td><td class="c yes">✔</td></tr>
-      <tr><td>อนุมัติผู้ใช้ใหม่</td><td class="c no">—</td><td class="c no">—</td><td class="c yes">✔ *</td><td class="c yes">✔</td></tr>
-      <tr><td>🔍 ตรวจข้อมูล</td><td class="c no">—</td><td class="c no">—</td><td class="c yes">✔</td><td class="c yes">✔</td></tr>
-      <tr><td>⚙️ แจ้งเตือน</td><td class="c no">—</td><td class="c no">—</td><td class="c no">—</td><td class="c yes">✔</td></tr>
+      <tr><td>ดูสต๊อกทุกคลัง</td><td class="c yes"><i class="ui-sg sg-ok" aria-hidden="true"></i>ได้</td><td class="c yes"><i class="ui-sg sg-ok" aria-hidden="true"></i>ได้</td><td class="c yes"><i class="ui-sg sg-ok" aria-hidden="true"></i>ได้</td><td class="c yes"><i class="ui-sg sg-ok" aria-hidden="true"></i>ได้</td></tr>
+      <tr><td>เบิก / รับ / คืน / นับ</td><td class="c yes"><i class="ui-sg sg-ok" aria-hidden="true"></i>ได้</td><td class="c no">—</td><td class="c yes"><i class="ui-sg sg-ok" aria-hidden="true"></i>ได้</td><td class="c yes"><i class="ui-sg sg-ok" aria-hidden="true"></i>ได้</td></tr>
+      <tr><td>เพิ่ม / แก้ไข / ลบรายการ</td><td class="c yes"><i class="ui-sg sg-ok" aria-hidden="true"></i>ได้</td><td class="c no">—</td><td class="c yes"><i class="ui-sg sg-ok" aria-hidden="true"></i>ได้</td><td class="c yes"><i class="ui-sg sg-ok" aria-hidden="true"></i>ได้</td></tr>
+      <tr><td>ใบเบิก · รายงานรายเดือน</td><td class="c yes"><i class="ui-sg sg-ok" aria-hidden="true"></i>ได้</td><td class="c no">—</td><td class="c yes"><i class="ui-sg sg-ok" aria-hidden="true"></i>ได้</td><td class="c yes"><i class="ui-sg sg-ok" aria-hidden="true"></i>ได้</td></tr>
+      <tr><td>หน้าภาพรวมทั้งระบบ</td><td class="c no">—</td><td class="c yes"><i class="ui-sg sg-ok" aria-hidden="true"></i>ได้</td><td class="c yes"><i class="ui-sg sg-ok" aria-hidden="true"></i>ได้</td><td class="c yes"><i class="ui-sg sg-ok" aria-hidden="true"></i>ได้</td></tr>
+      <tr><td>อนุมัติผู้ใช้ใหม่</td><td class="c no">—</td><td class="c no">—</td><td class="c yes">*</td><td class="c yes"><i class="ui-sg sg-ok" aria-hidden="true"></i>ได้</td></tr>
+      <tr><td>ตรวจข้อมูล</td><td class="c no">—</td><td class="c no">—</td><td class="c yes"><i class="ui-sg sg-ok" aria-hidden="true"></i>ได้</td><td class="c yes"><i class="ui-sg sg-ok" aria-hidden="true"></i>ได้</td></tr>
+      <tr><td>แจ้งเตือน</td><td class="c no">—</td><td class="c no">—</td><td class="c no">—</td><td class="c yes"><i class="ui-sg sg-ok" aria-hidden="true"></i>ได้</td></tr>
     </tbody>
   </table>
   </div>
@@ -647,10 +648,10 @@
   <p>พิมพ์ป้าย QR ติดที่ถัง/ชั้นวาง แล้วให้พนักงานสแกนแทนการเลื่อนหาในลิสต์ เร็วกว่ามากและกดผิดรายการไม่ได้</p>
 
   <h3>แชร์แอปให้พนักงาน<span class="dev both">คอม + มือถือ</span></h3>
-  <p>กด <span class="btn">🔗 แชร์แอป</span> จะได้ QR ให้พนักงานสแกนเข้าใช้ · ปุ่ม <strong>🖨️ พิมพ์ติดบอร์ด</strong> จะได้ใบที่มีทั้ง QR และวิธีติดตั้งลงหน้าจอโฮม เอาไปติดบอร์ดได้เลย</p>
+  <p>กด <span class="btn">แชร์แอป</span> จะได้ QR ให้พนักงานสแกนเข้าใช้ · ปุ่ม <strong>พิมพ์ติดบอร์ด</strong> จะได้ใบที่มีทั้ง QR และวิธีติดตั้งลงหน้าจอโฮม เอาไปติดบอร์ดได้เลย</p>
 
   <h3>ระบบอัปเดตตัวเองอัตโนมัติ</h3>
-  <p>เวลามีเวอร์ชันใหม่ ระบบจะอัปเดตให้เองตอนสลับหน้าต่างกลับมา ไม่ต้องทำอะไร — แต่ถ้าค้างจริงๆ กด <span class="btn">🔄 อัปเดต</span> บนแถบเมนูได้</p>
+  <p>เวลามีเวอร์ชันใหม่ ระบบจะอัปเดตให้เองตอนสลับหน้าต่างกลับมา ไม่ต้องทำอะไร — แต่ถ้าค้างจริงๆ กด <span class="btn">อัปเดต</span> บนแถบเมนูได้</p>
 
   <h3>ทุกอย่างมีบันทึกว่าใครทำ</h3>
   <p>ทุกรายการเก็บชื่อคนทำ เวลา และเครื่องที่ใช้ ไม่ใช่เพื่อจับผิด แต่เวลาตัวเลขไม่ตรงจะได้ย้อนกลับไปดูได้ว่าเกิดอะไรขึ้นตรงไหน แก้ได้ตรงจุดโดยไม่ต้องนั่งเดา</p>
@@ -667,12 +668,12 @@
     <tbody>
       <tr>
         <td><strong>เข้าระบบไม่ได้ บอกว่าไม่พบชื่อ</strong></td>
-        <td>กดปุ่ม <strong>🙋 ขอสิทธิ์เข้าใช้งานจาก Admin</strong> ในหน้าเข้าระบบ แล้วรอหัวหน้าอนุมัติ</td>
+        <td>กดปุ่ม <strong>ขอสิทธิ์เข้าใช้งานจากหัวหน้า</strong> ในหน้าเข้าระบบ แล้วรอหัวหน้าอนุมัติ</td>
       </tr>
       <tr>
         <td><strong>แก้ตัวเลขใน Google Sheet แล้วแอปไม่เปลี่ยน</strong></td>
         <td>ตั้งแต่ 29 ก.ย. 2569 ข้อมูลจริงอยู่บนเซิร์ฟเวอร์ใหม่ <strong>Google Sheet เป็นสำเนาไว้เปิดดูอย่างเดียว</strong> แก้ในชีตไม่มีผล และจะถูกเขียนทับในรอบถัดไป — แก้ยอดให้ใช้ปุ่ม <strong>นับ</strong> ในแอป ·
-            ชีตอัปเดตตามเองภายในราว 15 นาที อยากได้ทันทีให้หัวหน้า/แอดมินกด <strong>🔄 อัปเดตสำเนาเดี๋ยวนี้</strong> ในหน้า Admin → สถานะระบบ</td>
+            ชีตอัปเดตตามเองภายในราว 15 นาที อยากได้ทันทีให้หัวหน้า/แอดมินกด <strong>อัปเดตสำเนาเดี๋ยวนี้</strong> ในหน้า Admin → สถานะระบบ</td>
       </tr>
       <tr>
         <td><strong>แอปบอกว่า "บัตรผ่านหมดอายุ" ให้เข้าระบบใหม่</strong></td>
@@ -680,11 +681,11 @@
       </tr>
       <tr>
         <td><strong>หน้าค้าง / ข้อมูลไม่อัปเดต</strong></td>
-        <td>กด <strong>🔄 อัปเดต</strong> บนแถบเมนู หรือ <strong>↻</strong> ในมือถือ · ถ้ายังไม่หายให้ปิดแอปแล้วเปิดใหม่</td>
+        <td>กด <strong>อัปเดต</strong> บนแถบเมนู หรือ <strong>↻</strong> ในมือถือ · ถ้ายังไม่หายให้ปิดแอปแล้วเปิดใหม่</td>
       </tr>
       <tr>
         <td><strong>เห็นของเวอร์ชันเก่า ทั้งที่หัวหน้าบอกว่าแก้แล้ว</strong></td>
-        <td>กด <strong>🔄 อัปเดตแอป / แก้หน้าค้าง</strong> ที่ด้านล่างหน้าเข้าระบบ จะล้างของเก่าทิ้งแล้วโหลดใหม่</td>
+        <td>กด <strong>อัปเดตแอป / แก้หน้าค้าง</strong> ที่ด้านล่างหน้าเข้าระบบ จะล้างของเก่าทิ้งแล้วโหลดใหม่</td>
       </tr>
       <tr>
         <td><strong>มีแถบขึ้นว่าออฟไลน์</strong></td>
@@ -692,7 +693,7 @@
       </tr>
       <tr>
         <td><strong>กดยืนยันแล้วขึ้นว่าของไม่พอ</strong></td>
-        <td>ยอดในระบบน้อยกว่าที่จะเบิก — ถ้าของจริงมีมากกว่า ให้กด <strong>📊 นับ</strong> ใส่ยอดจริงก่อน แล้วค่อยเบิก</td>
+        <td>ยอดในระบบน้อยกว่าที่จะเบิก — ถ้าของจริงมีมากกว่า ให้กด <strong>นับ</strong> ใส่ยอดจริงก่อน แล้วค่อยเบิก</td>
       </tr>
       <tr>
         <td><strong>กล้องไม่ขึ้นตอนสแกน</strong></td>

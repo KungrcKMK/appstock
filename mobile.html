@@ -112,7 +112,6 @@
     .m-well{background:var(--m-ground);border:1.5px solid var(--m-line);border-radius:6px}
     .m-field{background:#fff;border:2px solid var(--m-ink);border-radius:6px}
     .m-btn{background:#fff;border:2px solid var(--m-green);border-radius:6px;font-weight:800;min-height:44px}
-    .m-btn-ink{background:var(--m-green);color:#fff;border-radius:6px;font-weight:800;min-height:48px}
     .m-btn-go{background:var(--m-green);color:#fff;border-radius:6px;font-weight:800;min-height:48px}
     .m-chip{background:#fff;border:1.5px solid var(--m-line2);border-radius:6px;font-weight:800;font-size:13px;line-height:1.2}
     .m-chip.hot{border:2px solid var(--m-green)}
@@ -152,7 +151,8 @@
     .m-fac-ico{width:60px;flex:none;color:#fff}
     .m-fac-ico .ic{width:30px;height:30px}
     /* ปุ่มเครื่องมือหน้าเลือกคลัง: ไอคอนบน ชื่อล่าง กว้างเท่ากัน */
-    .m-tool{min-height:64px;font-size:13px}
+    .m-tool{min-height:64px;font-size:13px;grid-column:span 2}
+    .m-tool:nth-last-child(-n+2){grid-column:span 3}
     .fac-sqf{background:#c2410c} .fac-mlm{background:#15803d} .fac-cr{background:#0e7490}
     /* ── ต้องสั่ง ── */
     .m-tile{background:#fff;border:1.5px solid var(--m-line);border-radius:6px;min-width:0}
@@ -161,10 +161,11 @@
     .m-toast{border:0;border-radius:6px;box-shadow:0 8px 24px rgba(0,0,0,.25)}
     .m-toast-ok{background:var(--m-green);color:#fff} .m-toast-warn{background:var(--m-band);color:var(--m-ink)} .m-toast-err{background:var(--m-red);color:#fff}
     .m-corner{border-color:var(--m-band)}
-    /* แท็บเล็ต: ไม่ยืดรายการเต็มจอ (ชื่อกับจำนวนห่างกันเกินสายตา) — หัว/เมนูล่างยังเต็มกว้าง */
+    /* แท็บเล็ต: ไม่ยืดรายการเต็มจอ (ชื่อกับจำนวนห่างกันเกินสายตา) — แถบสีหัว/เมนูล่างเต็มกว้าง แต่ของข้างในตรงคอลัมน์เดียวกับรายการ */
     @media (min-width:700px){
       .m-wrap{width:100%;max-width:640px;margin-left:auto;margin-right:auto}
       .m-sheet{max-width:640px;margin-left:auto;margin-right:auto}
+      .m-head, .m-nav{padding-left:max(12px, calc((100% - 640px) / 2 + 12px)) !important;padding-right:max(12px, calc((100% - 640px) / 2 + 12px)) !important}
     }
   </style>
 </head>
@@ -221,7 +222,6 @@
       <div class="flex items-center gap-3 min-w-0">
         <span id="mLastIcon" class="text-xl flex-shrink-0"></span>
         <div class="min-w-0">
-          <div class="text-xs m-ink2 font-bold">เปิดล่าสุด</div>
           <div id="mLastTitle" class="text-base font-black truncate"></div>
           <div id="mLastSub"   class="text-xs m-ink2 truncate"></div>
         </div>
@@ -230,7 +230,7 @@
     </div>
 
     <!-- ปุ่มเสริมท้ายจอ — ชุดเดียวกับลิงก์ลัดหน้าแรกฝั่งคอม -->
-    <div class="mt-3 grid grid-cols-3 gap-2">
+    <div class="mt-3 grid grid-cols-6 gap-2">
       <button onclick="openMyHistory()" class="btn-tap m-btn m-tool flex flex-col items-center justify-center gap-1"><i class="ic ic-lg ic-mine"></i>ของฉัน</button>
       <button onclick="openShareApp()" class="btn-tap m-btn m-tool flex flex-col items-center justify-center gap-1"><i class="ic ic-lg ic-share"></i>แชร์แอป</button>
       <a href="manual.html" target="_blank" rel="noopener" class="btn-tap m-btn m-tool flex flex-col items-center justify-center gap-1"><i class="ic ic-lg ic-book"></i>คู่มือ</a>
@@ -260,7 +260,7 @@
   <!-- Scan button + Dropdown + Search -->
   <div class="m-wrap flex-shrink-0 px-3 pt-3 pb-2 space-y-2">
     <button onclick="openScanner()"
-      class="btn-tap m-btn-ink w-full py-3 text-base flex items-center justify-center gap-2">
+      class="btn-tap m-btn-go w-full py-3 text-base flex items-center justify-center gap-2">
       <i class="ic ic-scan"></i> สแกน Barcode / QR Code
     </button>
     <select id="mDropdown" aria-label="เลือกสินค้า" onchange="onDropdownChange()"
@@ -534,10 +534,12 @@
   </div>
   <div id="planTiles" class="m-wrap grid grid-cols-4 gap-1.5 px-3 py-2.5 flex-shrink-0"></div>
   <div id="planList" class="m-wrap flex-1 overflow-y-auto px-3 pb-4 space-y-2"></div>
-  <div class="flex-shrink-0 px-3 pt-2 bg-white" style="border-top:3px solid var(--m-green);padding-bottom:max(12px,env(safe-area-inset-bottom))">
-    <button id="planCopyBtn" onclick="planCopy()" class="btn-tap m-btn-go icb ic-copy w-full py-3.5 text-base">
-      คัดลอกรายการสั่ง
-    </button>
+  <div class="flex-shrink-0 pt-2 bg-white" style="border-top:3px solid var(--m-green);padding-bottom:max(12px,env(safe-area-inset-bottom))">
+    <div class="m-wrap px-3">
+      <button id="planCopyBtn" onclick="planCopy()" class="btn-tap m-btn-go icb ic-copy w-full py-3.5 text-base">
+        คัดลอกรายการสั่ง
+      </button>
+    </div>
   </div>
 </div>
 
@@ -616,7 +618,7 @@ function showScreens(...ids) {
 let _toastT;
 function toast(msg, type = "ok") {
   const el = $("toast");
-  el.textContent = msg;
+  el.textContent = String(msg).replace(/(?![\u2190-\u21FF])\p{Extended_Pictographic}\uFE0F?\s?/gu, "").trim();   // สีบอกชนิดแล้ว ไม่ต้องมี emoji (ชุดเดียวกับ uiNoEmoji หน้าคอม)
   el.className = "fixed left-4 right-4 z-[999] p-4 m-toast font-black text-center text-sm";
   el.classList.add(type === "err" ? "m-toast-err" : type === "warn" ? "m-toast-warn" : "m-toast-ok");
   show("toast");
@@ -1039,7 +1041,7 @@ function updateLastBar() {
   const cfg = MOD_CFG[last];
   $("mLastIcon").innerHTML  = '<i class="ic ic-' + (MOD_ICON[last] || "stock") + '"></i>';
   $("mLastTitle").textContent = cfg.title;
-  $("mLastSub").textContent   = user + " · " + cfg.sub;
+  $("mLastSub").textContent   = "เปิดล่าสุด · " + user + " · " + cfg.sub;
   bar.classList.remove("hidden");
 }
 
@@ -1270,7 +1272,7 @@ function populateDropdown() {
   data.forEach(item => {
     const opt = document.createElement("option");
     opt.value = item.sku;
-    const lowTag = (item.min > 0 && item.qty <= item.min) ? " ⚠️" : "";
+    const lowTag = (item.min > 0 && item.qty <= item.min) ? " · ต่ำกว่าจุดสั่งซื้อ" : "";
     opt.textContent = item.name + "  ·  " + fmtNum(item.qty) + " " + item.unit + lowTag;
     sel.appendChild(opt);
   });
@@ -1835,7 +1837,7 @@ async function confirmAction() {
   const BUSY  = { COUNT:"กำลังบันทึกการนับ...", OUT:"กำลังบันทึกการเบิก...", RETURN:"กำลังบันทึกการคืน...", IN:"กำลังบันทึกรับเข้า..." };
   setLoading(true, BUSY[aType] || "กำลังบันทึก...");
   try {
-    const LB = { COUNT:"📊 นับ", OUT:"📤 เบิก", RETURN:"↩️ คืน", IN:"📥 รับ" };
+    const LB = { COUNT:"นับ", OUT:"เบิก", RETURN:"คืน", IN:"รับ" };
     const label = `${LB[aType]||aType} ${sel.name} ${qty} ${sel.unit||""}`.trim();
     // ผ่านคิวออฟไลน์ — ออนไลน์ยิงตรงเหมือนเดิม เน็ตล่มเก็บไว้ส่งเองทีหลัง
     const r = isCount
@@ -1854,7 +1856,7 @@ async function confirmAction() {
 
     // ข้อ 2: เน็ตล่มและเก็บลงเครื่องไม่ได้ — ต้องบอกตรงๆ ไม่ปิดแผง ให้พนักงานจดไว้
     if (r.storeFailed) {
-      alert("❌ เน็ตล่ม และเก็บรายการไว้ในเครื่องไม่ได้\n(พื้นที่เต็มหรือเบราว์เซอร์ไม่อนุญาต)\n\nกรุณาจดไว้: " + label + "\nแล้วบันทึกใหม่เมื่อเน็ตกลับมา");
+      alert("เน็ตล่ม และเก็บรายการไว้ในเครื่องไม่ได้\n(พื้นที่เต็มหรือเบราว์เซอร์ไม่อนุญาต)\n\nกรุณาจดไว้: " + label + "\nแล้วบันทึกใหม่เมื่อเน็ตกลับมา");
       return;
     }
     if (r.needLogin) { if (r.queued) closeAction(); mNeedLogin(r); return; }
@@ -1868,7 +1870,7 @@ async function confirmAction() {
 
     const ok = isCount ? r.status === "success" : r.status === "success";
     if (ok) {
-      const LABEL = { COUNT:`📊 นับ → ${fmtNum(qty)}`, OUT:`📤 เบิก ${fmtNum(qty)}`, RETURN:`↩️ คืน ${fmtNum(qty)}`, IN:`📥 รับ ${fmtNum(qty)}` };
+      const LABEL = { COUNT:`นับ → ${fmtNum(qty)}`, OUT:`เบิก ${fmtNum(qty)}`, RETURN:`คืน ${fmtNum(qty)}`, IN:`รับ ${fmtNum(qty)}` };
       const label = LABEL[aType] || `${qty}`;
       toast(`${label} ${sel.unit} · ${sel.name}`);
       closeAction();

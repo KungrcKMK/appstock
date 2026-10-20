@@ -63,16 +63,16 @@
     .loading-overlay { position:fixed;inset:0;z-index:9998;background:rgba(15,23,42,0.65);backdrop-filter:blur(4px);display:none;align-items:center;justify-content:center; }
     .loading-overlay.active { display:flex; }
     .loading-box { background:#fff;border-radius:6px;padding:28px 32px;box-shadow:0 16px 30px rgba(0,0,0,.2);display:flex;align-items:center;gap:16px;font-weight:800;color:var(--sq-ink); }
-    .spinner { width:28px;height:28px;border:4px solid #e2e8f0;border-top-color:var(--sq-accent);border-radius:50%;animation:spin .8s linear infinite; }
+    .spinner { width:28px;height:28px;border:4px solid var(--sq-line);border-top-color:var(--sq-green);border-radius:50%;animation:spin .8s linear infinite; }
     @keyframes spin { to { transform:rotate(360deg); } }
 
     /* ── Toast ── */
     .toast-container { position:fixed;top:calc(var(--nav-h) + 12px);right:20px;z-index:9999;display:flex;flex-direction:column;gap:10px;pointer-events:none; }
-    .toast-item { min-width:260px;max-width:400px;padding:12px 18px;border-radius:1rem;color:#fff;font-weight:800;font-size:14px;box-shadow:0 8px 24px rgba(0,0,0,.18);animation:slideIn .25s ease-out; }
+    .toast-item { min-width:260px;max-width:400px;padding:12px 18px;border-radius:6px;color:#fff;font-weight:800;font-size:14px;box-shadow:0 8px 24px rgba(0,0,0,.18);animation:slideIn .25s ease-out; }
     .toast-success { background:var(--sq-accent); }
     .toast-error   { background:var(--sq-crit); }
     .toast-warn    { background:var(--sq-high); }
-    .toast-info    { background:#2563eb; }
+    .toast-info    { background:var(--sq-must); }
     @keyframes slideIn { from{opacity:0;transform:translateY(-8px) translateX(16px)} to{opacity:1;transform:translateY(0) translateX(0)} }
 
     /* ── Nav ── */
@@ -88,7 +88,7 @@
     /* 📱 ภาพรวมผู้บริหารบนมือถือ (js/exec.js → execMobileView) — การ์ดแทนตาราง */
     .xm { padding-bottom:28px; }
     .xm-kpis { display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;margin-bottom:12px; }
-    .xm-kpi { background:var(--sq-surface);border:1px solid var(--sq-line);border-radius:12px;padding:9px 8px;text-align:center;box-shadow:var(--sq-shadow); }
+    .xm-kpi { background:var(--sq-surface);border:1px solid var(--sq-line);border-radius:6px;padding:9px 8px;text-align:center;box-shadow:var(--sq-shadow); }
     .xm-kpi-n { font:800 22px/1.1 var(--sq-mono);color:var(--sq-muted); }
     .xm-kpi-n.crit { color:var(--sq-crit); } .xm-kpi-n.high { color:var(--sq-high); } .xm-kpi-n.warn { color:var(--sq-warn); }
     .xm-kpi-l { font-size:12px;font-weight:700;color:var(--sq-ink2);margin-top:3px;line-height:1.3; }
@@ -100,9 +100,8 @@
     .xm-tab-n { display:inline-block;min-width:20px;padding:0 6px;border-radius:999px;background:rgba(0,0,0,.08);font-size:12px;margin-left:3px; }
     .xm-tab.on .xm-tab-n { background:rgba(255,255,255,.25); }
     .xm-list { display:flex;flex-direction:column;gap:8px; }
-    .xm-card { background:var(--sq-surface);border:1px solid var(--sq-line);border-left:4px solid var(--sq-line);border-radius:12px;
+    .xm-card { background:var(--sq-surface);border:1.5px solid var(--sq-line);border-radius:6px;
                padding:11px 12px;box-shadow:var(--sq-shadow); }
-    .xm-card.sev-crit { border-left-color:var(--sq-crit); } .xm-card.sev-high { border-left-color:var(--sq-high); } .xm-card.sev-warn { border-left-color:var(--sq-warn); }
     .xm-top { display:flex;align-items:flex-start;justify-content:space-between;gap:10px; }
     .xm-name { font-weight:800;font-size:15.5px;line-height:1.35;color:var(--sq-ink); }
     .xm-fac { display:inline-block;font-size:12px;font-weight:800;color:var(--sq-ink2);background:var(--sq-none-bg);border-radius:5px;padding:1px 6px;vertical-align:2px; }
@@ -114,7 +113,7 @@
     .xm-sub { font-size:12px;color:var(--sq-muted);margin-top:3px; }
     .xm-tags { display:flex;flex-wrap:wrap;gap:5px;margin-top:7px; }
     .xm-foot { font-size:12px;color:var(--sq-muted);text-align:center;margin-top:14px;line-height:1.6; }
-    .xm-chart { background:var(--sq-surface);border:1px solid var(--sq-line);border-radius:12px;padding:11px 12px 8px;box-shadow:var(--sq-shadow); }
+    .xm-chart { background:var(--sq-surface);border:1px solid var(--sq-line);border-radius:6px;padding:11px 12px 8px;box-shadow:var(--sq-shadow); }
     .xm-chart-h { font-weight:800;font-size:14px;color:var(--sq-ink); }
     @media (max-width:360px) { .xm-kpis { grid-template-columns:repeat(2,minmax(0,1fr)); } }
     /* หัวหน้าบนมือถือ: เล็กลง + ติดด้านบนตอนเลื่อน (เฉพาะลิงก์ผู้บริหาร ซึ่งไม่มีแถบเมนูบัง) */
@@ -198,24 +197,24 @@
     .home-links .is-out:hover { border-color:var(--sq-crit);background:var(--sq-crit-bg);color:var(--sq-crit); }
 
     /* ── Alert Modal ── */
-    .alert-item { display:flex;justify-content:space-between;align-items:center;padding:12px 0;border-bottom:1px solid #f1f5f9;gap:8px; }
+    .alert-item { display:flex;justify-content:space-between;align-items:center;padding:12px 0;border-bottom:1px solid #f2f2ef;gap:8px; }
     .alert-item:last-child { border-bottom:none; }
 
     /* ── Autocomplete Dropdown ── */
     /* สีตาม token ของแอป (เดิมม่วงครามจากธีมเก่า + ตัวรองจาง 2.6:1 · audit 2026-10-19) */
-    .ac-dropdown { position:fixed;z-index:9700;background:var(--sq-surface);border:2px solid var(--sq-line);border-radius:14px;box-shadow:0 12px 32px rgba(22,36,27,0.16);max-height:300px;overflow-y:auto;display:none;font-family:'Sarabun',sans-serif;min-width:220px; }
+    .ac-dropdown { position:fixed;z-index:9700;background:var(--sq-surface);border:2px solid var(--sq-green);border-radius:6px;box-shadow:0 10px 24px rgba(0,0,0,.18);max-height:300px;overflow-y:auto;display:none;font-family:'Sarabun',sans-serif;min-width:220px; }
     .ac-dropdown.show { display:block; }
     .ac-item { padding:10px 16px;cursor:pointer;border-bottom:1px solid var(--sq-line); }
     .ac-item:last-child { border-bottom:none; }
-    .ac-item:hover,.ac-item.ac-hover { background:#e9f4ed; }
+    .ac-item:hover,.ac-item.ac-hover { background:#e3f1e8; }
     .ac-main { font-weight:700;color:var(--sq-ink);font-size:14px;line-height:1.3; }
     .ac-sub  { font-size:12px;color:var(--sq-muted);margin-top:2px; }
-    .ac-badge { display:inline-block;padding:1px 7px;border-radius:6px;font-size:12px;font-weight:800;margin-left:6px;background:#e9f4ed;color:var(--sq-accent);vertical-align:middle; }
+    .ac-badge { display:inline-block;padding:1px 7px;border-radius:6px;font-size:12px;font-weight:800;margin-left:6px;background:#e3f1e8;color:var(--sq-accent);vertical-align:middle; }
     .ac-empty { padding:14px 16px;color:var(--sq-muted);font-size:13px;text-align:center; }
 
     /* ── Activity filter buttons ── */
     .act-filter-btn { padding:5px 14px;border-radius:999px;font-size:12px;font-weight:800;background:rgba(255,255,255,0.1);color:rgba(255,255,255,0.78);border:none;cursor:pointer;white-space:nowrap;min-height:32px;transition:all .2s; }
-    .act-filter-btn.active { background:rgba(52,211,153,0.3);color:#a7f3d0; }
+    .act-filter-btn.active { background:var(--sq-green);border-color:var(--sq-green);color:#fff; }
 
     /* ── หน้าคลังสินค้า ──
        ตัวแปรชุดนี้ชี้ไปที่ token แบรนด์ (--sq-*) ทั้งหมด
@@ -231,7 +230,7 @@
     #module-COLDROOM { background:var(--bg);color:var(--sq-ink); }
     #module-COLDROOM .cr-wrap { max-width:1400px;margin:0 auto;padding:18px 16px 60px; }
     #module-COLDROOM .cr-topbar { display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap;margin-bottom:14px; }
-    #module-COLDROOM .cr-badge { background:var(--sq-none-bg);color:var(--sq-ink2);padding:3px 10px;border-radius:20px;font-size:12px;font-weight:700; }
+    #module-COLDROOM .cr-badge { background:var(--sq-none-bg);color:var(--sq-ink2);padding:3px 10px;border-radius:6px;font-size:12px;font-weight:700; }
     /* แท็บแบบขีดเส้นใต้ ให้เหมือนหน้าอื่น */
     #module-COLDROOM .cr-mode-row { display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px; }
     #module-COLDROOM .cr-mode-row .cr-btn { line-height:1.25;padding:10px 8px;font-size:15px; }
@@ -252,7 +251,7 @@
     @keyframes fadeIn { from{opacity:0;transform:translateY(4px)} to{opacity:1;transform:translateY(0)} }
     #module-COLDROOM .card { background:var(--sq-surface);border-radius:var(--radius);box-shadow:var(--shadow);padding:14px;margin-bottom:12px;border:1px solid var(--line); }
     #module-COLDROOM .mini-stats { display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;margin-bottom:12px; }
-    #module-COLDROOM .stat { border:1px solid var(--line);background:var(--sq-raised);border-radius:10px;padding:11px 13px;text-align:left; }
+    #module-COLDROOM .stat { border:1px solid var(--line);background:var(--sq-raised);border-radius:6px;padding:11px 13px;text-align:left; }
     #module-COLDROOM .stat .v { font:800 25px/1.15 var(--sq-mono);font-variant-numeric:tabular-nums;letter-spacing:-.02em;color:var(--sq-ink); }
     #module-COLDROOM .row { display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px;margin-bottom:12px; }
     #module-COLDROOM .field { display:flex;flex-direction:column;gap:5px; }
@@ -268,21 +267,21 @@
     #module-COLDROOM .btn-light { background:var(--sq-surface);color:var(--text);border:1px solid var(--line); }
     #module-COLDROOM .btn-light:hover { background:var(--sq-raised);border-color:var(--sq-muted); }
     #module-COLDROOM .cr-status { padding:14px;border-radius:var(--radius-sm);font-size:14px;font-weight:600;display:none;margin-bottom:16px;border:1px solid transparent; }
-    #module-COLDROOM .cr-status.ok  { display:flex;background:var(--sq-accent-2);color:var(--sq-accent);border-color:#b8dcc6; }
-    #module-COLDROOM .cr-status.warn{ display:flex;background:var(--sq-high-bg);color:var(--sq-high);border-color:#f3d2ad; }
-    #module-COLDROOM .cr-status.err { display:flex;background:var(--sq-crit-bg);color:var(--sq-crit);border-color:#f0c4c0; }
+    #module-COLDROOM .cr-status.ok  { display:flex;background:var(--sq-accent-2);color:var(--sq-accent);border-color:var(--sq-accent); }
+    #module-COLDROOM .cr-status.warn{ display:flex;background:var(--sq-high-bg);color:var(--sq-high);border-color:var(--sq-high); }
+    #module-COLDROOM .cr-status.err { display:flex;background:var(--sq-crit-bg);color:var(--sq-crit);border-color:var(--sq-crit); }
     #module-COLDROOM .big-stat-box { background:var(--primary);color:#fff;padding:25px;border-radius:6px;margin-bottom:20px;text-align:center; }
     #module-COLDROOM .big-stat-label { font-size:14px;margin-bottom:8px;display:block; }   /* ตัวขาวทึบบนเขียว (จาง .9 = 4.2:1 ไม่ผ่าน) */
     #module-COLDROOM .big-stat-value { font-size:56px;font-weight:800;line-height:1; }
     #module-COLDROOM .big-stat-unit { font-size:20px;margin-left:10px; }
-    #module-COLDROOM .lot-breakdown-box { background:rgba(0,0,0,.15);border-radius:12px;padding:12px;margin-top:15px;text-align:left;font-size:14px;line-height:1.6;display:none; }
-    #module-COLDROOM .scanner-box { border-radius:16px;overflow:hidden;background:#000;position:relative;min-height:240px;margin:10px 0; }
+    #module-COLDROOM .lot-breakdown-box { background:rgba(0,0,0,.15);border-radius:6px;padding:12px;margin-top:15px;text-align:left;font-size:14px;line-height:1.6;display:none; }
+    #module-COLDROOM .scanner-box { border-radius:6px;overflow:hidden;background:#000;position:relative;min-height:240px;margin:10px 0; }
     #module-COLDROOM .scanner-video { width:100%;height:240px;object-fit:cover; }
-    #module-COLDROOM .scanner-frame { position:absolute;inset:0;border:2px solid #fff;width:70%;height:50%;margin:auto;border-radius:12px;box-shadow:0 0 0 1000px rgba(0,0,0,.5); }
-    #module-COLDROOM .table-wrap { overflow-x:auto;border:1px solid var(--line);border-radius:16px; }
+    #module-COLDROOM .scanner-frame { position:absolute;inset:0;border:2px solid #fff;width:70%;height:50%;margin:auto;border-radius:6px;box-shadow:0 0 0 1000px rgba(0,0,0,.5); }
+    #module-COLDROOM .table-wrap { overflow-x:auto;border:1px solid var(--line);border-radius:6px; }
     #module-COLDROOM table { width:100%;border-collapse:collapse;font-size:14px;min-width:700px; }
-    #module-COLDROOM th, #module-COLDROOM td { padding:14px;text-align:left;border-bottom:1px solid #f1f5f9; }
-    #module-COLDROOM th { background:#f8fafc;font-weight:700;color:var(--muted);font-size:12px; }
+    #module-COLDROOM th, #module-COLDROOM td { padding:14px;text-align:left;border-bottom:1px solid #f2f2ef; }
+    #module-COLDROOM th { background:#f7f7f4;font-weight:700;color:var(--muted);font-size:12px; }
     #module-COLDROOM .pill { padding:4px 10px;border-radius:99px;font-size:12px;font-weight:700; }
     #module-COLDROOM .pill-danger { background:var(--sq-crit-bg);color:var(--sq-crit); }   /* สีสถานะของแอป (เดิม 3.0–4.0:1 · audit 2026-10-19) */
     #module-COLDROOM .pill-ok    { background:var(--sq-accent-2);color:var(--sq-accent); }
@@ -377,7 +376,7 @@
     #module-RAW .rm-sub { font-size:12px;color:var(--sq-muted);margin-top:3px; }
     #module-RAW .rm-factory {
       display:inline-flex;align-items:center;gap:6px;font-size:12px;font-weight:700;
-      background:var(--sq-none-bg);color:var(--sq-ink2);padding:3px 10px;border-radius:20px;
+      background:var(--sq-none-bg);color:var(--sq-ink2);padding:3px 10px;border-radius:6px;
     }
     #module-RAW .rm-factory::before {
       content:"";width:7px;height:7px;border-radius:50%;background:var(--sq-muted);flex:none;
@@ -403,7 +402,7 @@
     #module-RAW .rm-more > summary::-webkit-details-marker { display:none; }
     #module-RAW .rm-more-menu {
       position:absolute;right:0;top:calc(100% + 5px);z-index:60;min-width:196px;
-      background:var(--sq-surface);border:1px solid var(--sq-line);border-radius:10px;
+      background:var(--sq-surface);border:1px solid var(--sq-line);border-radius:6px;
       box-shadow:var(--sq-shadow);padding:5px;display:flex;flex-direction:column;
     }
     #module-RAW .rm-more-menu button {
@@ -415,7 +414,7 @@
     /* การ์ดพื้นฐาน */
     #module-RAW .rm-card {
       background:var(--sq-surface);border:1px solid var(--sq-line);
-      border-radius:12px;box-shadow:var(--sq-shadow);overflow:hidden;
+      border-radius:6px;box-shadow:var(--sq-shadow);overflow:hidden;
     }
     #module-RAW .rm-card-head {
       display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;
@@ -428,7 +427,7 @@
     #module-RAW .rm-tiles {
       /* 4 ช่อง หรือ 5 ช่องเมื่อเปิดเตือน "ไม่อัปเดต" — ปรับจำนวนคอลัมน์ตามจำนวนการ์ดจริง */
       display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));
-      background:var(--sq-surface);border:1px solid var(--sq-line);border-radius:12px;
+      background:var(--sq-surface);border:1px solid var(--sq-line);border-radius:6px;
       box-shadow:var(--sq-shadow);overflow:hidden;margin-bottom:12px;
     }
     #module-RAW .rm-tile { padding:11px 14px;border-right:1px solid var(--sq-line-soft); }
@@ -456,7 +455,7 @@
     }
     #module-RAW .rm-chips { display:flex;gap:5px;flex-wrap:wrap; }
     #module-RAW .rm-chip {
-      font:inherit;font-size:12px;font-weight:700;padding:5px 11px;border-radius:20px;cursor:pointer;
+      font:inherit;font-size:12px;font-weight:700;padding:5px 11px;border-radius:6px;cursor:pointer;
       border:1px solid var(--sq-line);background:var(--sq-surface);color:var(--sq-ink2);white-space:nowrap;
     }
     #module-RAW .rm-chip:hover { border-color:var(--sq-muted); }
@@ -558,7 +557,7 @@
 
     .sq-card {
       background:var(--sq-surface);border:1px solid var(--sq-line);
-      border-radius:12px;box-shadow:var(--sq-shadow);overflow:hidden;margin-bottom:12px;
+      border-radius:6px;box-shadow:var(--sq-shadow);overflow:hidden;margin-bottom:12px;
     }
     .sq-card-head {
       display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;
@@ -572,13 +571,12 @@
     .sq-card-note { font-size:12px;color:var(--sq-muted);font-weight:600; }
     .sq-card-body { padding:12px 14px; }
     /* แถบสีบอกว่าการ์ดนี้เป็นของคลังไหน */
-    .sq-card.rail-cold { border-left:3px solid #0369a1; }
-    .sq-card.rail-sqf  { border-left:3px solid var(--sq-orange); }
-    .sq-card.rail-mlm  { border-left:3px solid var(--sq-green); }
+    .sq-card.rail-cold, .sq-card.rail-sqf, .sq-card.rail-mlm { border-top:6px solid;border-radius:0; }   /* สีคลัง = แถบบนแบบป้าย (แถบหนาบนมุมมนดูบิด) */
+    .sq-card.rail-cold { border-top-color:var(--sq-fac-cr); } .sq-card.rail-sqf { border-top-color:var(--sq-fac-sqf); } .sq-card.rail-mlm { border-top-color:var(--sq-fac-mlm); }
 
     .sq-tiles {
       display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));
-      background:var(--sq-surface);border:1px solid var(--sq-line);border-radius:12px;
+      background:var(--sq-surface);border:1px solid var(--sq-line);border-radius:6px;
       box-shadow:var(--sq-shadow);overflow:hidden;margin-bottom:12px;
     }
     .sq-tile { padding:11px 14px;border-right:1px solid var(--sq-line-soft); }
@@ -606,10 +604,7 @@
     .sq-table tbody tr:last-child { border-bottom:0; }
     .sq-table tbody tr:hover { background:var(--sq-raised); }
     .sq-table td { padding:8px 12px;vertical-align:middle; }
-    .sq-table td.rail { padding:0;width:3px;border-left:3px solid transparent; }
-    .sq-table tr.sev-crit td.rail { border-left-color:var(--sq-crit); }
-    .sq-table tr.sev-high td.rail { border-left-color:var(--sq-high); }
-    .sq-table tr.sev-warn td.rail { border-left-color:var(--sq-warn); }
+    .sq-table td.rail, .sq-table th.rail { display:none; }   /* แถบสีข้างแถว (เลิกใช้) — สถานะบอกด้วยป้าย/คำในแถว · js ยังส่งช่องนี้มา */
 
     .sq-name { font-weight:700;font-size:13.5px;line-height:1.35;color:var(--sq-ink); }
     .sq-meta { font:500 12px/1.5 var(--sq-mono);color:var(--sq-muted);margin-top:2px;display:flex;gap:9px;flex-wrap:wrap; }
@@ -652,7 +647,7 @@
 
     /* กล่องคำอธิบาย */
     .sq-note {
-      background:var(--sq-accent-2);border:1px solid var(--sq-line);border-radius:9px;
+      background:var(--sq-accent-2);border:1px solid var(--sq-line);border-radius:6px;
       padding:10px 13px;margin-bottom:12px;font-size:12px;line-height:1.7;color:var(--sq-ink2);
     }
     .sq-note b { color:var(--sq-accent); }
@@ -661,7 +656,7 @@
 
     /* แถวรายชื่อคน */
     .sq-row {
-      background:var(--sq-surface);border:1px solid var(--sq-line);border-radius:10px;
+      background:var(--sq-surface);border:1px solid var(--sq-line);border-radius:6px;
       padding:11px 14px;display:flex;align-items:center;justify-content:space-between;
       gap:10px;flex-wrap:wrap;box-shadow:var(--sq-shadow);
     }
@@ -682,11 +677,11 @@
 
     /* ── กล่องลากไฟล์มาวาง (หน้านำเข้า) ── */
     .imp-drop {
-      border:2px dashed var(--sq-line);border-radius:12px;background:var(--sq-raised);
+      border:2px dashed var(--sq-line);border-radius:6px;background:var(--sq-raised);
       padding:30px 20px;text-align:center;cursor:pointer;transition:border-color .15s,background .15s;
     }
     .imp-drop:hover, .imp-drop.drag { border-color:var(--sq-accent);background:var(--sq-accent-2); }
-    .imp-drop-icon { font-size:38px;line-height:1; }
+    .imp-drop-icon { font-size:32px;line-height:1;color:var(--sq-green); }
     .imp-drop-main { font-size:14px;font-weight:800;color:var(--sq-ink);margin-top:8px; }
     .imp-drop-sub  { font-size:12px;color:var(--sq-muted);margin-top:3px; }
 
@@ -715,10 +710,10 @@
     .history-text-act  { font:700 13px/1.3 var(--sq-mono);margin-top:2px; }
     .history-text-sub  { font:500 12px/1.4 var(--sq-mono);color:var(--sq-muted);margin-top:3px; }
     .custom-scrollbar::-webkit-scrollbar { width:5px; }
-    .custom-scrollbar::-webkit-scrollbar-thumb { background:#cbd5e1;border-radius:10px; }
+    .custom-scrollbar::-webkit-scrollbar-thumb { background:var(--sq-line2);border-radius:6px; }
     .chart-wrap       { position:relative;height:280px; }
     .chart-wrap-small { position:relative;height:250px; }
-    .qr-box canvas, .qr-box img { margin:0 auto;background:#fff;padding:10px;border-radius:1.5rem;box-shadow:0 8px 24px rgba(0,0,0,.12); }
+    .qr-box canvas, .qr-box img { margin:0 auto;background:#fff;padding:10px;border:1.5px solid var(--sq-line);border-radius:6px; }
     .btn-disabled { opacity:.65;pointer-events:none; }
     /* ปุ่มที่กดไม่ได้ต้องดูออก (เดิมหน้าตาเหมือนเดิม ต่างแค่ข้อความ · QA M15) */
     button:disabled, .sq-btn:disabled, .rm-mini:disabled { opacity:.55;cursor:not-allowed;filter:saturate(.6); }
@@ -728,7 +723,7 @@
     .cr-modal-overlay { position:fixed;inset:0;background:rgba(0,0,0,.5);backdrop-filter:blur(4px);z-index:9997;display:flex;justify-content:center;align-items:center;opacity:0;pointer-events:none;visibility:hidden;transition:opacity .2s,visibility 0s .2s; }
     .cr-modal-overlay.show { opacity:1;pointer-events:auto;visibility:visible;transition:opacity .2s,visibility 0s; }
     /* ซ่อนด้วย visibility ด้วย — opacity:0 อย่างเดียวปุ่มข้างในยังรับ Tab ได้ (โฟกัสหายไปปุ่มที่มองไม่เห็น · QA M8) */
-    .cr-modal-box { background:#fff;width:90%;max-width:400px;border-radius:24px;padding:24px;box-shadow:0 20px 40px rgba(0,0,0,.2);transform:scale(.95);transition:.2s; }
+    .cr-modal-box { background:#fff;width:90%;max-width:400px;border-radius:6px;padding:24px;box-shadow:0 20px 40px rgba(0,0,0,.2);transform:scale(.95);transition:.2s; }
     .cr-modal-overlay.show .cr-modal-box { transform:scale(1); }
     .cr-modal-box h3 { margin:0 0 10px;font-size:20px; }
     .cr-modal-box p  { margin:0 0 20px;color:var(--muted);font-size:15px;line-height:1.5; }
@@ -741,10 +736,10 @@
       #module-COLDROOM table { min-width:100%;display:block; }
       #module-COLDROOM thead { display:none; }
       #module-COLDROOM tbody { display:flex;flex-direction:column;gap:12px; }
-      #module-COLDROOM tr { display:block;background:#fff;border:1px solid var(--line);border-radius:16px;padding:12px; }
-      #module-COLDROOM td { display:flex;justify-content:space-between;align-items:center;padding:8px 4px;border-bottom:1px dashed var(--line);text-align:right; }
+      #module-COLDROOM tr { display:block;background:#fff;border:1.5px solid var(--line);border-radius:6px;padding:12px; }
+      #module-COLDROOM td { display:flex;justify-content:flex-end;align-items:center;gap:4px;padding:8px 4px;border-bottom:1px dashed var(--line);text-align:right; }
       #module-COLDROOM td:last-child { border-bottom:none; }
-      #module-COLDROOM td::before { content:attr(data-label);font-weight:700;color:var(--muted);font-size:12px;text-transform:uppercase;float:left;text-align:left; }
+      #module-COLDROOM td::before { content:attr(data-label);font-weight:700;color:var(--muted);font-size:12px;text-transform:uppercase;text-align:left;margin-right:auto; }
     }
     /* หน้าเข้าระบบ: สีแบรนด์ (เดิมม่วงคราม ไม่เหมือนแอป) · ลิงก์ท้ายการ์ดอ่านออกและกดได้ (เดิม #cbd5e1 = 1.48:1, สูง 17px) · QA M20/M5/L1 */
     .login-btn { background:var(--sq-green);border-radius:6px;min-height:56px;font-family:var(--sq-head);font-weight:700; }
@@ -765,7 +760,7 @@
       #module-RAW .rm-table thead { display:none; }
       #module-RAW .rm-table, #module-RAW .rm-table tbody { display:block;width:100%;min-width:0 !important; }
       #module-RAW .rm-table tr { display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:4px 10px;padding:12px;margin:0 0 10px;
-                                  border:1px solid var(--sq-line);border-radius:12px;background:var(--sq-surface); }
+                                  border:1px solid var(--sq-line);border-radius:6px;background:var(--sq-surface); }
       #module-RAW .rm-table td { display:block;padding:0 !important;border:0 !important;text-align:left !important; }
       #module-RAW .rm-table td:nth-child(1) { display:none; }
       #module-RAW .rm-table td[data-label="วัตถุดิบ"] { grid-column:1 / -1;order:-1; }
@@ -779,30 +774,30 @@
     /* ช่องติ๊กในตารางวัตถุดิบ 13px → 18px (กดง่ายขึ้น · QA L1) */
     #module-RAW .raw-checkbox, #rawSelectAll { width:18px;height:18px;cursor:pointer; }
     /* โฟกัสด้วยคีย์บอร์ดต้องเห็น (QA L5/M7) */
-    .rm-purpose-in:focus { border-color:var(--sq-accent) !important;box-shadow:0 0 0 3px rgba(14,122,63,.2); }
+    .rm-purpose-in:focus { border-color:var(--sq-green) !important;box-shadow:0 0 0 3px #fde0bd; }
     [role="button"]:focus-visible, th.s:focus-visible, .imp-drop:focus-visible { outline:3px solid var(--sq-accent);outline-offset:2px; }
     /* ข้อผิดพลาดใต้ช่องกรอก (rawFieldError ใน js/raw.js · QA M12) */
     .rm-field-err { color:var(--sq-crit);font-size:13px;font-weight:800;margin:6px 4px 0;text-align:left;line-height:1.4; }
-    .rm-input-err { border-color:var(--sq-crit) !important;box-shadow:0 0 0 3px rgba(192,54,44,.18) !important; }
+    .rm-input-err { border-color:var(--sq-crit) !important;box-shadow:0 0 0 3px rgba(200,16,46,.18) !important; }
     /* 🗓️ กำหนดการส่งสรุป (js/notify.js) — CSS ล้วน ไม่พึ่ง class Tailwind ใหม่ */
-    .ntf-card{border:2px solid;border-radius:24px;padding:16px;margin-bottom:12px;}
+    .ntf-card{border:1.5px solid var(--sq-line);border-radius:6px;padding:16px;margin-bottom:12px;background:#fff;}
     .ntf-head{display:flex;justify-content:space-between;align-items:center;gap:8px;font-size:15px;margin-bottom:4px;}
     .ntf-lbl{font-size:12px;font-weight:900;color:var(--sq-ink2);margin:12px 0 5px;}
     .ntf-days{display:flex;gap:6px;flex-wrap:wrap;}
     .ntf-day input{position:absolute;opacity:0;pointer-events:none;}
-    .ntf-day span{display:inline-flex;align-items:center;justify-content:center;min-width:40px;height:36px;padding:0 6px;border-radius:12px;border:2px solid #cbd5e1;background:#fff;font-weight:900;font-size:13px;color:var(--sq-ink2);cursor:pointer;user-select:none;}
+    .ntf-day span{display:inline-flex;align-items:center;justify-content:center;min-width:40px;height:36px;padding:0 6px;border-radius:6px;border:2px solid var(--sq-line2);background:#fff;font-weight:900;font-size:13px;color:var(--sq-ink2);cursor:pointer;user-select:none;}
     .ntf-day input:checked + span{background:var(--sq-green);border-color:var(--sq-green);color:#fff;}
     .ntf-day input:focus-visible + span{outline:3px solid var(--sq-accent);}
     .ntf-quick{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px;}
-    .ntf-quick button{font-size:12px;font-weight:900;color:#475569;background:#fff;border:1px solid #cbd5e1;border-radius:999px;padding:3px 10px;}
+    .ntf-quick button{font-size:12px;font-weight:900;color:var(--sq-ink);background:#fff;border:1.5px solid var(--sq-line2);border-radius:6px;padding:3px 10px;min-height:32px;}
     .ntf-col{display:flex;flex-direction:column;gap:5px;}
-    .ntf-opt{display:flex;align-items:center;gap:7px;font-size:13px;font-weight:700;color:#334155;cursor:pointer;}
-    .ntf-opt input{width:16px;height:16px;flex-shrink:0;}
+    .ntf-opt{display:flex;align-items:center;gap:7px;font-size:13px;font-weight:700;color:var(--sq-ink2);cursor:pointer;}
+    .ntf-opt input{width:16px;height:16px;flex-shrink:0;accent-color:var(--sq-green);}
     .ntf-dim{font-size:12px;font-weight:700;color:var(--sq-muted);}
-    .ntf-hint{font-size:12px;color:#475569;margin-top:10px;line-height:1.55;display:flex;flex-direction:column;gap:3px;}
-    .ntf-btn{margin-top:10px;width:100%;background:#fff;border:2px solid #cbd5e1;border-radius:16px;padding:8px;font-size:13px;font-weight:900;color:#334155;}
+    .ntf-hint{font-size:12px;color:var(--sq-ink2);margin-top:10px;line-height:1.55;display:flex;flex-direction:column;gap:3px;}
+    .ntf-btn{margin-top:10px;width:100%;background:#fff;border:1.5px solid var(--sq-line2);border-radius:6px;padding:8px;font-size:13px;font-weight:900;color:var(--sq-ink);min-height:40px;}
     .ntf-btn:hover{border-color:var(--sq-green);}
-    .ntf-pre{white-space:pre-wrap;word-break:break-word;background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:10px;margin-top:6px;font-size:12px;line-height:1.5;max-height:260px;overflow:auto;font-family:inherit;color:var(--sq-ink);}
+    .ntf-pre{white-space:pre-wrap;word-break:break-word;background:var(--sq-raised);border:1.5px solid var(--sq-line);border-radius:6px;padding:10px;margin-top:6px;font-size:12px;line-height:1.5;max-height:260px;overflow:auto;font-family:inherit;color:var(--sq-ink);}
 
     /* ═══ ชั้นแผ่นป้าย (P2 2026-10-20) — โลกเดียวกับมือถือ · วางท้ายสุดให้ชนะกฎเดิมที่เท่ากัน ═══ */
     /* ป้ายรูปทรงใน HTML นิ่ง (ชิปกรอง ฯลฯ) — รูปเดียวกับ UI_SIGN ใน js/utils.js: <i class="ui-sg sg-warn"></i> */
@@ -825,12 +820,8 @@
 
     /* แผ่นป้าย: การ์ด / ช่องสรุป / ตาราง — ขอบ 1.5px สีเส้น มุม 6px ไม่มีเงา */
     #module-RAW .rm-card, #module-RAW .rm-tiles, .sq-card, .sq-tiles, .sq-row, #module-COLDROOM .card, .xm-kpi, .xm-card, .xm-chart { border:1.5px solid var(--sq-line);border-radius:6px;box-shadow:none; }
-    .sq-card.rail-cold, .sq-card.rail-sqf, .sq-card.rail-mlm { border-left-width:1.5px;border-top:6px solid;border-radius:0; }   /* สีคลังย้ายจากขอบซ้ายขึ้นแถบบน (แบบป้าย) */
-    .sq-card.rail-cold { border-top-color:var(--sq-fac-cr); } .sq-card.rail-sqf { border-top-color:var(--sq-fac-sqf); } .sq-card.rail-mlm { border-top-color:var(--sq-fac-mlm); }
-    .xm-card, .xm-card.sev-crit, .xm-card.sev-high, .xm-card.sev-warn { border-left:1.5px solid var(--sq-line); }
     #module-RAW .rm-table thead th, .sq-table thead th { color:var(--sq-ink2);font-size:12.5px;letter-spacing:0;border-bottom:2px solid var(--sq-green); }
     #module-RAW .rm-table tbody tr, .sq-table tbody tr { border-bottom:1px solid var(--sq-line); }
-    .sq-table td.rail, .sq-table th.rail { display:none; }   /* แถบสีข้างแถว → สถานะบอกด้วยป้าย/คำในแถวแล้ว */
     .badge-status, .sq-chip { gap:6px;padding:2px 2px;background:none !important;font-size:13px; }
     .badge-status.crit, .sq-chip.crit { color:var(--sq-crit); } .badge-status.high, .sq-chip.high { color:var(--sq-high); }
     .badge-status.warn, .sq-chip.warn { color:var(--sq-warn); } .badge-status:not(.crit):not(.high):not(.warn) { color:var(--sq-ink2);font-weight:600; }
@@ -909,22 +900,14 @@
     /* toast = แผ่นป้ายเล็ก */
     .toast-item { border-radius:6px;border:0;box-shadow:0 8px 20px rgba(0,0,0,.2); }
     .toast-warn { background:var(--sq-band);color:#111; }
-    .toast-info { background:var(--sq-must); }
     .loading-box { border-radius:6px;border:2px solid var(--sq-green);border-top:6px solid var(--sq-band);color:var(--sq-ink); }
     .loading-overlay { background:rgba(17,17,17,.55);backdrop-filter:none; }
-    .spinner { border-color:var(--sq-line);border-top-color:var(--sq-ink); }
-    .ntf-card { border-radius:6px; }
-    .ntf-day span { border-radius:6px;border-color:var(--sq-line2);color:var(--sq-ink2); }
-    .ntf-day input:checked + span { background:var(--sq-green);border-color:var(--sq-green); }
-    .ntf-btn, .ntf-quick button { border-radius:6px; }
-    .ntf-hint, .ntf-opt { color:var(--sq-ink2); }
     /* ตั้งค่าแจ้งเตือน: ส่วน Telegram / LINE / กำหนดการ เป็นหัวข้อคั่นเส้น ไม่ซ้อนกล่องในกล่อง */
     #unifiedSettingsModal .space-y-5 > div { background:none !important;border:0 !important;border-top:2px solid var(--sq-green) !important;border-radius:0 !important;padding:16px 0 4px !important; }
     #unifiedSettingsModal .space-y-5 > div:first-child { border-top:0 !important;padding-top:0 !important; }
     #unifiedSettingsModal h3 { font:700 18px/1.3 var(--sq-head);letter-spacing:0;text-transform:none;color:var(--sq-ink); }
     /* ตัวกรองความเคลื่อนไหว: ชิปเส้นบนแผ่นขาว ขึ้นบรรทัดใหม่ได้ (ไม่เลื่อนข้าง) */
     .act-filter-btn { background:#fff;color:var(--sq-ink);border:1.5px solid var(--sq-line2);border-radius:6px;min-height:36px; }
-    .act-filter-btn.active { background:var(--sq-green);border-color:var(--sq-green);color:#fff; }
     /* ภาพรวมบนมือถือ: แท็บขึ้นบรรทัดใหม่แทนเลื่อนข้าง (เจ้าของสั่ง 2026-10-20) */
     .xm-tabs { flex-wrap:wrap;overflow:visible; }
     .xm-tab { border-radius:6px; }
@@ -1364,7 +1347,7 @@
     <div class="cr-modal-box">
       <h3 id="crModalTitle"></h3>
       <p  id="crModalMessage"></p>
-      <input aria-label="ข้อความที่ต้องกรอก" type="text" id="crModalInput" style="display:none;width:100%;padding:12px;border:1px solid var(--sq-line);border-radius:12px;font-size:16px;margin-bottom:4px;" autocomplete="off">
+      <input aria-label="ข้อความที่ต้องกรอก" type="text" id="crModalInput" style="display:none;width:100%;padding:12px;border:1px solid var(--sq-line);border-radius:6px;font-size:16px;margin-bottom:4px;" autocomplete="off">
       <div class="cr-modal-actions">
         <button class="cr-btn btn-light" id="crModalCancel">ยกเลิก</button>
         <button class="cr-btn btn-primary" id="crModalConfirm">ตกลง</button>
@@ -1476,7 +1459,7 @@
             <div class="field"><label for="crMfg">วันผลิต (MFG) 6 หลัก *</label><input type="text" id="crMfg" placeholder="เช่น 170326" maxlength="6" inputmode="numeric" autocomplete="off" oninput="crQtyPreview()"></div>
             <div class="field"><label for="crExp">วันหมดอายุ (EXP) *</label><input type="text" id="crExp" placeholder="คำนวณอัตโนมัติ" maxlength="6" inputmode="numeric" autocomplete="off"></div>
           </div>
-          <div style="background:var(--sq-line-soft);padding:15px;border-radius:15px;">
+          <div style="background:var(--sq-line-soft);padding:15px;border-radius:6px;">
             <!-- ต้องเลือกก่อนว่ารับเข้าหรือนับ — เดิมช่องเดียว "จำนวน" แทนที่ยอดทั้งล็อตเสมอ รับของซ้ำวันผลิตเดียวกันทับยอดเดิม (critique 2026-10-20) -->
             <div class="cr-mode-row" role="group" aria-label="บันทึกแบบไหน">
               <button type="button" id="crModeIn" class="cr-btn btn-light" aria-pressed="false" onclick="crSetMode('in')">รับเข้า<br><small>บวกเพิ่มเข้าล็อต</small></button>
@@ -1530,15 +1513,15 @@
         <!-- Sub-tab bar -->
         <div style="display:flex;gap:8px;padding:16px 16px 0;border-bottom:2px solid var(--sq-line);margin-bottom:0;overflow-x:auto;">
           <button id="crMngBtn-newproduct"  onclick="crManageSubTab('newproduct')"
-            style="flex-shrink:0;padding:8px 18px;border-radius:12px 12px 0 0;border:2px solid var(--sq-line);border-bottom:none;font-weight:900;font-size:13px;cursor:pointer;background:var(--sq-accent);color:#fff;font-family:inherit;">
+            style="flex-shrink:0;padding:8px 18px;border-radius:6px 6px 0 0;border:2px solid var(--sq-line);border-bottom:none;font-weight:900;font-size:13px;cursor:pointer;background:var(--sq-accent);color:#fff;font-family:inherit;">
             สินค้าใหม่
           </button>
           <button id="crMngBtn-editproduct" onclick="crManageSubTab('editproduct')"
-            style="flex-shrink:0;padding:8px 18px;border-radius:12px 12px 0 0;border:2px solid var(--sq-line);border-bottom:none;font-weight:900;font-size:13px;cursor:pointer;background:var(--sq-raised);color:var(--sq-ink2);font-family:inherit;">
+            style="flex-shrink:0;padding:8px 18px;border-radius:6px 6px 0 0;border:2px solid var(--sq-line);border-bottom:none;font-weight:900;font-size:13px;cursor:pointer;background:var(--sq-raised);color:var(--sq-ink2);font-family:inherit;">
             แก้ไขสินค้า
           </button>
           <button id="crMngBtn-bom"         onclick="crManageSubTab('bom')"
-            style="flex-shrink:0;padding:8px 18px;border-radius:12px 12px 0 0;border:2px solid var(--sq-line);border-bottom:none;font-weight:900;font-size:13px;cursor:pointer;background:var(--sq-raised);color:var(--sq-ink2);font-family:inherit;">
+            style="flex-shrink:0;padding:8px 18px;border-radius:6px 6px 0 0;border:2px solid var(--sq-line);border-bottom:none;font-weight:900;font-size:13px;cursor:pointer;background:var(--sq-raised);color:var(--sq-ink2);font-family:inherit;">
             ข้อมูลอ้างอิง
           </button>
         </div>
@@ -1575,7 +1558,7 @@
                 oninput="$$cr('crNewSetNamePreview').textContent = $$cr('crNewUnit').value || 'หน่วยนับ'">
             </div>
           </div>
-          <div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;padding:10px 14px;font-size:12px;color:#1d4ed8;margin-bottom:10px;">
+          <div style="background:var(--sq-must-bg);border:1.5px solid var(--sq-must);border-radius:6px;padding:10px 14px;font-size:12px;color:var(--sq-must);margin-bottom:10px;">
             ตัวอย่าง: ชุด = ตะกร้า, 1 ชุด = 10 ตะกร้า — ตอนสั่งผลิตพิมพ์ว่า "20 ชุด" ระบบจะคิด 200 ตะกร้าให้อัตโนมัติ
           </div>
           <button class="cr-btn btn-primary" onclick="crSaveNewProduct()" style="width:100%;">บันทึกข้อมูลสินค้า</button>
@@ -1593,8 +1576,8 @@
 
           <!-- Dropdown เลือกสินค้า -->
           <div style="margin-bottom:16px;">
-            <label for="crEditProductSelect" style="font-size:13px;font-weight:600;color:#475569;display:block;margin-bottom:6px;">เลือกสินค้าที่ต้องการแก้ไข</label>
-            <select id="crEditProductSelect" onchange="crSelectEditProduct()" style="width:100%;padding:12px;font-size:15px;border:2px solid var(--sq-line);border-radius:12px;background:#fff;cursor:pointer;">
+            <label for="crEditProductSelect" style="font-size:13px;font-weight:600;color:var(--sq-ink2);display:block;margin-bottom:6px;">เลือกสินค้าที่ต้องการแก้ไข</label>
+            <select id="crEditProductSelect" onchange="crSelectEditProduct()" style="width:100%;padding:12px;font-size:15px;border:2px solid var(--sq-line);border-radius:6px;background:#fff;cursor:pointer;">
               <option value="">-- กดโหลดรายการ หรือเปิด Tab นี้เพื่อโหลดอัตโนมัติ --</option>
             </select>
           </div>
@@ -1605,7 +1588,7 @@
 
           <!-- ฟิลด์แก้ไข (ซ่อนจนกว่าจะเลือกสินค้า) -->
           <div id="crEditProductFields" style="display:none;">
-            <div style="background:var(--sq-raised);border:1px solid var(--sq-line);border-radius:12px;padding:12px 16px;margin-bottom:16px;font-size:13px;color:var(--sq-ink2);">
+            <div style="background:var(--sq-raised);border:1px solid var(--sq-line);border-radius:6px;padding:12px 16px;margin-bottom:16px;font-size:13px;color:var(--sq-ink2);">
               บาร์โค้ด: <strong id="crEditBarcodeDisplay" style="color:var(--sq-ink);font-size:14px;letter-spacing:1px;"></strong>
             </div>
             <div class="row">
@@ -1640,7 +1623,7 @@
                   oninput="document.getElementById('crEditSetNamePreview').textContent = document.getElementById('crEditUnit').value || 'หน่วยนับ'">
               </div>
             </div>
-            <div style="background:#eff6ff;border:1px solid #bfdbfe;border-radius:8px;padding:10px 14px;font-size:12px;color:#1d4ed8;margin-bottom:16px;">
+            <div style="background:var(--sq-must-bg);border:1.5px solid var(--sq-must);border-radius:6px;padding:10px 14px;font-size:12px;color:var(--sq-must);margin-bottom:16px;">
               SetName/UnitsPerSet ใช้สำหรับใบสั่งผลิต เช่น ชุด = ตะกร้า, 1 ชุด = 10 ตะกร้า
             </div>
             <div class="sticky-actions">
@@ -1664,9 +1647,9 @@
                   <label>① โรงงานวัตถุดิบ</label>
                   <div style="display:flex;gap:8px;">
                     <button id="crBomBtnSQF" onclick="crBomSelectFactory('SQF')"
-                      style="flex:1;padding:12px;border-radius:10px;border:2px solid var(--sq-line);background:var(--sq-raised);font-weight:800;font-size:13px;cursor:pointer;font-family:inherit;transition:.15s;">SQF</button>
+                      style="flex:1;padding:12px;border-radius:6px;border:2px solid var(--sq-line);background:var(--sq-raised);font-weight:800;font-size:13px;cursor:pointer;font-family:inherit;transition:.15s;">SQF</button>
                     <button id="crBomBtnMLM" onclick="crBomSelectFactory('MLM')"
-                      style="flex:1;padding:12px;border-radius:10px;border:2px solid var(--sq-line);background:var(--sq-raised);font-weight:800;font-size:13px;cursor:pointer;font-family:inherit;transition:.15s;">MLM</button>
+                      style="flex:1;padding:12px;border-radius:6px;border:2px solid var(--sq-line);background:var(--sq-raised);font-weight:800;font-size:13px;cursor:pointer;font-family:inherit;transition:.15s;">MLM</button>
                   </div>
                 </div>
                 <div class="field">
@@ -1698,7 +1681,7 @@
                   style="margin-top:10px;width:100%;border:2px dashed var(--sq-line);background:var(--sq-accent-2);color:var(--sq-accent);font-weight:900;">เพิ่มวัตถุดิบ</button>
                 <div style="display:flex;gap:10px;margin-top:14px;flex-wrap:wrap;">
                   <button class="cr-btn btn-primary" onclick="crSaveBom()" style="flex:1;">บันทึก BOM</button>
-                  <button class="cr-btn btn-light" onclick="crDeleteBom()" style="background:var(--sq-crit-bg);color:var(--sq-crit);border:2px solid #f0c4c0;">ลบ BOM นี้</button>
+                  <button class="cr-btn btn-light" onclick="crDeleteBom()" style="background:var(--sq-crit-bg);color:var(--sq-crit);border:2px solid var(--sq-crit);">ลบ BOM นี้</button>
                 </div>
               </div>
               <div id="crBomPlaceholder" style="text-align:center;padding:28px 0;color:var(--sq-muted);font-size:13px;font-weight:700;">เลือกโรงงานและสินค้าเพื่อเริ่มกำหนดข้อมูล</div>
@@ -1807,13 +1790,13 @@
           <!-- รายการสินค้า -->
           <div id="crSiRows" style="display:flex;flex-direction:column;gap:14px;margin-bottom:16px;"></div>
 
-          <button class="cr-btn btn-light" onclick="crSiAddRow()" style="width:100%;padding:12px;font-size:14px;border:2px dashed #94a3b8;margin-bottom:12px;">
+          <button class="cr-btn btn-light" onclick="crSiAddRow()" style="width:100%;padding:12px;font-size:14px;border:2px dashed #8a8a84;margin-bottom:12px;">
             เพิ่มสินค้า
           </button>
 
           <div style="margin-bottom:12px;">
             <label for="crSiNote" style="font-size:12px;color:var(--sq-ink2);font-weight:700;display:block;margin-bottom:4px;">หมายเหตุ (ถ้ามี)</label>
-            <input id="crSiNote" type="text" placeholder="เช่น รุ่นการผลิต, กะ, เลขที่ใบสั่งผลิต..." style="width:100%;padding:10px 12px;border:1.5px solid var(--sq-line);border-radius:10px;font-size:14px;box-sizing:border-box;">
+            <input id="crSiNote" type="text" placeholder="เช่น รุ่นการผลิต, กะ, เลขที่ใบสั่งผลิต..." style="width:100%;padding:10px 12px;border:1.5px solid var(--sq-line);border-radius:6px;font-size:14px;box-sizing:border-box;">
           </div>
 
           <button class="cr-btn btn-primary" onclick="crSiSubmit()" style="width:100%;padding:16px;font-size:16px;font-weight:900;letter-spacing:0.5px;">
@@ -1959,7 +1942,7 @@
             <input type="text" id="rawModalPurpose" list="rawPurposeList" maxlength="120"
                    placeholder="เช่น ผลิตวุ้นมะพร้าว ล็อต 3"
                    class="rm-purpose-in"
-                   style="width:100%;padding:14px 16px;border:2px solid var(--sq-line);border-radius:14px;
+                   style="width:100%;padding:14px 16px;border:2px solid var(--sq-line);border-radius:6px;
                           font-family:inherit;font-size:16px;font-weight:700;outline:none;box-sizing:border-box;
                           background:var(--sq-surface);color:var(--sq-ink);">
             <datalist id="rawPurposeList"></datalist>
@@ -2227,7 +2210,7 @@
   <!-- ═══ จุดสั่งซื้อแนะนำ (คำนวณจากประวัติเบิกจริง) ═══ -->
   <div id="ropModal" class="ui-modal hidden fixed inset-0 z-[630] flex items-center justify-center p-4"
        style="background:rgba(22,36,27,.55);backdrop-filter:blur(3px);">
-    <div class="sq-page" style="width:100%;max-width:1080px;border-radius:14px;overflow:hidden;
+    <div class="sq-page" style="width:100%;max-width:1080px;border-radius:6px;overflow:hidden;
                 box-shadow:0 20px 50px rgba(0,0,0,.3);display:flex;flex-direction:column;max-height:94vh;">
 
       <div style="background:var(--sq-surface);border-bottom:1px solid var(--sq-line);
@@ -2260,7 +2243,7 @@
   <!-- ═══ 📈 วางแผนสั่งซื้อ — วิเคราะห์การเบิก กันของหมด/สั่งไม่ทัน (js/plan.js) ═══ -->
   <div id="planModal" class="ui-modal hidden fixed inset-0 z-[630] flex items-center justify-center p-4"
        style="background:rgba(22,36,27,.55);backdrop-filter:blur(3px);">
-    <div class="sq-page" style="width:100%;max-width:1240px;border-radius:14px;overflow:hidden;
+    <div class="sq-page" style="width:100%;max-width:1240px;border-radius:6px;overflow:hidden;
                 box-shadow:0 20px 50px rgba(0,0,0,.3);display:flex;flex-direction:column;max-height:94vh;">
 
       <div style="background:var(--sq-surface);border-bottom:1px solid var(--sq-line);
@@ -2295,7 +2278,7 @@
 
   <div id="drModal" class="ui-modal hidden fixed inset-0 z-[630] flex items-center justify-center p-4"
        style="background:rgba(22,36,27,.55);backdrop-filter:blur(3px);">
-    <div class="sq-page" style="width:100%;max-width:1080px;border-radius:14px;overflow:hidden;
+    <div class="sq-page" style="width:100%;max-width:1080px;border-radius:6px;overflow:hidden;
                 box-shadow:0 20px 50px rgba(0,0,0,.3);display:flex;flex-direction:column;max-height:94vh;">
 
       <div style="background:var(--sq-surface);border-bottom:1px solid var(--sq-line);
@@ -2319,7 +2302,7 @@
        ใช้รูปเดียวกันทั้งหมด จึงตรงกันแน่นอน -->
   <div id="slipModal" class="ui-modal hidden fixed inset-0 z-[640] flex items-center justify-center p-4"
        style="background:rgba(22,36,27,.6);backdrop-filter:blur(3px);">
-    <div class="sq-page" style="width:100%;max-width:620px;border-radius:14px;overflow:hidden;
+    <div class="sq-page" style="width:100%;max-width:620px;border-radius:6px;overflow:hidden;
                 box-shadow:0 20px 50px rgba(0,0,0,.3);display:flex;flex-direction:column;max-height:94vh;">
 
       <div style="background:var(--sq-surface);border-bottom:1px solid var(--sq-line);
@@ -2346,7 +2329,7 @@
        อันนี้เห็นของทุกคนในคลังที่กำลังเปิดอยู่ -->
   <div id="rawHistModal" class="ui-modal hidden fixed inset-0 z-[610] flex items-center justify-center p-4"
        style="background:rgba(22,36,27,.55);backdrop-filter:blur(3px);">
-    <div class="sq-page" style="width:100%;max-width:620px;border-radius:14px;overflow:hidden;
+    <div class="sq-page" style="width:100%;max-width:620px;border-radius:6px;overflow:hidden;
                 box-shadow:0 20px 50px rgba(0,0,0,.3);display:flex;flex-direction:column;max-height:92vh;">
 
       <div style="background:var(--sq-surface);border-bottom:1px solid var(--sq-line);
@@ -2366,7 +2349,7 @@
   <!-- ═══ 📥 นำเข้าวัตถุดิบจากไฟล์ ═══ -->
   <div id="impModal" class="ui-modal hidden fixed inset-0 z-[620] flex items-center justify-center p-4"
        style="background:rgba(22,36,27,.55);backdrop-filter:blur(3px);">
-    <div class="sq-page" style="width:100%;max-width:900px;border-radius:14px;overflow:hidden;
+    <div class="sq-page" style="width:100%;max-width:900px;border-radius:6px;overflow:hidden;
                 box-shadow:0 20px 50px rgba(0,0,0,.3);display:flex;flex-direction:column;max-height:92vh;">
 
       <div style="background:var(--sq-surface);border-bottom:1px solid var(--sq-line);
@@ -2393,7 +2376,7 @@
         <div id="impDropZone" class="imp-drop" tabindex="0" role="button" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();this.click();}"
              onclick="document.getElementById('impFileInput').click()"
              ondrop="impOnDrop(event)" ondragover="impOnDragOver(event)" ondragleave="impOnDragLeave()">
-          <div class="imp-drop-icon"></div>
+          <div class="imp-drop-icon"><i class="ic ic-doc" aria-hidden="true"></i></div>
           <div class="imp-drop-main">ลากไฟล์ .csv มาวางที่นี่ หรือคลิกเพื่อเลือกไฟล์</div>
           <div class="imp-drop-sub">นำเข้าได้ครั้งละไม่เกิน 500 รายการ</div>
           <input type="file" id="impFileInput" accept=".csv,text/csv" style="display:none"
@@ -2408,7 +2391,7 @@
   <!-- ═══ 📥 นำเข้าล็อตห้องเย็นจากไฟล์ (js/crimport.js) ═══ -->
   <div id="criModal" class="ui-modal hidden fixed inset-0 z-[620] flex items-center justify-center p-4"
        style="background:rgba(22,36,27,.55);backdrop-filter:blur(3px);">
-    <div class="sq-page" style="width:100%;max-width:900px;border-radius:14px;overflow:hidden;
+    <div class="sq-page" style="width:100%;max-width:900px;border-radius:6px;overflow:hidden;
                 box-shadow:0 20px 50px rgba(0,0,0,.3);display:flex;flex-direction:column;max-height:92vh;">
 
       <div style="background:var(--sq-surface);border-bottom:1px solid var(--sq-line);
@@ -2438,7 +2421,7 @@
         </div>
 
         <div class="imp-drop" tabindex="0" role="button" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();this.click();}" onclick="document.getElementById('criFile').click()">
-          <div class="imp-drop-icon"></div>
+          <div class="imp-drop-icon"><i class="ic ic-doc" aria-hidden="true"></i></div>
           <div class="imp-drop-main">คลิกเพื่อเลือกไฟล์ .csv</div>
           <div class="imp-drop-sub">นำเข้าได้ครั้งละไม่เกิน 500 ล็อต</div>
           <input type="file" id="criFile" accept=".csv,text/csv" style="display:none" onchange="criFilePicked(this)">
@@ -2457,7 +2440,7 @@
   <!-- ═══ 📴 งานที่ค้างส่ง / ส่งไม่ผ่าน (ข้อ 17) ═══ -->
   <div id="offlineModal" class="ui-modal hidden fixed inset-0 z-[640] flex items-center justify-center p-4"
        style="background:rgba(22,36,27,.55);backdrop-filter:blur(3px);">
-    <div class="sq-page" style="width:100%;max-width:900px;border-radius:14px;overflow:hidden;
+    <div class="sq-page" style="width:100%;max-width:900px;border-radius:6px;overflow:hidden;
                 box-shadow:0 20px 50px rgba(0,0,0,.3);display:flex;flex-direction:column;max-height:92vh;">
       <div style="background:var(--sq-surface);border-bottom:1px solid var(--sq-line);padding:13px 16px;display:flex;align-items:center;gap:10px;">
         <div style="flex:1;min-width:0;">
@@ -2473,7 +2456,7 @@
   <!-- ═══ 📜 ประวัติล็อตห้องเย็น (ข้อ 21) ═══ -->
   <div id="crLotHistModal" class="ui-modal hidden fixed inset-0 z-[640] flex items-center justify-center p-4"
        style="background:rgba(22,36,27,.55);backdrop-filter:blur(3px);">
-    <div class="sq-page" style="width:100%;max-width:1000px;border-radius:14px;overflow:hidden;
+    <div class="sq-page" style="width:100%;max-width:1000px;border-radius:6px;overflow:hidden;
                 box-shadow:0 20px 50px rgba(0,0,0,.3);display:flex;flex-direction:column;max-height:92vh;">
       <div style="background:var(--sq-surface);border-bottom:1px solid var(--sq-line);padding:13px 16px;display:flex;align-items:center;gap:10px;">
         <div style="flex:1;min-width:0;">

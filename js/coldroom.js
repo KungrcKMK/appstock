@@ -626,44 +626,45 @@ async function crPrintActualReport(o) {
     const actual  = r.actual;
     const diff    = actual - planned;
     const diffSign = diff>=0?"+":"";
-    const diffColor = diff>=0?"#059669":"#dc2626";
+    const diffColor = diff>=0?"#006b31":"#c8102e";
     const mfgFmt  = isoToDdmmyy(ddmmyyToIsoWo(r.mfg)||r.mfg)||r.mfg||"-";
     const expFmt  = isoToDdmmyy(ddmmyyToIsoWo(r.exp)||r.exp)||r.exp||"-";
     const status  = diff>=0
-      ? `<span style="color:#059669;font-weight:700;">ตามแผน</span>`
-      : `<span style="color:#dc2626;font-weight:700;">ขาด ${Math.abs(diff).toLocaleString()}</span>`;
-    return `<tr style="background:${i%2===0?"#fff":"#f8fafc"}">
-      <td style="padding:10px 12px;border:1px solid #e2e8f0;text-align:center;font-size:12px;color:#5b6e63;">${i+1}</td>
-      <td style="padding:10px 12px;border:1px solid #e2e8f0;font-weight:700;">${escapeHtml(r.name||"-")}</td>
-      <td style="padding:10px 12px;border:1px solid #e2e8f0;text-align:center;font-weight:900;color:#0e7a3f;">${mfgFmt}</td>
-      <td style="padding:10px 12px;border:1px solid #e2e8f0;text-align:center;color:#059669;">${expFmt}</td>
-      <td style="padding:10px 12px;border:1px solid #e2e8f0;text-align:right;font-weight:900;font-size:16px;color:#3b82f6;">${planned.toLocaleString()}</td>
-      <td style="padding:10px 12px;border:1px solid #e2e8f0;text-align:right;font-weight:900;font-size:16px;color:#16a34a;">${actual.toLocaleString()}</td>
-      <td style="padding:10px 12px;border:1px solid #e2e8f0;text-align:right;font-weight:900;font-size:16px;color:${diffColor};">${diffSign}${diff.toLocaleString()}</td>
-      <td style="padding:10px 12px;border:1px solid #e2e8f0;">${escapeHtml(r.unit||"-")}</td>
-      <td style="padding:10px 12px;border:1px solid #e2e8f0;text-align:center;">${status}</td>
+      ? `<span style="color:#006b31;font-weight:700;">ตามแผน</span>`
+      : `<span style="color:#c8102e;font-weight:700;">ขาด ${Math.abs(diff).toLocaleString()}</span>`;
+    return `<tr style="background:${i%2===0?"#fff":"#f7f7f4"}">
+      <td style="padding:10px 12px;border:1px solid #d6d6d0;text-align:center;font-size:12px;color:#5c5c57;">${i+1}</td>
+      <td style="padding:10px 12px;border:1px solid #d6d6d0;font-weight:700;">${escapeHtml(r.name||"-")}</td>
+      <td style="padding:10px 12px;border:1px solid #d6d6d0;text-align:center;font-weight:900;color:#006b31;">${mfgFmt}</td>
+      <td style="padding:10px 12px;border:1px solid #d6d6d0;text-align:center;color:#111;">${expFmt}</td>
+      <td style="padding:10px 12px;border:1px solid #d6d6d0;text-align:right;font-weight:900;font-size:16px;color:#111;">${planned.toLocaleString()}</td>
+      <td style="padding:10px 12px;border:1px solid #d6d6d0;text-align:right;font-weight:900;font-size:16px;color:#006b31;">${actual.toLocaleString()}</td>
+      <td style="padding:10px 12px;border:1px solid #d6d6d0;text-align:right;font-weight:900;font-size:16px;color:${diffColor};">${diffSign}${diff.toLocaleString()}</td>
+      <td style="padding:10px 12px;border:1px solid #d6d6d0;">${escapeHtml(r.unit||"-")}</td>
+      <td style="padding:10px 12px;border:1px solid #d6d6d0;text-align:center;">${status}</td>
     </tr>`;
   }).join("");
 
-  const overallDiffColor = totalDiff>=0?"#059669":"#dc2626";
+  const overallDiffColor = totalDiff>=0?"#006b31":"#c8102e";
   const w = window.open("","","width=1050,height=720");
   w.document.write(`<!DOCTYPE html><html lang="th"><head><meta charset="UTF-8">
   <title>รายงานยอดผลิตจริง ${o.OrderID}</title>
   <style>
-    body{font-family:'Sarabun',sans-serif;color:#1e293b;padding:32px 40px;font-size:14px;}
-    .hd{display:flex;justify-content:space-between;align-items:flex-start;border-bottom:3px solid #1e293b;padding-bottom:14px;margin-bottom:22px;}
-    h1{font-size:24px;font-weight:900;margin:0 0 4px;} .sub{font-size:12px;color:#64748b;}
+    @import url('${fontCssUrl()}');
+    body{font-family:'Sarabun',sans-serif;color:#111;padding:32px 40px;font-size:14px;}
+    .hd{display:flex;justify-content:space-between;align-items:flex-start;border-bottom:3px solid #00843d;padding-bottom:14px;margin-bottom:22px;}
+    h1{font-size:24px;font-weight:900;margin:0 0 4px;} .sub{font-size:12px;color:#5c5c57;}
     .summary{display:flex;gap:16px;margin-bottom:22px;}
-    .sum-card{flex:1;border-radius:10px;padding:16px 20px;text-align:center;}
+    .sum-card{flex:1;border:1.5px solid #d6d6d0;border-top:6px solid #00843d;padding:14px 20px;text-align:center;background:#fff;}
     .sum-card .n{font-size:32px;font-weight:900;line-height:1;}
-    .sum-card .l{font-size:11px;font-weight:700;text-transform:uppercase;margin-top:5px;opacity:.7;}
-    .plan-c{background:#eff6ff;border:2px solid #3b82f6;} .plan-c .n{color:#3b82f6;}
-    .act-c{background:#f0fdf4;border:2px solid #22c55e;} .act-c .n{color:#16a34a;}
-    .dif-c{background:#f8fafc;border:2px solid #64748b;} .dif-c .n{color:${overallDiffColor};}
-    .status-bar{padding:12px 18px;border-radius:8px;font-weight:900;font-size:14px;text-align:center;margin-bottom:20px;}
+    .sum-card .l{font-size:12px;font-weight:700;margin-top:5px;color:#3d3d3d;}
+    .plan-c .n{color:#111;}
+    .act-c .n{color:#006b31;}
+    .dif-c .n{color:${overallDiffColor};}
+    .status-bar{padding:12px 18px;border-radius:6px;font-weight:900;font-size:14px;text-align:center;margin-bottom:20px;}
     .sign{display:flex;gap:40px;margin-top:40px;}
-    .sign-box{flex:1;text-align:center;border-top:2px solid #94a3b8;padding-top:8px;font-size:11px;color:#64748b;}
-    .footer{margin-top:18px;font-size:11px;color:#5b6e63;text-align:center;border-top:1px solid #e2e8f0;padding-top:10px;}
+    .sign-box{flex:1;text-align:center;border-top:2px solid #8a8a84;padding-top:8px;font-size:11px;color:#5c5c57;}
+    .footer{margin-top:18px;font-size:11px;color:#5c5c57;text-align:center;border-top:1px solid #d6d6d0;padding-top:10px;}
     @media print{body{padding:14px 22px;} .no-print{display:none;}}
   </style></head><body>
   <div class="hd">
@@ -676,7 +677,7 @@ async function crPrintActualReport(o) {
     </div>
     <div style="text-align:right;">
       <div class="sub">วันที่พิมพ์: <b>${printDate}</b> &nbsp;|&nbsp; ผู้พิมพ์: <b>${personName(currentUser)}</b></div>
-      <button class="no-print" onclick="window.print()" style="margin-top:8px;background:#0f766e;color:#fff;border:none;padding:8px 20px;border-radius:6px;font-size:12px;font-weight:700;cursor:pointer;">พิมพ์</button>
+      <button class="no-print" onclick="window.print()" style="margin-top:8px;background:#00843d;color:#fff;border:none;padding:8px 20px;border-radius:6px;font-size:12px;font-weight:700;cursor:pointer;">พิมพ์</button>
     </div>
   </div>
   <div class="summary">
@@ -684,11 +685,11 @@ async function crPrintActualReport(o) {
     <div class="sum-card act-c"><div class="n">${totalActual.toLocaleString()}</div><div class="l">ผลิตได้จริง</div></div>
     <div class="sum-card dif-c"><div class="n" style="color:${overallDiffColor};">${totalDiff>=0?"+":""}${totalDiff.toLocaleString()}</div><div class="l">ผลต่าง (จำนวน)</div></div>
   </div>
-  <div class="status-bar" style="background:${totalDiff>=0?"#f0fdf4":"#fef2f2"};border:2px solid ${totalDiff>=0?"#22c55e":"#ef4444"};color:${totalDiff>=0?"#16a34a":"#dc2626"};">
+  <div class="status-bar" style="background:${totalDiff>=0?"#e3f1e8":"#fbe9ec"};border:2px solid ${totalDiff>=0?"#00843d":"#c8102e"};color:${totalDiff>=0?"#006b31":"#c8102e"};">
     ${totalDiff>=0?"ผลิตได้ตามเป้าหมายโดยรวม":"ผลิตได้ต่ำกว่าแผนโดยรวม — ตรวจสอบสาเหตุ"}
   </div>
   <table style="width:100%;border-collapse:collapse;font-size:13px;">
-    <thead><tr style="background:#1e293b;color:#fff;font-size:11px;">
+    <thead><tr style="background:#f2f2ef;color:#111;border-bottom:2px solid #00843d;font-size:11px;">
       <th style="padding:9px 12px;text-align:center;width:30px">#</th>
       <th style="padding:9px 12px;text-align:left;">ชื่อสินค้า</th>
       <th style="padding:9px 12px;text-align:center;width:80px">MFG</th>
@@ -700,15 +701,15 @@ async function crPrintActualReport(o) {
       <th style="padding:9px 12px;text-align:center;width:100px">สถานะ</th>
     </tr></thead>
     <tbody>${tableRows}</tbody>
-    <tfoot><tr style="background:#f1f5f9;font-weight:900;font-size:14px;">
-      <td colspan="4" style="padding:10px 12px;border:1px solid #e2e8f0;text-align:right;">รวม</td>
-      <td style="padding:10px 12px;border:1px solid #e2e8f0;text-align:right;color:#3b82f6;">${totalPlan.toLocaleString()}</td>
-      <td style="padding:10px 12px;border:1px solid #e2e8f0;text-align:right;color:#16a34a;">${totalActual.toLocaleString()}</td>
-      <td style="padding:10px 12px;border:1px solid #e2e8f0;text-align:right;color:${overallDiffColor};">${totalDiff>=0?"+":""}${totalDiff.toLocaleString()}</td>
-      <td colspan="2" style="padding:10px 12px;border:1px solid #e2e8f0;"></td>
+    <tfoot><tr style="background:#f2f2ef;font-weight:900;font-size:14px;">
+      <td colspan="4" style="padding:10px 12px;border:1px solid #d6d6d0;text-align:right;">รวม</td>
+      <td style="padding:10px 12px;border:1px solid #d6d6d0;text-align:right;color:#111;">${totalPlan.toLocaleString()}</td>
+      <td style="padding:10px 12px;border:1px solid #d6d6d0;text-align:right;color:#006b31;">${totalActual.toLocaleString()}</td>
+      <td style="padding:10px 12px;border:1px solid #d6d6d0;text-align:right;color:${overallDiffColor};">${totalDiff>=0?"+":""}${totalDiff.toLocaleString()}</td>
+      <td colspan="2" style="padding:10px 12px;border:1px solid #d6d6d0;"></td>
     </tfoot>
   </table>
-  ${o.Note ? `<div style="background:#fef9c3;border-left:5px solid #eab308;padding:10px 14px;border-radius:6px;margin:16px 0;font-size:12px;"><b>หมายเหตุ:</b> ${escapeHtml(o.Note)}</div>` : ""}
+  ${o.Note ? `<div style="background:#fff6cc;border:1.5px solid #8a5a00;padding:10px 14px;border-radius:6px;margin:16px 0;font-size:12px;"><b>หมายเหตุ:</b> ${escapeHtml(o.Note)}</div>` : ""}
   <div class="sign">
     <div class="sign-box">ผู้จัดทำรายงาน<br><br>( ${personName(currentUser)} )</div>
     <div class="sign-box">ผู้ควบคุมการผลิต<br><br>( .......................... )</div>
@@ -737,18 +738,18 @@ function crOpenWorkOrderPrint(o) {
 
     // แสดงจำนวน: ถ้ามีชุด → แสดงทั้ง 2 บรรทัด; ถ้าไม่มี → แสดงแค่ qty
     const qtyCell = (sets > 0 && sName)
-      ? `<div style="font-size:15px;font-weight:900;color:#0e7a3f;">${sets.toLocaleString()} ${escapeHtml(sName)}</div>
-         <div style="font-size:11px;color:#5b6e63;margin:2px 0;">× ${ups} ${escapeHtml(unit)}/ชุด</div>
-         <div style="font-size:18px;font-weight:900;color:#1e293b;border-top:1px dashed #e2e8f0;margin-top:4px;padding-top:4px;">= ${qty.toLocaleString()} <span style="font-size:12px;font-weight:400;color:#64748b;">${escapeHtml(unit)}</span></div>`
-      : `<div style="font-size:18px;font-weight:900;">${qty.toLocaleString()} <span style="font-size:12px;font-weight:400;color:#64748b;">${escapeHtml(unit)}</span></div>`;
+      ? `<div style="font-size:15px;font-weight:900;color:#006b31;">${sets.toLocaleString()} ${escapeHtml(sName)}</div>
+         <div style="font-size:11px;color:#5c5c57;margin:2px 0;">× ${ups} ${escapeHtml(unit)}/ชุด</div>
+         <div style="font-size:18px;font-weight:900;color:#111;border-top:1px dashed #d6d6d0;margin-top:4px;padding-top:4px;">= ${qty.toLocaleString()} <span style="font-size:12px;font-weight:400;color:#5c5c57;">${escapeHtml(unit)}</span></div>`
+      : `<div style="font-size:18px;font-weight:900;">${qty.toLocaleString()} <span style="font-size:12px;font-weight:400;color:#5c5c57;">${escapeHtml(unit)}</span></div>`;
 
-    return `<tr style="background:${i%2===0?"#fff":"#f8fafc"}">
-      <td style="padding:10px 14px;border:1px solid #e2e8f0;text-align:center;font-size:12px;color:#5b6e63;">${i+1}</td>
-      <td style="padding:10px 14px;border:1px solid #e2e8f0;font-weight:700;font-size:14px;">${escapeHtml(item.name||"-")}</td>
-      <td style="padding:10px 14px;border:1px solid #e2e8f0;text-align:center;font-weight:900;font-size:16px;color:#0e7a3f;letter-spacing:1px;">${mfgFmt}</td>
-      <td style="padding:10px 14px;border:1px solid #e2e8f0;text-align:center;font-weight:900;font-size:16px;color:#059669;letter-spacing:1px;">${expFmt}</td>
-      <td style="padding:10px 14px;border:1px solid #e2e8f0;text-align:right;vertical-align:middle;">${qtyCell}</td>
-      <td style="padding:10px 14px;border:1px solid #e2e8f0;"></td>
+    return `<tr style="background:${i%2===0?"#fff":"#f7f7f4"}">
+      <td style="padding:10px 14px;border:1px solid #d6d6d0;text-align:center;font-size:12px;color:#5c5c57;">${i+1}</td>
+      <td style="padding:10px 14px;border:1px solid #d6d6d0;font-weight:700;font-size:14px;">${escapeHtml(item.name||"-")}</td>
+      <td style="padding:10px 14px;border:1px solid #d6d6d0;text-align:center;font-weight:900;font-size:16px;color:#006b31;letter-spacing:1px;">${mfgFmt}</td>
+      <td style="padding:10px 14px;border:1px solid #d6d6d0;text-align:center;font-weight:900;font-size:16px;color:#111;letter-spacing:1px;">${expFmt}</td>
+      <td style="padding:10px 14px;border:1px solid #d6d6d0;text-align:right;vertical-align:middle;">${qtyCell}</td>
+      <td style="padding:10px 14px;border:1px solid #d6d6d0;"></td>
     </tr>`;
   }).join("");
 
@@ -765,20 +766,19 @@ function crOpenWorkOrderPrint(o) {
   w.document.write(`<!DOCTYPE html><html lang="th"><head><meta charset="UTF-8">
   <title>ใบสั่งผลิต ${o.OrderID}</title>
   <style>
-    body{font-family:'Sarabun',sans-serif;color:#1e293b;padding:36px 48px;font-size:14px;}
-    .hd{display:flex;justify-content:space-between;align-items:flex-start;border-bottom:3px solid #1e293b;padding-bottom:16px;margin-bottom:24px;}
+    @import url('${fontCssUrl()}');
+    body{font-family:'Sarabun',sans-serif;color:#111;padding:36px 48px;font-size:14px;}
+    .hd{display:flex;justify-content:space-between;align-items:flex-start;border-bottom:3px solid #00843d;padding-bottom:16px;margin-bottom:24px;}
     h1{font-size:26px;font-weight:900;margin:0 0 4px;}
-    .sub{font-size:12px;color:#64748b;}
-    .note-box{background:#fef9c3;border-left:5px solid #eab308;padding:12px 16px;border-radius:6px;margin:16px 0;font-size:13px;}
+    .sub{font-size:12px;color:#5c5c57;}
+    .note-box{background:#fff6cc;border:1.5px solid #8a5a00;padding:12px 16px;border-radius:6px;margin:16px 0;font-size:13px;}
     .total-bar{display:flex;gap:16px;margin:12px 0;flex-wrap:wrap;}
-    .total-card{padding:10px 18px;border-radius:10px;border:2px solid;}
-    .tc-sets{border-color:#b8dcc6;background:#e9f4ed;color:#0e7a3f;}
-    .tc-qty {border-color:#bbf7d0;background:#f0fdf4;color:#15803d;}
-    .tc-label{font-size:10px;font-weight:700;text-transform:uppercase;opacity:.8;margin-bottom:4px;}
+    .total-card{padding:10px 18px;border:1.5px solid #d6d6d0;border-top:6px solid #00843d;background:#fff;color:#006b31;}
+        .tc-label{font-size:12px;font-weight:700;color:#3d3d3d;margin-bottom:4px;}
     .tc-value{font-size:20px;font-weight:900;}
     .sign{display:flex;gap:48px;margin-top:48px;}
-    .sign-box{flex:1;text-align:center;border-top:2px solid #94a3b8;padding-top:8px;font-size:11px;color:#64748b;}
-    .footer{margin-top:20px;font-size:11px;color:#5b6e63;text-align:center;border-top:1px solid #e2e8f0;padding-top:10px;}
+    .sign-box{flex:1;text-align:center;border-top:2px solid #8a8a84;padding-top:8px;font-size:11px;color:#5c5c57;}
+    .footer{margin-top:20px;font-size:11px;color:#5c5c57;text-align:center;border-top:1px solid #d6d6d0;padding-top:10px;}
     @media print{body{padding:16px 24px;} .no-print{display:none;}}
   </style></head><body>
   <div class="hd">
@@ -790,9 +790,9 @@ function crOpenWorkOrderPrint(o) {
       </div>
     </div>
     <div style="text-align:right;">
-      <div style="font-size:22px;font-weight:900;color:#0e7a3f;">${escapeHtml(o.OrderID||"-")}</div>
+      <div style="font-size:22px;font-weight:900;color:#006b31;">${escapeHtml(o.OrderID||"-")}</div>
       <div class="sub">วันที่: <b>${dateStr}</b> &nbsp;|&nbsp; ผู้สั่ง: <b>${escapeHtml(personName(o.CreatedBy))}</b></div>
-      <button class="no-print" onclick="window.print()" style="margin-top:8px;background:#1e293b;color:#fff;border:none;padding:8px 20px;border-radius:6px;font-size:12px;font-weight:700;cursor:pointer;">พิมพ์</button>
+      <button class="no-print" onclick="window.print()" style="margin-top:8px;background:#00843d;color:#fff;border:none;padding:8px 20px;border-radius:6px;font-size:12px;font-weight:700;cursor:pointer;">พิมพ์</button>
     </div>
   </div>
   ${setsSummary ? `<div class="total-bar">
@@ -800,7 +800,7 @@ function crOpenWorkOrderPrint(o) {
     <div class="total-card tc-qty" ><div class="tc-label">รวมทั้งหมด (หน่วย)</div><div class="tc-value">${totalQty.toLocaleString()}</div></div>
   </div>` : ""}
   <table style="width:100%;border-collapse:collapse;margin-bottom:16px;">
-    <thead><tr style="background:#1e293b;color:#fff;font-size:12px;">
+    <thead><tr style="background:#f2f2ef;color:#111;border-bottom:2px solid #00843d;font-size:12px;">
       <th style="padding:10px 14px;text-align:center;width:32px">#</th>
       <th style="padding:10px 14px;text-align:left;">ชื่อสินค้า</th>
       <th style="padding:10px 14px;text-align:center;width:90px">MFG</th>
@@ -809,13 +809,13 @@ function crOpenWorkOrderPrint(o) {
       <th style="padding:10px 14px;text-align:left;width:120px">หมายเหตุ</th>
     </tr></thead>
     <tbody>${itemRows}</tbody>
-    <tfoot><tr style="background:#f1f5f9;font-weight:900;">
-      <td colspan="4" style="padding:10px 14px;border:1px solid #e2e8f0;text-align:right;">รวมทั้งหมด</td>
-      <td style="padding:10px 14px;border:1px solid #e2e8f0;text-align:right;">
-        ${setsSummary ? `<div style="font-size:14px;color:#0e7a3f;font-weight:700;">${setsSummary}</div>` : ""}
-        <div style="font-size:20px;color:#15803d;">${totalQty.toLocaleString()}</div>
+    <tfoot><tr style="background:#f2f2ef;font-weight:900;">
+      <td colspan="4" style="padding:10px 14px;border:1px solid #d6d6d0;text-align:right;">รวมทั้งหมด</td>
+      <td style="padding:10px 14px;border:1px solid #d6d6d0;text-align:right;">
+        ${setsSummary ? `<div style="font-size:14px;color:#006b31;font-weight:700;">${setsSummary}</div>` : ""}
+        <div style="font-size:20px;color:#006b31;">${totalQty.toLocaleString()}</div>
       </td>
-      <td style="padding:10px 14px;border:1px solid #e2e8f0;"></td>
+      <td style="padding:10px 14px;border:1px solid #d6d6d0;"></td>
     </tr></tfoot>
   </table>
   ${o.Note ? `<div class="note-box"><b>หมายเหตุ:</b> ${escapeHtml(o.Note)}</div>` : ""}
@@ -851,22 +851,22 @@ async function crCheckBomMaterials() {
   });
   if (!items.length) {
     resultEl.style.display = "";
-    resultEl.innerHTML = `<div style="background:var(--sq-warn-bg);border:2px solid var(--sq-warn-bg);border-radius:12px;padding:12px 16px;font-size:13px;font-weight:700;color:var(--sq-high);">กรุณาเพิ่มสินค้าและระบุจำนวนก่อน</div>`;
+    resultEl.innerHTML = `<div style="background:var(--sq-warn-bg);border:2px solid var(--sq-warn-bg);border-radius:6px;padding:12px 16px;font-size:13px;font-weight:700;color:var(--sq-high);">กรุณาเพิ่มสินค้าและระบุจำนวนก่อน</div>`;
     crWoLockButtons();
     return;
   }
   resultEl.style.display = "";
-  resultEl.innerHTML = `<div style="background:var(--sq-line-soft);border-radius:12px;padding:14px;font-size:13px;color:var(--sq-muted);font-weight:700;text-align:center;">กำลังคำนวณวัตถุดิบ...</div>`;
+  resultEl.innerHTML = `<div style="background:var(--sq-line-soft);border-radius:6px;padding:14px;font-size:13px;color:var(--sq-muted);font-weight:700;text-align:center;">กำลังคำนวณวัตถุดิบ...</div>`;
   const res = await crCallServer("calcWorkOrderMaterials", { items });
   if (!res.ok) {
-    resultEl.innerHTML = `<div style="background:var(--sq-crit-bg);border:2px solid var(--sq-crit);border-radius:12px;padding:12px 16px;font-size:13px;font-weight:700;color:var(--sq-crit);">${escapeHtml(res.message||"เกิดข้อผิดพลาด")}</div>`;
+    resultEl.innerHTML = `<div style="background:var(--sq-crit-bg);border:2px solid var(--sq-crit);border-radius:6px;padding:12px 16px;font-size:13px;font-weight:700;color:var(--sq-crit);">${escapeHtml(res.message||"เกิดข้อผิดพลาด")}</div>`;
     return;
   }
   const matsByFactory = res.materials || {};
   const noBom = res.noBom || [];
   const hasShortage = Object.values(matsByFactory).some(mats => mats.some(m => !m.sufficient));
 
-  let html = `<div style="border:2px solid ${hasShortage?"var(--sq-crit)":"var(--sq-accent)"};border-radius:16px;overflow:hidden;">
+  let html = `<div style="border:2px solid ${hasShortage?"var(--sq-crit)":"var(--sq-accent)"};border-radius:6px;overflow:hidden;">
     <div style="background:${hasShortage?"var(--sq-crit-bg)":"var(--sq-accent-2)"};padding:12px 16px;font-size:14px;font-weight:900;color:${hasShortage?"var(--sq-crit)":"var(--sq-accent)"};">
       ${hasShortage?"มีวัตถุดิบไม่เพียงพอ — ตรวจสอบด้านล่าง":"วัตถุดิบเพียงพอทั้งหมด"}
     </div>`;
@@ -947,13 +947,13 @@ function crSiAddRow() {
   row.className = "cr-si-row";
   row.dataset.idx = idx;
   row.innerHTML = `
-    <div style="background:var(--sq-raised);border:1.5px solid var(--sq-line);border-radius:14px;padding:14px;position:relative;">
+    <div style="background:var(--sq-raised);border:1.5px solid var(--sq-line);border-radius:6px;padding:14px;position:relative;">
       <button onclick="this.closest('.cr-si-row').remove()" aria-label="ลบแถวนี้" style="position:absolute;top:6px;right:6px;background:none;border:none;font-size:18px;cursor:pointer;color:var(--sq-ink2);line-height:1;min-width:36px;min-height:36px;border-radius:8px;">✕</button>
 
       <div style="margin-bottom:10px;">
         <label style="font-size:12px;font-weight:700;color:var(--sq-muted);display:block;margin-bottom:4px;">สินค้า</label>
         <select class="cr-si-product" aria-label="สินค้า" onchange="crSiOnProductChange(this)"
-          style="width:100%;padding:10px 12px;border:1.5px solid var(--sq-line);border-radius:10px;font-size:14px;background:#fff;box-sizing:border-box;">
+          style="width:100%;padding:10px 12px;border:1.5px solid var(--sq-line);border-radius:6px;font-size:14px;background:#fff;box-sizing:border-box;">
           <option value="">— เลือกสินค้า —</option>
           ${opts}
         </select>
@@ -964,12 +964,12 @@ function crSiAddRow() {
           <label style="font-size:12px;font-weight:700;color:var(--sq-muted);display:block;margin-bottom:4px;">MFG <span style="font-weight:400;opacity:.7;">(วันเดือนปี 6 หลัก)</span></label>
           <input class="cr-si-mfg" aria-label="วันผลิต (MFG)" type="text" maxlength="6" inputmode="numeric" placeholder="เช่น 100426"
             oninput="this.value=this.value.replace(/\D/g,''); crSiAutoExp(this)"
-            style="width:100%;padding:12px;border:1.5px solid var(--sq-line);border-radius:10px;font-size:20px;font-weight:900;text-align:center;letter-spacing:3px;box-sizing:border-box;">
+            style="width:100%;padding:12px;border:1.5px solid var(--sq-line);border-radius:6px;font-size:20px;font-weight:900;text-align:center;letter-spacing:3px;box-sizing:border-box;">
         </div>
         <div>
           <label style="font-size:12px;font-weight:700;color:var(--sq-high);display:block;margin-bottom:4px;">EXP <span style="font-weight:400;opacity:.7;">(คำนวณอัตโนมัติ)</span></label>
           <input class="cr-si-exp" aria-label="วันหมดอายุ (EXP)" type="text" maxlength="6" inputmode="numeric" placeholder="—" readonly
-            style="width:100%;padding:12px;border:1.5px solid var(--sq-high-bg);border-radius:10px;font-size:20px;font-weight:900;text-align:center;letter-spacing:3px;background:var(--sq-high-bg);color:var(--sq-high);box-sizing:border-box;">
+            style="width:100%;padding:12px;border:1.5px solid var(--sq-high-bg);border-radius:6px;font-size:20px;font-weight:900;text-align:center;letter-spacing:3px;background:var(--sq-high-bg);color:var(--sq-high);box-sizing:border-box;">
         </div>
       </div>
 
@@ -977,11 +977,11 @@ function crSiAddRow() {
         <div>
           <label style="font-size:12px;font-weight:700;color:var(--sq-muted);display:block;margin-bottom:4px;">จำนวน (ประมาณ)</label>
           <input class="cr-si-qty" aria-label="จำนวน" type="number" min="0" value="" inputmode="numeric"
-            style="width:100%;padding:12px;border:1.5px solid var(--sq-line);border-radius:10px;font-size:20px;font-weight:900;text-align:center;box-sizing:border-box;">
+            style="width:100%;padding:12px;border:1.5px solid var(--sq-line);border-radius:6px;font-size:20px;font-weight:900;text-align:center;box-sizing:border-box;">
         </div>
         <div>
           <label style="font-size:12px;font-weight:700;color:var(--sq-muted);display:block;margin-bottom:4px;">หน่วย</label>
-          <div class="cr-si-unit-label" style="padding:12px 8px;font-size:14px;font-weight:700;color:var(--sq-ink);text-align:center;background:#fff;border:1.5px solid var(--sq-line);border-radius:10px;">—</div>
+          <div class="cr-si-unit-label" style="padding:12px 8px;font-size:14px;font-weight:700;color:var(--sq-ink);text-align:center;background:#fff;border:1.5px solid var(--sq-line);border-radius:6px;">—</div>
         </div>
       </div>
     </div>`;
@@ -1100,7 +1100,7 @@ async function crSiLoadReviewList(filterStatus) {
         </td>
       </tr>`).join("");
 
-    return `<div style="border:2px solid ${isPending?"var(--sq-high)":"var(--sq-line)"};border-radius:14px;padding:16px;margin-bottom:16px;"
+    return `<div style="border:2px solid ${isPending?"var(--sq-high)":"var(--sq-line)"};border-radius:6px;padding:16px;margin-bottom:16px;"
                  id="cr-si-card-${escapeHtml(si.StockInID)}">
       <div style="display:flex;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;gap:8px;margin-bottom:10px;">
         <div>
@@ -1380,7 +1380,7 @@ function crLoadMoreLots() {
     b.insertAdjacentHTML("beforeend", `
       <tr id="crLoadMoreRow">
         <td colspan="9" style="text-align:center;padding:16px;">
-          <button onclick="crLoadMoreLots()" style="background:var(--primary);color:#fff;border:none;padding:10px 28px;border-radius:12px;font-weight:800;font-size:14px;cursor:pointer;font-family:inherit;">
+          <button onclick="crLoadMoreLots()" style="background:var(--primary);color:#fff;border:none;padding:10px 28px;border-radius:6px;font-weight:800;font-size:14px;cursor:pointer;font-family:inherit;">
             โหลดเพิ่ม (${end}/${lots.length}) ▼
           </button>
         </td>
@@ -1829,7 +1829,7 @@ function crExport(format) {
     showToast("ดาวน์โหลด CSV เรียบร้อย");
   } else {
     const w = window.open("","","width=900,height=600");
-    w.document.write(`<!DOCTYPE html><html><head><title>รายงาน</title><style>@import url('${fontCssUrl()}');body{font-family:Sarabun,sans-serif;padding:20px}table{width:100%;border-collapse:collapse;font-size:14px}th,td{border:1px solid #5b6e63;padding:8px;text-align:left}th{background:#ebf0ec;font-weight:700}.hd{display:flex;align-items:center;gap:14px;border-bottom:2px solid #16241b;padding-bottom:10px;margin-bottom:12px}</style></head><body><div class="hd">${logoImgTag(44)}<div><h2 style="margin:0">รายงานสต๊อกคงเหลือ SQF</h2><p style="margin:2px 0 0;font-size:12px;color:#5b6e63">อัปเดต: ${new Date().toLocaleString("th-TH")}</p></div></div><table><thead><tr><th>ชื่อสินค้า</th><th>MFG</th><th>จำนวน</th><th>เหลือ(วัน)</th><th>สถานะ</th><th>QC</th></tr></thead><tbody>${sorted.map(r=>`<tr><td>${escapeHtml(r.ProductName)}</td><td>${isoToDdmmyy(r.MFG)}</td><td>${r.Qty} ${escapeHtml(r.Unit)}</td><td>${r.ExpireDays}</td><td>${r.ExpireStatus}</td><td>${escapeHtml(uiNoEmoji(r.QcShelfLifeStatus))}</td></tr>`).join("")}</tbody></table></body></html>`);
+    w.document.write(`<!DOCTYPE html><html><head><title>รายงาน</title><style>@import url('${fontCssUrl()}');body{font-family:Sarabun,sans-serif;padding:20px}table{width:100%;border-collapse:collapse;font-size:14px}th,td{border:1px solid #5c5c57;padding:8px;text-align:left}th{background:#f2f2ef;font-weight:700}.hd{display:flex;align-items:center;gap:14px;border-bottom:2px solid #111;padding-bottom:10px;margin-bottom:12px}</style></head><body><div class="hd">${logoImgTag(44)}<div><h2 style="margin:0">รายงานสต๊อกคงเหลือ SQF</h2><p style="margin:2px 0 0;font-size:12px;color:#5c5c57">อัปเดต: ${new Date().toLocaleString("th-TH")}</p></div></div><table><thead><tr><th>ชื่อสินค้า</th><th>MFG</th><th>จำนวน</th><th>เหลือ(วัน)</th><th>สถานะ</th><th>QC</th></tr></thead><tbody>${sorted.map(r=>`<tr><td>${escapeHtml(r.ProductName)}</td><td>${isoToDdmmyy(r.MFG)}</td><td>${r.Qty} ${escapeHtml(r.Unit)}</td><td>${r.ExpireDays}</td><td>${r.ExpireStatus}</td><td>${escapeHtml(uiNoEmoji(r.QcShelfLifeStatus))}</td></tr>`).join("")}</tbody></table></body></html>`);
     w.document.close(); setTimeout(()=>{ w.focus(); w.print(); },500);
   }
 }

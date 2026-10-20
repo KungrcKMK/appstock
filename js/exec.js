@@ -98,7 +98,7 @@ async function loadExecDashboard() {
     }
     if (slot("execKpiSlot")) slot("execKpiSlot").innerHTML =
       `<div class="sq-card"><p class="sq-empty" style="color:var(--sq-crit);font-weight:700;">ข้อมูลไม่ครบ (${failed.length} คลังโหลดไม่สำเร็จ) — ตัวเลขรวมยังไม่แสดง เพราะรวมแค่บางคลังจะหลอกตา</p>
-        <p style="text-align:center;margin-top:10px;"><button onclick="loadExecDashboard()" style="padding:9px 18px;border-radius:10px;border:1px solid var(--sq-line,#cfd8d2);background:#fff;font-weight:700;cursor:pointer;">ลองใหม่</button></p></div>`;
+        <p style="text-align:center;margin-top:10px;"><button onclick="loadExecDashboard()" style="padding:9px 18px;border-radius:6px;border:1px solid var(--sq-line,#d6d6d0);background:#fff;font-weight:700;cursor:pointer;">ลองใหม่</button></p></div>`;
     return;
   }
   const now = new Date().toLocaleString("th-TH", { dateStyle:"medium", timeStyle:"short" });
@@ -342,7 +342,7 @@ function execStockSection(icon, title, railClass, products, expiring, expired, s
   return `
   <div class="sq-card ${railClass}">
     <div class="sq-card-head">
-      <span class="sq-card-title">${icon} ${title}</span>
+      <span class="sq-card-title"><i class="ic ic-${railClass === "rail-cold" ? "snow" : "factory"}" aria-hidden="true"></i>${title}</span>
       <span class="sq-card-note">${products.length} ชนิด${warnCount>0?` · <span style="color:var(--sq-high);font-weight:700;">${warnCount} ต้องดู</span>`:""}${staleDays && staleLots.length ? ` · <span style="color:var(--sq-high);font-weight:700;">${staleLots.length} ไม่อัปเดต</span>` : ""}</span>
     </div>
     ${products.length === 0
@@ -440,7 +440,7 @@ function execRawSection(icon, title, railClass, mats, staleDays) {
   return `
   <div class="sq-card ${railClass}">
     <div class="sq-card-head">
-      <span class="sq-card-title">${icon} ${title}</span>
+      <span class="sq-card-title"><i class="ic ic-${railClass === "rail-cold" ? "snow" : "factory"}" aria-hidden="true"></i>${title}</span>
       <span class="sq-card-note">${active.length} รายการ${lowCount>0?` · <span style="color:var(--sq-high);font-weight:700;">${lowCount} ต่ำกว่าจุดสั่งซื้อ</span>`:""}</span>
     </div>
     <div class="sq-card-body" style="display:flex;gap:6px;flex-wrap:wrap;border-bottom:1px solid var(--sq-line-soft);">
@@ -638,7 +638,7 @@ const _xmValueLabels = {
     const { ctx, chartArea } = chart;
     ctx.save();
     ctx.font = "700 11px Sarabun, sans-serif";
-    ctx.fillStyle = "#435349";
+    ctx.fillStyle = "#3d3d3d";
     ctx.textBaseline = "middle";
     chart.getDatasetMeta(0).data.forEach((bar, i) => {
       const t = texts[i];

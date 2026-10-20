@@ -466,10 +466,10 @@ function renderActivityList() {
   }
   const moduleColor = { COLDROOM: "text-white", SQF: "text-white", MLM: "text-white" };
   const moduleBg    = { COLDROOM: "var(--sq-fac-cr)", SQF: "var(--sq-fac-sqf)", MLM: "var(--sq-fac-mlm)" };   // สีโรงงานชุดเดียวกับการ์ดหน้าแรก/แถบเมนู
-  const moduleIcon  = { COLDROOM: "", SQF: "", MLM: "" };
+  const moduleIcon  = { COLDROOM: "snow", SQF: "factory", MLM: "factory" };
   listEl.innerHTML = items.map(a => `
     <div class="flex gap-3 items-start bg-slate-50 rounded-2xl p-3 border border-slate-100">
-      <span class="shrink-0 text-xl mt-0.5">${moduleIcon[a.module] || ""}</span>
+      <i class="ic ic-${moduleIcon[a.module] || "doc"} shrink-0 text-xl mt-0.5" style="color:${moduleBg[a.module] || "var(--sq-ink2)"}" aria-hidden="true"></i>
       <div class="flex-1 min-w-0">
         <div class="flex items-center gap-2 flex-wrap">
           <span class="text-xs font-black px-2 py-0.5 rounded-full ${moduleColor[a.module] || "bg-slate-100 text-slate-600"}" style="${moduleBg[a.module] ? "background:" + moduleBg[a.module] : ""}">${escapeHtml(a.module||"")}</span>

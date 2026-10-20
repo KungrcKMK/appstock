@@ -224,7 +224,7 @@ function bhRenderWhereUsed() {
     const title = nm && nm !== sku ? nm : sku;
     const badge = (nm && nm !== sku) ? `<span class="sq-meta" style="display:inline;margin-left:6px;">${escapeHtml(sku)}</span>` : "";
     return `
-    <div style="border:1px solid var(--sq-line);border-radius:9px;padding:10px 12px;margin-bottom:7px;">
+    <div style="border:1px solid var(--sq-line);border-radius:6px;padding:10px 12px;margin-bottom:7px;">
       <div class="sq-name">${escapeHtml(title)}${badge}</div>
       <div class="sq-list" style="margin-top:5px;">
         ${wu[sku].map(u => `

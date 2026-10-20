@@ -124,14 +124,14 @@ function sharePrintQr() {
     <style>
       @import url('${fontCssUrl()}');
       body{font-family:Sarabun,sans-serif;text-align:center;padding:40px 30px;margin:0;}
-      h1{font-size:34px;font-weight:800;margin:0 0 6px;color:#16241b;}
-      .sub{font-size:17px;color:#435349;font-weight:700;margin-bottom:26px;}
-      img{width:340px;height:340px;border:10px solid #16241b;border-radius:20px;}
-      .url{font-family:monospace;font-size:15px;color:#435349;margin-top:18px;word-break:break-all;}
-      .steps{margin:32px auto 0;max-width:520px;text-align:left;background:#fafbfa;border:1px solid #dfe6e0;border-radius:16px;padding:20px 24px;}
-      .steps h2{font-size:18px;margin:0 0 12px;color:#16241b;}
-      .steps ol{margin:0;padding-left:22px;font-size:15px;line-height:1.9;color:#16241b;}
-      .note{margin-top:18px;font-size:13px;color:#5b6e63;}
+      h1{font-size:34px;font-weight:800;margin:0 0 6px;color:#111;}
+      .sub{font-size:17px;color:#3d3d3d;font-weight:700;margin-bottom:26px;}
+      img{width:340px;height:340px;border:10px solid #111;border-radius:6px;}
+      .url{font-family:monospace;font-size:15px;color:#3d3d3d;margin-top:18px;word-break:break-all;}
+      .steps{margin:32px auto 0;max-width:520px;text-align:left;background:#f7f7f4;border:1px solid #d6d6d0;border-radius:6px;padding:20px 24px;}
+      .steps h2{font-size:18px;margin:0 0 12px;color:#111;}
+      .steps ol{margin:0;padding-left:22px;font-size:15px;line-height:1.9;color:#111;}
+      .note{margin-top:18px;font-size:13px;color:#5c5c57;}
       @media print{ body{padding:20px;} .noprint{display:none;} }
     </style></head><body>
     <img src="${logoUrl()}" alt="" onerror="this.style.display='none'"

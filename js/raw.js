@@ -336,7 +336,7 @@ function rawStatusOf(item) {
 const RAW_RUNOUT = { late: ["crit", "#c8102e"], now: ["high", "#c2410c"], soon: ["warn", "#8a5a00"] };
 function rawRunout(item) {
   if (item.DaysCover === null || item.DaysCover === undefined || item.DaysCover === "") return null;
-  const m = String(item.RunOutDate || "").match(/^(\d{4})-(\d{2})-(\d{2})/), t = RAW_RUNOUT[item.PlanStatus] || ["", "#475569"];
+  const m = String(item.RunOutDate || "").match(/^(\d{4})-(\d{2})-(\d{2})/), t = RAW_RUNOUT[item.PlanStatus] || ["", "#3d3d3d"];
   return { days: Number(item.DaysCover), date: m ? m[3] + "/" + m[2] + "/" + (Number(m[1]) + 543) : "", cls: t[0], hex: t[1] };
 }
 
@@ -597,33 +597,33 @@ function rawExportPdf() {
     const isLow = rawIsLow(item);
     const ed = rawParseDate(item.ExpiryDate); const isExp = ed && ed < today;
     const nearAlert2 = rawNearExpiry(item, rawAlertDays);
-    let rowStyle = "", statusText = "ปลอดภัย", statusColor = "#059669";
-    if(isExp)        { rowStyle="background:#fee2e2;"; statusText="หมดอายุ";                        statusColor="#dc2626"; }
-    else if(isLow)   { rowStyle="background:#ffedd5;"; statusText="ต่ำ";                             statusColor="#ea580c"; }
-    else if(nearAlert2){ rowStyle="background:#fef9c3;"; statusText=`ใกล้หมด(≤${rawAlertDays}ว)`; statusColor="#d97706"; }
+    let rowStyle = "", statusText = "ปลอดภัย", statusColor = "#006b31";
+    if(isExp)        { rowStyle="background:#fbe9ec;"; statusText="หมดอายุ";                        statusColor="#c8102e"; }
+    else if(isLow)   { rowStyle="background:#fdf0e2;"; statusText="ต่ำ";                             statusColor="#a8560a"; }
+    else if(nearAlert2){ rowStyle="background:#fff6cc;"; statusText=`ใกล้หมด(≤${rawAlertDays}ว)`; statusColor="#8a5a00"; }
     return `<tr style="${rowStyle}">
-      <td style="padding:8px 12px;border:1px solid #e2e8f0;">${escapeHtml(item.SKU||"-")}</td>
-      <td style="padding:8px 12px;border:1px solid #e2e8f0;font-weight:700;">${escapeHtml(item.Name||"-")}</td>
-      <td style="padding:8px 12px;border:1px solid #e2e8f0;text-align:right;font-weight:700;">${Number(item.Qty||0).toLocaleString()}</td>
-      <td style="padding:8px 12px;border:1px solid #e2e8f0;text-align:right;">${Number(item.Min||0).toLocaleString()}</td>
-      <td style="padding:8px 12px;border:1px solid #e2e8f0;">${escapeHtml(item.Unit||"-")}</td>
-      <td style="padding:8px 12px;border:1px solid #e2e8f0;">${rawForceThaiDate(item.ExpiryDate)||"-"}</td>
-      <td style="padding:8px 12px;border:1px solid #e2e8f0;text-align:center;font-weight:700;color:${statusColor};">${statusText}</td>
+      <td style="padding:8px 12px;border:1px solid #d6d6d0;">${escapeHtml(item.SKU||"-")}</td>
+      <td style="padding:8px 12px;border:1px solid #d6d6d0;font-weight:700;">${escapeHtml(item.Name||"-")}</td>
+      <td style="padding:8px 12px;border:1px solid #d6d6d0;text-align:right;font-weight:700;">${Number(item.Qty||0).toLocaleString()}</td>
+      <td style="padding:8px 12px;border:1px solid #d6d6d0;text-align:right;">${Number(item.Min||0).toLocaleString()}</td>
+      <td style="padding:8px 12px;border:1px solid #d6d6d0;">${escapeHtml(item.Unit||"-")}</td>
+      <td style="padding:8px 12px;border:1px solid #d6d6d0;">${rawForceThaiDate(item.ExpiryDate)||"-"}</td>
+      <td style="padding:8px 12px;border:1px solid #d6d6d0;text-align:center;font-weight:700;color:${statusColor};">${statusText}</td>
     </tr>`;
   }).join("");
   const w = window.open("","","width=1000,height=700");
   w.document.write(`<!DOCTYPE html><html lang="th"><head><meta charset="UTF-8">
   <title>รายงานสต๊อกวัตถุดิบ — ${factoryName}</title>
-  <style>
-    body{font-family:'Sarabun',sans-serif;font-size:13px;color:#1e293b;padding:32px;}
+  <style>@import url('${fontCssUrl()}');
+    body{font-family:'Sarabun',sans-serif;font-size:13px;color:#111;padding:32px;}
     h1{font-size:22px;font-weight:900;margin-bottom:4px;}
-    h2{font-size:15px;font-weight:700;color:#64748b;margin-bottom:24px;}
+    h2{font-size:15px;font-weight:700;color:#5c5c57;margin-bottom:24px;}
     table{width:100%;border-collapse:collapse;margin-top:16px;}
-    thead tr{background:#1e293b;color:#fff;}
-    th{padding:10px 12px;border:1px solid #334155;text-align:left;font-size:12px;font-weight:700;}
+    thead tr{background:#f2f2ef;color:#111;border-bottom:2px solid #00843d;}
+    th{padding:10px 12px;border:1px solid #3d3d3d;text-align:left;font-size:12px;font-weight:700;}
     td{font-size:12px;}
-    .footer{margin-top:32px;font-size:11px;color:#5b6e63;text-align:right;}
-    .doc-head{display:flex;align-items:center;gap:16px;border-bottom:2px solid #1e293b;padding-bottom:12px;margin-bottom:16px;}
+    .footer{margin-top:32px;font-size:11px;color:#5c5c57;text-align:right;}
+    .doc-head{display:flex;align-items:center;gap:16px;border-bottom:3px solid #00843d;padding-bottom:12px;margin-bottom:16px;}
     @media print{body{padding:16px;}}
   </style></head><body>
   <div class="doc-head">
@@ -675,45 +675,45 @@ function openPurchaseRequest() {
     // ใช้ได้กี่วันหลังสั่ง = สั่งจริง ÷ ใช้/วัน (ปัดลง)
     const daysAfterSuggest = daily > 0 ? Math.floor(suggestQty / daily) : null;
     const daysText   = daysLeft !== null ? `${daysLeft.toLocaleString()} วัน` : "-";
-    return `<tr style="${isExp?"background:#fee2e2":"background:#ffedd5"}" data-qty="${qty}" data-daily="${daily}">
-      <td style="padding:8px 12px;border:1px solid #e2e8f0;text-align:center;">${idx+1}</td>
-      <td style="padding:8px 12px;border:1px solid #e2e8f0;font-size:11px;color:#64748b;">${escapeHtml(item.SKU||"-")}</td>
-      <td style="padding:8px 12px;border:1px solid #e2e8f0;font-weight:700;">${escapeHtml(item.Name||"-")}</td>
-      <td style="padding:8px 12px;border:1px solid #e2e8f0;text-align:right;">${qty.toLocaleString()}</td>
-      <td style="padding:8px 12px;border:1px solid #e2e8f0;text-align:right;color:#64748b;">${daily > 0 ? daily.toLocaleString() : "-"}</td>
-      <td style="padding:8px 12px;border:1px solid #e2e8f0;text-align:center;font-weight:700;color:${ro ? ro.hex : "#475569"};">${daysText}</td>
-      <td style="padding:8px 12px;border:1px solid #e2e8f0;text-align:right;">
+    return `<tr style="${isExp?"background:#fbe9ec":"background:#fdf0e2"}" data-qty="${qty}" data-daily="${daily}">
+      <td style="padding:8px 12px;border:1px solid #d6d6d0;text-align:center;">${idx+1}</td>
+      <td style="padding:8px 12px;border:1px solid #d6d6d0;font-size:11px;color:#5c5c57;">${escapeHtml(item.SKU||"-")}</td>
+      <td style="padding:8px 12px;border:1px solid #d6d6d0;font-weight:700;">${escapeHtml(item.Name||"-")}</td>
+      <td style="padding:8px 12px;border:1px solid #d6d6d0;text-align:right;">${qty.toLocaleString()}</td>
+      <td style="padding:8px 12px;border:1px solid #d6d6d0;text-align:right;color:#5c5c57;">${daily > 0 ? daily.toLocaleString() : "-"}</td>
+      <td style="padding:8px 12px;border:1px solid #d6d6d0;text-align:center;font-weight:700;color:${ro ? ro.hex : "#3d3d3d"};">${daysText}</td>
+      <td style="padding:8px 12px;border:1px solid #d6d6d0;text-align:right;">
         <input type="number" class="order-input" aria-label="จำนวนที่จะสั่ง" value="${suggestQty > 0 ? suggestQty : ""}" min="0"
-          style="width:80px;padding:4px 6px;border:2px solid #0e7a3f;border-radius:8px;font-size:13px;font-weight:700;text-align:right;font-family:inherit;"
+          style="width:80px;padding:4px 6px;border:2px solid #006b31;border-radius:8px;font-size:13px;font-weight:700;text-align:right;font-family:inherit;"
           oninput="calcDaysAfter(this)">
         <span class="order-input-print" style="display:none;font-weight:700;">${suggestQty > 0 ? suggestQty.toLocaleString() : "-"}</span>
       </td>
-      <td style="padding:8px 12px;border:1px solid #e2e8f0;text-align:center;font-weight:700;">
-        <span class="days-after" style="color:#059669;">${daysAfterSuggest !== null ? daysAfterSuggest + " วัน" : "-"}</span>
+      <td style="padding:8px 12px;border:1px solid #d6d6d0;text-align:center;font-weight:700;">
+        <span class="days-after" style="color:#006b31;">${daysAfterSuggest !== null ? daysAfterSuggest + " วัน" : "-"}</span>
       </td>
-      <td style="padding:8px 12px;border:1px solid #e2e8f0;">${escapeHtml(item.Unit||"-")}</td>
-      <td style="padding:8px 12px;border:1px solid #e2e8f0;color:#ea580c;font-weight:700;">${reason.join(", ")}</td>
+      <td style="padding:8px 12px;border:1px solid #d6d6d0;">${escapeHtml(item.Unit||"-")}</td>
+      <td style="padding:8px 12px;border:1px solid #d6d6d0;color:#a8560a;font-weight:700;">${reason.join(", ")}</td>
     </tr>`;
   }).join("");
 
   const w = window.open("","","width=1050,height=750");
   w.document.write(`<!DOCTYPE html><html lang="th"><head><meta charset="UTF-8">
   <title>ใบขอซื้อวัตถุดิบ — ${factoryName}</title>
-  <style>
-    body{font-family:'Sarabun',sans-serif;font-size:13px;color:#1e293b;padding:32px 40px;}
-    .header{display:flex;justify-content:space-between;align-items:flex-start;border-bottom:3px solid #1e293b;padding-bottom:16px;margin-bottom:16px;}
+  <style>@import url('${fontCssUrl()}');
+    body{font-family:'Sarabun',sans-serif;font-size:13px;color:#111;padding:32px 40px;}
+    .header{display:flex;justify-content:space-between;align-items:flex-start;border-bottom:3px solid #00843d;padding-bottom:16px;margin-bottom:16px;}
     h1{font-size:24px;font-weight:900;margin:0 0 4px;}
-    .sub{font-size:13px;color:#475569;}
-    .doc-no{text-align:right;font-size:12px;color:#64748b;line-height:1.8;}
-    .formula-note{background:#eff6ff;border:1px solid #bfdbfe;border-radius:10px;padding:10px 16px;font-size:11px;color:#1d4ed8;margin-bottom:16px;line-height:1.8;}
-    .print-btn{background:#0e7a3f;color:#fff;border:none;padding:8px 20px;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;margin-bottom:12px;}
+    .sub{font-size:13px;color:#3d3d3d;}
+    .doc-no{text-align:right;font-size:12px;color:#5c5c57;line-height:1.8;}
+    .formula-note{background:#e5eff8;border:1px solid #005a9c;border-radius:6px;padding:10px 16px;font-size:11px;color:#005a9c;margin-bottom:16px;line-height:1.8;}
+    .print-btn{background:#006b31;color:#fff;border:none;padding:8px 20px;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;margin-bottom:12px;}
     table{width:100%;border-collapse:collapse;margin-top:8px;}
-    thead tr{background:#1e293b;color:#fff;}
-    th{padding:10px 12px;border:1px solid #334155;font-size:11px;font-weight:700;text-align:left;}
+    thead tr{background:#f2f2ef;color:#111;border-bottom:2px solid #00843d;}
+    th{padding:10px 12px;border:1px solid #3d3d3d;font-size:11px;font-weight:700;text-align:left;}
     td{font-size:12px;}
     .sign-section{margin-top:60px;display:flex;gap:60px;}
-    .sign-box{flex:1;text-align:center;border-top:2px solid #94a3b8;padding-top:8px;font-size:12px;color:#64748b;}
-    .footer{margin-top:24px;font-size:11px;color:#5b6e63;text-align:center;}
+    .sign-box{flex:1;text-align:center;border-top:2px solid #8a8a84;padding-top:8px;font-size:12px;color:#5c5c57;}
+    .footer{margin-top:24px;font-size:11px;color:#5c5c57;text-align:center;}
     @media print{
       .no-print{display:none!important;}
       .order-input{display:none!important;}
@@ -723,7 +723,7 @@ function openPurchaseRequest() {
   </style></head><body>
   <div class="no-print" style="margin-bottom:12px;display:flex;gap:10px;align-items:center;">
     <button class="print-btn" onclick="window.print()">พิมพ์ใบขอซื้อ</button>
-    <span style="font-size:12px;color:#64748b;">แก้ไขช่อง <b style="color:#0e7a3f;">สั่งจริง</b> ได้ก่อนพิมพ์ — ระบบจะคำนวณ <b style="color:#059669;">ใช้ได้กี่วัน</b> ให้อัตโนมัติ</span>
+    <span style="font-size:12px;color:#5c5c57;">แก้ไขช่อง <b style="color:#006b31;">สั่งจริง</b> ได้ก่อนพิมพ์ — ระบบจะคำนวณ <b style="color:#006b31;">ใช้ได้กี่วัน</b> ให้อัตโนมัติ</span>
   </div>
   <div class="header">
     <div style="display:flex;align-items:center;gap:14px;">
@@ -778,7 +778,7 @@ function openPurchaseRequest() {
       if (daily > 0) {
         const d = Math.floor(order / daily);
         daysEl.textContent = d + " วัน";
-        daysEl.style.color = d <= 7 ? "#dc2626" : d <= 14 ? "#ea580c" : d <= 30 ? "#f59e0b" : "#059669";
+        daysEl.style.color = d <= 7 ? "#c8102e" : d <= 14 ? "#a8560a" : d <= 30 ? "#8a5a00" : "#006b31";
       } else {
         daysEl.textContent = "-";
       }
@@ -819,31 +819,31 @@ function openStockReport() {
       const daily    = Number(item.DailyUsage||0);   // คอลัมน์ "ใช้ต่อวัน" (ค่าที่ตั้งไว้)
       const ro       = rawRunout(item);   // วันพอใช้จากหลังบ้าน (ชุดเดียวกับจอต้องสั่ง)
       const daysText = ro
-        ? `<span style="font-weight:700;color:${ro.hex}">${ro.days.toLocaleString()} วัน</span>${ro.date?`<br><span style="font-size:11px;color:#5b6e63;font-weight:400;">(ถึง ${ro.date})</span>`:""}`
+        ? `<span style="font-weight:700;color:${ro.hex}">${ro.days.toLocaleString()} วัน</span>${ro.date?`<br><span style="font-size:11px;color:#5c5c57;font-weight:400;">(ถึง ${ro.date})</span>`:""}`
         : "-";
       return `<tr style="background:${idx%2===0?"#fff":bgColor}">
-        <td style="padding:7px 10px;border:1px solid #e2e8f0;text-align:center;font-size:11px;">${idx+1}</td>
-        <td style="padding:7px 10px;border:1px solid #e2e8f0;font-weight:700;">${escapeHtml(item.Name||"-")}</td>
-        <td style="padding:7px 10px;border:1px solid #e2e8f0;text-align:right;font-weight:700;">${qty.toLocaleString()} <span style="font-size:10px;color:#64748b;font-weight:400;">${escapeHtml(item.Unit||"")}</span></td>
-        <td style="padding:7px 10px;border:1px solid #e2e8f0;text-align:right;">${Number(item.Min||0).toLocaleString()}</td>
-        <td style="padding:7px 10px;border:1px solid #e2e8f0;text-align:right;color:#0284c7;">${daily>0?daily.toLocaleString():"-"}</td>
-        <td style="padding:7px 10px;border:1px solid #e2e8f0;text-align:center;line-height:1.6;">${daysText}</td>
-        <td style="padding:7px 10px;border:1px solid #e2e8f0;">${rawForceThaiDate(item.ExpiryDate)||"-"}</td>
-        <td style="padding:7px 10px;border:1px solid #e2e8f0;">${rawForceThaiDate(item.LastVerified)||"-"}</td>
+        <td style="padding:7px 10px;border:1px solid #d6d6d0;text-align:center;font-size:11px;">${idx+1}</td>
+        <td style="padding:7px 10px;border:1px solid #d6d6d0;font-weight:700;">${escapeHtml(item.Name||"-")}</td>
+        <td style="padding:7px 10px;border:1px solid #d6d6d0;text-align:right;font-weight:700;">${qty.toLocaleString()} <span style="font-size:10px;color:#5c5c57;font-weight:400;">${escapeHtml(item.Unit||"")}</span></td>
+        <td style="padding:7px 10px;border:1px solid #d6d6d0;text-align:right;">${Number(item.Min||0).toLocaleString()}</td>
+        <td style="padding:7px 10px;border:1px solid #d6d6d0;text-align:right;color:#005a9c;">${daily>0?daily.toLocaleString():"-"}</td>
+        <td style="padding:7px 10px;border:1px solid #d6d6d0;text-align:center;line-height:1.6;">${daysText}</td>
+        <td style="padding:7px 10px;border:1px solid #d6d6d0;">${rawForceThaiDate(item.ExpiryDate)||"-"}</td>
+        <td style="padding:7px 10px;border:1px solid #d6d6d0;">${rawForceThaiDate(item.LastVerified)||"-"}</td>
       </tr>`;
     }).join("");
     return `<div style="margin-bottom:28px">
-      <div style="background:${bgColor};border-left:6px solid ${color};padding:10px 16px;border-radius:6px 6px 0 0;font-weight:900;font-size:13px;color:${color};letter-spacing:0.5px;">${title} (${items.length} รายการ)</div>
+      <div style="background:${bgColor};border-bottom:2px solid ${color};padding:10px 16px;font-weight:900;font-size:13px;color:${color};letter-spacing:0.5px;">${title} (${items.length} รายการ)</div>
       <table style="width:100%;border-collapse:collapse;font-size:12px;">
-        <thead><tr style="background:#1e293b;color:#fff;">
-          <th style="padding:7px 10px;border:1px solid #334155;text-align:center;width:30px">ลำดับ</th>
-          <th style="padding:7px 10px;border:1px solid #334155;">ชื่อวัตถุดิบ</th>
-          <th style="padding:7px 10px;border:1px solid #334155;text-align:right;width:100px">คงเหลือ / หน่วย</th>
-          <th style="padding:7px 10px;border:1px solid #334155;text-align:right;width:65px">ขั้นต่ำ</th>
-          <th style="padding:7px 10px;border:1px solid #334155;text-align:right;width:65px">ใช้/วัน</th>
-          <th style="padding:7px 10px;border:1px solid #334155;text-align:center;width:110px">วันคงเหลือ / ถึงวันที่</th>
-          <th style="padding:7px 10px;border:1px solid #334155;width:90px">วันหมดอายุ</th>
-          <th style="padding:7px 10px;border:1px solid #334155;width:100px">ตรวจนับล่าสุด</th>
+        <thead><tr style="background:#f2f2ef;color:#111;border-bottom:2px solid #00843d;">
+          <th style="padding:7px 10px;border:1px solid #3d3d3d;text-align:center;width:30px">ลำดับ</th>
+          <th style="padding:7px 10px;border:1px solid #3d3d3d;">ชื่อวัตถุดิบ</th>
+          <th style="padding:7px 10px;border:1px solid #3d3d3d;text-align:right;width:100px">คงเหลือ / หน่วย</th>
+          <th style="padding:7px 10px;border:1px solid #3d3d3d;text-align:right;width:65px">ขั้นต่ำ</th>
+          <th style="padding:7px 10px;border:1px solid #3d3d3d;text-align:right;width:65px">ใช้/วัน</th>
+          <th style="padding:7px 10px;border:1px solid #3d3d3d;text-align:center;width:110px">วันคงเหลือ / ถึงวันที่</th>
+          <th style="padding:7px 10px;border:1px solid #3d3d3d;width:90px">วันหมดอายุ</th>
+          <th style="padding:7px 10px;border:1px solid #3d3d3d;width:100px">ตรวจนับล่าสุด</th>
         </tr></thead>
         <tbody>${rows}</tbody>
       </table></div>`;
@@ -852,18 +852,18 @@ function openStockReport() {
   const w = window.open("","","width=1100,height=800");
   w.document.write(`<!DOCTYPE html><html lang="th"><head><meta charset="UTF-8">
   <title>ใบรายงานสต๊อกวัตถุดิบ — ${factoryName}</title>
-  <style>
-    body{font-family:'Sarabun',sans-serif;font-size:13px;color:#1e293b;padding:28px 36px;}
-    .report-header{display:flex;justify-content:space-between;align-items:flex-start;padding-bottom:16px;margin-bottom:20px;border-bottom:3px solid #1e293b;}
+  <style>@import url('${fontCssUrl()}');
+    body{font-family:'Sarabun',sans-serif;font-size:13px;color:#111;padding:28px 36px;}
+    .report-header{display:flex;justify-content:space-between;align-items:flex-start;padding-bottom:16px;margin-bottom:20px;border-bottom:3px solid #00843d;}
     h1{font-size:22px;font-weight:900;margin:0 0 4px;}
-    .sub{font-size:12px;color:#475569;}
+    .sub{font-size:12px;color:#3d3d3d;}
     .summary{display:flex;gap:12px;margin-bottom:24px;flex-wrap:wrap;}
-    .sum-card{flex:1;min-width:120px;background:#f8fafc;border:2px solid #e2e8f0;border-radius:10px;padding:12px 16px;text-align:center;}
+    .sum-card{flex:1;min-width:120px;background:#f7f7f4;border:2px solid #d6d6d0;border-radius:6px;padding:12px 16px;text-align:center;}
     .sum-card .num{font-size:26px;font-weight:900;line-height:1;}
-    .sum-card .lbl{font-size:10px;font-weight:700;color:#5b6e63;margin-top:4px;text-transform:uppercase;}
+    .sum-card .lbl{font-size:10px;font-weight:700;color:#5c5c57;margin-top:4px;text-transform:uppercase;}
     .sign-section{margin-top:48px;display:flex;gap:48px;}
-    .sign-box{flex:1;text-align:center;border-top:2px solid #94a3b8;padding-top:8px;font-size:11px;color:#64748b;}
-    .footer{margin-top:20px;font-size:11px;color:#5b6e63;text-align:center;border-top:1px solid #e2e8f0;padding-top:12px;}
+    .sign-box{flex:1;text-align:center;border-top:2px solid #8a8a84;padding-top:8px;font-size:11px;color:#5c5c57;}
+    .footer{margin-top:20px;font-size:11px;color:#5c5c57;text-align:center;border-top:1px solid #d6d6d0;padding-top:12px;}
     @media print{body{padding:12px 20px;} .no-print{display:none;}}
   </style></head><body>
   <div class="report-header">
@@ -876,23 +876,23 @@ function openStockReport() {
       </div>
     </div>
     <div style="text-align:right;">
-      <button class="no-print" onclick="window.print()" style="background:#1e293b;color:#fff;border:none;padding:10px 24px;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;">พิมพ์</button>
+      <button class="no-print" onclick="window.print()" style="background:#00843d;color:#fff;border:none;padding:10px 24px;border-radius:8px;font-size:13px;font-weight:700;cursor:pointer;">พิมพ์</button>
     </div>
   </div>
 
   <div class="summary">
-    <div class="sum-card"><div class="num" style="color:#1e293b">${total}</div><div class="lbl">รายการทั้งหมด</div></div>
-    <div class="sum-card"><div class="num" style="color:#dc2626">${expItems.length}</div><div class="lbl">หมดอายุ</div></div>
-    <div class="sum-card"><div class="num" style="color:#ea580c">${lowItems.length}</div><div class="lbl">สต๊อกต่ำ</div></div>
-    <div class="sum-card"><div class="num" style="color:#d97706">${near7.length}</div><div class="lbl">ใกล้หมด 7 วัน</div></div>
-    <div class="sum-card"><div class="num" style="color:#0284c7">${near30.length}</div><div class="lbl">ใกล้หมด 30 วัน</div></div>
-    <div class="sum-card"><div class="num" style="color:#059669">${okItems.length}</div><div class="lbl">ปกติ</div></div>
+    <div class="sum-card"><div class="num" style="color:#111">${total}</div><div class="lbl">รายการทั้งหมด</div></div>
+    <div class="sum-card"><div class="num" style="color:#c8102e">${expItems.length}</div><div class="lbl">หมดอายุ</div></div>
+    <div class="sum-card"><div class="num" style="color:#a8560a">${lowItems.length}</div><div class="lbl">สต๊อกต่ำ</div></div>
+    <div class="sum-card"><div class="num" style="color:#8a5a00">${near7.length}</div><div class="lbl">ใกล้หมด 7 วัน</div></div>
+    <div class="sum-card"><div class="num" style="color:#005a9c">${near30.length}</div><div class="lbl">ใกล้หมด 30 วัน</div></div>
+    <div class="sum-card"><div class="num" style="color:#006b31">${okItems.length}</div><div class="lbl">ปกติ</div></div>
   </div>
 
-  ${buildSection("หมดอายุ — ต้องดำเนินการทันที","#dc2626","#fee2e2",expItems)}
-  ${buildSection("สต๊อกต่ำกว่าจุดสั่งซื้อ","#ea580c","#fff7ed",lowItems)}
-  ${buildSection(`ใกล้หมดอายุ ภายใน ${rawAlertDays} วัน`,"#d97706","#fefce8",near7)}
-  ${buildSection("สต๊อกปกติ","#059669","#f0fdf4",okItems)}
+  ${buildSection("หมดอายุ — ต้องดำเนินการทันที","#c8102e","#fbe9ec",expItems)}
+  ${buildSection("สต๊อกต่ำกว่าจุดสั่งซื้อ","#a8560a","#fdf0e2",lowItems)}
+  ${buildSection(`ใกล้หมดอายุ ภายใน ${rawAlertDays} วัน`,"#8a5a00","#fff6cc",near7)}
+  ${buildSection("สต๊อกปกติ","#006b31","#e3f1e8",okItems)}
 
   <div class="sign-section">
     <div class="sign-box">ผู้จัดทำรายงาน<br><br>( ${personName(currentUser)} )</div>
@@ -1098,7 +1098,7 @@ async function rawPrintQrAll() {
 
   const factory = rawCurrentModule;
   const factoryLabel = factory === "SQF" ? "สุพรรณคิวฟู้ดส์ (SQF)" : "แม่ละมาย (MLM)";
-  const factoryColor = factory === "SQF" ? "#2563eb" : "#16a34a";
+  const factoryColor = factory === "SQF" ? "#c2410c" : "#15803d";   // สีประจำโรงงาน (hex — หน้าต่างพิมพ์)
   const dateStr = new Date().toLocaleDateString("th-TH", { year:"numeric", month:"long", day:"numeric" });
 
   // Generate QR data URLs using QRCode.js (synchronous canvas)
@@ -1123,7 +1123,7 @@ async function rawPrintQrAll() {
     return `
       <div class="qr-card">
         <div class="qr-factory" style="background:${factoryColor}">${factory}</div>
-        ${src ? `<img src="${src}" alt="QR ${sku}">` : `<div style="width:160px;height:160px;margin:0 auto 8px;background:#f1f5f9;border-radius:8px;"></div>`}
+        ${src ? `<img src="${src}" alt="QR ${sku}">` : `<div style="width:160px;height:160px;margin:0 auto 8px;background:#f2f2ef;border-radius:8px;"></div>`}
         <div class="qr-sku">${sku}</div>
         <div class="qr-name">${name}</div>
       </div>`;
@@ -1133,14 +1133,14 @@ async function rawPrintQrAll() {
   win.document.write(`<!DOCTYPE html><html><head>
   <meta charset="utf-8">
   <title>QR วัตถุดิบ — ${factoryLabel}</title>
-  <style>
+  <style>@import url('${fontCssUrl()}');
     *{box-sizing:border-box;margin:0;padding:0;}
-    body{font-family:Sarabun,sans-serif;background:#f8fafc;padding:20px;}
-    h1{text-align:center;font-size:18px;font-weight:900;margin-bottom:4px;color:#1e293b;}
-    .sub{text-align:center;font-size:12px;color:#64748b;margin-bottom:20px;}
+    body{font-family:Sarabun,sans-serif;background:#f7f7f4;padding:20px;}
+    h1{text-align:center;font-size:18px;font-weight:900;margin-bottom:4px;color:#111;}
+    .sub{text-align:center;font-size:12px;color:#5c5c57;margin-bottom:20px;}
     .grid{display:flex;flex-wrap:wrap;gap:12px;justify-content:flex-start;}
     .qr-card{
-      width:200px;background:#fff;border-radius:16px;border:2px solid #e2e8f0;
+      width:200px;background:#fff;border-radius:6px;border:2px solid #d6d6d0;
       padding:12px 10px 14px;text-align:center;box-shadow:0 2px 8px rgba(0,0,0,.08);
       page-break-inside:avoid;
     }
@@ -1149,8 +1149,8 @@ async function rawPrintQrAll() {
       padding:3px 10px;border-radius:999px;margin-bottom:8px;letter-spacing:1px;
     }
     .qr-card img{width:160px;height:160px;display:block;margin:0 auto 8px;}
-    .qr-sku{font-size:11px;font-weight:900;color:#475569;letter-spacing:1px;margin-bottom:3px;}
-    .qr-name{font-size:13px;font-weight:700;color:#1e293b;line-height:1.3;}
+    .qr-sku{font-size:11px;font-weight:900;color:#3d3d3d;letter-spacing:1px;margin-bottom:3px;}
+    .qr-name{font-size:13px;font-weight:700;color:#111;line-height:1.3;}
     @media print{
       body{background:#fff;padding:10px;}
       .no-print{display:none!important;}
@@ -1158,8 +1158,8 @@ async function rawPrintQrAll() {
   </style>
   </head><body>
   <div class="no-print" style="text-align:center;margin-bottom:16px;">
-    <button onclick="window.print()" style="background:#1e293b;color:#fff;border:none;padding:10px 28px;border-radius:10px;font-size:14px;font-weight:900;cursor:pointer;margin-right:8px;">พิมพ์</button>
-    <button onclick="window.close()" style="background:#64748b;color:#fff;border:none;padding:10px 20px;border-radius:10px;font-size:14px;font-weight:900;cursor:pointer;">✕ ปิด</button>
+    <button onclick="window.print()" style="background:#00843d;color:#fff;border:none;padding:10px 28px;border-radius:6px;font-size:14px;font-weight:900;cursor:pointer;margin-right:8px;">พิมพ์</button>
+    <button onclick="window.close()" style="background:#5c5c57;color:#fff;border:none;padding:10px 20px;border-radius:6px;font-size:14px;font-weight:900;cursor:pointer;">✕ ปิด</button>
   </div>
   <div style="display:flex;align-items:center;justify-content:center;gap:14px;margin-bottom:6px;">
     ${logoImgTag(40)}

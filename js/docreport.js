@@ -194,7 +194,7 @@ function drPrint() {
   const waiting = _drRows.filter(r => !r.ackBy).length;
 
   const rows = _drRows.map(r => `
-    <tr${r.ackBy ? "" : ' style="background:#faf3d9;"'}>
+    <tr${r.ackBy ? "" : ' style="background:#fff6cc;"'}>
       <td style="text-align:center;font-size:16px;"></td>
       <td style="font-family:monospace;">${escapeHtml(r.docNo)}</td>
       <td>${escapeHtml(_drTime(r.at))}</td>
@@ -209,21 +209,21 @@ function drPrint() {
   if (!w) { showToast("เบราว์เซอร์บล็อกหน้าต่างใหม่", "warn"); return; }
   w.document.write(`<!DOCTYPE html><html lang="th"><head><meta charset="UTF-8">
   <title>รายงานใบเบิก ${escapeHtml(_drMonthLabel(_drMonth))}</title>
-  <style>
-    body{font-family:'Leelawadee UI','Sarabun',sans-serif;font-size:12px;color:#16241b;padding:26px;}
-    .hd{display:flex;align-items:center;gap:14px;border-bottom:2px solid #16241b;padding-bottom:10px;margin-bottom:14px;}
+  <style>@import url('${fontCssUrl()}');
+    body{font-family:'Sarabun','Leelawadee UI',sans-serif;font-size:12px;color:#111;padding:26px;}
+    .hd{display:flex;align-items:center;gap:14px;border-bottom:3px solid #00843d;padding-bottom:10px;margin-bottom:14px;}
     h1{font-size:19px;margin:0;}
-    .sub{font-size:12px;color:#5b6e63;margin-top:3px;}
+    .sub{font-size:12px;color:#5c5c57;margin-top:3px;}
     table{width:100%;border-collapse:collapse;margin-top:10px;}
-    th{background:#eef3ef;padding:7px 8px;border:1px solid #c9d4cc;font-size:11px;text-align:left;}
-    td{padding:6px 8px;border:1px solid #dfe6e0;font-size:11.5px;}
-    .foot{margin-top:22px;font-size:11px;color:#5b6e63;display:flex;justify-content:space-between;}
+    th{background:#f2f2ef;padding:7px 8px;border:1px solid #d6d6d0;border-bottom:2px solid #00843d;font-size:11px;text-align:left;}
+    td{padding:6px 8px;border:1px solid #d6d6d0;font-size:11.5px;}
+    .foot{margin-top:22px;font-size:11px;color:#5c5c57;display:flex;justify-content:space-between;}
     .sign{margin-top:40px;display:flex;gap:50px;}
-    .sign div{flex:1;text-align:center;border-top:1px solid #16241b;padding-top:7px;font-size:11px;color:#5b6e63;}
+    .sign div{flex:1;text-align:center;border-top:1px solid #111;padding-top:7px;font-size:11px;color:#5c5c57;}
     @media print{body{padding:12px;} .noprint{display:none;}}
   </style></head><body>
   <div class="noprint" style="margin-bottom:12px;">
-    <button onclick="window.print()" style="background:#0e7a3f;color:#fff;border:none;padding:9px 22px;border-radius:8px;font-weight:700;font-size:13px;cursor:pointer;">พิมพ์</button>
+    <button onclick="window.print()" style="background:#006b31;color:#fff;border:none;padding:9px 22px;border-radius:8px;font-weight:700;font-size:13px;cursor:pointer;">พิมพ์</button>
   </div>
   <div class="hd">
     <img src="${logoUrl()}" alt="" onerror="this.style.display='none'" style="height:44px;">

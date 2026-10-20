@@ -92,6 +92,35 @@ console.log("2) ไฟล์ใน sw.js STATIC_ASSETS");
   }
   if (!sutra.length) ok("ไม่มีคำว่า \"สูตร\" ในข้อความที่ผู้ใช้เห็น");
   else bad("มีคำว่า \"สูตร\" ในหน้าจอ (เจ้าของห้าม — ใช้ \"ข้อมูลอ้างอิง\"): " + sutra.join(", "));
+
+  // ธีม เขียว-ส้ม-ขาว (เจ้าของสั่ง 2026-10-20): สี hex ในหน้าจอ/หน้าต่างพิมพ์ต้องมาจากชุดนี้ — กันสีชุดเก่า (เทาอมฟ้า Tailwind / เขียวเก่า / คราม) กลับมา
+  //   เพิ่มสีใหม่ได้ แต่ต้องใส่ในรายการนี้ด้วย (และ DESIGN.md) · คอมเมนต์ไม่นับ
+  const THEME_HEX = new Set(["#111", "#111111", "#fff", "#ffffff", "#000", "#000000",
+    "#00843d", "#006b31", "#f2951c", "#fde0bd",                                   // เขียวเซฟตี้ / เขียวตัวหนังสือ / ส้มแถบ / ส้มอ่อนโฟกัส
+    "#f2f2ef", "#f7f7f4", "#ecece8", "#e6e6e1", "#d6d6d0", "#8a8a84", "#6b6b66", "#5c5c57", "#4f4f4b", "#3d3d3d", "#262624", "#0a0a0a",   // เทาหมึก
+    "#c8102e", "#fbe9ec", "#a8560a", "#fdf0e2", "#8a5a00", "#fff6cc", "#005a9c", "#e5eff8", "#e3f1e8", "#ffd100",   // สถานะ + พื้นอ่อน + เหลืองในป้ายเตือน
+    "#c2410c", "#15803d", "#0e7490",                                               // สีประจำโรงงาน SQF / MLM / ห้องเย็น
+    "#0369a1", "#047857", "#6d28d9"]);                                             // สีงาน คืน / รับ / ใหม่ (เบิก = #c2410c · นับ = #0e7490)
+  const COMMENT = /\/\*[\s\S]*?\*\/|<!--[\s\S]*?-->|(?<![:"'`\\])\/\/[^\n]*/g;
+  const offTheme = [];
+  for (const f of [...new Set([...shipped.filter((x) => /\.(html|js)$/.test(x) && x !== "sw.js" && !x.startsWith("js/vendor/")), "404.html", "manual.html"])]) {
+    const p = path.join(root, f);
+    if (!fs.existsSync(p)) continue;
+    const code = fs.readFileSync(p, "utf8").replace(COMMENT, "");
+    const odd = [...new Set((code.match(/#[0-9a-fA-F]{6}\b|#[0-9a-fA-F]{3}\b/g) || []).map((h) => h.toLowerCase()).filter((h) => !THEME_HEX.has(h)))];
+    if (odd.length) offTheme.push(f + " (" + odd.join(" ") + ")");
+  }
+  // หน้าต่างพิมพ์ (window.open + document.write) ไม่ได้ CSS/ฟอนต์ของหน้าแม่ — ต้อง @import fontCssUrl() เอง ไม่งั้นเครื่องที่ไม่มี Sarabun พิมพ์ฟอนต์อื่น (กับดักข้อ 4)
+  const noFont = [];
+  for (const f of fs.readdirSync(path.join(root, "js")).filter((x) => x.endsWith(".js"))) {
+    const s = fs.readFileSync(path.join(root, "js", f), "utf8"), re = /\.document\.write\(`/g;
+    let m;
+    while ((m = re.exec(s))) { const st = s.indexOf("<style>", m.index); if (st > 0 && st - m.index < 800 && !/fontCssUrl\(\)/.test(s.slice(m.index, st + 300))) noFont.push("js/" + f + ":" + s.slice(0, m.index).split("\n").length); }
+  }
+  if (!noFont.length) ok("หน้าต่างพิมพ์ทุกใบโหลดฟอนต์ของแอป (fontCssUrl)");
+  else bad("หน้าต่างพิมพ์ไม่โหลดฟอนต์ — ใส่ @import url('${fontCssUrl()}') ต้น <style>: " + noFont.join(", "));
+  if (!offTheme.length) ok("สีทุกหน้าจอ/หน้าต่างพิมพ์อยู่ในชุด เขียว-ส้ม-ขาว");
+  else bad("มีสีนอกธีม (ใช้ token --sq-*/--m-* หรือ hex ในชุด · ดู DESIGN.md): " + offTheme.join(", "));
 }
 
 // ── 3. GAS_URL ตรงกัน ──

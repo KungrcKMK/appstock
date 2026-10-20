@@ -229,7 +229,7 @@ function planRender() {
     </div>
     <div class="sq-card" style="margin-bottom:12px;"><div class="sq-tablewrap">
       ${rows.length ? `<table class="sq-table">
-        <thead><tr><th style="width:3px;padding:0;"></th><th>สถานะ</th><th>วัตถุดิบ</th><th class="n">คงเหลือ</th><th class="n">ใช้ต่อวัน</th>
+        <thead><tr><th class="rail" aria-hidden="true"></th><th>สถานะ</th><th>วัตถุดิบ</th><th class="n">คงเหลือ</th><th class="n">ใช้ต่อวัน</th>
           <th class="n">พอใช้อีก</th><th>ต้องสั่งภายใน</th><th class="n">แนะนำสั่ง</th><th>ข้อสังเกต</th></tr></thead>
         <tbody>${body}</tbody></table>` : `<p class="sq-empty">${empty}</p>`}
     </div></div>
@@ -297,13 +297,13 @@ function planPrint() {
   if (!_planData) return;
   const rows = _planFiltered();
   const S = _planData.settings;
-  const COL = { late: "#c0362c", now: "#a8560a", soon: "#7d6407", ok: "#0e7a3f", nodata: "#5b6e63" };
-  const BG  = { late: "#fbeceb", now: "#fdf0e2", soon: "#faf3d9", ok: "#ffffff", nodata: "#ffffff" };
-  const td = "padding:6px 9px;border:1px solid #dfe6e0;vertical-align:top;";
+  const COL = { late: "#c8102e", now: "#a8560a", soon: "#8a5a00", ok: "#006b31", nodata: "#5c5c57" };
+  const BG  = { late: "#fbe9ec", now: "#fdf0e2", soon: "#fff6cc", ok: "#ffffff", nodata: "#ffffff" };
+  const td = "padding:6px 9px;border:1px solid #d6d6d0;vertical-align:top;";
   const body = rows.map((x, i) => `<tr style="background:${BG[x.status]};">
       <td style="${td}text-align:center;">${i + 1}</td>
       <td style="${td}color:${COL[x.status]};font-weight:700;white-space:nowrap;">${escapeHtml(x.statusText)}</td>
-      <td style="${td}"><b>${escapeHtml(x.name)}</b><br><span style="color:#5b6e63;font-size:10px;">${escapeHtml(x.sku)}</span></td>
+      <td style="${td}"><b>${escapeHtml(x.name)}</b><br><span style="color:#5c5c57;font-size:10px;">${escapeHtml(x.sku)}</span></td>
       <td style="${td}text-align:right;">${planFmt(x.qty)} ${escapeHtml(x.unit)}</td>
       <td style="${td}text-align:right;">${x.rate > 0 ? planFmt(x.rate) : "—"}</td>
       <td style="${td}text-align:right;">${x.daysCover === null ? "—" : planFmt(x.daysCover) + " วัน"}</td>
@@ -316,18 +316,18 @@ function planPrint() {
   const w = window.open("", "_blank");
   if (!w) { showToast("เบราว์เซอร์บล็อกหน้าต่างพิมพ์ — อนุญาต pop-up ก่อน", "warn"); return; }
   w.document.write(`<!DOCTYPE html><html lang="th"><head><meta charset="UTF-8"><title>วางแผนสั่งซื้อ ${escapeHtml(rawCurrentModule)}</title>
-    <style>body{font-family:'Sarabun','Segoe UI',Tahoma,sans-serif;color:#16241b;margin:18px;font-size:12px;}
-      table{border-collapse:collapse;width:100%;}th{background:#0e7a3f;color:#fff;padding:7px 9px;border:1px solid #0e7a3f;font-size:11px;text-align:left;}
+    <style>@import url('${fontCssUrl()}');body{font-family:'Sarabun','Segoe UI',Tahoma,sans-serif;color:#111;margin:18px;font-size:12px;}
+      table{border-collapse:collapse;width:100%;}th{background:#f2f2ef;color:#111;padding:7px 9px;border:1px solid #d6d6d0;border-bottom:2px solid #00843d;font-size:11px;text-align:left;}
       @media print{.noprint{display:none}}</style></head><body>
     <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px;">
       ${logo ? `<img src="${escapeAttr(logo)}" alt="" style="height:44px;">` : ""}
       <div><div style="font-size:17px;font-weight:800;">วางแผนสั่งซื้อวัตถุดิบ — ${escapeHtml(planFactoryName())} (${escapeHtml(rawCurrentModule)})</div>
-      <div style="color:#435349;">วันที่ ${planThaiDate(_planData.today)} · รอของ ${S.leadDays} วัน · กันชน ${S.safetyDays} วัน · สั่งให้พอใช้ ${S.coverDays} วัน · พิมพ์โดย ${escapeHtml(currentUser || "-")}</div></div>
+      <div style="color:#3d3d3d;">วันที่ ${planThaiDate(_planData.today)} · รอของ ${S.leadDays} วัน · กันชน ${S.safetyDays} วัน · สั่งให้พอใช้ ${S.coverDays} วัน · พิมพ์โดย ${escapeHtml(currentUser || "-")}</div></div>
       <button class="noprint" onclick="window.print()" style="margin-left:auto;padding:8px 16px;font-weight:700;">พิมพ์</button>
     </div>
     <table><thead><tr><th>#</th><th>สถานะ</th><th>วัตถุดิบ</th><th>คงเหลือ</th><th>ใช้/วัน</th><th>พอใช้อีก</th><th>รอของ (วัน)</th><th>ต้องสั่งภายใน</th><th>แนะนำสั่ง</th><th>สั่งจริง</th></tr></thead>
     <tbody>${body || '<tr><td colspan="10" style="padding:20px;text-align:center;">ไม่มีรายการ</td></tr>'}</tbody></table>
-    <p style="color:#5b6e63;margin-top:10px;">ตัวเลขเป็นคำแนะนำจากประวัติการเบิก — ผู้สั่งซื้อปรับจำนวนได้ตามจริง</p>
+    <p style="color:#5c5c57;margin-top:10px;">ตัวเลขเป็นคำแนะนำจากประวัติการเบิก — ผู้สั่งซื้อปรับจำนวนได้ตามจริง</p>
     </body></html>`);
   w.document.close();
 }

@@ -11,8 +11,8 @@ const NTF_TOPICS = [["plan", "ที่ต้องสั่งซื้อ"], [
 const NTF_DAYS = [[1, "จ"], [2, "อ"], [3, "พ"], [4, "พฤ"], [5, "ศ"], [6, "ส"], [0, "อา"]];
 const NTF_DAY_FULL = ["อาทิตย์", "จันทร์", "อังคาร", "พุธ", "พฤหัสฯ", "ศุกร์", "เสาร์"];
 const NTF_CH = {
-  tg:   { name: "Telegram", color: "#1d4ed8", bg: "#eff6ff", border: "#bfdbfe" },
-  line: { name: "LINE กลุ่ม", color: "#15803d", bg: "#f0fdf4", border: "#bbf7d0" }
+  tg:   { name: "Telegram", color: "#005a9c" },
+  line: { name: "LINE กลุ่ม", color: "#15803d" }
 };
 let _ntf = null;
 
@@ -49,7 +49,7 @@ function _ntfCard(ch, s) {
   const topics = NTF_TOPICS.map(([k, t]) => `<label class="ntf-opt">
       <input type="checkbox" data-ntf="${ch}-topic" value="${k}" ${s.topics[k] ? "checked" : ""} onchange="ntfUpdateHints()"> ${t}</label>`).join("");
   const radio = (name, val, cur, label) => `<label class="ntf-opt"><input type="radio" name="ntf-${ch}-${name}" value="${val}" ${cur === val ? "checked" : ""} onchange="ntfUpdateHints()"> ${label}</label>`;
-  return `<div class="ntf-card" style="background:${m.bg};border-color:${m.border};">
+  return `<div class="ntf-card" style="border-top:6px solid ${m.color};border-radius:0;">
     <div class="ntf-head">
       <b style="color:${m.color};">${m.name}</b>
       <label class="ntf-opt" style="font-weight:900;"><input type="checkbox" id="ntf-${ch}-on" ${s.on ? "checked" : ""} onchange="ntfUpdateHints()"> เปิดส่งสรุป</label>
@@ -117,16 +117,16 @@ function ntfUpdateHints() {
     const rows = [];
     if (!s.on) rows.push("ปิดอยู่ — ไม่ส่งสรุปเข้าช่องนี้ (รวมปุ่มส่งในหน้าวางแผนสั่งซื้อ)");
     else {
-      if (!s.days.length) rows.push('<b style="color:#b45309;">ยังไม่ได้เลือกวัน</b> = ไม่ส่งอัตโนมัติ (ยังกดส่งเองในหน้าวางแผนสั่งซื้อได้)');
-      if (!tCount) rows.push('<b style="color:#b45309;">ยังไม่ได้เลือกหัวข้อ</b> = ไม่มีอะไรส่งตามเวลา');
+      if (!s.days.length) rows.push('<b style="color:#8a5a00;">ยังไม่ได้เลือกวัน</b> = ไม่ส่งอัตโนมัติ (ยังกดส่งเองในหน้าวางแผนสั่งซื้อได้)');
+      if (!tCount) rows.push('<b style="color:#8a5a00;">ยังไม่ได้เลือกหัวข้อ</b> = ไม่มีอะไรส่งตามเวลา');
       if (s.days.length && tCount) rows.push(`ส่ง <b>${s.days.length === 7 ? "ทุกวัน" : s.days.length + " วัน/สัปดาห์"}</b> เวลา <b>${String(s.hour).padStart(2, "0")}:00</b> · ${tCount} หัวข้อ · ส่งเฉพาะหัวข้อที่มีรายการ`);
       if (ch === "line" && s.days.length && tCount) {
         const n = typeof _lineMembersOn === "function" ? _lineMembersOn() : 0;
         const perMonth = Math.round(s.days.length * 30 / 7);
         if (n) {
           const max = n * perMonth, over = max > 300;
-          rows.push(`โควตา: ส่ง 1 ครั้ง = ${n} ข้อความ (สมาชิก ${n} คน) · ${s.when === "always" ? "ประมาณ" : "สูงสุด"} <b${over ? ' style="color:#b91c1c;"' : ""}>${max.toLocaleString()}</b> ข้อความ/เดือน จากฟรี 300` +
-            (s.when === "change" ? " (ส่งจริงน้อยกว่านี้ — เฉพาะวันที่รายการเปลี่ยน)" : "") + (over && s.when === "always" ? " — <b style=\"color:#b91c1c;\">เกินโควตาฟรี ลดวันลงหรือเลือก \"เฉพาะเมื่อรายการเปลี่ยน\"</b>" : ""));
+          rows.push(`โควตา: ส่ง 1 ครั้ง = ${n} ข้อความ (สมาชิก ${n} คน) · ${s.when === "always" ? "ประมาณ" : "สูงสุด"} <b${over ? ' style="color:#c8102e;"' : ""}>${max.toLocaleString()}</b> ข้อความ/เดือน จากฟรี 300` +
+            (s.when === "change" ? " (ส่งจริงน้อยกว่านี้ — เฉพาะวันที่รายการเปลี่ยน)" : "") + (over && s.when === "always" ? " — <b style=\"color:#c8102e;\">เกินโควตาฟรี ลดวันลงหรือเลือก \"เฉพาะเมื่อรายการเปลี่ยน\"</b>" : ""));
         } else rows.push("LINE นับโควตาตามจำนวนสมาชิกในกลุ่ม (ฟรี 300 ข้อความ/เดือน) — เชิญบอทเข้ากลุ่มแล้วจะคำนวณให้");
       }
     }

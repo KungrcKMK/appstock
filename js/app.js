@@ -437,12 +437,12 @@ if ("serviceWorker" in navigator) {
     bar.id = "swUpdateBar";
     bar.style.cssText =
       "position:fixed;left:16px;right:16px;bottom:16px;z-index:9999;display:flex;align-items:center;" +
-      "gap:12px;flex-wrap:wrap;justify-content:center;background:#0e7a3f;color:#fff;" +
-      "padding:12px 16px;border-radius:10px;font-weight:700;font-size:13px;" +
+      "gap:12px;flex-wrap:wrap;justify-content:center;background:#006b31;color:#fff;" +
+      "padding:12px 16px;border-radius:6px;font-weight:700;font-size:13px;" +
       "box-shadow:0 8px 24px rgba(0,0,0,.25);font-family:inherit;";
     bar.innerHTML =
       '<span>มีเวอร์ชันใหม่พร้อมใช้งานแล้ว</span>' +
-      '<button onclick="location.reload()" style="background:#fff;color:#0e7a3f;border:none;' +
+      '<button onclick="location.reload()" style="background:#fff;color:#006b31;border:none;' +
       'padding:7px 16px;border-radius:7px;font-weight:800;font-size:13px;cursor:pointer;font-family:inherit;">' +
       'โหลดเลย</button>';
     document.body.appendChild(bar);

@@ -43,6 +43,31 @@ CREATE INDEX IF NOT EXISTS idx_hist_doc ON history(module, doc_no) WHERE doc_no 
 -- กันบันทึกซ้ำแบบถาวร: opId เดียวกันเข้าได้ครั้งเดียว (แทนการสแกนประวัติ 3,000 แถวของเดิม)
 CREATE UNIQUE INDEX IF NOT EXISTS idx_hist_op ON history(module, op_id) WHERE op_id <> '';
 
+-- ล็อตวัตถุดิบ (2026-10-20) — 1 ครั้งรับเข้า = 1 ล็อต · ผลรวม qty_left ของแต่ละ SKU = materials.qty เสมอ (src/lots.js คุมให้)
+CREATE TABLE IF NOT EXISTS rm_lots (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  module TEXT NOT NULL,
+  sku TEXT NOT NULL,
+  recv_date TEXT NOT NULL DEFAULT '',               -- yyyy-MM-dd วันที่รับเข้า (เวลาไทย) · '' = ยอดยกมา (ไม่ทราบวันรับ ถือว่าเก่าสุด)
+  lot_no TEXT NOT NULL DEFAULT '',                  -- เลขล็อตของผู้ขาย (ถ้ามี)
+  exp_date TEXT NOT NULL DEFAULT '',                -- yyyy-MM-dd (ถ้ามี)
+  qty_in REAL NOT NULL DEFAULT 0,                   -- รับเข้ามาเท่าไร
+  qty_left REAL NOT NULL DEFAULT 0,                 -- เหลืออยู่เท่าไร
+  created_at TEXT NOT NULL DEFAULT '',
+  op_id TEXT NOT NULL DEFAULT ''
+);
+-- รับวันเดียวกัน + เลขล็อตเดียวกัน + วันหมดอายุเดียวกัน = ล็อตเดียวกัน (บวกเพิ่ม)
+CREATE UNIQUE INDEX IF NOT EXISTS idx_rmlot_key ON rm_lots(module, sku, recv_date, lot_no, exp_date);
+CREATE TABLE IF NOT EXISTS rm_lot_moves (           -- ล็อตไหนเปลี่ยนเท่าไร ต่อรายการในประวัติ (op_id) — ใบเบิกแสดงล็อต + คืนกลับล็อตเดิม
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  module TEXT NOT NULL,
+  op_id TEXT NOT NULL,
+  lot_id INTEGER NOT NULL,
+  qty REAL NOT NULL                                 -- ลบ = ตัดออก · บวก = เติมเข้า
+);
+CREATE INDEX IF NOT EXISTS idx_rmmove_op ON rm_lot_moves(module, op_id);
+CREATE INDEX IF NOT EXISTS idx_rmmove_lot ON rm_lot_moves(lot_id);
+
 CREATE TABLE IF NOT EXISTS users (                  -- AppUsers
   username TEXT PRIMARY KEY COLLATE NOCASE,
   active INTEGER NOT NULL DEFAULT 1,

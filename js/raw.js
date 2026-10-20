@@ -49,6 +49,39 @@ function rawUpdateStaleUi() {
     chip.innerHTML = '<i class="ui-sg sg-must" aria-hidden="true"></i>ไม่อัปเดตเกิน ' + n + " วัน" + (k ? " (" + k + ")" : "");
     if (!n && rawCurrentFilter === "stale") setRawFilter("all");
   }
+  rawUpdateLotUi();
+}
+// 🏷️ ล็อตค้างนาน — ตัวกรอง + ช่องตั้งจำนวนวัน (ค่ากลาง · หลังบ้านตัดสิน Old ให้แล้ว)
+function rawUpdateLotUi() {
+  const n = Number(window._rawLotAgeDays) || 0;
+  const inp = document.getElementById("rawLotAgeInput");
+  if (inp && document.activeElement !== inp) inp.value = n;
+  const role = (localStorage.getItem("unified_stock_role") || "").toLowerCase();
+  if (inp) { inp.disabled = !(role === "admin" || role === "manager"); inp.title = inp.disabled ? "หัวหน้า/แอดมินเป็นคนตั้งค่านี้" : ""; }
+  const chip = document.getElementById("rawFilter-lotold");
+  if (chip) {
+    const k = (rawLastData || []).filter(i => i.LotOld > 0).length;
+    chip.style.display = n ? "" : "none";
+    chip.innerHTML = '<i class="ui-sg sg-warn" aria-hidden="true"></i>ล็อตค้างเกิน ' + n + " วัน" + (k ? " (" + k + ")" : "");
+    if (!n && rawCurrentFilter === "lotold") setRawFilter("all");
+  }
+}
+async function rawSetLotAgeDays(v) {
+  const cur = Number(window._rawLotAgeDays) || 0;
+  const inp = document.getElementById("rawLotAgeInput");
+  const raw = String(v == null ? "" : v).trim();
+  const n = /^\d+$/.test(raw) ? Math.min(3650, parseInt(raw, 10)) : NaN;
+  if (isNaN(n)) { if (inp) inp.value = cur; showToast("ใส่จำนวนวันเป็นตัวเลข (0 = ปิดการเตือน) — ยังใช้ค่าเดิม " + (cur || "ปิด"), "warn"); return; }
+  if (n === cur) return;
+  if (n === 0 && !confirm("ปิดการเตือน \"ล็อตค้างนาน\" ของทุกคน?")) { if (inp) inp.value = cur; return; }
+  try {
+    const r = await rawFetch({ action: "PLANSET", lotAgeDays: n, user: currentUser });
+    if (r.status !== "success") throw new Error(r.message || "บันทึกไม่สำเร็จ");
+    window._rawLotAgeDays = r.settings.lotAgeDays;
+    showToast(n ? "เตือนล็อตที่รับมาเกิน " + n + " วัน — ใช้กับทุกคนแล้ว" : "ปิดการเตือนล็อตค้างนานแล้ว", "success");
+    rawLoadData(false, 0, { silent: true });
+  } catch (e) { if (inp) inp.value = cur; showToast("บันทึกไม่สำเร็จ: " + (e.message || ""), "error"); }
+  rawUpdateLotUi();
 }
 async function rawSetStaleDays(v) {
   // ค่าว่าง/พิมพ์ผิด → คืนค่าเดิม (เดิม parseInt||0 = บันทึก 0 = ปิดการเตือนของทุกคนทันทีโดยไม่ถาม · QA M14)
@@ -221,6 +254,7 @@ function _rawApplyData(data, startup, source, at, opts = {}) {
   rawLastData = Array.isArray(data.materials) ? data.materials : [];
   window._rawDiscontinued = data.discontinued || [];
   if (data.staleDays !== undefined) window._rawStaleDays = Number(data.staleDays) || 0;
+  if (data.lotAgeDays !== undefined) window._rawLotAgeDays = Number(data.lotAgeDays) || 0;
   rawUpdateStaleUi();
   window._rawDataAt = at || Date.now();   // เวลาของข้อมูลที่อยู่บนจอ (ไว้ขึ้นป้ายเมื่อตรวจข้อมูลใหม่ไม่ได้)
   rawSetDataAge(source || "server", at);
@@ -395,6 +429,7 @@ function renderRawInventory(items) {
     if (rawCurrentFilter==="exp"   && item.ExpStatus !== "expired") return false;
     if (rawCurrentFilter==="near"  && item.ExpStatus !== "near")    return false;
     if (rawCurrentFilter==="stale" && !rawIsStale(item)) return false;
+    if (rawCurrentFilter==="lotold" && !(item.LotOld > 0)) return false;
     return true;
   });
 
@@ -432,6 +467,7 @@ function rawRenderItemRow(item) {
         <span>หมดอายุ ${rawForceThaiDate(item.ExpiryDate)}</span>
         <span>นับล่าสุด ${rawForceThaiDate(item.LastVerified)}</span>
         ${rawIsStale(item) ? `<span class="rm-stale" title="ไม่มีใครเบิก/รับ/คืน/นับ เกิน ${window._rawStaleDays} วัน — ยอดในระบบอาจไม่ตรงของจริง กด นับ เพื่อยืนยัน">${uiSign("must", 14)}${item.IdleDays == null ? "ไม่เคยบันทึกยอด" : "ไม่อัปเดต " + item.IdleDays + " วัน"}</span>` : ""}
+        ${rawLotMeta(item)}
       </div>
       <div class="rm-trend" data-sku="${escapeAttr(item.SKU)}"></div>
     </td>
@@ -936,7 +972,8 @@ function openRawEdit(sku) {
   document.getElementById("rawEditUnit").value       = item.Unit||"";
   document.getElementById("rawEditMin").value        = Number(item.Min||0);
   document.getElementById("rawEditDailyUsage").value = Number(item.DailyUsage||0);
-  document.getElementById("rawEditExpiry").value     = rawFormatDateInput(item.ExpiryDate);
+  // ItemExpiry = ค่าที่ตั้งที่รายการเอง (ExpiryDate รวมวันหมดอายุของล็อตแล้ว — บันทึกกลับจะติดวันของล็อตไปเป็นของรายการ)
+  document.getElementById("rawEditExpiry").value     = rawFormatDateInput(item.ItemExpiry !== undefined ? item.ItemExpiry : item.ExpiryDate);
   document.getElementById("rawEditAlertDays").value  = item.AlertDays ? Number(item.AlertDays) : rawAlertDays;
   // ข้อ 20: ค่าจัดซื้อรายตัว
   const _e = id => document.getElementById(id);
@@ -972,6 +1009,10 @@ function openRawAction(sku, name, unit, currentQty) {
   const _pp = document.getElementById("rawModalPurpose");
   if (_pp) _pp.value = "";
   rawFieldErrorsClear("rawModalQty", "rawModalPurpose");
+  // 🏷️ ข้อมูลล็อตตอนรับ — เริ่มใหม่ทุกครั้ง (วันที่รับ = วันนี้ · ที่เหลือว่าง · พับไว้)
+  const _lw = document.getElementById("rawLotWrap");
+  if (_lw) _lw.open = false;
+  [["rawLotRecv", rawTodayYmd()], ["rawLotNo", ""], ["rawLotExp", ""]].forEach(([id, v]) => { const el = document.getElementById(id); if (el) el.value = v; });
   rawFillPurposeList();
   rawFillWorkOrders();
   document.getElementById("rawModalStock").style.color =
@@ -1001,6 +1042,12 @@ function rawUpdateAfter() {
     btn.disabled = over;
     btn.textContent = over ? "เกินยอดที่มี" : ok ? ({ OUT: "เบิก", RETURN: "คืน", IN: "รับ" }[type] || "บันทึก") + " " + f(q) + " " + unit : "บันทึกรายการ";
   }
+  // 🏷️ เบิก: ให้เห็นก่อนกดว่าระบบจะตัดล็อตไหน (หลังบ้านตัดจริงตามยอด ณ ตอนบันทึก)
+  const lp = document.getElementById("rawModalLots");
+  if (lp) {
+    const h = type === "OUT" && ok && after >= 0 ? rawLotPreview(rawItemOf(document.getElementById("rawModalSkuVal").value), q) : "";
+    lp.innerHTML = h; lp.hidden = !h;
+  }
   if (!ok) { el.textContent = ""; return; }   // กำลังพิมพ์โจทย์คำนวณ — รอผลก่อน
   if (after < 0) {
     el.style.color = "var(--sq-crit)";
@@ -1015,6 +1062,121 @@ function rawPickPurpose(btn) {
   if (inp) { inp.value = btn.getAttribute("data-p") || ""; inp.focus(); }
 }
 function closeRawAction() { document.getElementById("rawActionModal").classList.add("hidden"); }
+
+// ═══ 🏷️ ล็อตวัตถุดิบ (วันที่รับเข้า) — หลังบ้านคิดทั้งหมด (src/lots.js · ลำดับตัด / ค้างนาน / ชื่อล็อต) หน้าจอแค่แสดงและส่งค่าที่คนกรอก ═══
+const rawItemOf = sku => (rawLastData || []).find(m => String(m.SKU) === String(sku));
+function rawTodayYmd() { const d = new Date(); return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0"); }
+function rawYmdThai(ymd) { const m = String(ymd || "").match(/^(\d{4})-(\d{2})-(\d{2})$/); return m ? `${m[3]}/${m[2]}/${Number(m[1]) + 543}` : "–"; }
+const rawLotNum = n => Number(n).toLocaleString("th-TH", { maximumFractionDigits: 3 });
+// บรรทัดในแถวรายการ: "3 ล็อต · เก่าสุด รับ 02/10/2569" (กดเปิดรายการล็อต) + ป้ายล็อตค้างนาน
+function rawLotMeta(item) {
+  const L = item.Lots || [];
+  if (!L.length) return "";
+  const recv = L.filter(l => l.RecvDate).map(l => l.RecvDate).sort();
+  const txt = L.length === 1 ? "ล็อต " + L[0].Label
+    : L.length + " ล็อต · เก่าสุด " + (L.some(l => !l.RecvDate) ? "ยอดยกมา" : "รับ " + rawYmdThai(recv[0]));
+  const old = L.filter(l => l.Old);
+  return `<button type="button" class="rm-lotlink" onclick="openRawLots('${escapeJsAttr(item.SKU)}')" title="ดูล็อตทั้งหมด${window._appIsViewer ? "" : " / แก้ไข"}">${escapeHtml(txt)}</button>` +
+    (old.length ? `<span class="rm-lotold" title="รับมาเกิน ${window._rawLotAgeDays} วันแล้วยังเหลือ — หยิบใช้ก่อน หรือตรวจว่าของยังอยู่จริง">${uiSign("warn", 14)}ล็อตค้าง ${Math.max(...old.map(l => l.AgeDays))} วัน</span>` : "");
+}
+// เบิก q → ล็อตที่จะถูกตัด (เดินตามลำดับที่หลังบ้านเรียงมาให้แล้ว)
+function rawLotPreview(item, q) {
+  const L = (item && item.Lots) || [];
+  if (!L.length || !(q > 0)) return "";
+  const out = [];
+  let left = q;
+  for (const l of L) {
+    if (left <= 0) break;
+    const t = Math.min(l.Qty, left);
+    out.push(`<div class="rm-lotpv-row"><span>${escapeHtml(l.Label)}</span><span style="white-space:nowrap"><b>${rawLotNum(t)}</b> ${escapeHtml(item.Unit || "")}</span></div>`);
+    left = Math.round((left - t) * 1000) / 1000;
+  }
+  return '<div class="rm-lotpv-head">จะตัดจากล็อตเก่าก่อน</div>' + out.join("");
+}
+
+let _rawLotSku = "", _rawLotEditId = null;
+function openRawLots(sku) {
+  _rawLotSku = String(sku);
+  rawLotFormClose();
+  rawRenderLots();
+  document.getElementById("rawLotModal").classList.remove("hidden");
+}
+function closeRawLots() { rawLotFormClose(); document.getElementById("rawLotModal").classList.add("hidden"); }
+function rawRenderLots() {
+  const item = rawItemOf(_rawLotSku), box = document.getElementById("rawLotList");
+  if (!box) return;
+  if (!item) { box.innerHTML = '<p class="rm-lotnote">ไม่พบรายการนี้แล้ว</p>'; return; }
+  const L = item.Lots || [], u = escapeHtml(item.Unit || ""), ro = !!window._appIsViewer;
+  document.getElementById("rawLotTitle").textContent = item.Name || item.SKU;
+  document.getElementById("rawLotSub").textContent = item.SKU + " · คงเหลือ " + rawLotNum(item.Qty) + " " + (item.Unit || "") +
+    (L.length > 1 ? " · เบิกจะตัดจากบนลงล่าง" : "");
+  if (!L.length) { box.innerHTML = '<p class="rm-lotnote" style="padding:12px 0;">ไม่มีล็อตที่ยังมีของ (คงเหลือ 0)</p>'; return; }
+  const sum = L.reduce((a, l) => a + l.Qty, 0);
+  box.innerHTML = L.map(l => `<div class="rm-lotrow">
+      <div>
+        <div class="l1">${escapeHtml(l.Label)}${l.Old ? `<span class="rm-lotold">${uiSign("warn", 14)}ค้าง ${l.AgeDays} วัน</span>` : ""}</div>
+        <div class="l2">${l.RecvDate ? (l.AgeDays > 0 ? "รับมาแล้ว " + l.AgeDays + " วัน" : l.AgeDays === 0 ? "รับวันนี้" : "วันที่รับล่วงหน้า") + " · รับเข้า " + rawLotNum(l.QtyIn) : "ของเดิมก่อนมีระบบล็อต"}${l.ExpDate ? " · หมดอายุ " + rawYmdThai(l.ExpDate) : ""}</div>
+      </div>
+      <div class="q">${rawLotNum(l.Qty)}<small>${u}</small></div>
+      ${ro ? "" : `<div class="acts"><button type="button" class="rm-lotbtn" onclick="rawLotFormOpen(${Number(l.Id)})">แก้ไข</button><button type="button" class="rm-lotbtn del" onclick="rawLotDelete(${Number(l.Id)})">ลบ</button></div>`}
+    </div>`).join("") +
+    `<div class="rm-lottotal"><span>รวมทุกล็อต</span><span><b>${rawLotNum(sum)}</b> ${u}${Math.abs(sum - Number(item.Qty)) < 0.0005 ? " = คงเหลือ" : ""}</span></div>`;
+}
+const _rawLotOf = id => ((rawItemOf(_rawLotSku) || {}).Lots || []).find(l => Number(l.Id) === Number(id));
+function rawLotFormOpen(id) {
+  const l = _rawLotOf(id), item = rawItemOf(_rawLotSku);
+  if (!l || !item) return;
+  _rawLotEditId = l.Id;
+  document.getElementById("rawLotFormTitle").textContent = "แก้ไขล็อต " + l.Label;
+  document.getElementById("rawLotEdRecv").value = l.RecvDate || "";
+  document.getElementById("rawLotEdNo").value = l.LotNo || "";
+  document.getElementById("rawLotEdExp").value = l.ExpDate || "";
+  document.getElementById("rawLotEdQty").value = l.Qty;
+  document.getElementById("rawLotEdUnit").textContent = "(" + (item.Unit || "") + ")";
+  rawFieldErrorsClear("rawLotEdQty");
+  const f = document.getElementById("rawLotForm");
+  f.hidden = false;
+  f.scrollIntoView({ block: "nearest" });
+  setTimeout(() => document.getElementById("rawLotEdRecv")?.focus(), 30);
+}
+function rawLotFormClose() { _rawLotEditId = null; const f = document.getElementById("rawLotForm"); if (f) f.hidden = true; }
+async function rawLotSend(body, label) {
+  const r = await offlineSend(Object.assign({ module: rawCurrentModule, action: "LOTEDIT", sku: _rawLotSku, user: currentUser }, body), label);
+  if (r.storeFailed) { alert("เน็ตล่ม และเก็บรายการไว้ในเครื่องไม่ได้ — ลองใหม่เมื่อเน็ตกลับมา"); return false; }
+  if (r.needLogin) { handleTokenExpired(r); return false; }
+  if (r.queued) { showToast("เน็ตล่ม — เก็บไว้ในเครื่องแล้ว จะส่งให้เองเมื่อเน็ตกลับมา", "warn", 6000); rawUpdateOfflineBadge(); closeRawLots(); return false; }
+  if (r.status !== "success") { showToast(r.message || "บันทึกไม่สำเร็จ", "error", 6000); return false; }
+  if (typeof tgFlushSoon === "function") tgFlushSoon();
+  await rawLoadData(false, 0, { silent: true });   // ยอดคงเหลือ/ลำดับล็อตใหม่จากหลังบ้าน
+  rawRenderLots();
+  return true;
+}
+async function rawLotSave() {
+  if (rawIsBusy("rawLotSaveBtn")) return;
+  const l = _rawLotOf(_rawLotEditId), item = rawItemOf(_rawLotSku);
+  if (!l || !item) return rawLotFormClose();
+  const rd = document.getElementById("rawLotEdRecv").value || "";
+  const ln = document.getElementById("rawLotEdNo").value.trim();
+  const ex = document.getElementById("rawLotEdExp").value || "";
+  const qs = String(document.getElementById("rawLotEdQty").value || "").replace(/,/g, "").trim();
+  const q = Number(qs);
+  if (qs === "" || isNaN(q) || q < 0) { rawFieldError("rawLotEdQty", "ใส่จำนวนที่เหลือจริงเป็นตัวเลข 0 ขึ้นไป"); return; }
+  if (rd && rd > rawTodayYmd() && !confirm("วันที่รับเข้า " + rawYmdThai(rd) + " เป็นวันในอนาคต\n\nยืนยันบันทึกตามนี้?")) return;
+  const diff = Math.round((q - l.Qty) * 1000) / 1000, u = item.Unit || "";
+  if (!diff && rd === (l.RecvDate || "") && ln === (l.LotNo || "") && ex === (l.ExpDate || "")) { showToast("ยังไม่ได้แก้อะไร", "warn"); return; }
+  if (diff && !confirm(`แก้จำนวนล็อต ${l.Label} จาก ${rawLotNum(l.Qty)} เป็น ${rawLotNum(q)} ${u}\n\nยอดคงเหลือของรายการจะ${diff > 0 ? "เพิ่ม" : "ลด"} ${rawLotNum(Math.abs(diff))} ${u} (ลงประวัติเป็น ตรวจนับ/ปรับยอด)\n\nยืนยัน?`)) return;
+  setRawBusy("rawLotSaveBtn", true, "กำลังบันทึก...");
+  const ok = await rawLotSend({ lotId: l.Id, recvDate: rd, lotNo: ln, expDate: ex, qty: q, seenQty: l.Qty }, `แก้ล็อต ${item.Name} ${l.Label}`);
+  setRawBusy("rawLotSaveBtn", false);
+  if (ok) { rawLotFormClose(); showToast("บันทึกล็อตแล้ว", "success"); }
+}
+async function rawLotDelete(id) {
+  const l = _rawLotOf(id), item = rawItemOf(_rawLotSku);
+  if (!l || !item) return;
+  const u = item.Unit || "";
+  if (!confirm(`ลบล็อต ${l.Label} (เหลือ ${rawLotNum(l.Qty)} ${u})?\n\nยอดคงเหลือของรายการจะลดลง ${rawLotNum(l.Qty)} ${u} — ใช้เมื่อล็อตนี้ไม่มีอยู่จริงหรือลงผิด\n(ของหมดตามปกติไม่ต้องลบ ระบบตัดให้เองตอนเบิก)`)) return;
+  if (await rawLotSend({ lotId: l.Id, remove: true, seenQty: l.Qty }, `ลบล็อต ${item.Name} ${l.Label}`)) showToast("ลบล็อตแล้ว", "success");
+}
 
 // ข้อ 19: ใบสั่งผลิตที่ยังเปิดอยู่ ให้เลือกอ้างอิงตอนเบิก (ไม่บังคับ — ไม่มีก็เบิกได้)
 let _rawWoCache = { at: 0, list: [] };
@@ -1058,6 +1220,8 @@ function setRawType(t) {
   if (_pin) _pin.placeholder = (t === "OUT")
     ? "เช่น ผลิตวุ้นมะพร้าว ล็อต 3"
     : "ระบุหรือไม่ก็ได้ เช่น รับจากซัพพลายเออร์ ก";
+  const _lw = document.getElementById("rawLotWrap");
+  if (_lw) _lw.hidden = t !== "IN";   // ข้อมูลล็อตมีเฉพาะตอนรับเข้า
   rawUpdateAfter();
 }
 
@@ -1258,6 +1422,13 @@ async function rawSubmitAction() {
   // ใช้กับงานอะไร — บังคับกรอกเฉพาะตอนเบิก เพราะเป็นข้อมูลที่ต้องขึ้นใบเบิกให้ออดิเตอร์ตรวจ
   const purpose = (document.getElementById("rawModalPurpose")?.value || "").trim();
   if (type === "OUT" && !purpose) { rawFieldError("rawModalPurpose", "กรุณาระบุว่าเบิกไปใช้กับงานอะไร"); return; }
+  // 🏷️ รับเข้า: ข้อมูลล็อต (ไม่บังคับ) · วันที่รับในอนาคต = ถามยืนยัน ไม่ห้าม
+  let lot = {};
+  if (type === "IN") {
+    const rd = document.getElementById("rawLotRecv")?.value || "";
+    if (rd && rd > rawTodayYmd() && !confirm("วันที่รับเข้า " + rawYmdThai(rd) + " เป็นวันในอนาคต\n\nยืนยันบันทึกตามนี้?")) return;
+    lot = { recvDate: rd, lotNo: (document.getElementById("rawLotNo")?.value || "").trim(), expDate: document.getElementById("rawLotExp")?.value || "" };
+  }
   setRawBusy("rawBtnSubmit",true,"กำลังบันทึก...");
   const _busyText = { IN:"กำลังบันทึกรับเข้า...", RETURN:"กำลังบันทึกการคืน...", OUT:"กำลังบันทึกการเบิก..." };
   showLoading(_busyText[type] || "กำลังบันทึก...");
@@ -1266,7 +1437,7 @@ async function rawSubmitAction() {
   // ผ่านคิวออฟไลน์เสมอ — ออนไลน์อยู่ก็ยิงตรงเหมือนเดิม เน็ตล่มถึงจะเก็บไว้ส่งทีหลัง
   const workOrderId = (document.getElementById("rawModalWorkOrder")?.value || "").trim();   // ข้อ 19
   const r = await offlineSend(
-    { module: rawCurrentModule, action:"UPDATE", sku, type, qty, purpose, workOrderId, user:currentUser },
+    { module: rawCurrentModule, action:"UPDATE", sku, type, qty, purpose, workOrderId, user:currentUser, ...lot },
     `${LBL[type]||type} ${name} ${qty}`);
   hideLoading(); setRawBusy("rawBtnSubmit",false);
   if (r.storeFailed) {   // ข้อ 2: เน็ตล่มและเก็บลงเครื่องไม่ได้ — ต้องบอกตรงๆ ไม่ปิดหน้าต่าง
@@ -1472,7 +1643,7 @@ function rawFillPurposeList() {
 function rawSlipFromHistory(payload) {
   try {
     const s = JSON.parse(decodeURIComponent(payload));
-    // ประวัติไม่ได้เก็บยอดคงเหลือ ณ ตอนนั้นไว้ จึงไม่แสดงตัวเลขนี้ในใบย้อนหลัง
+    // ยอดหลังทำรายการ + ล็อต: openWithdrawSlip ขอจากหลังบ้านตามเลขที่เอกสาร (SLIPINFO)
     s.balance = null;
     if (typeof openWithdrawSlip === "function") openWithdrawSlip(s);
   } catch (e) { showToast("เปิดใบไม่สำเร็จ", "error"); }

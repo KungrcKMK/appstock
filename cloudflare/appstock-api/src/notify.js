@@ -6,14 +6,14 @@
 //   on      ส่งสรุปเข้าช่องนี้ไหม (ทั้งตามเวลา และปุ่มส่งในหน้าวางแผนสั่งซื้อ)
 //   days    วันที่ส่ง 0 = อาทิตย์ … 6 = เสาร์ (เวลาไทย) · ว่าง = ไม่ส่งตามเวลา (ยังกดส่งเองได้)
 //   hour    ชั่วโมงที่ส่ง 0–23 เวลาไทย (cron ทุก 5 นาที → ส่งภายในชั่วโมงนั้น ครั้งเดียวต่อวัน)
-//   topics  หัวข้อที่ส่ง { plan ที่ต้องสั่งซื้อ · low ต่ำกว่าจุดสั่งซื้อ · stale ไม่อัปเดตเกินกำหนด · expiry ใกล้หมดอายุ/หมดอายุ }
+//   topics  หัวข้อที่ส่ง { plan ที่ต้องสั่งซื้อ · low ต่ำกว่าจุดสั่งซื้อ · stale ไม่อัปเดตเกินกำหนด · expiry ใกล้หมดอายุ/หมดอายุ · lotage ล็อตวัตถุดิบค้างนาน }
 //   detail  full = ทุกรายการพร้อมตัวเลข (แบบเดิม) · short = จำนวน + 5 รายการแรก
 //   when    change = เฉพาะเมื่อรายการเปลี่ยนจากที่เคยแจ้ง (ทวนซ้ำ "วันแรกของสัปดาห์ที่เลือก") · always = ทุกวันที่เลือก
 // ยังไม่เคยบันทึก → ค่าเริ่มต้นเท่าพฤติกรรมเดิมก่อนมีหน้านี้ (08:00 ทุกวัน · เฉพาะตอนเปลี่ยน + ทวนวันจันทร์)
 import { getCfg, cfgSet, sysLog } from "./lib.js";
 
-export const NOTIFY_TOPICS = ["plan", "low", "stale", "expiry"];
-export const TOPIC_TEXT = { plan: "ที่ต้องสั่งซื้อ", low: "ต่ำกว่าจุดสั่งซื้อ", stale: "ไม่อัปเดตเกินกำหนด", expiry: "ใกล้หมดอายุ" };
+export const NOTIFY_TOPICS = ["plan", "low", "stale", "expiry", "lotage"];
+export const TOPIC_TEXT = { plan: "ที่ต้องสั่งซื้อ", low: "ต่ำกว่าจุดสั่งซื้อ", stale: "ไม่อัปเดตเกินกำหนด", expiry: "ใกล้หมดอายุ", lotage: "ล็อตวัตถุดิบค้างนาน" };
 const DAY_TH = ["อา", "จ", "อ", "พ", "พฤ", "ศ", "ส"];
 const DAY_FULL = ["อาทิตย์", "จันทร์", "อังคาร", "พุธ", "พฤหัสบดี", "ศุกร์", "เสาร์"];
 const WEEK_ORDER = [1, 2, 3, 4, 5, 6, 0];   // นับสัปดาห์เริ่มวันจันทร์
@@ -24,9 +24,9 @@ function defaults(m) {
   const planOn = String(m.planAlert || "on").toLowerCase() !== "off";
   const lm = String(m.lineDigestMode || "change");
   return {
-    tg: { on: true, days: ALL_DAYS.slice(), hour: 8, topics: { plan: planOn, low: false, stale: true, expiry: true }, detail: "full", when: "change" },
+    tg: { on: true, days: ALL_DAYS.slice(), hour: 8, topics: { plan: planOn, low: false, stale: true, expiry: true, lotage: true }, detail: "full", when: "change" },
     line: { on: lm !== "off", days: lm === "monday" ? [1] : ALL_DAYS.slice(), hour: 8,
-            topics: { plan: planOn, low: false, stale: true, expiry: false }, detail: "full", when: lm === "monday" ? "always" : "change" },
+            topics: { plan: planOn, low: false, stale: true, expiry: false, lotage: false }, detail: "full", when: lm === "monday" ? "always" : "change" },
   };
 }
 

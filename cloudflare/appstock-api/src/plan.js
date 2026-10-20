@@ -17,6 +17,7 @@
 import { all, getCfg, cfgSet, kvGet, kvPut, nowIso, fmtTH, dayTH, thaiMidnightMs, expiryInfoTH, tgSendRaw, tgMarkLast, sysLog, DAY_MS, TZ_MS, FACTORY_NAME } from "./lib.js";
 import { lineConfig, lineSend, lineStatus } from "./line.js";
 import { lastStockUpdate, idleDaysTH, staleDaysOf } from "./raw.js";
+import { lotAgeDaysOf, lotOpenMap, lotEarliestExp, lotOldList, lotLabel } from "./lots.js";
 import { crGetStartupOverview } from "./cold.js";
 import { notifySchedule, normSchedule, topicDue, describeSchedule, NOTIFY_TOPICS, TOPIC_TEXT } from "./notify.js";
 
@@ -47,6 +48,7 @@ export async function planSettings(c, over) {
     coverDays: clampNum(m.planCoverDays, 1, 365, PLAN_DEFAULTS.coverDays),
     alert: String(m.planAlert || "on").toLowerCase() !== "off",
     staleDays: staleDaysOf(m),   // ⏰ เตือนเมื่อไม่มีการอัปเดตสต๊อกเกินกี่วัน (0 = ปิด)
+    lotAgeDays: lotAgeDaysOf(m), // 🏷️ เตือนล็อตวัตถุดิบที่รับมาเกินกี่วันแล้วยังเหลือ (0 = ปิด)
   };
   const o = over || {};
   return {
@@ -57,6 +59,7 @@ export async function planSettings(c, over) {
       coverDays: clampNum(o.coverDays, 1, 365, saved.coverDays),
       alert: saved.alert,
       staleDays: saved.staleDays,
+      lotAgeDays: saved.lotAgeDays,
     },
   };
 }
@@ -70,14 +73,17 @@ export async function planSet(c, data) {
     coverDays: clampNum(data.coverDays, 1, 365, cur.coverDays),
     alert: data.alert === undefined ? cur.alert : !(data.alert === false || String(data.alert).toLowerCase() === "off" || String(data.alert) === "false"),
     staleDays: clampNum(data.staleDays, 0, 365, cur.staleDays),
+    lotAgeDays: clampNum(data.lotAgeDays, 0, 3650, cur.lotAgeDays),
   };
   await cfgSet(c, "planLeadDays", next.leadDays);
   await cfgSet(c, "planSafetyDays", next.safetyDays);
   await cfgSet(c, "planCoverDays", next.coverDays);
   await cfgSet(c, "planAlert", next.alert ? "on" : "off");
   await cfgSet(c, "planStaleDays", next.staleDays);
+  await cfgSet(c, "lotAgeDays", next.lotAgeDays);
   await sysLog(c, "plan-settings", "รอของ " + next.leadDays + " วัน · กันชน " + next.safetyDays + " วัน · สั่งให้พอ " + next.coverDays + " วัน · แจ้งเตือนเช้า " + (next.alert ? "เปิด" : "ปิด") +
-    " · เตือนไม่อัปเดต " + (next.staleDays ? "เกิน " + next.staleDays + " วัน" : "ปิด"), data.user || c.user || "-", "ok");
+    " · เตือนไม่อัปเดต " + (next.staleDays ? "เกิน " + next.staleDays + " วัน" : "ปิด") +
+    " · เตือนล็อตค้าง " + (next.lotAgeDays ? "เกิน " + next.lotAgeDays + " วัน" : "ปิด"), data.user || c.user || "-", "ok");
   return { status: "success", ok: true, settings: next };
 }
 
@@ -316,8 +322,9 @@ async function expiryList(c, modules, crOv) {
   // นับเป็นวันปฏิทินไทย (expiryInfoTH ใน lib.js — ตัวเดียวกับสถานะที่ส่งให้หน้าจอ) ส่งตอนเช้าหรือตอนเย็นก็ได้ตัวเลขเดียวกัน
   const out = [];
   for (const mod of modules.filter((m) => m === "SQF" || m === "MLM")) {
+    const lots = await lotOpenMap(c, mod);   // 🏷️ วันหมดอายุ = ตัวที่ใกล้สุดระหว่างค่าที่รายการกับล็อต (ชุดเดียวกับที่ส่งให้หน้าจอ)
     for (const m of await all(c, "SELECT sku, name, expiry_date, alert_days FROM materials WHERE module = ? AND discontinued = 0 ORDER BY seq, rowid", mod)) {
-      const ex = expiryInfoTH(m.expiry_date);
+      const ex = expiryInfoTH(lotEarliestExp(m.expiry_date, lots[m.sku]));
       if (!ex) continue;
       const { days, y, mo, d } = ex;
       if (days > (Number(m.alert_days) || 7) || days < -30) continue;
@@ -334,6 +341,16 @@ async function expiryList(c, modules, crOv) {
     }
   }
   return out.sort((a, b) => a.days - b.days);
+}
+// 🏷️ ล็อตวัตถุดิบที่รับมานานแล้วยังเหลือ — ให้หยิบใช้ก่อน / ตรวจว่าของยังอยู่จริงไหม (ระบบตัดล็อตเก่าก่อนให้อยู่แล้ว ค้างนาน = ยอดอาจไม่ตรงของจริง)
+function lotAgeMessage(module, list, days, detail) {
+  const n = LIST_MAX[detail] || LIST_MAX.full;
+  const lines = list.slice(0, n).map((x) => "• " + x.name + " — " + lotLabel(x) + " (" + x.age + " วัน)" +
+    (detail === "short" ? "" : " · เหลือ " + fmtN(x.qty_left) + " " + (x.unit || "")));
+  let msg = "🏷️ ล็อตวัตถุดิบที่รับมาเกิน " + days + " วันแล้วยังเหลือ — " + (FACTORY_NAME[module] || module) + "\n" +
+    stamp() + " · " + list.length + " ล็อต\n\n" + lines.join("\n") + more(list.length, n, "ล็อต");
+  if (detail !== "short") msg += "\n\nหยิบล็อตเก่าใช้ก่อน หรือตรวจว่าของยังอยู่จริง: เปิดแอป → คลังวัตถุดิบ → เลือกรายการ → ดูล็อต";
+  return msg;
 }
 function expiryMessage(list, detail) {
   const n = LIST_MAX[detail] || LIST_MAX.full;
@@ -367,7 +384,7 @@ export function packTexts(msgs, max, limit) {
   return out;
 }
 
-const SIG_PREFIX = { plan: "plan_sig_", low: "low_sig_", stale: "stale_sig_", expiry: "exp_sig_" };
+const SIG_PREFIX = { plan: "plan_sig_", low: "low_sig_", stale: "stale_sig_", expiry: "exp_sig_", lotage: "lotage_sig_" };
 const sigKey = (topic, module, ch) => SIG_PREFIX[topic] + (ch === "line" ? "line_" : "") + module;   // คีย์ plan_/stale_ เดิมใช้ต่อได้
 
 /** 1 แถวต่อช่องต่อรอบใน system_log (digest-tg / digest-line) — ตรวจย้อนหลังได้ว่าวันไหนส่งอะไร ถึงกี่คน พลาดเพราะอะไร */
@@ -395,6 +412,7 @@ export async function planDigest(c, opts) {
   const want = new Set();
   for (const ch of channels) if (sch[ch].on || o.dry) topicsFor(ch).forEach((t) => want.add(t));
   if (set.saved.staleDays <= 0) want.delete("stale");   // ตั้ง 0 วัน = ปิดเรื่องไม่อัปเดตทั้งระบบ
+  if (set.saved.lotAgeDays <= 0) want.delete("lotage");
   const modules = o.modules || ["SQF", "MLM", "COLDROOM"];
 
   // คิดข้อมูลครั้งเดียวต่อโรงงาน ใช้ร่วมทุกช่อง (ข้อความสร้างตอนส่ง เพราะแต่ละช่องเลือกย่อ/ละเอียดต่างกันได้)
@@ -412,9 +430,14 @@ export async function planDigest(c, opts) {
     }
     for (const module of modules) {
       if (module === "COLDROOM") {   // ห้องเย็นไม่มีแผนสั่งซื้อ / จุดสั่งซื้อ — มีแค่เรื่องไม่อัปเดต
-        if (topic !== "stale") continue;
+        if (topic !== "stale") continue;   // ห้องเย็นไม่มีหัวข้อล็อตค้างนาน (มีเตือนวันหมดอายุของล็อตแล้ว)
         const v = await crOv(), sl = v.staleLots || [];
         entries.push({ topic, module, has: sl.length > 0, sig: sl.map((x) => x.Barcode + "|" + x.MFG).sort().join("|"), msg: (d) => crStaleMessage(v, d) });
+        continue;
+      }
+      if (topic === "lotage") {
+        const days = set.saved.lotAgeDays, l = await lotOldList(c, module, days);
+        entries.push({ topic, module, has: l.length > 0, sig: l.map((x) => x.id).sort().join("|"), msg: (d) => lotAgeMessage(module, l, days, d) });
         continue;
       }
       const p = await planOf(module);

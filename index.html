@@ -499,6 +499,39 @@
     #module-RAW .rm-runout { font:600 12px/1.4 var(--sq-mono);color:var(--sq-muted);margin-top:1px;white-space:nowrap; }
     /* ⏰ ไม่มีการอัปเดตสต๊อกเกินกำหนด — ป้ายในบรรทัดรายละเอียดของแถว */
     #module-RAW .rm-stale { display:inline-flex;align-items:center;gap:4px;color:var(--sq-must);font-weight:700;background:var(--sq-must-bg);border-radius:4px;padding:0 5px;font-family:'Sarabun',sans-serif; }
+    /* 🏷️ ล็อตวัตถุดิบ (2026-10-20) — ลิงก์เปิดรายการล็อต + ป้ายล็อตค้างนาน (เหลือง = ควรดู) */
+    #module-RAW .rm-lotlink { display:inline-flex;align-items:center;min-height:24px;border:0;background:none;padding:0;font:inherit;font-family:'Sarabun',sans-serif;color:var(--sq-accent);font-weight:700;text-decoration:underline;text-underline-offset:2px;cursor:pointer; }
+    #module-RAW .rm-lotold, .rm-lotlist .rm-lotold { display:inline-flex;align-items:center;gap:4px;color:var(--sq-warn);font-weight:700;background:var(--sq-warn-bg);border-radius:4px;padding:0 5px;font-family:'Sarabun',sans-serif;font-size:12px;white-space:nowrap; }
+    .rm-lotpv { margin-top:8px;padding:8px 10px;border:1.5px solid var(--sq-line);border-radius:6px;background:var(--sq-raised);text-align:left;font-size:13px;font-weight:700;color:var(--sq-ink2); }
+    .rm-lotpv b { color:var(--sq-ink);font-family:var(--sq-mono);white-space:nowrap; }
+    .rm-lotpv-head { color:var(--sq-ink);font-weight:800; }
+    .rm-lotpv-row { display:flex;justify-content:space-between;gap:12px; }
+    .rm-lotbox { text-align:left;border:1.5px dashed var(--sq-line2);border-radius:6px;padding:0 12px; }
+    .rm-lotbox > summary { cursor:pointer;min-height:44px;display:flex;align-items:center;font-size:14px;font-weight:800;color:var(--sq-ink); }
+    .rm-lotbox > summary span { color:var(--sq-muted);font-weight:600;margin-left:4px; }
+    .rm-lotgrid { display:grid;grid-template-columns:auto 1fr;gap:8px 12px;align-items:center;padding-bottom:12px; }
+    .rm-lotgrid label { font-size:13px;font-weight:800;color:var(--sq-ink2); }
+    .rm-lotgrid .ui-field { width:100%;min-width:0;padding:9px 12px;font-size:15px;min-height:44px; }
+    .rm-lotsub { font-size:13px;color:var(--sq-ink2);margin-top:2px; }
+    .rm-lotlist { padding:4px 20px 8px; }
+    .rm-lotrow { display:grid;grid-template-columns:1fr auto auto;gap:12px;align-items:center;padding:10px 0;border-top:1px solid var(--sq-line); }
+    .rm-lotrow:first-child { border-top:0; }
+    .rm-lotrow .l1 { font-weight:800;color:var(--sq-ink);display:flex;flex-wrap:wrap;gap:6px;align-items:center; }
+    .rm-lotrow .l2 { font-size:12px;color:var(--sq-muted);margin-top:2px; }
+    .rm-lotrow .q { font:700 16px/1.2 var(--sq-mono);font-variant-numeric:tabular-nums;text-align:right;white-space:nowrap;color:var(--sq-ink); }
+    .rm-lotrow .q small { font:600 12px/1 inherit;font-family:'Sarabun',sans-serif;color:var(--sq-muted);margin-left:3px; }
+    .rm-lotrow .acts { display:grid;grid-template-columns:repeat(2,auto);gap:6px; }
+    .rm-lotbtn { min-height:40px;padding:0 12px;border:1.5px solid var(--sq-line2);border-radius:6px;background:#fff;color:var(--sq-ink);font-weight:700;font-size:13px;cursor:pointer; }
+    .rm-lotbtn:hover { border-color:var(--sq-green); }
+    .rm-lotbtn.del { color:var(--sq-crit); }
+    .rm-lottotal { display:flex;justify-content:space-between;gap:12px;padding:10px 0 4px;border-top:2px solid var(--sq-line2);font-weight:800;color:var(--sq-ink2); }
+    .rm-lottotal b { font-family:var(--sq-mono);color:var(--sq-ink); }
+    .rm-lotform { margin:4px 20px 8px;padding:12px 14px;border:2px solid var(--sq-green);border-radius:6px;background:#fff; }
+    .rm-lotform-title { font-weight:800;color:var(--sq-ink);margin-bottom:10px; }
+    .rm-lotnote { font-size:12px;color:var(--sq-ink2);margin:0 0 10px; }
+    .rm-lotacts { display:grid;grid-template-columns:1fr 1fr;gap:10px;align-items:center; }
+    .rm-lotacts .ui-cancel { margin-top:0; }
+    .rm-lotacts .ui-confirm { font-size:16px;min-height:48px;padding:8px 12px; }
     #module-RAW .rm-runout.crit { color:var(--sq-crit);font-weight:700; }
     #module-RAW .rm-runout.high { color:var(--sq-high);font-weight:700; }
     #module-RAW .rm-runout.warn { color:var(--sq-warn);font-weight:700; }
@@ -1933,7 +1966,21 @@
           <div>
             <input type="number" id="rawModalQty" aria-label="จำนวน" oninput="rawUpdateAfter()" class="ui-field ui-k w-full p-4 text-5xl text-center" value="1" min="1" placeholder="เช่น 16*48+5">
             <div id="rawModalAfter" style="margin-top:10px;font-size:14px;font-weight:800;color:var(--sq-ink2);min-height:21px;"></div>
+            <!-- 🏷️ เบิก: ระบบตัดล็อตเก่าก่อนให้เอง — บอกให้เห็นก่อนกด (หลังบ้านตัดจริงตามยอด ณ ตอนบันทึก) -->
+            <div id="rawModalLots" class="rm-lotpv" hidden></div>
           </div>
+          <!-- 🏷️ รับเข้า: ข้อมูลล็อต ไม่บังคับ — ไม่เปิด = ล็อตตามวันนี้ -->
+          <details id="rawLotWrap" class="rm-lotbox" hidden>
+            <summary>ข้อมูลล็อต <span>(ถ้ามี)</span></summary>
+            <div class="rm-lotgrid">
+              <label for="rawLotRecv">วันที่รับเข้า</label>
+              <input type="date" id="rawLotRecv" lang="en-GB" class="ui-field">
+              <label for="rawLotNo">เลขล็อตผู้ขาย</label>
+              <input type="text" id="rawLotNo" maxlength="40" class="ui-field" placeholder="ว่างได้" autocomplete="off">
+              <label for="rawLotExp">วันหมดอายุ</label>
+              <input type="date" id="rawLotExp" lang="en-GB" class="ui-field">
+            </div>
+          </details>
           <!-- ใช้กับงานอะไร — บังคับกรอกตอนเบิก ข้อมูลนี้ขึ้นบนใบเบิกและออดิเตอร์ใช้ตรวจ -->
           <div id="rawPurposeWrap" style="text-align:left;">
             <label for="rawModalPurpose" style="font-size:13px;font-weight:800;color:var(--sq-ink2);display:block;margin:0 0 6px 4px;">
@@ -1959,6 +2006,39 @@
           <button onclick="rawSubmitAction()" id="rawBtnSubmit" class="ui-confirm icb w-full t-out">บันทึกรายการ</button>
           <button onclick="closeRawAction()" class="ui-cancel">ปิดหน้าต่าง</button>
         </div>
+      </div>
+    </div>
+
+    <!-- 🏷️ ล็อตของวัตถุดิบ: ดู / แก้ไข / ลบ — เรียงตามลำดับที่เบิกจะตัด (แก้จำนวน/ลบ = ยอดคงเหลือเปลี่ยนตาม ลงประวัติ) -->
+    <div id="rawLotModal" class="ui-modal hidden fixed inset-0 bg-black/80 z-[255] flex justify-center p-4 overflow-y-auto">
+      <div class="relative my-auto bg-white w-full" style="max-width:560px;">
+        <div class="ui-plate-head flex items-start gap-3">
+          <div style="flex:1;min-width:0;">
+            <h2 id="rawLotTitle" class="text-xl font-black">ล็อต</h2>
+            <p id="rawLotSub" class="rm-lotsub"></p>
+          </div>
+          <button type="button" onclick="closeRawLots()" aria-label="ปิดหน้าต่าง" title="ปิด (Esc)" class="ui-x"><i class="ic ic-x" aria-hidden="true"></i></button>
+        </div>
+        <div id="rawLotList" class="rm-lotlist"></div>
+        <form id="rawLotForm" class="rm-lotform" hidden onsubmit="event.preventDefault();rawLotSave();">
+          <div id="rawLotFormTitle" class="rm-lotform-title">แก้ไขล็อต</div>
+          <div class="rm-lotgrid">
+            <label for="rawLotEdRecv">วันที่รับเข้า</label>
+            <input type="date" id="rawLotEdRecv" lang="en-GB" class="ui-field">
+            <label for="rawLotEdNo">เลขล็อตผู้ขาย</label>
+            <input type="text" id="rawLotEdNo" maxlength="40" class="ui-field" placeholder="ว่างได้" autocomplete="off">
+            <label for="rawLotEdExp">วันหมดอายุ</label>
+            <input type="date" id="rawLotEdExp" lang="en-GB" class="ui-field">
+            <label for="rawLotEdQty">เหลือ <span id="rawLotEdUnit"></span></label>
+            <input type="text" inputmode="decimal" id="rawLotEdQty" class="ui-field ui-k" autocomplete="off">
+          </div>
+          <p class="rm-lotnote">แก้จำนวน = ยอดคงเหลือของรายการเปลี่ยนตาม และลงประวัติเป็น <span style="white-space:nowrap">ตรวจนับ/ปรับยอด</span></p>
+          <div class="rm-lotacts">
+            <button type="button" onclick="rawLotFormClose()" class="ui-cancel">ยกเลิก</button>
+            <button type="submit" id="rawLotSaveBtn" class="ui-confirm t-cnt">บันทึกล็อต</button>
+          </div>
+        </form>
+        <div class="px-4 pb-3"><button type="button" onclick="closeRawLots()" class="ui-cancel">ปิดหน้าต่าง</button></div>
       </div>
     </div>
 
@@ -2130,6 +2210,7 @@
               <button id="rawFilter-exp"  onclick="setRawFilter('exp')"  class="rm-chip"><i class="ui-sg sg-no" aria-hidden="true"></i>หมดอายุ</button>
               <button id="rawFilter-near" onclick="setRawFilter('near')" class="rm-chip"><i class="ui-sg sg-warn" aria-hidden="true"></i>ใกล้หมดอายุ</button>
               <button id="rawFilter-stale" onclick="setRawFilter('stale')" class="rm-chip" style="display:none;"><i class="ui-sg sg-must" aria-hidden="true"></i>ไม่อัปเดต</button>
+              <button id="rawFilter-lotold" onclick="setRawFilter('lotold')" class="rm-chip" style="display:none;"><i class="ui-sg sg-warn" aria-hidden="true"></i>ล็อตค้างนาน</button>
             </div>
             <div class="rm-alertdays">
               <label for="rawAlertDaysInput">เตือนล่วงหน้า</label>
@@ -2140,6 +2221,12 @@
             <div class="rm-alertdays" title="รายการที่ไม่มีใครเบิก/รับ/คืน/นับ เกินจำนวนวันนี้ จะขึ้นเตือน และสรุปเข้ากลุ่มตอนเช้า · 0 = ปิด">
               <label for="rawStaleDaysInput">เตือนไม่อัปเดตเกิน</label>
               <input type="number" id="rawStaleDaysInput" min="0" max="365" value="7" onchange="rawSetStaleDays(this.value)">
+              <span>วัน</span>
+            </div>
+            <!-- 🏷️ ล็อตที่รับมาเกินกี่วันแล้วยังเหลือ = ล็อตค้างนาน (ค่ากลาง · หัวหน้า/แอดมินแก้ได้ · 0 = ปิด) -->
+            <div class="rm-alertdays" title="ล็อตวัตถุดิบที่รับเข้ามาเกินจำนวนวันนี้แล้วยังเหลือ จะขึ้นเตือน และสรุปเข้ากลุ่มตอนเช้า · 0 = ปิด">
+              <label for="rawLotAgeInput">เตือนล็อตค้างเกิน</label>
+              <input type="number" id="rawLotAgeInput" min="0" max="3650" value="30" onchange="rawSetLotAgeDays(this.value)">
               <span>วัน</span>
             </div>
           </div>

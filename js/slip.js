@@ -156,8 +156,28 @@ async function slipDraw(s) {
   x.fillText(pTxt, M + 190, y + 47);
   y += 74;
 
+  // ── ล็อต (2026-10-20) — ตัดจาก/รับเข้าล็อตไหน ย้อนรอยได้ว่าของมาจากรับวันไหน · ห้ามตัดข้อความทิ้ง (เอกสารตรวจสอบ) → ขึ้นบรรทัดใหม่ ──
+  const lots = Array.isArray(s.lots) ? s.lots : [];
+  if (lots.length) {
+    x.font = "bold 28px " + F;
+    const parts = lots.map(l => String(l.label || "") + "  " + Number(l.qty || 0).toLocaleString() + " " + String(s.unit || ""));
+    const lines = [""];
+    parts.forEach(p => {
+      const cur = lines[lines.length - 1], next = cur ? cur + "   ·   " + p : p;
+      if (cur && x.measureText(next).width > tW - 220) lines.push(p); else lines[lines.length - 1] = next;
+    });
+    const h = 34 + lines.length * 40;
+    x.fillStyle = "#ffffff"; x.fillRect(M, y, tW, h);
+    x.strokeStyle = LINE; x.lineWidth = 2; x.strokeRect(M, y, tW, h);
+    x.fillStyle = MUTED; x.font = "26px " + F;
+    x.fillText(s.type === "OUT" ? "ตัดจากล็อต" : "ล็อต", M + 20, y + 46);
+    x.fillStyle = INK; x.font = "bold 28px " + F;
+    lines.forEach((t, i) => x.fillText(t, M + 190, y + 47 + i * 40));
+    y += h;
+  }
+
   // ── ยอดคงเหลือหลังทำรายการ ──
-  // ใบย้อนหลังจากประวัติไม่มีตัวเลขนี้ (ประวัติไม่ได้เก็บยอด ณ ตอนนั้นไว้)
+  // ใบย้อนหลัง: openWithdrawSlip ขอยอดหลังทำรายการจากหลังบ้านให้ (รายการเก่าก่อนมี balance_after = ไม่มีบรรทัดนี้)
   if (s.balance !== null && s.balance !== undefined) {
     x.fillStyle = "#f7f7f4"; x.fillRect(M, y, tW, 74);
     x.strokeStyle = LINE; x.strokeRect(M, y, tW, 74);
@@ -226,6 +246,21 @@ async function openWithdrawSlip(s) {
   box.innerHTML = '<p class="sq-empty">กำลังสร้างใบเบิก...</p>';
   modal.classList.remove("hidden");
   document.getElementById("slipDocNo").textContent = s.docNo || "รายการเก่า — ไม่มีเลขที่";
+
+  // ใบย้อนหลัง (ประวัติ / รายงานรายเดือน) → ขอล็อตที่ตัด + ยอดหลังทำรายการจากหลังบ้าน ให้ตรงกับใบที่ออกตอนบันทึก
+  // ดึงไม่ได้ (เน็ตล่ม / เอกสารก่อนมีระบบล็อต) = ออกใบได้ตามเดิม แค่ไม่มีบรรทัดนั้น
+  if (s.docNo && s.lots === undefined) {
+    try {
+      const ctl = new AbortController(), t = setTimeout(() => ctl.abort(), 8000);
+      const r = await (await fetch(GAS_URL, { method: "POST", signal: ctl.signal, headers: { "Content-Type": "text/plain;charset=utf-8" },
+        body: JSON.stringify({ module: s.module, action: "SLIPINFO", docNo: s.docNo }) })).json();
+      clearTimeout(t);
+      if (r && r.status === "success") {
+        s = Object.assign({}, s, { lots: r.lots || [] });
+        if ((s.balance === null || s.balance === undefined) && r.balance !== null && r.balance !== undefined) s.balance = r.balance;
+      }
+    } catch (e) {}
+  }
 
   const canvas = await slipDraw(s);
   _slipDataUrl = canvas.toDataURL("image/png");

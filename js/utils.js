@@ -326,6 +326,7 @@ const UI_MODALS = {
   planModal:            { close: "closePlanModal", backdrop: true },
   unifiedSettingsModal: { close: "closeUnifiedSettings" },
   rawActionModal:       { close: "closeRawAction" },
+  rawLotModal:          { close: "closeRawLots" },
   rawVerifyModal:       { close: "closeRawVerify" },
   rawEditModal:         { close: "closeRawEdit" },
   rawCreateModal:       { close: "closeRawCreate" },

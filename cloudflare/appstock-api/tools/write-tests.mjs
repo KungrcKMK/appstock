@@ -712,7 +712,7 @@ console.log("14) 🗓️ กำหนดการส่งสรุป — ว�
   const planTexts = [fP, sP, ...(fL.texts || []), ...(sL.texts || [])].filter((t) => t && /วัตถุดิบที่ต้องสั่งซื้อ/.test(t));
   T("ข้อความ TG + LINE (ย่อ/ละเอียด) ไม่มีจำนวนแนะนำสั่ง", planTexts.length >= 4 && (fL.texts || []).length > 0 && (sL.texts || []).length > 0 && planTexts.every((t) => !/แนะนำสั่ง|— สั่ง /.test(t)), { n: planTexts.length, line: [fL.status, (fL.texts || []).length, sL.status, (sL.texts || []).length], hit: planTexts.map((t) => (t.match(/.*(แนะนำสั่ง|— สั่ง ).*/) || [""])[0]) });
   T("ดูตัวอย่างไม่ไปแตะค่าที่บันทึกไว้", (await ns("NOTIFYGET")).schedule.tg.detail === "short");
-  const none = await ns("NOTIFYPREVIEW", { channel: "tg", tg: { topics: { plan: false, low: false, stale: false, expiry: false } } });
+  const none = await ns("NOTIFYPREVIEW", { channel: "tg", tg: { topics: { plan: false, low: false, stale: false, expiry: false, lotage: false } } });
   T("ไม่เลือกหัวข้อเลย → ไม่มีอะไรจะส่ง", none.status === "success" && none.texts.length === 0, none.texts);
 
   // หัวข้อต่ำกว่าจุดสั่งซื้อ + ใกล้หมดอายุ (สร้างของทดสอบ แล้วลบทิ้ง)
@@ -926,6 +926,107 @@ console.log("16) ส่งสรุปเข้ากลุ่ม: บันท�
     }
     T("คืนกำหนดการเดิม + ลบการตั้งค่า LINE ทดสอบ", JSON.stringify((await lsys("NOTIFYGET")).schedule) === JSON.stringify(ng0.schedule));
   }
+}
+
+console.log("17) 🏷️ ล็อตวัตถุดิบ (วันที่รับเข้า) — รับเป็นล็อต · เบิกตัดล็อตเก่าก่อน · คืนเข้าล็อตเดิม · นับขาด/เกิน · แก้/ลบล็อต · ค้างนาน · ลงชีต (2026-10-20)");
+{
+  const SKU = "LOT" + Date.now(), M = "SQF";
+  const thDay = (addDays) => new Date(Date.now() + 7 * 3600000 + addDays * 86400000).toISOString().slice(0, 10);
+  const today = thDay(0), d02 = "2026-10-02", old = thDay(-60);
+  const mat = async () => matOf(M, SKU);
+  const sumOk = (x) => x && Math.abs(x.Lots.reduce((a, l) => a + l.Qty, 0) - x.Qty) < 0.0005;
+  const lotsTxt = (x) => x ? x.Lots.map((l) => l.Label + "=" + l.Qty) : x;
+  const c0 = await raw("CREATE", { sku: SKU, name: "ทดสอบล็อต " + SKU, unit: "กก.", qty: 10, min: 0 }, tok, M);
+  let x = await mat();
+  T("สร้างรายการยอด 10 → ล็อตยอดยกมา 10 (ผลรวมล็อต = คงเหลือ)", c0.status === "success" && x.Lots.length === 1 && x.Lots[0].Label === "ยอดยกมา" && x.Lots[0].Qty === 10 && sumOk(x), lotsTxt(x));
+
+  const bad = await raw("UPDATE", { sku: SKU, type: "IN", qty: 1, recvDate: "2026-02-30" }, tok, M);
+  T("วันที่รับเข้าผิด (30 ก.พ.) → ปฏิเสธ ยอดไม่เปลี่ยน", bad.status === "error" && /วันที่รับเข้า/.test(bad.message) && (await mat()).Qty === 10, bad);
+  const r1 = await raw("UPDATE", { sku: SKU, type: "IN", qty: 20, recvDate: d02, lotNo: "L1", expDate: "2027-01-31" }, tok, M);
+  T("รับ 20 พร้อมข้อมูลล็อต → ใบรับบอกล็อต รับ 02/10/69 · L1", r1.status === "success" && r1.slip.lots.length === 1 && r1.slip.lots[0].label === "รับ 02/10/69 · L1" && r1.slip.lots[0].qty === 20, r1.slip);
+  const r2 = await raw("UPDATE", { sku: SKU, type: "IN", qty: 15 }, tok, M);
+  T("รับ 15 ไม่กรอกข้อมูลล็อต → ล็อตวันนี้ให้เอง", r2.status === "success" && r2.slip.lots[0].recvDate === today && r2.slip.lots[0].lotNo === "", r2.slip.lots);
+  const r3 = await raw("UPDATE", { sku: SKU, type: "IN", qty: 5, recvDate: d02, lotNo: "L1", expDate: "2027-01-31" }, tok, M);
+  x = await mat();
+  T("รับวัน+เลขล็อต+วันหมดอายุเดิม → รวมเข้าล็อตเดิม (3 ล็อต, L1 = 25)", r3.status === "success" && x.Lots.length === 3 && x.Lots.find((l) => l.LotNo === "L1").Qty === 25 && x.Qty === 50 && sumOk(x), lotsTxt(x));
+  T("วันหมดอายุของรายการ = ของล็อต (ค่าที่รายการว่าง)", x.ExpiryDate === "2027-01-31" && x.ItemExpiry === "", [x.ExpiryDate, x.ItemExpiry]);
+  T("เรียงล็อตตามลำดับที่จะถูกเบิก: ยอดยกมา → มีวันหมดอายุ → ไม่มีวันหมดอายุ", lotsTxt(x).join("|") === "ยอดยกมา=10|รับ 02/10/69 · L1=25|" + x.Lots[2].Label + "=15", lotsTxt(x));
+
+  const oOut = op();
+  const w1 = await raw("UPDATE", { sku: SKU, type: "OUT", qty: 30, purpose: "ทดสอบล็อต", opId: oOut }, tok, M);
+  x = await mat();
+  T("เบิก 30 → ตัดยอดยกมา 10 + L1 20 (เก่าก่อน · ไม่ต้องเลือก)", w1.status === "success" && w1.slip.lots.map((l) => l.label + "=" + l.qty).join("|") === "ยอดยกมา=10|รับ 02/10/69 · L1=20" && sumOk(x), [w1.slip.lots, lotsTxt(x)]);
+  T("ล็อตที่หมดแล้วไม่แสดง (เหลือ L1 5 + ล็อตวันนี้ 15)", x.Lots.length === 2 && x.Lots[0].Qty === 5 && x.Lots[1].Qty === 15, lotsTxt(x));
+  const w1b = await raw("UPDATE", { sku: SKU, type: "OUT", qty: 30, purpose: "ทดสอบล็อต", opId: oOut }, tok, M);
+  T("ส่งซ้ำ opId เดิม → ไม่ตัดล็อตซ้ำ ใบเบิกบอกล็อตชุดเดิม", w1b.duplicate === true && JSON.stringify(w1b.slip.lots) === JSON.stringify(w1.slip.lots) && (await mat()).Qty === 20, w1b.slip);
+  const si = await post({ module: M, action: "SLIPINFO", docNo: w1.docNo });
+  const siBad = await post({ module: M, action: "SLIPINFO", docNo: "RQ-NOPE-0000" });
+  T("ออกใบย้อนหลังตามเลขที่เอกสาร → ล็อตที่ตัด + ยอดหลังเบิก ตรงกับใบตอนบันทึก · เลขผิด = ไม่พบ", si.status === "success" && JSON.stringify(si.lots) === JSON.stringify(w1.slip.lots) && si.balance === w1.slip.balance && siBad.status === "error", [si, siBad]);
+  const t1 = await raw("UPDATE", { sku: SKU, type: "RETURN", qty: 3 }, tok, M);
+  x = await mat();
+  T("คืน 3 → กลับเข้าล็อตที่เบิกล่าสุด (L1 5 → 8)", t1.status === "success" && t1.slip.lots.length === 1 && t1.slip.lots[0].lotNo === "L1" && x.Lots[0].Qty === 8 && sumOk(x), [t1.slip.lots, lotsTxt(x)]);
+  const v1 = await raw("VERIFY", { sku: SKU, qty: 20 }, tok, M);
+  x = await mat();
+  T("นับได้ 20 (ระบบ 23) → ขาด 3 ตัดล็อตเก่า (L1 8 → 5)", v1.status === "success" && x.Qty === 20 && x.Lots[0].Qty === 5 && x.Lots[1].Qty === 15 && sumOk(x), lotsTxt(x));
+  const v2 = await raw("VERIFY", { sku: SKU, qty: 30 }, tok, M);
+  x = await mat();
+  T("นับได้ 30 (ระบบ 20) → เกิน 10 เข้าล็อตใหม่สุด (ล็อตวันนี้ 15 → 25)", v2.status === "success" && x.Qty === 30 && x.Lots[1].Qty === 25 && x.Lots[0].Qty === 5 && sumOk(x), lotsTxt(x));
+
+  // ── แก้ไข / ลบล็อตด้วยมือ ──
+  const L1 = x.Lots[0], LT = x.Lots[1];
+  T("viewer แก้ล็อตไม่ได้", (await raw("LOTEDIT", { sku: SKU, lotId: L1.Id, lotNo: "X" }, vtok, M)).status === "error");
+  const e1 = await raw("LOTEDIT", { sku: SKU, lotId: LT.Id, lotNo: "L2", seenQty: LT.Qty }, tok, M);
+  x = await mat();
+  T("แก้เลขล็อตอย่างเดียว → ยอดไม่เปลี่ยน", e1.status === "success" && x.Qty === 30 && x.Lots[1].LotNo === "L2" && sumOk(x), [e1, lotsTxt(x)]);
+  const e2 = await raw("LOTEDIT", { sku: SKU, lotId: L1.Id, qty: 1, seenQty: 4 }, tok, M);
+  T("จำนวนที่เห็นไม่ตรงของจริง (มีคนเบิกระหว่างเปิด) → ไม่ทับ", e2.status === "error" && /เปิดใหม่/.test(e2.message) && (await mat()).Qty === 30, e2);
+  const e3 = await raw("LOTEDIT", { sku: SKU, lotId: L1.Id, qty: 20, seenQty: 5 }, tok, M);
+  x = await mat();
+  T("แก้จำนวนล็อต 5 → 20 → คงเหลือ +15 (= 45)", e3.status === "success" && e3.balance === 45 && x.Qty === 45 && x.Lots[0].Qty === 20 && sumOk(x), [e3, lotsTxt(x)]);
+  const rIn = await raw("UPDATE", { sku: SKU, type: "IN", qty: 2, recvDate: "2026-10-05" }, tok, M);
+  const L5 = (await mat()).Lots.find((l) => l.RecvDate === "2026-10-05");
+  const e4 = await raw("LOTEDIT", { sku: SKU, lotId: L5.Id, recvDate: today, lotNo: "L2", seenQty: L5.Qty }, tok, M);
+  T("แก้จนซ้ำกับล็อตอื่น (วัน+เลขล็อต+วันหมดอายุเดียวกัน) → ปฏิเสธ ไม่มีอะไรเปลี่ยน", rIn.status === "success" && e4.status === "error" && /ตรงกันอยู่แล้ว/.test(e4.message) && (await mat()).Qty === 47, e4);
+  const e5 = await raw("LOTEDIT", { sku: SKU, lotId: L1.Id, remove: true, seenQty: 20 }, tok, M);
+  x = await mat();
+  T("ลบล็อต L1 (เหลือ 20) → คงเหลือ −20 · ล็อตหายจากรายการ", e5.status === "success" && x.Qty === 27 && !x.Lots.some((l) => l.Id === L1.Id) && sumOk(x), [e5, lotsTxt(x)]);
+  T("ไม่มีล็อตไหนมีวันหมดอายุแล้ว → วันหมดอายุรายการกลับเป็นค่าที่รายการ (ว่าง)", x.ExpiryDate === "", x.ExpiryDate);
+  const g = await get(M);
+  const hist = g.recentHistory.filter((h) => h[6] === SKU).map((h) => h[2]);
+  T("ประวัติ: แก้จำนวน/ลบ = ตรวจนับ/ปรับยอด · แก้ข้อมูล = แก้ไขล็อต", hist.filter((a) => a === "ตรวจนับ/ปรับยอด").length >= 4 && hist.includes("แก้ไขล็อต"), hist);
+  const audit = await raw("LEDGERAUDIT", {}, tok, M);
+  T("ยอดคลังตรงกับยอดหลังรายการล่าสุดในประวัติ (ไม่มีรายการไหนหลุด)", audit.status === "success" && !audit.mismatches.some((mm) => mm.sku === SKU), audit.mismatches);
+
+  // ── ล็อตค้างนาน ──
+  await raw("UPDATE", { sku: SKU, type: "IN", qty: 4, recvDate: old, lotNo: "OLD" }, tok, M);
+  x = await mat();
+  const lo = x.Lots.find((l) => l.LotNo === "OLD");
+  T("รับย้อนหลัง 60 วัน → ล็อตค้างนาน (เกิน 30 วัน) · ถูกเบิกก่อนล็อตใหม่", lo && lo.AgeDays === 60 && lo.Old === true && x.LotOld === 1 && g.lotAgeDays === 30 && x.Lots[0].LotNo === "OLD", [lotsTxt(x), lo, x.LotOld]);
+  const pv = await sys("NOTIFYPREVIEW", { channel: "tg", tg: { topics: { plan: false, low: false, stale: false, expiry: false, lotage: true }, detail: "full" } });
+  const lt = (pv.texts || []).join("\n");
+  T("สรุปเข้ากลุ่ม หัวข้อล็อตค้างนาน มีล็อตนี้ (ชื่อ · วันที่รับ · จำนวนวัน)", pv.status === "success" && /ล็อตวัตถุดิบที่รับมาเกิน 30 วัน/.test(lt) && lt.includes("ทดสอบล็อต " + SKU + " — รับ ") && /\(60 วัน\)/.test(lt), lt.slice(0, 400));
+
+  // ── ลงชีตสำเนา ──
+  const ex = await post({ module: "SYSTEM", action: "EXPORT", sessionToken: atok });
+  const sh = (ex.sheets || {}).RM_Lots || [], mv = (ex.sheets || {}).RM_LotMoves || [];
+  T("ส่งออกชีต: แผ่น RM_Lots มีทุกล็อตของรายการนี้ + ชื่อ · RM_LotMoves มีหัวตาราง", sh.length > 1 && sh.filter((r) => r[2] === SKU).length >= 4 && sh.some((r) => r[2] === SKU && r[3] === "ทดสอบล็อต " + SKU && r[4] === "ยอดยกมา") && mv[0] && mv[0][2] === "OpId", [sh[0], sh.filter((r) => r[2] === SKU).length, mv[0]]);
+
+  // ── งานตามเวลากันพลาด: ยอดถูกแก้นอกระบบล็อต → ล็อตปรับตามเอง ──
+  await sqlLocal("UPDATE materials SET qty = qty + 7 WHERE module = 'SQF' AND sku = '" + SKU + "';");
+  const tk = await fetch(BASE + "/__scheduled?cron=" + encodeURIComponent("*/5 * * * *")).catch(() => null);
+  if (!tk || !tk.ok) console.log("  ⏭️  ข้าม: เรียกงานตามเวลาไม่ได้ — เปิดหลังบ้านด้วย wrangler dev --test-scheduled");
+  else {
+    let ok = false;
+    for (let i = 0; i < 20 && !ok; i++) { await new Promise((r) => setTimeout(r, 300)); ok = sumOk(await mat()); }
+    x = await mat();
+    T("ยอดถูกแก้ตรงในฐานข้อมูล (+7) → งานตามเวลาเติมเข้าล็อตใหม่สุดให้ผลรวมตรง", ok && x.Qty === 38, lotsTxt(x));
+  }
+
+  // ── สองเครื่องเบิกพร้อมกัน → ผลรวมล็อตยังตรง ──
+  const par = await Promise.all([1, 2, 3].map(() => raw("UPDATE", { sku: SKU, type: "OUT", qty: 5, purpose: "พร้อมกัน" }, tok, M)));
+  x = await mat();
+  T("เบิกพร้อมกัน 3 เครื่อง → ยอดลด 15 และผลรวมล็อตยังเท่ากับคงเหลือ", par.every((r) => r.status === "success") && x.Qty === 23 && sumOk(x), [par.map((r) => r.status), lotsTxt(x), x.Qty]);
+  await raw("DELETE", { sku: SKU }, tok, M);
 }
 
 console.log(`\nสรุป: ผ่าน ${pass} · ไม่ผ่าน ${fail}`);

@@ -180,7 +180,7 @@ function drSlip(docNo) {
   openWithdrawSlip({
     docNo: r.docNo, sku: r.sku, name: r.name, qty: r.qty, unit: r.unit,
     purpose: r.purpose, user: r.user, at: r.at, module: rawCurrentModule,
-    balance: null,   // ประวัติไม่ได้เก็บยอดคงเหลือ ณ ตอนนั้นไว้
+    balance: null,   // openWithdrawSlip ขอยอดหลังทำรายการ + ล็อตจากหลังบ้านให้ (SLIPINFO)
     type: r.action.includes("เบิก") ? "OUT" : r.action.includes("คืน") ? "RETURN" : "IN"
   });
 }

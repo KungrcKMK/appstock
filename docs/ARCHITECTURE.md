@@ -88,6 +88,8 @@ D1 "appstock" (SQLite, 16 ตาราง — โครงใน cloudflare/apps
 |---|---|---|
 | materials | SQF_Materials / MLM_Materials | แยกโรงงานด้วยคอลัมน์ `module` · PK (module, sku) · min = จุดสั่งซื้อ · rop_start = วันเริ่มนับสถิติเบิก · lead_days/moq/pack_size = ค่าต่อรายการ (ว่าง = ใช้ค่ากลาง) |
 | history | SQF_History / MLM_History | action = "เบิกออก"/"รับเข้า"/"คืนวัตถุดิบ"/"ตรวจนับ/ปรับยอด" · ts = เวลาที่กดจริง (`clientAt`) · balance_after = ยอดหลังทำรายการ · ack_by/ack_at = รับทราบ |
+| rm_lots | RM_Lots (สำเนาใหม่ 2026-10-20) | ล็อตวัตถุดิบ: 1 ครั้งรับเข้า = 1 ล็อต (recv_date + lot_no + exp_date ไม่ซ้ำกัน · recv_date '' = "ยอดยกมา") · **ผลรวม qty_left ต่อ SKU = materials.qty เสมอ** — คุมที่ `src/lots.js` `lotSync` (ใส่ท้ายทุก batch ที่แตะยอด + cron ทุก 5 นาที) · ลำดับตัด: ยอดยกมา → มีวันหมดอายุ (ใกล้หมดก่อน) → รับก่อนตัดก่อน |
+| rm_lot_moves | RM_LotMoves | ล็อตไหนเปลี่ยนเท่าไรต่อรายการ (op_id ตรงกับ history) — ใบเบิกแสดงล็อต · คืนกลับล็อตที่เบิกล่าสุด |
 | users | AppUsers | role: user/viewer/manager/admin · password = `pbkdf2$<รอบ>$<เกลือ>$<hash>` (รูปแบบเก่าถูกแปลงเองตอน login) |
 | pending_users | PendingUsers | คำขอสิทธิ์จากหน้า login |
 | sessions | (เดิมอยู่ใน PropertiesService) | บัตรผ่าน 30 วัน · role/สถานะอ่านจาก users ทุกคำขอ → ลดสิทธิ์/ลบบัญชีมีผลทันที |

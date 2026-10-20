@@ -6,6 +6,7 @@ import { getTokenData, verifyAdminToken } from "./auth.js";
 import { archiveOldStock } from "./cold.js";
 import { planDigest } from "./plan.js";
 import { notifySchedule, channelsDue } from "./notify.js";
+import { lotSync } from "./lots.js";
 
 // ───────────── สถานะระบบ (manager ขึ้นไป) ─────────────
 export async function sysStatus(c) {
@@ -110,6 +111,11 @@ const SECRET_CONFIG = /token|apikey|secret/i;
 const SHEETS = [
   ["SQF_Materials", "materials", "module = 'SQF'", "seq, rowid", MAT_COLS], ["MLM_Materials", "materials", "module = 'MLM'", "seq, rowid", MAT_COLS],
   ["SQF_History", "history", "module = 'SQF'", "id", HIST_COLS, true], ["MLM_History", "history", "module = 'MLM'", "id", HIST_COLS, true],
+  // 🏷️ ล็อตวัตถุดิบ (ทุกล็อต รวมที่หมดแล้ว) + ล็อตไหนเปลี่ยนเท่าไรต่อรายการ (OpId ตรงกับชีตประวัติ)
+  ["RM_Lots", "(SELECT l.*, m.name AS name, m.unit AS unit FROM rm_lots l LEFT JOIN materials m ON m.module = l.module AND m.sku = l.sku)", "", "module, sku, id",
+    [["LotID", "id"], ["Module", "module"], ["SKU", "sku"], ["Name", "name"], ["RecvDate", (r) => r.recv_date || "ยอดยกมา"], ["LotNo", "lot_no"], ["ExpDate", "exp_date"],
+     ["QtyIn", "qty_in"], ["QtyLeft", "qty_left"], ["Unit", "unit"], ["CreatedAt", "created_at"]]],
+  ["RM_LotMoves", "rm_lot_moves", "", "id", [["ID", "id"], ["Module", "module"], ["OpId", "op_id"], ["LotID", "lot_id"], ["Qty", "qty"]], true],
   ["ColdRoom_Products", "cr_products", "", "seq, rowid", [["Barcode", "barcode"], ["ProductName", "product_name"], ["SKU", "sku"], ["DefaultUnit", "default_unit"],
     ["StandardShelfLifeDays", "shelf_life_days"], ["WarningPercentage", "warning_pct"], ["WarningDays", "warning_days"], ["SetName", "set_name"], ["UnitsPerSet", "units_per_set"], ["CreatedAt", "created_at"]]],
   ["ColdRoom_Stock", "cr_stock", "archived = 0", "seq, rowid", STOCK_COLS], ["ColdRoom_Stock_Archive", "cr_stock", "archived = 1", "seq, rowid", STOCK_COLS],
@@ -170,6 +176,7 @@ async function mirrorSig(c) {
     "(SELECT COALESCE(MAX(id), 0) FROM history) AS h, (SELECT COALESCE(MAX(id), 0) FROM cr_lot_history) AS l, " +
     "(SELECT COUNT(*) || ':' || COALESCE(SUM(qty), 0) || ':' || COALESCE(SUM(min), 0) || ':' || COALESCE(SUM(discontinued), 0) FROM materials) AS m, " +
     "(SELECT COUNT(*) || ':' || COALESCE(SUM(qty), 0) || ':' || COALESCE(SUM(archived), 0) FROM cr_stock) AS s, " +
+    "(SELECT COUNT(*) || ':' || COALESCE(SUM(qty_left), 0) FROM rm_lots) AS rl, " +
     "(SELECT COUNT(*) FROM cr_products) AS p, (SELECT COUNT(*) FROM bom) AS b, (SELECT COUNT(*) FROM users) AS u, (SELECT COUNT(*) FROM pending_users) AS pu, " +
     "(SELECT COALESCE(MAX(id), 0) FROM work_orders) AS w, (SELECT COALESCE(MAX(id), 0) FROM delivery_notes) AS d, (SELECT COALESCE(MAX(id), 0) FROM stock_in) AS si");
   return r ? Object.keys(r).map((k) => r[k]).join("|") : "";
@@ -235,6 +242,10 @@ export async function ticks(c, via) {
   const day = th.toISOString().slice(0, 10), hh = th.getUTCHours(), dow = th.getUTCDay();
   await kvPut(c, "cron_last", fmtTH(Date.now(), "dd/MM/yyyy HH:mm") + " " + via, 7 * 86400);
   try { await tgFlushQueue(c); } catch (e) {}
+  // 🏷️ ล็อตรวม = ยอดคงเหลือ (ปกติทุกการเขียนทำให้แล้ว — ตรงนี้กันพลาด + สร้างล็อตยอดยกมาให้ของเดิมครั้งแรกหลังขึ้นระบบ)
+  for (const mod of ["SQF", "MLM"]) {
+    try { await c.env.DB.batch(lotSync(c, mod, "", "")); } catch (e) { await sysLogOnce(c, "cron-error", "lotSync(" + mod + "): " + e, 3600); }
+  }
   // 08:00–08:59: สำรองข้อมูลประจำวัน (ครั้งเดียวต่อวัน)
   if (hh === 8 && await claim(c, "tick_morning_" + day, 2 * 86400)) {
     try { await backupAll(c, "daily", "ระบบ"); } catch (e) {}

@@ -40,7 +40,7 @@ export async function revokeToken(c, token) { if (token) await run(c, "DELETE FR
 // ⚠️ เพิ่ม action เขียนใหม่ต้องใส่ในตารางนี้เสมอ ไม่งั้นไม่ถูกตรวจ
 export const ROLE_RANK = { viewer: 0, user: 1, manager: 2, admin: 3 };
 export const WRITE_MIN_ROLE = {
-  UPDATE: "user", VERIFY: "user", CREATE: "user", EDIT: "user", DELETE: "user", IMPORT: "user",
+  UPDATE: "user", VERIFY: "user", CREATE: "user", EDIT: "user", DELETE: "user", IMPORT: "user", LOTEDIT: "user",
   BACKUP: "manager", SETMIN: "user", SETROPSTART: "user", ACKDOC: "user",
   saveOrUpdateCount: "user", importLots: "user", saveNewProduct: "user", clearLotStock: "user",
   saveWorkOrder: "user", deleteWorkOrder: "user", updateProduct: "user", archiveOldStock: "manager",

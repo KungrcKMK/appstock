@@ -131,6 +131,12 @@
     @media (prefers-reduced-motion:reduce){#scanLine{animation:none}}
     /* ── รายการ: ป้ายรูปทรงซ้าย · ชื่อ/รหัส/สถานะกลาง · จำนวนขวา ── */
     .m-row{display:grid;grid-template-columns:34px 1fr auto;gap:10px;align-items:center;width:100%;text-align:left;background:#fff;border:1.5px solid var(--m-line);border-radius:6px;padding:10px 12px}
+    /* 🏷️ ล็อตวัตถุดิบ (2026-10-20) — แผงพับ · ห้ามตั้ง display ใน .m-* (ชนกับ hidden) จัดวางด้วย Tailwind */
+    .m-lots{border:1.5px solid var(--m-line);border-radius:6px;padding:0 12px}
+    .m-lotin{border:1.5px dashed var(--m-line2);border-radius:6px;padding:0 12px}
+    .m-lots>summary,.m-lotin>summary{cursor:pointer;padding:11px 0;font-weight:800}
+    .m-lotrow+.m-lotrow{border-top:1px solid var(--m-line)}
+    .m-lotold{color:var(--m-warn-ink);background:#fff6cc;border-radius:4px;padding:0 5px;font-weight:800;white-space:nowrap}
     .m-name{font-size:16px;font-weight:800;line-height:1.25}
     .m-meta{font-size:13px;font-weight:600;color:var(--m-ink2);margin-top:2px;line-height:1.35}
     .m-qty{text-align:right}
@@ -367,6 +373,26 @@
         <svg width="20" height="20" viewBox="0 0 34 34" aria-hidden="true"><path d="M17 2.5 32.5 30.5H1.5Z" fill="#ffd100" stroke="#111" stroke-width="2.5" stroke-linejoin="round"/><path d="M17 11v10" stroke="#111" stroke-width="3.5" stroke-linecap="round"/><circle cx="17" cy="25.6" r="2" fill="#111"/></svg>
         ต่ำกว่าจุดสั่งซื้อ
       </div>
+      <!-- 🏷️ ล็อตคงเหลือ (วัตถุดิบ) — เรียงตามลำดับที่เบิกจะตัด · แตะ แก้ไข เพื่อแก้วันที่/เลขล็อต/จำนวน หรือลบ -->
+      <details id="aLots" class="hidden mt-3 text-left m-lots">
+        <summary id="aLotsSum"></summary>
+        <div id="aLotsList" class="pb-2"></div>
+        <div id="aLotForm" class="hidden m-well p-3 mb-3">
+          <p id="aLfTitle" class="font-black mb-2"></p>
+          <div class="grid grid-cols-2 gap-2">
+            <label class="text-sm font-black">วันที่รับเข้า<input id="aLfRecv" type="date" class="m-field w-full py-2 px-2 mt-1"></label>
+            <label class="text-sm font-black">วันหมดอายุ<input id="aLfExp" type="date" class="m-field w-full py-2 px-2 mt-1"></label>
+            <label class="text-sm font-black">เลขล็อตผู้ขาย<input id="aLfNo" type="text" maxlength="40" autocomplete="off" placeholder="ว่างได้" class="m-field w-full py-2 px-2 mt-1"></label>
+            <label class="text-sm font-black">เหลือ <span id="aLfUnit"></span><input id="aLfQty" type="text" inputmode="decimal" autocomplete="off" class="m-field m-k w-full py-2 px-2 mt-1"></label>
+          </div>
+          <p class="text-xs m-ink2 font-bold mt-2">แก้จำนวน = ยอดคงเหลือเปลี่ยนตาม · ลงประวัติเป็น <span class="whitespace-nowrap">ตรวจนับ/ปรับยอด</span></p>
+          <div class="grid grid-cols-2 gap-2 mt-2">
+            <button onclick="mLotFormClose()" class="btn-tap m-btn py-2">ยกเลิก</button>
+            <button id="aLfSave" onclick="mLotSave()" class="btn-tap m-btn-go py-2">บันทึกล็อต</button>
+          </div>
+          <button onclick="mLotDelete()" class="btn-tap w-full mt-2 py-2 m-red font-black underline">ลบล็อตนี้</button>
+        </div>
+      </details>
     </div>
 
     <!-- IN/OUT/COUNT Toggle -->
@@ -398,6 +424,17 @@
         <!-- 🧮 เปิดแป้นพิมพ์เต็มเพื่อพิมพ์โจทย์ เช่น 16*48+5 (แป้นตัวเลขไม่มีเครื่องหมายคูณ) -->
         <button onclick="calcMode()" class="tap44 btn-tap m-btn flex-shrink-0 px-3 text-sm"><i class="ic ic-calc"></i> คิดเลข</button>
       </div>
+      <!-- 🏷️ เบิก: ระบบตัดล็อตเก่าก่อนให้เอง — บอกให้เห็นก่อนกด -->
+      <div id="aLotPv" class="hidden mt-2 m-well px-3 py-2 text-sm font-bold m-ink2"></div>
+      <!-- 🏷️ รับเข้า: ข้อมูลล็อต ไม่บังคับ — ไม่เปิด = ล็อตตามวันนี้ -->
+      <details id="aLotIn" class="hidden mt-3 m-lotin">
+        <summary class="text-sm">ข้อมูลล็อต <span class="m-ink2 font-bold">(ถ้ามี)</span></summary>
+        <div class="grid grid-cols-2 gap-2">
+          <label class="text-sm font-black">วันที่รับเข้า<input id="aLotRecv" type="date" class="m-field w-full py-2 px-2 mt-1"></label>
+          <label class="text-sm font-black">วันหมดอายุ<input id="aLotExp" type="date" class="m-field w-full py-2 px-2 mt-1"></label>
+        </div>
+        <label class="text-sm font-black block mt-2 pb-3">เลขล็อตผู้ขาย<input id="aLotNo" type="text" maxlength="40" autocomplete="off" placeholder="ว่างได้" class="m-field w-full py-2 px-3 mt-1"></label>
+      </details>
 
       <!-- ใช้กับงานอะไร — บังคับกรอกตอนเบิก ข้อมูลนี้ขึ้นบนใบเบิกให้ออดิเตอร์ตรวจ -->
       <div id="aPurposeWrap" class="mt-3">
@@ -1165,6 +1202,9 @@ async function loadData(opts) {
           idle:  m.IdleDays === undefined ? undefined : m.IdleDays,   // ⏰ วันที่ไม่มีการอัปเดต (หลังบ้านนับให้)
           expDays: m.ExpDays === undefined ? null : m.ExpDays,        // ⛔ อีกกี่วันหมดอายุ (หลังบ้านคิดให้ · ติดลบ = เลยแล้ว)
           expStatus: m.ExpStatus || "",                              //    "expired" | "near" | ""
+          // 🏷️ ล็อตที่ยังมีของ (หลังบ้านเรียงตามลำดับที่เบิกจะตัด + ตัดสินค้างนานให้แล้ว) · ชื่อ rmLots ไม่ชน lots ของห้องเย็น
+          rmLots: (m.Lots || []).map(l => ({ id: l.Id, label: l.Label || "", recv: l.RecvDate || "", no: l.LotNo || "", exp: l.ExpDate || "",
+                                             qtyIn: Number(l.QtyIn) || 0, qty: Number(l.Qty) || 0, age: l.AgeDays, old: !!l.Old })),
           cr:    false
         }))
         .sort((a, b) => a.name.localeCompare(b.name, "th"));
@@ -1214,7 +1254,7 @@ function filterList() {
   clearTimeout(_mFilterTimer);
   _mFilterTimer = setTimeout(_filterListNow, 180);
 }
-let mListFilter = "all";   // all | no | warn | must | freq — ตรงกับป้ายในแถว (mSignOf) · must = ไม่อัปเดตทั้งหมด
+let mListFilter = "all";   // all | no | warn | must | lotold | freq — ตรงกับป้ายในแถว (mSignOf) · must = ไม่อัปเดตทั้งหมด
 const isLowItem = d => d.min > 0 && d.qty <= d.min;   // นิยามเดียวกับหลังบ้าน (plan.js belowMin) และ rawIsLow ในหน้าคอม
 const isExpItem = d => d.expStatus === "expired" || d.expStatus === "near";
 // ป้ายหมดอายุบนการ์ด/แผ่นเบิก — คำเดียวกับหน้าคอม
@@ -1224,6 +1264,7 @@ const expTagHtml = d => d.expStatus === "expired"
 // ⏰ ไม่มีการอัปเดตสต๊อกเกินกำหนด — ค่ากลางมากับข้อมูลคลัง (หัวหน้าตั้งที่หน้าคอม)
 const mStaleDays = () => Number(mStoreGet("m_staledays_" + mod, 0)) || 0;
 const isStaleItem = d => { const n = mStaleDays(); return !!n && d.idle !== undefined && (d.idle === null || d.idle > n); };
+const isLotOldItem = d => (d.rmLots || []).some(l => l.old);   // 🏷️ หลังบ้านตัดสินค้างนานให้แล้ว
 // ป้ายของแต่ละรายการ: หมด/หมดอายุ (วงกลมขีดแดง) > ต่ำกว่าจุดสั่งซื้อ/ใกล้หมดอายุ (สามเหลี่ยมเหลือง) > ไม่อัปเดต (วงกลมน้ำเงิน ต้องนับ) > พอ
 const mSignOf = d => (d.cr && d.qty <= 0) ? "none" : (d.qty <= 0 || d.expStatus === "expired") ? "no"
   : (isLowItem(d) || d.expStatus === "near" || d.planStatus === "late" || d.planStatus === "now") ? "warn" : isStaleItem(d) ? "must" : "ok";
@@ -1235,6 +1276,7 @@ function _filterListNow() {
   if (mListFilter === "all") list.sort((a, b) => M_RANK[mSignOf(a)] - M_RANK[mSignOf(b)]);
   else if (mListFilter === "no" || mListFilter === "warn") list = list.filter(d => mSignOf(d) === mListFilter);
   else if (mListFilter === "must") list = list.filter(isStaleItem);
+  else if (mListFilter === "lotold") list = list.filter(isLotOldItem);
   else if (mListFilter === "freq") {
     const f = mStoreGet("m_freq_" + mod, {});
     list = list.filter(d => f[d.sku] > 0).sort((a, b) => (f[b.sku] - f[a.sku]) || a.name.localeCompare(b.name, "th"));
@@ -1257,13 +1299,24 @@ function renderChips() {
   // ชิปตัวกรอง = ป้ายเดียวกับในแถว · ขึ้นเฉพาะกลุ่มที่มีรายการ (หรือกำลังเลือกอยู่) · "ทั้งหมด" ขึ้นเสมอ = ทางกลับ (คลังว่างแล้วกดใช้บ่อย เคยไม่มีทางกลับ · 2026-10-20)
   // ตาราง 3 ช่อง ไม่เลื่อนซ้าย-ขวา (เจ้าของสั่ง 2026-10-20) · คำยาวตัดหลัง "/" เท่านั้น (nowrap กันตัด "หมด|อายุ") · ต้องสั่ง/ใกล้หมดอายุ กว้าง 2 ช่อง
   const nw = t => `<span class="whitespace-nowrap">${t}</span>`;
-  const chip = (key, label, cnt, icon, span) => (!cnt && mListFilter !== key && key !== "freq" && key !== "all") ? "" :
-    `<button onclick="setListFilter('${key}')" aria-pressed="${mListFilter === key}" class="btn-tap m-chip ${mListFilter === key ? "on" : icon && icon !== "star" ? "hot" : ""} ${span ? "col-span-2" : ""} inline-flex items-center justify-center gap-1 px-1.5 py-1 text-left">${icon === "star" ? '<i class="ic ic-star"></i>' : icon ? mSign(icon, 18) : ""}<span>${label}${cnt ? nw(" " + cnt) : ""}</span></button>`;
-  el.innerHTML = chip("all", nw("ทั้งหมด"), data.length)
-    + chip("no", "หมด/" + nw("หมดอายุ"), nSign("no"), "no")
-    + (mStaleDays() ? chip("must", nw("ไม่อัปเดต"), data.filter(isStaleItem).length, "must") : "")
-    + chip("warn", "ต้องสั่ง/" + nw("ใกล้หมดอายุ"), nSign("warn"), "warn", true)
-    + chip("freq", nw("ใช้บ่อย"), freq, "star");
+  const list = [
+    ["all", nw("ทั้งหมด"), data.length, "", 1],
+    ["no", "หมด/" + nw("หมดอายุ"), nSign("no"), "no", 1],
+    mStaleDays() ? ["must", nw("ไม่อัปเดต"), data.filter(isStaleItem).length, "must", 1] : null,
+    ["warn", "ต้องสั่ง/" + nw("ใกล้หมดอายุ"), nSign("warn"), "warn", 2],
+    ["lotold", nw("ล็อตค้าง"), data.filter(isLotOldItem).length, "warn", 1],   // 🏷️ ล็อตรับมานานแล้วยังเหลือ
+    ["freq", nw("ใช้บ่อย"), freq, "star", 1],
+  ].filter(c => c && (c[2] || mListFilter === c[0] || c[0] === "freq" || c[0] === "all"));
+  // ทุกแถวต้องเต็ม 3 ช่อง (ไม่มีปุ่มเหลือเดี่ยว · เจ้าของสั่ง 2026-10-20): ปุ่มที่ไม่พอที่ในแถว → ปุ่มก่อนหน้ายืดเต็มแถว · แถวสุดท้ายยืดปุ่มสุดท้าย
+  let left = 3;
+  list.forEach((c, i) => {
+    if (c[4] > left) { list[i - 1][4] += left; left = 3; }
+    left -= c[4]; if (!left) left = 3;
+  });
+  if (left < 3) list[list.length - 1][4] += left;
+  const SPAN = { 2: "col-span-2", 3: "col-span-3" };
+  el.innerHTML = list.map(([key, label, cnt, icon, span]) =>
+    `<button onclick="setListFilter('${key}')" aria-pressed="${mListFilter === key}" class="btn-tap m-chip ${mListFilter === key ? "on" : icon && icon !== "star" ? "hot" : ""} ${SPAN[span] || ""} inline-flex items-center justify-center gap-1 px-1.5 py-1 text-left">${icon === "star" ? '<i class="ic ic-star"></i>' : icon ? mSign(icon, 18) : ""}<span>${label}${cnt ? nw(" " + cnt) : ""}</span></button>`).join("");
 }
 
 function populateDropdown() {
@@ -1294,6 +1347,7 @@ function renderList(more) {
     const why = mListFilter === "no" ? "✅ ไม่มีของที่หมดหรือหมดอายุ"
       : mListFilter === "warn" ? "✅ ไม่มีของที่ต้องสั่งหรือใกล้หมดอายุ"
       : mListFilter === "must" ? "✅ ทุกรายการมีการอัปเดตภายใน " + mStaleDays() + " วัน"
+      : mListFilter === "lotold" ? "✅ ไม่มีล็อตที่ค้างนาน"
       : mListFilter === "freq" ? "ยังไม่มีรายการที่ใช้บ่อย<br><span class=\"text-xs\">ทำรายการแล้วจะขึ้นที่นี่เอง</span>"
       : data.length ? "ไม่พบรายการ" : "ยังไม่มีของคงเหลือในคลังนี้";
     el.innerHTML = mEmptyHtml(why, "py-16");
@@ -1310,6 +1364,8 @@ function renderList(more) {
     if (item.qty > 0 && /^(late|now|soon)$/.test(item.planStatus)) meta.push(`<span class="font-black" style="color:${planClr(item)}">${escH(item.planText)}</span>`);
     if (isExpItem(item)) meta.push(expTagHtml(item));
     if (isStaleItem(item)) meta.push('<span class="m-must font-black">' + (item.idle === null ? "ไม่เคยบันทึกยอด" : "ไม่อัปเดต " + item.idle + " วัน") + "</span>");
+    const _old = (item.rmLots || []).filter(l => l.old);
+    if (_old.length) meta.push('<span class="m-lotold">ล็อตค้าง ' + Math.max(..._old.map(l => l.age)) + " วัน</span>");
     if (item.daysCover != null) meta.push(`<span class="font-black" style="color:${planClr(item)}">พอ ${fmtNum(item.daysCover)} วัน</span>`);
     return `
     <button onclick="pickItem('${escJA(item.sku)}')" class="item-card m-row">
@@ -1348,6 +1404,11 @@ function pickItem(sku) {
   if (sel.min > 0 && sel.qty <= sel.min) show("aWarn"); else hide("aWarn");
 
   const isViewer = (role || "").toLowerCase() === "viewer";
+  // 🏷️ ล็อต: แผงล็อตคงเหลือ (พับไว้) + ช่องข้อมูลล็อตตอนรับเริ่มใหม่ทุกครั้ง
+  if ($("aLots")) $("aLots").open = false;
+  mRenderLots();
+  if ($("aLotIn")) $("aLotIn").open = false;
+  [["aLotRecv", mTodayYmd()], ["aLotNo", ""], ["aLotExp", ""]].forEach(([id, v]) => { const e = $(id); if (e) e.value = v; });
 
   if (sel.cr) {
     // Cold Room — lot list + count
@@ -1699,6 +1760,7 @@ function setType(t) {
   if (_pi) _pi.placeholder = (t === "OUT")
     ? "เช่น ผลิตวุ้นมะพร้าว ล็อต 3"
     : "ระบุหรือไม่ก็ได้";
+  if (t === "IN") show("aLotIn"); else hide("aLotIn");   // 🏷️ ข้อมูลล็อตมีเฉพาะตอนรับเข้า
 
   // ปุ่มยืนยันสีเดียวกับประเภทที่เลือก — มองปุ่มก็รู้ว่ากำลังจะเบิกหรือรับ
   const confirmBtn = $("aConfirm");
@@ -1726,6 +1788,23 @@ function updateAfter() {
   const q = numVal($("aQtyIn").value), u = sel.unit || "";
   const btn = $("aConfirm");
   if (btn && !btn.disabled) btn.textContent = confirmLabel();
+  // 🏷️ เบิก: ล็อตที่ระบบจะตัด (เก่าก่อน · เดินตามลำดับที่หลังบ้านเรียงมาให้)
+  const pv = $("aLotPv");
+  if (pv) {
+    let h = "";
+    if (aType === "OUT" && q > 0 && q <= sel.qty && (sel.rmLots || []).length) {
+      const out = []; let left = q;
+      for (const l of sel.rmLots) {
+        if (left <= 0) break;
+        const t = Math.min(l.qty, left);
+        out.push(`<div class="flex justify-between gap-3"><span class="min-w-0">${escH(l.label)}</span><b class="m-k whitespace-nowrap">${fmtNum(t)} ${escH(u)}</b></div>`);
+        left = Math.round((left - t) * 1000) / 1000;
+      }
+      h = '<div class="font-black">จะตัดจากล็อตเก่าก่อน</div>' + out.join("");
+    }
+    pv.innerHTML = h;
+    pv.classList.toggle("hidden", !h);
+  }
   if (isNaN(q) || q < 0) {
     el.className = "flex-1 text-center text-sm font-black m-ink2";
     el.textContent = (aType === "COUNT" && String($("aQtyIn").value).trim() === "") ? "พิมพ์ยอดที่นับได้จริง" : "";
@@ -1823,6 +1902,13 @@ async function confirmAction() {
   if (aType === "OUT" && qty > sel.qty) {
     toast(`⚠️ สต๊อกไม่พอ — มี ${fmtNum(sel.qty)} ${sel.unit}`, "err"); return;
   }
+  // 🏷️ รับเข้า: ข้อมูลล็อต (ไม่บังคับ) · วันที่รับในอนาคต = ถามยืนยัน ไม่ห้าม
+  let lot = {};
+  if (aType === "IN") {
+    const rd = ($("aLotRecv") || {}).value || "";
+    if (rd && rd > mTodayYmd() && !confirm("วันที่รับเข้า " + mYmdThai(rd) + " เป็นวันในอนาคต\n\nยืนยันบันทึกตามนี้?")) return;
+    lot = { recvDate: rd, lotNo: (($("aLotNo") || {}).value || "").trim(), expDate: ($("aLotExp") || {}).value || "" };
+  }
   const btn = $("aConfirm");
   btn.disabled = true; btn.textContent = "กำลังบันทึก...";
 
@@ -1844,7 +1930,7 @@ async function confirmAction() {
       ? await offlineSend({ module: mod, action: "VERIFY", sku: sel.sku, qty, user }, label)
       : await offlineSend({ module: mod, action: "UPDATE", sku: sel.sku, type: aType, qty,
                         purpose: ($("aPurposeIn").value || "").trim(),
-                        workOrderId: ($("aWorkOrder")?.value || "").trim(), user }, label);
+                        workOrderId: ($("aWorkOrder")?.value || "").trim(), user, ...lot }, label);
 
     setLoading(false); btn.disabled = false;
     btn.textContent = confirmLabel();
@@ -1872,7 +1958,9 @@ async function confirmAction() {
     if (ok) {
       const LABEL = { COUNT:`นับ → ${fmtNum(qty)}`, OUT:`เบิก ${fmtNum(qty)}`, RETURN:`คืน ${fmtNum(qty)}`, IN:`รับ ${fmtNum(qty)}` };
       const label = LABEL[aType] || `${qty}`;
-      toast(`${label} ${sel.unit} · ${sel.name}`);
+      // 🏷️ บอกล็อตที่ระบบตัด/รับเข้า (ย้อนรอยได้ว่าใช้ของรับวันไหน)
+      const lots = (r.slip && r.slip.lots) || [];
+      toast(`${label} ${sel.unit} · ${sel.name}` + (lots.length ? (aType === "OUT" ? " · จากล็อต " : " · ล็อต ") + lots.map(l => l.label + " " + fmtNum(l.qty)).join(" · ") : ""));
       closeAction();
       // ข้อ 2: ยอดใหม่ที่เซิร์ฟเวอร์ยืนยันแล้ว → ปรับรายการบนจอทันที ไม่ต้องรอโหลดทั้งคลัง (ดึงใหม่เบื้องหลังตามหลัง)
       const newQty = isCount ? Number(r.applied) : (r.slip && r.slip.balance != null ? Number(r.slip.balance) : NaN);
@@ -1886,6 +1974,84 @@ async function confirmAction() {
     btn.textContent = confirmLabel();
     toast("เกิดข้อผิดพลาด: " + e.message, "err");
   }
+}
+
+// ─────────────────────────────────────────────
+// 🏷️ ล็อตวัตถุดิบ (วันที่รับเข้า) — หลังบ้านคิดทั้งหมด (ลำดับตัด / ค้างนาน / ชื่อล็อต) ที่นี่แค่แสดงและส่งค่าที่คนกรอก
+// ─────────────────────────────────────────────
+function mTodayYmd() { const d = new Date(); return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0"); }
+function mYmdThai(ymd) { const m = String(ymd || "").match(/^(\d{4})-(\d{2})-(\d{2})$/); return m ? m[3] + "/" + m[2] + "/" + (Number(m[1]) + 543) : "–"; }
+let _mLotId = null;
+const _mLotOf = id => ((sel && sel.rmLots) || []).find(l => l.id === id);
+function mRenderLots() {
+  if (!$("aLots")) return;
+  const L = (sel && !sel.cr && sel.rmLots) || [];
+  mLotFormClose();
+  if (!L.length) { hide("aLots"); return; }
+  show("aLots");
+  const viewer = (role || "").toLowerCase() === "viewer", u = escH(sel.unit || "");
+  const recv = L.filter(l => l.recv).map(l => l.recv).sort();
+  $("aLotsSum").innerHTML = (L.length === 1 ? "ล็อต " + escH(L[0].label) : L.length + " ล็อต · เก่าสุด " + (L.some(l => !l.recv) ? "ยอดยกมา" : "รับ " + mYmdThai(recv[0])))
+    + (L.some(l => l.old) ? ' <span class="m-lotold">ค้างนาน</span>' : "");
+  $("aLotsList").innerHTML = (L.length > 1 ? '<p class="text-xs m-ink2 font-bold">เบิกจะตัดจากบนลงล่าง</p>' : "") + L.map(l => `
+    <div class="m-lotrow flex items-center gap-2 py-2">
+      <div class="flex-1 min-w-0">
+        <div class="font-black">${escH(l.label)}${l.old ? ' <span class="m-lotold">ค้าง ' + l.age + " วัน</span>" : ""}</div>
+        <div class="text-xs m-ink2 font-bold">${l.recv ? (l.age > 0 ? "รับมาแล้ว " + l.age + " วัน" : l.age === 0 ? "รับวันนี้" : "วันที่รับล่วงหน้า") : "ของเดิมก่อนมีระบบล็อต"}${l.exp ? ' · <span class="whitespace-nowrap">หมดอายุ ' + mYmdThai(l.exp) + "</span>" : ""}</div>
+      </div>
+      <div class="m-k whitespace-nowrap">${fmtNum(l.qty)} <span class="text-xs m-ink2">${u}</span></div>
+      ${viewer ? "" : `<button onclick="mLotFormOpen(${Number(l.id)})" class="btn-tap m-btn px-3 text-sm">แก้ไข</button>`}
+    </div>`).join("");
+}
+function mLotFormOpen(id) {
+  const l = _mLotOf(id);
+  if (!l) return;
+  _mLotId = id;
+  $("aLfTitle").textContent = "แก้ไขล็อต " + l.label;
+  $("aLfRecv").value = l.recv; $("aLfNo").value = l.no; $("aLfExp").value = l.exp; $("aLfQty").value = l.qty;
+  $("aLfUnit").textContent = "(" + (sel.unit || "") + ")";
+  show("aLotForm");
+  $("aLotForm").scrollIntoView({ block: "nearest", behavior: "smooth" });
+}
+function mLotFormClose() { _mLotId = null; hide("aLotForm"); }
+async function mLotSend(body, label) {
+  const r = await offlineSend(Object.assign({ module: mod, action: "LOTEDIT", sku: sel.sku, user }, body), label);
+  if (r.storeFailed) { alert("เน็ตล่ม และเก็บรายการไว้ในเครื่องไม่ได้ — ลองใหม่เมื่อเน็ตกลับมา"); return false; }
+  if (r.needLogin) { if (r.queued) closeAction(); mNeedLogin(r); return false; }
+  if (r.queued) { toast("เน็ตล่ม — เก็บไว้ในเครื่องแล้ว ส่งให้เองเมื่อเน็ตกลับมา", "warn"); closeAction(); mUpdateOfflineBar(); return false; }
+  if (r.status !== "success") { toast(r.message || "บันทึกไม่สำเร็จ", "err"); return false; }
+  tgFlushSoon();
+  const sku = sel.sku;
+  await loadData({ silent: true });                // ยอดคงเหลือ + ลำดับล็อตใหม่จากหลังบ้าน
+  sel = data.find(d => d.sku === sku) || sel;
+  $("aQty").textContent = fmtNum(sel.qty);
+  mRenderLots();
+  $("aLots").open = true;
+  updateAfter();
+  return true;
+}
+async function mLotSave() {
+  const l = _mLotOf(_mLotId);
+  if (!l) return mLotFormClose();
+  const rd = $("aLfRecv").value || "", ex = $("aLfExp").value || "", no = $("aLfNo").value.trim();
+  const raw = String($("aLfQty").value || "").trim(), q = numVal(raw);
+  if (raw === "" || isNaN(q) || q < 0) { toast("ใส่จำนวนที่เหลือจริงเป็นตัวเลข 0 ขึ้นไป", "warn"); $("aLfQty").focus(); return; }
+  if (rd && rd > mTodayYmd() && !confirm("วันที่รับเข้า " + mYmdThai(rd) + " เป็นวันในอนาคต\n\nยืนยันบันทึกตามนี้?")) return;
+  const diff = Math.round((q - l.qty) * 1000) / 1000, u = sel.unit || "";
+  if (!diff && rd === l.recv && no === l.no && ex === l.exp) { toast("ยังไม่ได้แก้อะไร", "warn"); return; }
+  if (diff && !confirm(`แก้จำนวนล็อต ${l.label} จาก ${fmtNum(l.qty)} เป็น ${fmtNum(q)} ${u}\n\nยอดคงเหลือจะ${diff > 0 ? "เพิ่ม" : "ลด"} ${fmtNum(Math.abs(diff))} ${u} (ลงประวัติเป็น ตรวจนับ/ปรับยอด)\n\nยืนยัน?`)) return;
+  const b = $("aLfSave");
+  b.disabled = true; b.textContent = "กำลังบันทึก...";
+  const ok = await mLotSend({ lotId: l.id, recvDate: rd, lotNo: no, expDate: ex, qty: q, seenQty: l.qty }, `แก้ล็อต ${sel.name} ${l.label}`);
+  b.disabled = false; b.textContent = "บันทึกล็อต";
+  if (ok) toast("บันทึกล็อตแล้ว");
+}
+async function mLotDelete() {
+  const l = _mLotOf(_mLotId);
+  if (!l) return;
+  const u = sel.unit || "";
+  if (!confirm(`ลบล็อต ${l.label} (เหลือ ${fmtNum(l.qty)} ${u})?\n\nยอดคงเหลือจะลดลง ${fmtNum(l.qty)} ${u} — ใช้เมื่อล็อตนี้ไม่มีอยู่จริงหรือลงผิด\n(ของหมดตามปกติไม่ต้องลบ ระบบตัดให้เองตอนเบิก)`)) return;
+  if (await mLotSend({ lotId: l.id, remove: true, seenQty: l.qty }, `ลบล็อต ${sel.name} ${l.label}`)) toast("ลบล็อตแล้ว");
 }
 
 // ─────────────────────────────────────────────

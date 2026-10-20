@@ -2,6 +2,7 @@
 // คำตอบทุกตัวคงรูปแบบเดิมของหลังบ้าน Apps Script — หน้าจอทั้งสองไม่ต้องแก้
 import { all, first, run, stmt, changed, kvGet, kvPut, uuid, getCfg, nowIso, fmtTH, dayTH, thaiMidnightMs, eventTime, qtyStrict,
          numOrBlank, userWithDevice, deviceTag, sendAlert, stockSummaryLines, sysLog, expiryInfoTH, TZ_MS, DAY_MS } from "./lib.js";
+import { lotSync, lotReceive, lotReturn, lotMovesOf, lotMovesText, lotOpenMap, lotOut, lotEarliestExp, lotAgeDaysOf, lotYmd, lotGet, lotLabel } from "./lots.js";
 
 // ประเภทรายการ — IN รับเข้าจากซัพพลายเออร์ / OUT เบิกไปใช้ / RETURN คืนของที่เบิกเกิน
 // แยก RETURN ออกจาก IN เพื่อให้คำนวณยอดใช้จริงได้ถูก: ใช้จริง = เบิกออก − คืน
@@ -70,12 +71,20 @@ export async function getRawMaterials(c, module) {
   const materials = [], discontinued = [];
   // ⏰ อัปเดตสต๊อกล่าสุด — หน้าจอแค่แสดง/กรอง ตัวเลขคิดที่นี่ที่เดียว
   const last = await lastStockUpdate(c, module, rows), now = Date.now();
+  const cfg = await getCfg(c), lotAgeDays = lotAgeDaysOf(cfg), lots = await lotOpenMap(c, module);
   rows.forEach((r) => {
     const o = matOut(r);
     o.LastUpdate = last[r.sku] ? new Date(last[r.sku]).toISOString() : "";
     o.IdleDays = idleDaysTH(last[r.sku], now);
+    // 🏷️ ล็อตที่ยังมีของ (เรียงตามลำดับที่จะถูกเบิก) · วันหมดอายุของรายการ = ตัวที่ใกล้สุดระหว่างค่าที่รายการ กับล็อต
+    //    ItemExpiry = ค่าที่ตั้งไว้ที่รายการเอง (หน้าแก้ไขใช้ — ไม่งั้นบันทึกแก้ไขแล้ววันของล็อตจะติดไปเป็นค่าของรายการ)
+    const myLots = lots[r.sku] || [];
+    o.Lots = myLots.map((l) => lotOut(l, lotAgeDays, now));
+    o.LotOld = o.Lots.filter((l) => l.Old).length;
+    o.ItemExpiry = r.expiry_date;
+    o.ExpiryDate = lotEarliestExp(r.expiry_date, myLots);
     // ⛔ หมดอายุ — คิดที่นี่ที่เดียว (มือถือเดิมไม่มีเลย · หน้าคอมเคยอ่าน วว/ดด/ปปปป ผิด) · QA M2 2026-10-10
-    const ex = expiryInfoTH(r.expiry_date);
+    const ex = expiryInfoTH(o.ExpiryDate);
     o.ExpDays = ex ? ex.days : null;
     o.ExpStatus = !ex ? "" : ex.days < 0 ? "expired" : ex.days <= (Number(r.alert_days) || 7) ? "near" : "";
     (Number(r.discontinued) !== 0 ? discontinued : materials).push(o);
@@ -85,7 +94,7 @@ export async function getRawMaterials(c, module) {
   const nums = rows.map((r) => String(r.sku)).filter((s) => s.startsWith(prefix)).map((s) => parseInt(s.replace(prefix, ""), 10)).filter((n) => !isNaN(n));
   const nextNum = nums.length ? Math.max(...nums) + 1 : 1;
   return { status: "success", materials, discontinued, recentHistory: hist.map(histArr), nextSku: prefix + String(nextNum).padStart(4, "0"),
-           staleDays: staleDaysOf(await getCfg(c)) };
+           staleDays: staleDaysOf(cfg), lotAgeDays };
 }
 
 // ───────────── เพิ่มรายการใหม่ ─────────────
@@ -106,6 +115,7 @@ export async function rmCreate(c, data, module) {
     String(expiryDate || ""), Number(alertDays) || 7, module);
   if (!changed(r)) return { status: "error", message: "SKU นี้มีอยู่แล้ว" };
   await addHistory(c, module, { name, action: "สร้างรายการ", qty: Number(qty) || 0, user: userWithDevice(c, user), sku, unit });
+  await c.env.DB.batch(lotSync(c, module, String(sku), ""));   // ยอดเริ่มต้น = ล็อตยอดยกมา
   sendAlert(c, `🆕 เพิ่มวัตถุดิบใหม่\n📦 ${name} (${sku})\n🔢 ยอดเริ่มต้น: ${Number(qty) || 0} ${unit}\n👤 ${user || "-"}${deviceTag(c)}`, module);
   return { status: "success" };
 }
@@ -125,7 +135,7 @@ async function opReplay(c, module, opId) {
   const h = await first(c, "SELECT * FROM history WHERE module = ? AND op_id = ?", module, opId);
   if (!h) return null;
   const type = TYPE_BY_LABEL[h.action];
-  if (type) return { status: "success", duplicate: true, docNo: h.doc_no, slip: slipFrom(h, type, module) };
+  if (type) return { status: "success", duplicate: true, docNo: h.doc_no, slip: Object.assign(slipFrom(h, type, module), { lots: await lotMovesOf(c, module, opId) }) };
   if (h.action === COUNT_LABEL) return { status: "success", duplicate: true, counted: Number(h.qty), applied: Number(h.qty), adjusted: 0, movementsAfter: 0 };
   return { status: "success", duplicate: true };
 }
@@ -154,6 +164,14 @@ export async function rmUpdate(c, data, module) {
   // เบิกออกต้องบอกว่าเอาไปใช้กับงานอะไร — บังคับที่เซิร์ฟเวอร์ด้วย (ออดิเตอร์ถามหา)
   if (type === "OUT" && !purpose) return { status: "error", message: "กรุณาระบุว่าเบิกไปใช้กับงานอะไร" };
   const workOrderId = String(data.workOrderId || "").trim().slice(0, 40);
+  // 🏷️ รับเข้า: ข้อมูลล็อต (ไม่บังคับ) — ไม่ส่งวันที่รับมา = วันที่ทำรายการ (เวลาไทย · ออฟไลน์ = วันที่กดหน้างาน) · วันในอนาคตหน้าจอถามยืนยันแล้ว
+  let lotIn = null;
+  if (type === "IN") {
+    const rd = lotYmd(data.recvDate), ex = lotYmd(data.expDate);
+    if (rd === null) return { status: "error", message: "วันที่รับเข้าไม่ถูกต้อง" };
+    if (ex === null) return { status: "error", message: "วันหมดอายุไม่ถูกต้อง" };
+    lotIn = { recv: rd || dayTH(eventAt), no: String(data.lotNo == null ? "" : data.lotNo).trim().slice(0, 40), exp: ex };
+  }
 
   const m = await first(c, "SELECT * FROM materials WHERE module = ? AND sku = ?", module, sku);
   if (!m) return { status: "error", message: "ไม่พบ SKU" };
@@ -175,11 +193,13 @@ export async function rmUpdate(c, data, module) {
   //   1) ประวัติ — เงื่อนไขสต๊อกตรวจซ้ำ "ในฐานข้อมูล" ณ วินาทีที่เขียน (สองเครื่องเบิกพร้อมกันไม่ทำให้ยอดติดลบ)
   //   2) ตัวนับเลขที่เอกสาร — ขยับเฉพาะเมื่อข้อ 1 เขียนสำเร็จ (ไม่มีเลขข้าม)
   //   3) ยอดคงเหลือ — เปลี่ยนเฉพาะเมื่อข้อ 1 เขียนสำเร็จ
+  //   4) ล็อต — รับ = ล็อตตามวันที่รับ · คืน = กลับล็อตที่เบิกล่าสุด · เบิก = lotSync ตัดล็อตเก่าก่อน (ก่อนเริ่ม lotSync อีกรอบ = เก็บยอดเดิมให้ตรงก่อน)
   // opId ซ้ำ → ข้อ 1 ชน unique index → ยกเลิกทั้งชุด ไม่หักซ้ำ
   const op = opId || "srv-" + uuid();
   const delta = type === "OUT" ? -q : q;
   try {
     await c.env.DB.batch([
+      ...lotSync(c, module, sku, ""),
       stmt(c,
         "INSERT INTO history (module, ts, name, action, qty, user, doc_no, sku, unit, purpose, op_id, balance_after, work_order) " +
         "SELECT ?, ?, m.name, ?, ?, ?, ? || printf('%04d', COALESCE((SELECT CAST(value AS INTEGER) FROM config WHERE key = ?), ?) + 1), " +
@@ -192,6 +212,8 @@ export async function rmUpdate(c, data, module) {
       stmt(c,
         "UPDATE materials SET qty = ROUND(qty + ?, 3) WHERE module = ? AND sku = ? AND EXISTS (SELECT 1 FROM history WHERE module = ? AND op_id = ?)",
         delta, module, sku, module, op),
+      ...(type === "IN" ? lotReceive(c, module, sku, op, q, lotIn.recv, lotIn.no, lotIn.exp) : type === "RETURN" ? lotReturn(c, module, sku, op, q) : []),
+      ...lotSync(c, module, sku, op),
     ]);
   } catch (e) {
     const again = await opReplay(c, module, opId);   // ชน unique = คำขอเดียวกันมาถึงซ้อนกัน
@@ -205,14 +227,16 @@ export async function rmUpdate(c, data, module) {
     return insufficient(Number(m2.qty || 0));
   }
   const newQty = Number(h.balance_after);
+  const lots = await lotMovesOf(c, module, op);
   sendAlert(c, meta.emoji + "\n📦 " + m.name + " (" + sku + ")" +
     "\n🔢 " + meta.sign + q + " " + (m.unit || "") + "  →  คงเหลือ: " + newQty + " " + (m.unit || "") +
+    (lots.length ? "\n🏷️ " + (type === "OUT" ? "จากล็อต " : "ล็อต ") + lotMovesText(lots) : "") +
     stockSummaryLines(newQty, m.unit || "", Number(m.min || 0), Number(m.daily_usage || 0)) +
     "\n👤 " + (user || "-") + deviceTag(c), module);
   const res = {
     status: "success", docNo: h.doc_no,
     slip: { docNo: h.doc_no, type, action: meta.label, sku: String(sku), name: String(m.name), qty: q, unit: String(m.unit || ""),
-            balance: newQty, user: String(user || "-"), purpose, workOrderId, module, at: eventAt },
+            balance: newQty, user: String(user || "-"), purpose, workOrderId, module, at: eventAt, lots },
   };
   await opRemember(c, opId, res);
   return res;
@@ -251,8 +275,10 @@ export async function rmVerify(c, data, module) {
   }
   const newQty = Math.max(0, Math.round((counted + adj) * 1000) / 1000);
   const op = opId || "srv-" + uuid();
+  // ล็อต: นับได้น้อยกว่า = ตัดล็อตเก่าก่อน · มากกว่า = เติมเข้าล็อตใหม่สุด (lotSync)
   try {
     await c.env.DB.batch([
+      ...lotSync(c, module, sku, ""),
       stmt(c,
         "INSERT INTO history (module, ts, name, action, qty, user, sku, unit, purpose, op_id, balance_after) " +
         "SELECT ?, ?, m.name, ?, ?, ?, m.sku, m.unit, ?, ?, ? FROM materials m WHERE m.module = ? AND m.sku = ?",
@@ -260,6 +286,7 @@ export async function rmVerify(c, data, module) {
       stmt(c,
         "UPDATE materials SET qty = ?, last_verified = ? WHERE module = ? AND sku = ? AND EXISTS (SELECT 1 FROM history WHERE module = ? AND op_id = ?)",
         newQty, eventAt, module, sku, module, op),
+      ...lotSync(c, module, sku, op),
     ]);
   } catch (e) {
     const again = await opReplay(c, module, opId);
@@ -301,6 +328,79 @@ export async function rmDelete(c, data, module) {
   await addHistory(c, module, { name: m.name, action: "ลบ/ยกเลิก", user: userWithDevice(c, user), sku, unit: m.unit });
   sendAlert(c, `🗑️ ลบ/ยกเลิกรายการ\n📦 ${m.name} (${sku})\n👤 ${user || "-"}${deviceTag(c)}`, module);
   return { status: "success" };
+}
+
+// ───────────── 🏷️ แก้ไข / ลบล็อตด้วยมือ ─────────────
+//   แก้วันที่รับ / เลขล็อต / วันหมดอายุ → ไม่แตะยอด (ประวัติ "แก้ไขล็อต")
+//   แก้จำนวน / ลบ (= เหลือ 0) → ยอดคงเหลือเปลี่ยนตามส่วนต่าง ลงประวัติเป็น ตรวจนับ/ปรับยอด พร้อมเหตุผล (ยอดในคลัง = ผลรวมล็อตเสมอ)
+//   seenQty = จำนวนที่คนเห็นตอนเปิดหน้าต่าง — ระหว่างนั้นมีคนเบิก/รับล็อตนี้ = ไม่ทับ ให้เปิดใหม่ (ตรวจซ้ำใน SQL)
+export async function rmLotEdit(c, data, module) {
+  const sku = String(data.sku == null ? "" : data.sku), opId = String(data.opId || "");
+  const seen0 = await opReplay(c, module, opId);
+  if (seen0) return seen0;
+  const lot = await lotGet(c, module, sku, data.lotId);
+  if (!lot) return { status: "error", message: "ไม่พบล็อตนี้ — ปิดแล้วเปิดรายการใหม่อีกครั้ง" };
+  const m = await first(c, "SELECT name, unit, qty FROM materials WHERE module = ? AND sku = ?", module, sku);
+  if (!m) return { status: "error", message: "ไม่พบ SKU" };
+  const rd = data.recvDate === undefined ? lot.recv_date : lotYmd(data.recvDate);
+  const ex = data.expDate === undefined ? lot.exp_date : lotYmd(data.expDate);
+  if (rd === null) return { status: "error", message: "วันที่รับเข้าไม่ถูกต้อง" };
+  if (ex === null) return { status: "error", message: "วันหมดอายุไม่ถูกต้อง" };
+  const no = data.lotNo === undefined ? lot.lot_no : String(data.lotNo == null ? "" : data.lotNo).trim().slice(0, 40);
+  const cur = Number(lot.qty_left);
+  const q = data.remove === true ? 0 : (data.qty === undefined || data.qty === "" ? cur : qtyStrict(data.qty, true));
+  if (isNaN(q) || q < 0) return { status: "error", message: "จำนวนไม่ถูกต้อง (ต้องเป็นตัวเลข 0 ขึ้นไป)" };
+  const seen = data.seenQty === undefined || data.seenQty === "" ? cur : Number(data.seenQty);
+  const unit = m.unit || "";
+  const fmt = (n) => Number(n).toLocaleString("en-US", { maximumFractionDigits: 3 });
+  if (!isFinite(seen) || Math.abs(seen - cur) > 0.0005)
+    return { status: "error", message: "ล็อตนี้เพิ่งมีการเบิก/รับ (ตอนนี้เหลือ " + fmt(cur) + " " + unit + ") — ปิดแล้วเปิดใหม่ก่อนแก้" };
+  const diff = Math.round((q - cur) * 1000) / 1000;
+  const meta = rd !== lot.recv_date || no !== lot.lot_no || ex !== lot.exp_date;
+  if (!diff && !meta) return { status: "success", unchanged: true };
+
+  const what = [];
+  if (diff) what.push(data.remove === true ? "ลบล็อต (เหลือ " + fmt(cur) + " " + unit + ")" : "จำนวน " + fmt(cur) + " → " + fmt(q) + " " + unit);
+  if (rd !== lot.recv_date) what.push("วันที่รับ " + (lot.recv_date || "ยอดยกมา") + " → " + (rd || "ยอดยกมา"));
+  if (no !== lot.lot_no) what.push("เลขล็อต " + (lot.lot_no || "–") + " → " + (no || "–"));
+  if (ex !== lot.exp_date) what.push("วันหมดอายุ " + (lot.exp_date || "–") + " → " + (ex || "–"));
+  const note = ("แก้ล็อต " + lotLabel(lot) + ": " + what.join(", ")).slice(0, 120);
+  const op = opId || "lot-" + uuid(), eventAt = eventTime(data.clientAt), who = userWithDevice(c, data.user);
+  const gate = "EXISTS (SELECT 1 FROM history WHERE module = ? AND op_id = ?)";
+  const stmts = [
+    // แถวประวัติเขียนได้เฉพาะเมื่อล็อตยังเหลือเท่าที่คนเห็น — คำสั่งที่เหลือทำตามแถวนี้
+    diff
+      ? stmt(c, "INSERT INTO history (module, ts, name, action, qty, user, sku, unit, purpose, op_id, balance_after) " +
+          "SELECT ?, ?, m.name, ?, ROUND(m.qty + ?, 3), ?, m.sku, m.unit, ?, ?, ROUND(m.qty + ?, 3) FROM materials m WHERE m.module = ? AND m.sku = ? " +
+          "AND m.qty + ? >= 0 AND EXISTS (SELECT 1 FROM rm_lots WHERE id = ? AND ABS(qty_left - ?) < 0.0005)",
+          module, eventAt, COUNT_LABEL, diff, who, note, op, diff, module, sku, diff, lot.id, cur)
+      : stmt(c, "INSERT INTO history (module, ts, name, action, qty, user, sku, unit, purpose, op_id) " +
+          "SELECT ?, ?, m.name, 'แก้ไขล็อต', '-', ?, m.sku, m.unit, ?, ? FROM materials m WHERE m.module = ? AND m.sku = ? " +
+          "AND EXISTS (SELECT 1 FROM rm_lots WHERE id = ? AND ABS(qty_left - ?) < 0.0005)",
+          module, eventAt, who, note, op, module, sku, lot.id, cur),
+    stmt(c, "UPDATE rm_lots SET recv_date = ?, lot_no = ?, exp_date = ?, qty_left = ? WHERE id = ? AND " + gate, rd, no, ex, q, lot.id, module, op),
+  ];
+  if (diff) stmts.push(
+    stmt(c, "UPDATE materials SET qty = ROUND(qty + ?, 3) WHERE module = ? AND sku = ? AND " + gate, diff, module, sku, module, op),
+    stmt(c, "INSERT INTO rm_lot_moves (module, op_id, lot_id, qty) SELECT ?, ?, ?, ? WHERE " + gate, module, op, lot.id, diff, module, op));
+  try { await c.env.DB.batch(stmts); }
+  catch (e) {
+    const again = await opReplay(c, module, opId);
+    if (again) return again;
+    if (/UNIQUE/i.test(String(e && e.message || e)))
+      return { status: "error", message: "มีล็อตที่วันที่รับ เลขล็อต และวันหมดอายุ ตรงกันอยู่แล้ว — แก้ให้ต่างกัน หรือแก้จำนวนที่ล็อตนั้นแทน" };
+    throw e;
+  }
+  const h = await first(c, "SELECT balance_after FROM history WHERE module = ? AND op_id = ?", module, op);
+  if (!h) {
+    const now = await lotGet(c, module, sku, lot.id);
+    return { status: "error", message: "ล็อตนี้เพิ่งมีการเบิก/รับ (ตอนนี้เหลือ " + fmt(now ? now.qty_left : 0) + " " + unit + ") — ปิดแล้วเปิดใหม่ก่อนแก้" };
+  }
+  sendAlert(c, "🏷️ แก้ไขล็อตวัตถุดิบ\n📦 " + m.name + " (" + sku + ")\n• " + what.join("\n• ") +
+    (diff ? "\n🔢 คงเหลือ: " + fmt(h.balance_after) + " " + unit : "") + "\n👤 " + (data.user || "-") + deviceTag(c), module);
+  const res = { status: "success", balance: diff ? Number(h.balance_after) : Number(m.qty) };
+  await opRemember(c, opId, res);
+  return res;
 }
 
 // ───────────── จุดสั่งซื้อ ─────────────
@@ -471,6 +571,15 @@ export async function rmDocReport(c, data, module) {
   return { status: "success", rows: out, months: Object.keys(monthSet).sort().reverse() };
 }
 
+// ใบเอกสารย้อนหลัง (จากประวัติ / รายงานรายเดือน) — ล็อตที่ตัด + ยอดหลังทำรายการ ให้ตรงกับใบที่ออกตอนบันทึก (อ่านอย่างเดียว)
+export async function rmSlipInfo(c, data, module) {
+  const doc = String(data.docNo || "").trim();
+  if (!doc) return { status: "error", message: "ไม่ได้ระบุเลขที่เอกสาร" };
+  const h = await first(c, "SELECT op_id, balance_after FROM history WHERE module = ? AND doc_no = ? ORDER BY id LIMIT 1", module, doc);
+  if (!h) return { status: "error", message: "ไม่พบเอกสาร " + doc };
+  return { status: "success", lots: await lotMovesOf(c, module, h.op_id), balance: h.balance_after == null ? null : Number(h.balance_after) };
+}
+
 // "รับทราบ" = หัวหน้าเข้ามากดว่าเห็นแล้ว · ใครกดก็ได้ แต่บันทึกชื่อไว้เสมอ · กดครั้งแรกเท่านั้นที่นับ
 export async function rmAckDocs(c, data, module) {
   const list = Array.isArray(data.docNos) ? data.docNos : (data.docNo ? [data.docNo] : []);
@@ -592,6 +701,7 @@ export async function rmImport(c, data, module) {
 
   // เขียนทั้งชุดใน transaction เดียว — นำเข้าครึ่งไฟล์แล้วล้มกลางทางไม่ได้
   for (let i = 0; i < stmts.length; i += 80) await c.env.DB.batch(stmts.slice(i, i + 80));
+  if (nCreated || nUpdated) await c.env.DB.batch(lotSync(c, module, "", ""));   // ยอดใหม่/ยอดที่ทับ → ล็อตยอดยกมา / ปรับล็อตให้ตรง
 
   if (nCreated || nUpdated)
     sendAlert(c, "📥 นำเข้าวัตถุดิบจากไฟล์\n➕ เพิ่มใหม่ " + nCreated + " รายการ\n🔄 อัปเดต " + nUpdated + " รายการ\n⏭️ ข้าม " + nSkipped +
@@ -607,11 +717,13 @@ export async function handleRaw(c, action, data, module, extra) {
     case "VERIFY": return rmVerify(c, data, module);
     case "EDIT": return rmEdit(c, data, module);
     case "DELETE": return rmDelete(c, data, module);
+    case "LOTEDIT": return rmLotEdit(c, data, module);
     case "BACKUP": return extra.backup(c, data, module);
     case "IMPORT": return rmImport(c, data, module);
     case "TRENDS": return rmTrends(c, data, module);
     case "LEDGERAUDIT": return rmLedgerAudit(c, data, module);
     case "DOCREPORT": return rmDocReport(c, data, module);
+    case "SLIPINFO": return rmSlipInfo(c, data, module);
     case "ACKDOC": return rmAckDocs(c, data, module);
     case "ROPSTATS": return rmRopStats(c, data, module);
     case "SETMIN": return rmSetMin(c, data, module);

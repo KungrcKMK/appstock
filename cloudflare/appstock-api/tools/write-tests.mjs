@@ -350,6 +350,10 @@ console.log("10) วางแผนสั่งซื้อ — วิเคร�
   const gm = (g0.materials || []).find((m) => m.SKU === sku);
   T("รายการวัตถุดิบมีวันพอใช้ + สถานะการสั่ง ตรงกับจอต้องสั่งทุกตัว", !!gm && gm.DaysCover === a.daysCover && gm.PlanStatus === a.status &&
     p0.items.every((i) => { const m = g0.materials.find((x) => x.SKU === i.sku); return m && m.DaysCover === i.daysCover && m.PlanStatus === i.status; }), gm);
+  // ใบขอซื้อหน้าคอมใช้จำนวนแนะนำ/อัตราใช้จากรายการนี้ — ต้องเท่ากับจอวางแผนสั่งซื้อทุกตัว (เดิมคิดเอง ใช้/วัน × 30)
+  T("รายการวัตถุดิบมีจำนวนแนะนำสั่ง + อัตราใช้ ตรงกับจอวางแผนสั่งซื้อทุกตัว (ใบขอซื้อใช้)",
+    p0.items.every((i) => { const m = g0.materials.find((x) => x.SKU === i.sku); return m && m.PlanSuggest === i.suggestQty && m.PlanRate === i.rate; }) &&
+    p0.items.some((i) => i.suggestQty > 0), p0.items.filter((i) => i.suggestQty > 0).length);
   const lead7 = find(await plan({ leadDays: 7, safetyDays: 3, coverDays: 30 }));
   T("พอ 10 วัน รอของ 7 + กันชน 3 → ต้องสั่งวันนี้", lead7.status === "now" && lead7.orderInDays === 0 && lead7.orderByDate === p0.today, lead7);
   T("แนะนำสั่ง = ใช้ 33 วัน − ของที่เหลือตอนของมาถึง (100−70)", lead7.suggestQty === 300, lead7.suggestQty);

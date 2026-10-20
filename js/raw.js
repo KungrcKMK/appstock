@@ -647,13 +647,14 @@ function rawExportPdf() {
 function openPurchaseRequest() {
   const today = new Date(); today.setHours(0,0,0,0);
   const checkedSkus = Array.from(document.querySelectorAll(".raw-checkbox:checked")).map(cb=>cb.getAttribute("data-sku"));
-  // ถ้าเลือกไว้ใช้เฉพาะที่เลือก, ถ้าไม่เลือกกรองเฉพาะที่สต๊อกต่ำ/หมดอายุ
+  // ติ๊กไว้ = ใช้เฉพาะที่ติ๊ก · ไม่ติ๊ก = รายการ "ต้องลงมือ" ชุดเดียวกับจอวางแผนสั่งซื้อ (สั่งไม่ทัน/ต้องสั่งวันนี้/ใกล้ถึงเวลาสั่ง) + ของหมดอายุ
+  //   หลังบ้านคิดแผนไม่ได้ (ไม่มี PlanStatus) → ถอยไปใช้ต่ำกว่าจุดสั่งซื้อแบบเดิม
   const lowItems = checkedSkus.length > 0
     ? rawLastData.filter(i => checkedSkus.includes(String(i.SKU)))
     : rawLastData.filter(item => {
-        const isLow = rawIsLow(item);
         const ed = rawParseDate(item.ExpiryDate); const isExp = ed && ed < today;
-        return isLow || isExp;
+        const ps = item.PlanStatus;
+        return isExp || (ps ? (ps === "late" || ps === "now" || ps === "soon") : rawIsLow(item));
       });
   if (!lowItems.length) { showToast("ไม่มีรายการที่ต้องสั่งซื้อ ","success"); return; }
 
@@ -662,25 +663,24 @@ function openPurchaseRequest() {
   const rows = lowItems.map((item,idx) => {
     const isLow = rawIsLow(item);
     const ed = rawParseDate(item.ExpiryDate); const isExp = ed && ed < today;
+    // เหตุผล / อัตราใช้ / วันพอใช้ / จำนวนแนะนำ = จากหลังบ้านทั้งหมด (ชุดเดียวกับจอวางแผนสั่งซื้อ · คิดที่เดียว)
     let reason = [];
     if(isExp) reason.push("หมดอายุ");
-    if(isLow) reason.push(`สต๊อกต่ำ`);
+    if(item.PlanStatus === "late" || item.PlanStatus === "now" || item.PlanStatus === "soon") reason.push(item.PlanStatusText);
+    else if(isLow) reason.push("ต่ำกว่าจุดสั่งซื้อ");
     const qty       = Number(item.Qty||0);
-    const minQty    = Number(item.Min||0);
-    const daily     = Number(item.DailyUsage||0);
-    // วันพอใช้ = จากหลังบ้าน (ชุดเดียวกับจอต้องสั่ง)
+    const daily     = Number(item.PlanRate||0);
     const ro        = rawRunout(item), daysLeft = ro ? ro.days : null;
-    // แนะนำสั่ง: ถ้ามี daily → 30 วัน, ถ้าไม่มี → Min - Qty
-    const suggestQty = daily > 0 ? Math.ceil(daily * 30) : (Math.max(0, minQty - qty) || 0);
-    // ใช้ได้กี่วันหลังสั่ง = สั่งจริง ÷ ใช้/วัน (ปัดลง)
-    const daysAfterSuggest = daily > 0 ? Math.floor(suggestQty / daily) : null;
+    const suggestQty = Number(item.PlanSuggest||0);
+    // พอใช้อีกกี่วันเมื่อรวมที่สั่ง = (คงเหลือ + สั่งจริง) ÷ ใช้/วัน (ปัดลง) — คนแก้จำนวนแล้วคิดใหม่ใน calcDaysAfter
+    const daysAfterSuggest = daily > 0 && suggestQty > 0 ? Math.floor((qty + suggestQty) / daily) : null;
     const daysText   = daysLeft !== null ? `${daysLeft.toLocaleString()} วัน` : "-";
     return `<tr style="${isExp?"background:#fbe9ec":"background:#fdf0e2"}" data-qty="${qty}" data-daily="${daily}">
       <td style="padding:8px 12px;border:1px solid #d6d6d0;text-align:center;">${idx+1}</td>
       <td style="padding:8px 12px;border:1px solid #d6d6d0;font-size:11px;color:#5c5c57;">${escapeHtml(item.SKU||"-")}</td>
       <td style="padding:8px 12px;border:1px solid #d6d6d0;font-weight:700;">${escapeHtml(item.Name||"-")}</td>
       <td style="padding:8px 12px;border:1px solid #d6d6d0;text-align:right;">${qty.toLocaleString()}</td>
-      <td style="padding:8px 12px;border:1px solid #d6d6d0;text-align:right;color:#5c5c57;">${daily > 0 ? daily.toLocaleString() : "-"}</td>
+      <td style="padding:8px 12px;border:1px solid #d6d6d0;text-align:right;color:#5c5c57;">${daily > 0 ? planFmt(daily) : "-"}</td>
       <td style="padding:8px 12px;border:1px solid #d6d6d0;text-align:center;font-weight:700;color:${ro ? ro.hex : "#3d3d3d"};">${daysText}</td>
       <td style="padding:8px 12px;border:1px solid #d6d6d0;text-align:right;">
         <input type="number" class="order-input" aria-label="จำนวนที่จะสั่ง" value="${suggestQty > 0 ? suggestQty : ""}" min="0"
@@ -723,7 +723,7 @@ function openPurchaseRequest() {
   </style></head><body>
   <div class="no-print" style="margin-bottom:12px;display:flex;gap:10px;align-items:center;">
     <button class="print-btn" onclick="window.print()">พิมพ์ใบขอซื้อ</button>
-    <span style="font-size:12px;color:#5c5c57;">แก้ไขช่อง <b style="color:#006b31;">สั่งจริง</b> ได้ก่อนพิมพ์ — ระบบจะคำนวณ <b style="color:#006b31;">ใช้ได้กี่วัน</b> ให้อัตโนมัติ</span>
+    <span style="font-size:12px;color:#5c5c57;">แก้ไขช่อง <b style="color:#006b31;">สั่งจริง</b> ได้ก่อนพิมพ์ — ระบบจะคำนวณ <b style="color:#006b31;">พอใช้อีกกี่วัน</b> ให้อัตโนมัติ</span>
   </div>
   <div class="header">
     <div style="display:flex;align-items:center;gap:14px;">
@@ -740,10 +740,9 @@ function openPurchaseRequest() {
     </div>
   </div>
   <div class="formula-note no-print">
-    <b>วิธีคำนวณ "สั่งจริง" ที่ pre-fill ให้:</b>
-    &nbsp;&nbsp;• ถ้ามีข้อมูล <b>ใช้/วัน</b> → สั่งจริง (เริ่มต้น) = <b>ใช้/วัน × 30 วัน</b>
-    &nbsp;&nbsp;• ถ้าไม่มีข้อมูลใช้/วัน → สั่งจริง (เริ่มต้น) = <b>Stock ขั้นต่ำ − คงเหลือ</b>
-    &nbsp;&nbsp;• <b>ใช้ได้กี่วัน (หลังสั่ง)</b> = สั่งจริง ÷ ใช้/วัน (ปัดลง — ไม่นับวันที่ใช้ไม่เต็ม)
+    <b>"สั่งจริง" ที่ใส่ไว้ให้ = จำนวนแนะนำจากจอวางแผนสั่งซื้อ</b> (ตัวเลขชุดเดียวกัน · คิดจากการเบิกจริง เวลารอของ กันชน และสั่งให้พอใช้ตามที่ตั้งไว้ · แก้ได้ก่อนพิมพ์)
+    &nbsp;&nbsp;• <b>ใช้/วัน</b> และ <b>วันคงเหลือ</b> = ตัวเลขเดียวกับจอวางแผนสั่งซื้อ
+    &nbsp;&nbsp;• <b>พอใช้อีกกี่วัน (รวมที่สั่ง)</b> = (คงเหลือ + สั่งจริง) ÷ ใช้/วัน (ปัดลง — ไม่นับวันที่ใช้ไม่เต็ม)
   </div>
   <table>
     <thead><tr>
@@ -754,7 +753,7 @@ function openPurchaseRequest() {
       <th style="text-align:right;width:65px">ใช้/วัน</th>
       <th style="text-align:center;width:70px">วันคงเหลือ</th>
       <th style="text-align:right;width:90px">สั่งจริง </th>
-      <th style="text-align:center;width:85px">ใช้ได้กี่วัน<br>(หลังสั่ง)</th>
+      <th style="text-align:center;width:85px">พอใช้อีกกี่วัน<br>(รวมที่สั่ง)</th>
       <th style="width:50px">หน่วย</th>
       <th style="width:90px">เหตุผล</th>
     </tr></thead>
@@ -775,8 +774,8 @@ function openPurchaseRequest() {
       const printSpan = tr.querySelector(".order-input-print");
       if (printSpan) printSpan.textContent = order > 0 ? order.toLocaleString() : "-";
       const daysEl = tr.querySelector(".days-after");
-      if (daily > 0) {
-        const d = Math.floor(order / daily);
+      if (daily > 0 && order > 0) {
+        const d = Math.floor((qty + order) / daily);
         daysEl.textContent = d + " วัน";
         daysEl.style.color = d <= 7 ? "#c8102e" : d <= 14 ? "#a8560a" : d <= 30 ? "#8a5a00" : "#006b31";
       } else {

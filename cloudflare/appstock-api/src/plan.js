@@ -242,6 +242,7 @@ export async function attachPlan(c, module, res) {
       const i = by[String(m.SKU)];
       if (!i) return;
       m.DaysCover = i.daysCover; m.PlanStatus = i.status; m.PlanStatusText = i.statusText; m.PlanRate = i.rate; m.RunOutDate = i.runOutDate || "";
+      m.PlanSuggest = i.suggestQty;   // ใบขอซื้อหน้าคอมใช้ (เดิมคิดเอง ใช้/วัน × 30 ไม่ตรงจอวางแผน)
     });
   } catch (e) { /* คิดแผนไม่ได้ = รายการยังมาครบ หน้าจอแค่ไม่มีวันพอใช้ */ }
   return res;

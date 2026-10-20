@@ -99,7 +99,7 @@ export default {
         const url = new URL(request.url);
         if (url.searchParams.has("ping")) return reply(c, { ok: true, status: "success", backend: "cloudflare", version: String(env.APP_VERSION || "") });
         const module = String(url.searchParams.get("module") || "MLM").toUpperCase();
-        if (module === "SQF" || module === "MLM") return reply(c, await R.getRawMaterials(c, module));
+        if (module === "SQF" || module === "MLM") return reply(c, await P.attachPlan(c, module, await R.getRawMaterials(c, module)));
         return reply(c, { status: "error", message: "GET ไม่รองรับ module นี้" });
       }
       if (request.method !== "POST") return reply(c, { ok: false, status: "error", message: "method" }, 405);

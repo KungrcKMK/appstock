@@ -233,7 +233,7 @@ function _rawApplyData(data, startup, source, at, opts = {}) {
   renderRawStats(rawLastData, data.discontinued || []);
   // ⚠️ ไม่วาดกราฟตรงนี้ — กราฟย้ายไปอยู่ในหน้าต่าง 📈 กราฟ ที่ต้องกดเปิด
   //    Chart.js วาดในกล่องที่ซ่อนอยู่ไม่ได้ (ความสูงเป็น 0) จึงวาดตอนเปิดหน้าต่างแทน
-  if (!opts.skipAlerts) rawCheckCritical(rawLastData, rawCurrentModule, startup);
+  if (!opts.skipAlerts) rawCheckCritical(rawLastData, rawCurrentModule);
   if (!opts.skipTrends) rawLoadTrends();   // เส้นเทรนด์เบิกตามมาทีหลัง — ไม่ถ่วงการโหลดหลัก
   // ป้าย "ต้องสั่ง N" บนปุ่มวางแผนสั่งซื้อ — ของเก่าจากเครื่องไม่มีตัวเลขนี้ ล้างไว้ก่อนกันเลขของคลังอื่นค้าง
   if (typeof planRefreshTile === "function") { if (opts.skipTrends) planUpdateTile(null); else planRefreshTile(); }
@@ -318,6 +318,26 @@ function rawApplyTrends() {
 // ต่ำกว่าจุดสั่งซื้อ — นิยามเดียวทั้งระบบ = หลังบ้าน plan.js (belowMin) และ isLowItem ในมือถือ: ตั้งจุดสั่งซื้อไว้ (>0) และคงเหลือ ≤ จุดนั้น
 // (เดิมตัวกรอง / การ์ดสรุป / ป๊อปอัป ใช้เงื่อนไขต่างกัน ตัวเลขไม่ตรงกัน — QA M11 2026-10-10)
 function rawIsLow(i) { const min = Number(i.Min); return min > 0 && Number(i.Qty) <= min; }
+// สถานะชุดเดียวกับมือถือและจอต้องสั่ง — หมดอายุ/ใกล้หมดอายุ (ExpStatus) · วันพอใช้/สถานะการสั่ง (DaysCover · PlanStatus) มาจากหลังบ้านทั้งหมด
+// เดิมคิดเองจาก "ใช้ต่อวัน" ("วิกฤต/เร่งด่วน/ควรสั่ง") → ไม่ตรงจอต้องสั่งที่ใช้ยอดเบิกจริง และของใกล้หมดอายุถูกเรียก "ควรสั่ง" (critique 2026-10-20)
+function rawStatusOf(item) {
+  const ps = item.PlanStatus || "";
+  if (item.ExpStatus === "expired") return { pri: 0, sev: "sev-crit", bg: "crit", bi: "⛔", bt: "หมดอายุ" };
+  if (Number(item.Qty || 0) <= 0)   return { pri: 1, sev: "sev-crit", bg: "crit", bi: "⛔", bt: "หมดแล้ว" };
+  if (ps === "late")                return { pri: 2, sev: "sev-crit", bg: "crit", bi: "🔴", bt: "สั่งวันนี้ก็ไม่ทัน" };
+  if (ps === "now")                 return { pri: 3, sev: "sev-high", bg: "high", bi: "🟠", bt: "ต้องสั่งวันนี้" };
+  if (rawIsLow(item))               return { pri: 4, sev: "sev-high", bg: "high", bi: "🟠", bt: "ต่ำกว่าจุดสั่งซื้อ" };
+  if (item.ExpStatus === "near")    return { pri: 5, sev: "sev-warn", bg: "warn", bi: "⏳", bt: "ใกล้หมดอายุ" };
+  if (ps === "soon")                return { pri: 6, sev: "sev-warn", bg: "warn", bi: "🟡", bt: "ใกล้ถึงเวลาสั่ง" };
+  return { pri: 7, sev: "", bg: "", bi: "✓", bt: "ปกติ" };
+}
+// วันพอใช้จากหลังบ้าน (ทศนิยม 1 ตำแหน่งเหมือนจอต้องสั่ง) · cls/hex = สีตามสถานะการสั่ง (hex ใช้ในหน้าต่างพิมพ์ — CSS var ไม่ติดไป)
+const RAW_RUNOUT = { late: ["crit", "#c8102e"], now: ["high", "#c2410c"], soon: ["warn", "#8a5a00"] };
+function rawRunout(item) {
+  if (item.DaysCover === null || item.DaysCover === undefined || item.DaysCover === "") return null;
+  const m = String(item.RunOutDate || "").match(/^(\d{4})-(\d{2})-(\d{2})/), t = RAW_RUNOUT[item.PlanStatus] || ["", "#475569"];
+  return { days: Number(item.DaysCover), date: m ? m[3] + "/" + m[2] + "/" + (Number(m[1]) + 543) : "", cls: t[0], hex: t[1] };
+}
 
 // ── Date helpers ──
 // วันที่จากหลายแหล่ง → "วว/ดด/ปปปป" (พ.ศ.)
@@ -370,28 +390,14 @@ function renderRawInventory(items) {
   const filtered = items.filter(item => {
     const name = (item.Name||"").toLowerCase(); const sku = (item.SKU||"").toLowerCase();
     if (!name.includes(search) && !sku.includes(search)) return false;
-    const isLow = rawIsLow(item);
-    const ed=rawParseDate(item.ExpiryDate); const isExp=ed&&ed<today;
-    if (rawCurrentFilter==="low"   && !isLow)            return false;
-    if (rawCurrentFilter==="exp"   && !isExp)            return false;
-    if (rawCurrentFilter==="near"  && !rawNearExpiry(item, rawAlertDays)) return false;
+    if (rawCurrentFilter==="low"   && !rawIsLow(item))   return false;
+    if (rawCurrentFilter==="exp"   && item.ExpStatus !== "expired") return false;
+    if (rawCurrentFilter==="near"  && item.ExpStatus !== "near")    return false;
     if (rawCurrentFilter==="stale" && !rawIsStale(item)) return false;
     return true;
   });
 
-  const _statusPri = item => {
-    const isLow = rawIsLow(item);
-    const ed = rawParseDate(item.ExpiryDate); const isExp = ed && ed < today;
-    const d = Number(item.DailyUsage||0); const q = Number(item.Qty||0);
-    const days = d > 0 ? Math.floor(q/d) : null;
-    const iad = Number(item.AlertDays) || rawAlertDays;
-    if (days !== null && days <= 7) return 0;
-    if (isExp)  return 1;
-    if (isLow)  return 2;
-    if (days !== null && days <= 14) return 3;
-    if (rawNearExpiry(item, iad) || (days !== null && days <= 30)) return 4;
-    return 5;
-  };
+  const _statusPri = item => rawStatusOf(item).pri;
   filtered.sort((a, b) => {
     let va, vb;
     if (rawSortKey === "name")     { va = (a.Name||"").toLowerCase(); vb = (b.Name||"").toLowerCase(); }
@@ -411,25 +417,9 @@ function renderRawInventory(items) {
 const RAW_ITEMS_PER_PAGE = 50;
 
 function rawRenderItemRow(item) {
-  const today = new Date(); today.setHours(0,0,0,0);
-  const isLow=rawIsLow(item);
-  const ed=rawParseDate(item.ExpiryDate); const isExp=ed&&ed<today;
-  const itemAlertDays = Number(item.AlertDays) || rawAlertDays;
-  const nearAlert=rawNearExpiry(item, itemAlertDays);
-  const daily    = Number(item.DailyUsage||0);
-  const qty      = Number(item.Qty||0);
-  const daysLeft = daily > 0 ? Math.floor(qty / daily) : null;
-  const outDate  = daysLeft !== null ? (() => { const d=new Date(today); d.setDate(d.getDate()+daysLeft); return `${String(d.getDate()).padStart(2,"0")}/${String(d.getMonth()+1).padStart(2,"0")}/${d.getFullYear()+543}`; })() : null;
-  // เกณฑ์ตัดสินสถานะ — ลำดับเงื่อนไขเหมือนเดิมทุกข้อ เปลี่ยนแค่หน้าตาที่แสดง
-  // sev = แถบสีขอบซ้ายแถว · bg = สีป้าย · bi + bt = ไอคอนกับคำ (ไม่ได้ใช้สีอย่างเดียว)
-  let sev="", bg="", bi="✓", bt="ปกติ";
-  if(isExp)                             {sev="sev-crit"; bg="crit"; bi="⛔"; bt="หมดอายุ";}
-  else if(daysLeft!==null&&daysLeft<=7) {sev="sev-crit"; bg="crit"; bi="🔴"; bt="วิกฤต";}
-  else if(isLow)                        {sev="sev-high"; bg="high"; bi="🟠"; bt="ต่ำกว่าจุดสั่งซื้อ";}
-  else if(daysLeft!==null&&daysLeft<=14){sev="sev-high"; bg="high"; bi="🟠"; bt="เร่งด่วน";}
-  else if(nearAlert||daysLeft!==null&&daysLeft<=30){sev="sev-warn"; bg="warn"; bi="⏳"; bt="ควรสั่ง";}
-
-  const runoutCls = daysLeft===null ? "" : daysLeft<=7 ? "crit" : daysLeft<=14 ? "high" : daysLeft<=30 ? "warn" : "";
+  const qty = Number(item.Qty||0);
+  // sev = แถบสีขอบซ้ายแถว · bg = สีป้าย · bi + bt = ไอคอนกับคำ (ไม่ได้ใช้สีอย่างเดียว) — คำชุดเดียวกับมือถือ/จอต้องสั่ง
+  const { sev, bg, bi, bt } = rawStatusOf(item), ro = rawRunout(item);
 
   return `<tr class="${sev}">
     <td class="rm-rail"></td>
@@ -447,7 +437,7 @@ function rawRenderItemRow(item) {
     </td>
     <td class="n" data-label="คงเหลือ">
       <div class="rm-qty">${qty.toLocaleString()}<span class="rm-unit">${escapeHtml(item.Unit||"-")}</span></div>
-      ${daysLeft !== null ? `<div class="rm-runout ${runoutCls}">พอใช้อีก ${daysLeft} วัน (ถึง ${outDate})</div>` : ""}
+      ${ro ? `<div class="rm-runout ${ro.cls}">พอใช้อีก ${ro.days.toLocaleString()} วัน${ro.date ? " (ถึง " + ro.date + ")" : ""}</div>` : ""}
     </td>
     <td class="n" data-label="จุดสั่งซื้อ"><span class="rm-min">${Number(item.Min||0).toLocaleString()}</span></td>
     <td class="n rm-actcell">
@@ -557,7 +547,7 @@ function renderRawHistory(h) {
 function renderRawStats(items, discontinued) {
   const today=new Date(); today.setHours(0,0,0,0);
   const low = items.filter(i=>rawIsLow(i)).length;
-  const exp = items.filter(i=>{ const d=rawParseDate(i.ExpiryDate); return d&&d<today; }).length;
+  const exp = items.filter(i => i.ExpStatus === "expired").length;
   const stop = Array.isArray(discontinued) ? discontinued.length : 0;
   const tile = (dot, label, num, note, color) => `
     <div class="rm-tile">
@@ -678,20 +668,20 @@ function openPurchaseRequest() {
     const qty       = Number(item.Qty||0);
     const minQty    = Number(item.Min||0);
     const daily     = Number(item.DailyUsage||0);
-    // วันคงเหลือ = qty / daily
-    const daysLeft  = (daily > 0) ? Math.floor(qty / daily) : null;
+    // วันพอใช้ = จากหลังบ้าน (ชุดเดียวกับจอต้องสั่ง)
+    const ro        = rawRunout(item), daysLeft = ro ? ro.days : null;
     // แนะนำสั่ง: ถ้ามี daily → 30 วัน, ถ้าไม่มี → Min - Qty
     const suggestQty = daily > 0 ? Math.ceil(daily * 30) : (Math.max(0, minQty - qty) || 0);
     // ใช้ได้กี่วันหลังสั่ง = สั่งจริง ÷ ใช้/วัน (ปัดลง)
     const daysAfterSuggest = daily > 0 ? Math.floor(suggestQty / daily) : null;
-    const daysText   = daysLeft !== null ? `${daysLeft} วัน` : "-";
+    const daysText   = daysLeft !== null ? `${daysLeft.toLocaleString()} วัน` : "-";
     return `<tr style="${isExp?"background:#fee2e2":"background:#ffedd5"}" data-qty="${qty}" data-daily="${daily}">
       <td style="padding:8px 12px;border:1px solid #e2e8f0;text-align:center;">${idx+1}</td>
       <td style="padding:8px 12px;border:1px solid #e2e8f0;font-size:11px;color:#64748b;">${escapeHtml(item.SKU||"-")}</td>
       <td style="padding:8px 12px;border:1px solid #e2e8f0;font-weight:700;">${escapeHtml(item.Name||"-")}</td>
       <td style="padding:8px 12px;border:1px solid #e2e8f0;text-align:right;">${qty.toLocaleString()}</td>
       <td style="padding:8px 12px;border:1px solid #e2e8f0;text-align:right;color:#64748b;">${daily > 0 ? daily.toLocaleString() : "-"}</td>
-      <td style="padding:8px 12px;border:1px solid #e2e8f0;text-align:center;font-weight:700;color:${daysLeft!==null&&daysLeft<=7?"#dc2626":daysLeft!==null&&daysLeft<=14?"#ea580c":"#475569"};">${daysText}</td>
+      <td style="padding:8px 12px;border:1px solid #e2e8f0;text-align:center;font-weight:700;color:${ro ? ro.hex : "#475569"};">${daysText}</td>
       <td style="padding:8px 12px;border:1px solid #e2e8f0;text-align:right;">
         <input type="number" class="order-input" aria-label="จำนวนที่จะสั่ง" value="${suggestQty > 0 ? suggestQty : ""}" min="0"
           style="width:80px;padding:4px 6px;border:2px solid #0e7a3f;border-radius:8px;font-size:13px;font-weight:700;text-align:right;font-family:inherit;"
@@ -826,11 +816,10 @@ function openStockReport() {
     if(!items.length) return "";
     const rows = items.map((item,idx) => {
       const qty      = Number(item.Qty||0);
-      const daily    = Number(item.DailyUsage||0);
-      const daysLeft = daily > 0 ? Math.floor(qty/daily) : null;
-      const outDate  = daysLeft !== null ? (() => { const d=new Date(); d.setHours(0,0,0,0); d.setDate(d.getDate()+daysLeft); return `${String(d.getDate()).padStart(2,"0")}/${String(d.getMonth()+1).padStart(2,"0")}/${d.getFullYear()+543}`; })() : null;
-      const daysText = daysLeft !== null
-        ? `<span style="font-weight:700;color:${daysLeft<=7?"#dc2626":daysLeft<=14?"#ea580c":"#475569"}">${daysLeft} วัน</span>${outDate?`<br><span style="font-size:11px;color:#5b6e63;font-weight:400;">(ถึง ${outDate})</span>`:""}`
+      const daily    = Number(item.DailyUsage||0);   // คอลัมน์ "ใช้ต่อวัน" (ค่าที่ตั้งไว้)
+      const ro       = rawRunout(item);   // วันพอใช้จากหลังบ้าน (ชุดเดียวกับจอต้องสั่ง)
+      const daysText = ro
+        ? `<span style="font-weight:700;color:${ro.hex}">${ro.days.toLocaleString()} วัน</span>${ro.date?`<br><span style="font-size:11px;color:#5b6e63;font-weight:400;">(ถึง ${ro.date})</span>`:""}`
         : "-";
       return `<tr style="background:${idx%2===0?"#fff":bgColor}">
         <td style="padding:7px 10px;border:1px solid #e2e8f0;text-align:center;font-size:11px;">${idx+1}</td>

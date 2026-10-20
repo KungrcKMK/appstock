@@ -1205,7 +1205,10 @@ function crSetStatus(id, msg, type = "ok") {
 function crClearStatus(id) { const el = $$cr(id); if (el) { el.innerHTML = ""; el.className = "cr-status"; } }
 
 // ── Lot Breakdown ──
+let crLastBalances = [], crMode = "";   // ยอดล็อตของสินค้าที่เลือก · "in" รับเข้า (บวกเพิ่ม) | "count" นับ (ยอดทั้งล็อต) | "" ยังไม่เลือก
 function crRenderLotBreakdown(rows) {
+  crLastBalances = rows || [];
+  setTimeout(crQtyPreview, 0);
   const unit = $$cr("crMasterUnit").textContent;
   if (!rows || !rows.length) { $$cr("crTotalQty").textContent = "0"; $$cr("crLotBreakdown").style.display = "none"; return; }
   const total = rows.reduce((s, r) => s + r.Qty, 0);
@@ -1225,6 +1228,7 @@ function crRenderLotBreakdown(rows) {
 function crSelectLot(mfgIso, expIso, qty) {
   $$cr("crMfg").value = isoToDdmmyy(mfgIso);
   $$cr("crExp").value = isoToDdmmyy(expIso);
+  crQtyPreview();
   $$cr("crNewQty").focus();
   showToast(`เลือกรอบผลิต ${isoToDdmmyy(mfgIso)} แล้ว!`);
 }
@@ -1532,9 +1536,43 @@ function crEvalExpr(el) {
   if (/^[0-9+\-*/().\s]+$/.test(v)) { try { el.value = Math.round(new Function("return "+v)()*100)/100; } catch(e){} }
 }
 
+// ── รับเข้า / นับ: เลือกโหมด + ทวนตัวเลขก่อนบันทึก ──
+function crSetMode(m) {
+  crMode = m;
+  [["crModeIn", "in"], ["crModeCount", "count"]].forEach(([id, k]) => { const b = $$cr(id); if (b) b.setAttribute("aria-pressed", String(m === k)); });
+  const lb = $$cr("crNewQtyLabel");
+  if (lb) lb.textContent = m === "in" ? "📦 จำนวนที่รับเข้า *" : m === "count" ? "📦 ยอดที่นับได้ทั้งล็อต *" : "📦 จำนวน *";
+  crQtyPreview();
+}
+function crQtyPreview() {
+  const out = $$cr("crQtyPreview"), btn = $$cr("crSaveBtn");
+  if (!out || !btn) return;
+  const unit = ($$cr("crMasterUnit") && $$cr("crMasterUnit").textContent !== "-") ? $$cr("crMasterUnit").textContent : "";
+  const mfg = $$cr("crMfg").value.trim();
+  const raw = String($$cr("crNewQty").value).trim().replace(/x/gi, "*");
+  let q = NaN;
+  if (raw && /^[0-9+\-*/().\s]+$/.test(raw)) { try { q = Math.round(new Function("return " + raw)() * 100) / 100; } catch (e) {} }
+  const lot = mfg.length === 6 ? crLastBalances.find(b => isoToDdmmyy(b.MFG) === mfg) : null;
+  const have = lot ? Number(lot.Qty) || 0 : 0, n = v => Number(v).toLocaleString("en-US");
+  if (!crMode) { out.textContent = "เลือกก่อน: 📥 รับเข้า (บวกเพิ่ม) หรือ 📊 นับ (ยอดทั้งล็อต)"; btn.textContent = "✅ บันทึกข้อมูล"; return; }
+  if (isNaN(q)) { out.textContent = lot ? "ล็อต " + mfg + " ในระบบมี " + n(have) + " " + unit : (mfg.length === 6 ? "ล็อต " + mfg + " ยังไม่มีในระบบ (ล็อตใหม่)" : ""); btn.textContent = crMode === "in" ? "📥 รับเข้า" : "📊 บันทึกยอดนับ"; return; }
+  if (crMode === "in") {
+    out.textContent = lot ? "ล็อต " + mfg + ": ในระบบ " + n(have) + " → หลังรับเข้า " + n(have + q) + " " + unit : "ล็อตใหม่ " + mfg + " → " + n(q) + " " + unit;
+    btn.textContent = "📥 รับเข้า " + n(q) + " " + unit;
+  } else {
+    const d = Math.round((q - have) * 100) / 100;
+    out.textContent = lot ? "ล็อต " + mfg + ": ในระบบ " + n(have) + " → นับได้ " + n(q) + " " + unit + (d ? " (" + (d > 0 ? "+" : "−") + n(Math.abs(d)) + ")" : " (ตรงกับระบบ)") : "ล็อต " + mfg + " ยังไม่มีในระบบ → สร้างใหม่ " + n(q) + " " + unit;
+    btn.textContent = "📊 บันทึกยอดนับ " + n(q) + " " + unit;
+  }
+}
+
 // ── Save Count ──
 async function crSaveCount() {
   crEvalExpr($$cr("crNewQty"));
+  if (!crMode) {
+    await crShowModal("alert", "เลือกก่อน", "กด 📥 รับเข้า (บวกเพิ่มเข้าล็อต) หรือ 📊 นับ (ยอดที่นับได้ทั้งล็อต) ก่อนบันทึก");
+    $$cr("crModeIn")?.focus(); return;
+  }
   const pl = {
     barcode:      $$cr("crBarcode").value.trim(),
     employeeName: $$cr("crEmployee").value.trim(),
@@ -1551,6 +1589,9 @@ async function crSaveCount() {
   if (missing.length) {
     await crShowModal("alert", "ข้อมูลไม่ครบ", "ยังขาด: " + missing.map(x => x[0]).join(", "));
     $$cr(missing[0][1])?.focus(); return;
+  }
+  if (crMode === "in" && !(Number(pl.newQty) > 0)) {
+    await crShowModal("alert", "จำนวนไม่ถูกต้อง", "จำนวนที่รับเข้าต้องมากกว่า 0"); $$cr("crNewQty")?.focus(); return;
   }
   if (Number(pl.newQty) < 0) {
     await crShowModal("alert", "จำนวนไม่ถูกต้อง", "จำนวนต้องไม่ติดลบ — ถ้าของหมดให้ใส่ 0"); $$cr("crNewQty")?.focus(); return;
@@ -1578,13 +1619,16 @@ async function crSaveCount() {
   const qty = Number(pl.newQty);
   // Poka-Yoke: เตือนเมื่อจำนวนใหม่ต่างจากเดิมมาก (> 5 เท่า)
   const curTotal = Number(($$cr("crTotalQty")?.textContent || "0").replace(/,/g,"")) || 0;
-  if (curTotal > 0 && qty > curTotal * 5) {
+  if (crMode === "count" && curTotal > 0 && qty > curTotal * 5) {
     if (!confirm(`⚠️ ยอดใหม่ (${qty}) สูงกว่ายอดปัจจุบันรวม (${curTotal}) มาก\n\nแน่ใจว่าถูกต้อง?`)) return;
   }
+  // รับเข้า = บวกเพิ่มในฐานข้อมูล (mode add) · opId กันบวกซ้ำถ้าคำขอเดียวกันถูกส่งซ้ำ
+  if (crMode === "in") { pl.mode = "add"; pl.opId = (window.crypto && crypto.randomUUID) ? crypto.randomUUID() : "cr-" + Date.now() + "-" + Math.random().toString(36).slice(2); }
+  const unitTxt = ($$cr("crMasterUnit")?.textContent || "").replace(/^-$/, "");
   const res = await crCallServer("saveOrUpdateCount", pl);
   if (res.ok) {
     if (navigator.vibrate) navigator.vibrate([100,50,100]);
-    showToast(qty === 0 ? "ปรับยอดเป็น 0 เรียบร้อย" : "บันทึกเข้าสต๊อกเรียบร้อย!");
+    showToast(crMode === "in" ? "📥 รับเข้า " + qty + " " + unitTxt + " เรียบร้อย" : "📊 บันทึกยอดนับ " + qty + " " + unitTxt + " เรียบร้อย");
     const bc = $$cr("crBarcode").value.trim();
     crClearAll(); $$cr("crBarcode").value = bc; crLookupBarcode(); crLoadOverview({ silent: true });
   } else if (!res.needLogin) {
@@ -1739,6 +1783,7 @@ async function crSaveSettings() {
 // ── Clear ──
 function crClearLotOnly() {
   ["crMfg","crExp","crNewQty","crNote"].forEach(id => { if ($$cr(id)) $$cr(id).value = ""; });
+  crSetMode("");
   showToast("ล้างฟอร์มอัปเดตยอดเรียบร้อย");
 }
 function crClearAll() {
@@ -1746,7 +1791,7 @@ function crClearAll() {
   const dd = $$cr("crProductDropdown"); if (dd) dd.value = "";
   $$cr("crTotalQty").textContent = "0"; $$cr("crMasterUnit").textContent = "-";
   $$cr("crLotBreakdown").style.display = "none"; $$cr("crLotBreakdown").innerHTML = "";
-  crCurrentProduct = null; crClearStatus("crMainStatus"); $$cr("crBarcode").focus();
+  crCurrentProduct = null; crLastBalances = []; crSetMode(""); crClearStatus("crMainStatus"); $$cr("crBarcode").focus();
   const editBtn = document.getElementById("crBtnEditProductInline");
   if (editBtn) editBtn.style.display = "none";
 }

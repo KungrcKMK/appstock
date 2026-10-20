@@ -117,7 +117,7 @@
     .m-chip{background:#fff;border:1.5px solid var(--m-line2);border-radius:6px;font-weight:800;font-size:13px;line-height:1.2}
     .m-chip.hot{border:2px solid var(--m-ink)}
     .m-chip.on{background:var(--m-ink);border:2px solid var(--m-ink);color:#fff}
-    .m-type{min-height:52px;border-radius:6px;font-weight:800;font-size:15px;background:#fff;border:2px solid var(--m-line2)}
+    .m-type{min-height:52px;border-radius:6px;font-weight:800;font-size:16px;background:#fff;border:2px solid var(--m-line2)}
     .m-type.on{color:#fff;border-color:var(--m-ink)}
     /* สีประจำงาน — ชุดเดียวกับหน้าคอม (ต้องอยู่หลัง .m-type เพื่อชนะพื้นขาว) */
     .t-out{background:#c2410c;--i:var(--ic-out)} .t-ret{background:#0369a1;--i:var(--ic-ret)} .t-in{background:#047857;--i:var(--ic-in)} .t-cnt{background:#0e7490;--i:var(--ic-count)} .t-new{background:#6d28d9;--i:var(--ic-new)} .t-none{background:var(--m-ink2);--i:var(--ic-doc)}
@@ -430,10 +430,10 @@
       <p class="m-ink2 text-sm font-black px-5 pt-3">รายการ Lot</p>
       <div id="aCrLots" class="px-4 pt-2 space-y-2"></div>
 
-      <!-- ปุ่มรับเข้า Lot ใหม่ -->
+      <!-- ปุ่มรับเข้า — วันผลิตตรงกับล็อตที่มี = บวกเพิ่มเข้าล็อตนั้น · ไม่ตรง = ล็อตใหม่ -->
       <div class="px-4 pt-2 pb-2">
         <button onclick="crOpenNewLot()" class="btn-tap t-in text-white w-full py-3 rounded-md font-black text-base" style="min-height:48px">
-          <i class="ic ic-in"></i> รับเข้า Lot ใหม่
+          <i class="ic ic-in"></i> รับเข้า
         </button>
       </div>
 
@@ -445,11 +445,12 @@
           <div class="m-field flex items-center gap-2 px-1 py-1">
             <button onclick="adjCrQty(-1)" aria-label="ลดจำนวน"
               class="btn-tap flex-shrink-0 text-3xl font-black flex items-center justify-center" style="width:48px;height:48px;">−</button>
-            <input id="aCrQtyIn" aria-label="จำนวน" type="text" inputmode="numeric" pattern="[0-9]*" value="0"
+            <input id="aCrQtyIn" aria-label="จำนวน" type="text" inputmode="numeric" pattern="[0-9]*" value="0" oninput="crPreview()"
               class="m-k flex-1 min-w-0 w-0 bg-transparent text-4xl text-center outline-none py-1" style="min-width:5ch;">
             <button onclick="adjCrQty(1)" aria-label="เพิ่มจำนวน"
               class="btn-tap flex-shrink-0 text-3xl font-black flex items-center justify-center" style="width:48px;height:48px;">+</button>
           </div>
+          <p id="aCrDiff" class="text-sm text-center font-black mt-2 m-ink2" aria-live="polite"></p>
           <label for="aCrNote" class="text-sm font-black block mt-3 mb-1">หมายเหตุ <span class="m-red">*</span></label>
           <textarea id="aCrNote" rows="2" placeholder="เช่น เบิกส่งขาย, นับรอบเช้า..."
             class="m-field w-full px-3 py-2 font-bold outline-none resize-none"></textarea>
@@ -460,11 +461,11 @@
       <div id="aCrInRow" class="hidden px-4 pt-1 pb-2">
         <div class="m-well p-4 space-y-3">
           <button onclick="_hideCrInputs()" class="btn-tap m-btn px-4 text-sm">‹ กลับ เลือก Lot</button>
-          <p class="m-go text-sm font-black text-center"><i class="ic ic-in"></i> รับเข้า Lot ใหม่</p>
+          <p class="m-go text-sm font-black text-center"><i class="ic ic-in"></i> รับเข้า</p>
           <div class="grid grid-cols-2 gap-2">
             <div>
               <label for="aCrMfg" class="text-sm font-black block mb-1">วันผลิต (MFG)</label>
-              <input id="aCrMfg" aria-label="วันผลิต (MFG)" type="date" onchange="crCalcExp()"
+              <input id="aCrMfg" aria-label="วันผลิต (MFG)" type="date" onchange="crCalcExp();crPreview()" oninput="crPreview()"
                 class="m-field w-full font-bold p-3 outline-none">
             </div>
             <div>
@@ -474,10 +475,11 @@
             </div>
           </div>
           <p id="aCrExpHint" class="m-go text-sm text-center font-bold -mt-1"></p>
+          <p id="aCrInHint" class="text-sm text-center font-black" aria-live="polite"></p>
           <div class="m-field flex items-center gap-2 px-1 py-1">
             <button onclick="adjCrQty(-1)" aria-label="ลดจำนวน"
               class="btn-tap flex-shrink-0 text-3xl font-black flex items-center justify-center" style="width:48px;height:48px;">−</button>
-            <input id="aCrQtyIn2" aria-label="จำนวนรับเข้า" type="text" inputmode="numeric" pattern="[0-9]*" value="1"
+            <input id="aCrQtyIn2" aria-label="จำนวนรับเข้า" type="text" inputmode="numeric" pattern="[0-9]*" value="1" oninput="crPreview()"
               class="m-k flex-1 min-w-0 w-0 bg-transparent text-3xl text-center outline-none py-1">
             <button onclick="adjCrQty(1)" aria-label="เพิ่มจำนวน"
               class="btn-tap flex-shrink-0 text-3xl font-black flex items-center justify-center" style="width:48px;height:48px;">+</button>
@@ -718,13 +720,9 @@ function mNeedLogin(res) {
   setTimeout(() => { window.location.replace("index.html"); }, 1800);
 }
 
-// สีบนพื้นขาว — ผ่าน 4.5:1 ทุกระดับ (เหลือง/เขียวสดบนขาวอ่านไม่ออก จึงใช้โทนเข้ม)
-function daysColor(d) {
-  if (d <= 7)  return "#c8102e";
-  if (d <= 14) return "#c2410c";
-  if (d <= 30) return "#8a5a00";
-  return "#006b31";
-}
+// สีวันพอใช้ตามสถานะการสั่งจากหลังบ้าน (ชุดเดียวกับจอต้องสั่ง) — ผ่าน 4.5:1 บนพื้นขาว
+const M_PLAN_CLR = { late: "#c8102e", now: "#c2410c", soon: "#8a5a00", ok: "#006b31" };
+const planClr = d => M_PLAN_CLR[d.planStatus] || "#3d3d3d";
 
 // ป้ายรูปทรงแบบ ISO 7010 — รูปทรงต่างกันจึงอ่านสถานะได้แม้ตาบอดสี/จอโดนแดด (คำบรรยายอยู่ในตัวหนังสือข้างป้ายเสมอ)
 const M_SIGN = {
@@ -1159,6 +1157,9 @@ async function loadData(opts) {
           unit:  m.Unit  || "",
           min:   Number(m.Min   || 0),
           daily: Number(m.DailyUsage || 0),
+          // วันพอใช้/สถานะการสั่ง คิดที่หลังบ้าน (เดิมคิด qty ÷ ใช้ต่อวัน ที่เครื่อง → ไม่ตรงจอต้องสั่ง · critique 2026-10-20)
+          daysCover: m.DaysCover === undefined || m.DaysCover === "" ? null : m.DaysCover,
+          planStatus: m.PlanStatus || "", planText: m.PlanStatusText || "",
           idle:  m.IdleDays === undefined ? undefined : m.IdleDays,   // ⏰ วันที่ไม่มีการอัปเดต (หลังบ้านนับให้)
           expDays: m.ExpDays === undefined ? null : m.ExpDays,        // ⛔ อีกกี่วันหมดอายุ (หลังบ้านคิดให้ · ติดลบ = เลยแล้ว)
           expStatus: m.ExpStatus || "",                              //    "expired" | "near" | ""
@@ -1223,7 +1224,7 @@ const mStaleDays = () => Number(mStoreGet("m_staledays_" + mod, 0)) || 0;
 const isStaleItem = d => { const n = mStaleDays(); return !!n && d.idle !== undefined && (d.idle === null || d.idle > n); };
 // ป้ายของแต่ละรายการ: หมด/หมดอายุ (วงกลมขีดแดง) > ต่ำกว่าจุดสั่งซื้อ/ใกล้หมดอายุ (สามเหลี่ยมเหลือง) > ไม่อัปเดต (วงกลมน้ำเงิน ต้องนับ) > พอ
 const mSignOf = d => (d.cr && d.qty <= 0) ? "none" : (d.qty <= 0 || d.expStatus === "expired") ? "no"
-  : (isLowItem(d) || d.expStatus === "near") ? "warn" : isStaleItem(d) ? "must" : "ok";
+  : (isLowItem(d) || d.expStatus === "near" || d.planStatus === "late" || d.planStatus === "now") ? "warn" : isStaleItem(d) ? "must" : "ok";
 const M_RANK = { no: 0, warn: 1, must: 2, ok: 3, none: 4 };
 function _filterListNow() {
   const q = $("mSearch").value.trim().toLowerCase();
@@ -1299,14 +1300,15 @@ function renderList(more) {
   _mShown = more ? _mShown + M_PAGE : M_PAGE;
   const part = filt.slice(0, _mShown);
   el.innerHTML = part.map(item => {
-    const days = item.daily > 0 ? Math.floor(item.qty / item.daily) : null;
+
     // บรรทัดสถานะเป็นคำพูด — ป้ายรูปทรงซ้ายเป็นแค่ตัวช่วยกวาดตา
     const meta = [`<span class="m-sku">${escH(item.sku)}</span>`];
     if (item.qty <= 0) meta.push(item.cr ? '<span class="font-black">ยังไม่มีของในคลัง · แตะเพื่อรับเข้า</span>' : '<span class="m-red font-black">หมดแล้ว</span>');
     else if (isLowItem(item)) meta.push('<span class="m-warn font-black">ต่ำกว่าจุดสั่งซื้อ</span>');
+    if (item.qty > 0 && /^(late|now|soon)$/.test(item.planStatus)) meta.push(`<span class="font-black" style="color:${planClr(item)}">${escH(item.planText)}</span>`);
     if (isExpItem(item)) meta.push(expTagHtml(item));
     if (isStaleItem(item)) meta.push('<span class="m-must font-black">' + (item.idle === null ? "ไม่เคยบันทึกยอด" : "ไม่อัปเดต " + item.idle + " วัน") + "</span>");
-    if (days !== null) meta.push(`<span class="font-black" style="color:${daysColor(days)}">พอ ${fmtNum(days)} วัน</span>`);
+    if (item.daysCover != null) meta.push(`<span class="font-black" style="color:${planClr(item)}">พอ ${fmtNum(item.daysCover)} วัน</span>`);
     return `
     <button onclick="pickItem('${escJA(item.sku)}')" class="item-card m-row">
       ${mSign(mSignOf(item)) || "<span></span>"}
@@ -1335,10 +1337,9 @@ function pickItem(sku) {
   if ($("aPurposeIn")) $("aPurposeIn").value = "";   // กันงานของรายการก่อนหน้าติดมา
   renderPurposeChips();
 
-  if (sel.daily > 0) {
-    const d = Math.floor(sel.qty / sel.daily);
-    $("aDays").textContent = fmtNum(d);
-    $("aDays").style.color = daysColor(d);
+  if (sel.daysCover !== null && sel.daysCover !== undefined) {
+    $("aDays").textContent = fmtNum(sel.daysCover);
+    $("aDays").style.color = planClr(sel);
     show("aDaysWrap");
   } else { hide("aDaysWrap"); }
 
@@ -1468,7 +1469,41 @@ function crSelectLot(i, action) {
 
   if ($("aCrNote")) $("aCrNote").value = "";
   show("aCrCountRow"); show("aCrConfirmRow");
+  crPreview();
   $("aCrQtyIn").focus();
+}
+
+// รหัสกันส่งซ้ำ — รับเข้า/เบิกเป็นการบวก/ลบ ถ้าคำขอเดียวกันถูกส่งซ้ำ หลังบ้านต้องรู้ว่าเป็นอันเดิม
+const mOpId = () => (window.crypto && crypto.randomUUID) ? crypto.randomUUID() : "m-" + Date.now() + "-" + Math.random().toString(36).slice(2);
+// ทวนตัวเลขก่อนกด: รับเข้า (บวกเข้าล็อตเดิม/ล็อตใหม่) · นับ (ต่างจากระบบเท่าไร) · เบิก (เหลือเท่าไร)
+function crPreview() {
+  if (!sel) return;
+  const u = sel.unit || "", btn = $("aCrConfirm");
+  if (crAction === "in") {
+    const q = numVal($("aCrQtyIn2").value), mfg = $("aCrMfg").value;
+    const lot = (sel.lots || []).find(l => String(l.mfg).slice(0, 10) === mfg);
+    $("aCrInHint").textContent = !mfg ? "" : lot
+      ? "มีล็อตวันผลิตนี้อยู่ " + fmtNum(lot.qty) + " → รับเข้าแล้วรวม " + (isNaN(q) ? "?" : fmtNum(lot.qty + q)) + " " + u
+      : "ล็อตใหม่";
+    btn.textContent = "บันทึกรับเข้า" + (isNaN(q) ? "" : " " + fmtNum(q) + " " + u);
+    return;
+  }
+  if (!crLotSel) return;
+  const el = $("aCrDiff"), rawQ = String($("aCrQtyIn").value).trim(), q = numVal(rawQ), have = Number(crLotSel.qty) || 0;
+  let txt = "", cls = "m-ink2";
+  if (rawQ === "" || isNaN(q)) btn.textContent = crAction === "out" ? "ยืนยันการเบิก" : "บันทึกการนับ";
+  else if (crAction === "out") {
+    if (q > have) { txt = "เกินยอดล็อต (มี " + fmtNum(have) + " " + u + ")"; cls = "m-red"; }
+    else txt = "เบิกแล้วล็อตนี้เหลือ " + fmtNum(have - q) + " " + u;
+    btn.textContent = "ยืนยันเบิก " + fmtNum(q) + " " + u;
+  } else {
+    const d = Math.round((q - have) * 1000) / 1000;
+    txt = "ในระบบ " + fmtNum(have) + " → นับได้ " + fmtNum(q) + " " + u + (d ? " (" + (d > 0 ? "+" : "−") + fmtNum(Math.abs(d)) + ")" : " (ตรงกับระบบ)");
+    if (d) cls = "m-warn";
+    btn.textContent = "บันทึกยอดนับ " + fmtNum(q) + " " + u;
+  }
+  el.textContent = txt;
+  el.className = "text-sm text-center font-black mt-2 " + cls;
 }
 
 function crCalcExp() {
@@ -1510,6 +1545,7 @@ function crOpenNewLot() {
   confirmBtn.textContent = "บันทึกรับเข้า";
 
   show("aCrInRow"); show("aCrConfirmRow");
+  crPreview();
 }
 
 function adjCrQty(d) {
@@ -1517,6 +1553,7 @@ function adjCrQty(d) {
   const min = crAction === "count" ? 0 : 1;
   const cur = numVal(el.value);
   el.value = Math.max(min, (isNaN(cur) ? (crAction === "count" ? 0 : min) : cur) + d);
+  crPreview();
 }
 
 async function confirmCrCount() {
@@ -1528,13 +1565,13 @@ async function confirmCrCount() {
   if (crAction === "in") {
     const mfgIso = $("aCrMfg").value;
     const expIso = $("aCrExp").value;
-    const qty    = Number($("aCrQtyIn2").value) || 0;
+    const qty    = numVal($("aCrQtyIn2").value);
     if (!mfgIso || !expIso) { toast("กรุณาระบุ MFG และ EXP", "warn"); return; }
-    if (qty <= 0)            { toast("ระบุจำนวนมากกว่า 0", "warn"); return; }
+    if (!(qty > 0))          { toast("ระบุจำนวนมากกว่า 0", "warn"); return; }
     if (mfgIso > expIso)     { toast("MFG ต้องไม่เกิน EXP", "warn"); return; }
     payload = { barcode: sel.sku, employeeName: user,
                 mfg: isoToDdmmyy(mfgIso), exp: isoToDdmmyy(expIso),
-                newQty: qty, note: "รับเข้า (Mobile)" };
+                newQty: qty, note: "รับเข้า (Mobile)", mode: "add", opId: mOpId() };   // บวกเพิ่มเข้าล็อตวันผลิตเดียวกัน (เดิมทับยอด)
     loadMsg   = "กำลังบันทึกรับเข้า...";
     successMsg = `📥 รับเข้า ${qty} ${sel.unit || ""} · MFG ${fmtDate(mfgIso)}`;
 
@@ -1546,13 +1583,16 @@ async function confirmCrCount() {
     if (isNaN(newQty) || newQty < 0) { toast("ระบุจำนวนให้ถูกต้อง", "warn"); return; }
     const crNote = ($("aCrNote")?.value || "").trim();
     if (!crNote) { toast("กรุณาระบุหมายเหตุก่อนบันทึก", "warn"); $("aCrNote")?.focus(); return; }
-    if (crAction === "out") {
+    const isOut = crAction === "out";
+    if (isOut) {
+      if (!(newQty > 0)) { toast("ระบุจำนวนที่เบิกมากกว่า 0", "warn"); return; }
       if (newQty > crLotSel.qty) { toast(`⚠️ เบิกเกินยอด Lot (มี ${crLotSel.qty})`, "err"); return; }
-      newQty = crLotSel.qty - newQty;  // เบิก = ลดจากยอดเดิม
     }
+    // เบิก: ส่ง "จำนวนที่เบิก" ให้หลังบ้านลดเอง + ตรวจยอดพอใน SQL (เดิมคิดยอดเหลือที่เครื่อง → สองเครื่องทำพร้อมกันยอดเพี้ยน)
     payload = { barcode: sel.sku, employeeName: user,
                 mfg: isoToDdmmyy(crLotSel.mfg), exp: isoToDdmmyy(crLotSel.exp),
-                newQty, note: crNote };
+                newQty, note: crNote, ...(isOut ? { mode: "sub", opId: mOpId() } : {}) };
+    if (isOut) newQty = crLotSel.qty - newQty;   // ไว้แสดงผลหลังบันทึก
     loadMsg   = crAction === "out" ? "กำลังบันทึกการเบิก..." : "กำลังบันทึกการนับ...";
     successMsg = crAction === "out"
       ? `📤 เบิก · ${sel.name} Lot ${fmtDate(crLotSel.mfg)} → เหลือ ${newQty} ${crLotSel.unit}`

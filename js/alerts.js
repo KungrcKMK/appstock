@@ -9,24 +9,16 @@ const ALERT_META = {
   MLM:      { label:"🏭 วัตถุดิบ MLM",       color:"var(--sq-fac-mlm)", icon:"🏭" }
 };
 
-// ── ป๊อปอัปแจ้งเตือนสต๊อก (ปรับตามรายงาน QA M1 2026-10-10) ──
-// เดิม: เข้าระบบแล้วเด้ง 3 ใบต่อกัน (ห้องเย็น → SQF → MLM) และเด้งซ้ำทุกครั้งที่เข้าคลัง · "รับทราบ" กับ "ปิดชั่วคราว" ทำเหมือนกัน
-//       → คนกดปิดโดยไม่อ่าน และป๊อปอัปบังหน้าต่างเบิก
-// ตอนนี้: · เข้าระบบ = ใบเดียวรวมทุกคลัง
-//         · "รับทราบ" = ไม่เด้งซ้ำในรอบการใช้งานนี้ จนกว่าจะมีรายการใหม่ที่ยังไม่เคยเห็น
-//         · "ปิดชั่วคราว" = ปิดเฉยๆ เปิดคลังนั้นอีกครั้งจะเด้งอีก
-//         · ป้ายตัวเลขบนเมนู/การ์ดหน้าแรกอัปเดตเสมอ ไม่ขึ้นกับการรับทราบ
-const _ALERT_ACK_KEY = "appstock_alert_ack";
-let _alertSections = {};     // module → { module, expItems, lowItems, nearItems, soonItems } ที่อยู่บนป๊อปอัปตอนนี้
-let _alertBatch = null;      // ระหว่างตรวจตอนเข้าระบบ: เก็บไว้ก่อน แล้วโชว์ทีเดียว
+// ── แจ้งเตือนสต๊อก: แผง "ต้องจัดการ" บนหน้าแรก ไม่บังจอ (critique 2026-10-20 · เดิมปรับตาม QA M1 2026-10-10) ──
+// เดิม: ป๊อปอัปเด้งเองตอนเข้าระบบและทุกครั้งที่เข้าคลัง (เจอ 4 ครั้งในรอบเดียว บังงาน ขัด "ทำก่อน รับทราบทีหลัง")
+//       · ตัวเลขบนการ์ดหน้าแรกนับแค่ตอนเลือกโหมดหลังเข้าระบบ รีโหลดแล้วหาย
+//       · "ใกล้หมด" คิดเองจาก ใช้ต่อวัน ไม่ตรงจอต้องสั่ง
+// ตอนนี้: · ไม่เด้งเอง — หน้าแรกมีแผงสรุปต่อคลัง แตะเพื่อเข้าไปทำงาน · "ดูรายการทั้งหมด" เปิดหน้าต่างเดิมเมื่ออยากดู
+//         · ตัวเลขบนเมนู/การ์ดนับทุกครั้งที่เปิดแอป (checkAuth) และทุกครั้งที่ข้อมูลคลังโหลด
+//         · หมวดจากหลังบ้าน: หมดอายุ / ใกล้หมดอายุ (ExpStatus) · ต่ำกว่าจุดสั่งซื้อ · ต้องสั่ง (PlanStatus late/now) — ชุดเดียวกับจอต้องสั่งและมือถือ
+let _alertSections = {};     // module → { module, expItems, lowItems, nearItems, soonItems } · soonItems = ต้องสั่ง
 
 const _alertName = i => String(i.name || i.Name || i.ProductName || "");
-function _alertKeys(sec) {
-  return [...sec.expItems.map(i => "exp|" + _alertName(i)), ...sec.nearItems.map(i => "near|" + _alertName(i)),
-          ...sec.lowItems.map(i => "low|" + _alertName(i)), ...(sec.soonItems || []).map(i => "soon|" + _alertName(i))];
-}
-function _alertAckGet() { try { return JSON.parse(sessionStorage.getItem(_ALERT_ACK_KEY) || "{}") || {}; } catch (e) { return {}; } }
-function _alertAckSave(m) { try { sessionStorage.setItem(_ALERT_ACK_KEY, JSON.stringify(m)); } catch (e) {} }
 
 // อัปเดต badge บน Nav
 function updateNavBadge(module, count) {
@@ -43,43 +35,60 @@ function updateNavBadge(module, count) {
   });
 }
 
-// แสดงแจ้งเตือนของคลังหนึ่ง (รวมเข้าป๊อปอัปเดียวกับคลังอื่นที่เปิดอยู่)
+// จดรายการที่ต้องจัดการของคลังหนึ่ง → วาดแผงหน้าแรกใหม่ (ไม่เปิดหน้าต่างเอง)
 function showStockAlert(module, expItems = [], lowItems = [], nearItems = [], soonItems = []) {
-  const sec = { module, expItems, lowItems, nearItems, soonItems };
   const total = expItems.length + lowItems.length + nearItems.length + soonItems.length;
-  if (_alertBatch) { if (total) _alertBatch[module] = sec; return; }
-  if (!total) {
-    if (_alertSections[module]) { delete _alertSections[module]; _alertRender(); }
-    return;
-  }
-  const acked = new Set(_alertAckGet()[module] || []);
-  if (_alertKeys(sec).every(k => acked.has(k))) return;   // รับทราบครบทุกรายการแล้วในรอบนี้
-  _alertSections[module] = sec;
-  _alertRender();
+  if (total) _alertSections[module] = { module, expItems, lowItems, nearItems, soonItems };
+  else delete _alertSections[module];
+  _alertRenderHome();
+  const modal = document.getElementById("stockAlertModal");
+  if (modal && !modal.classList.contains("hidden")) _alertRender();   // เปิดดูอยู่ → อัปเดตตาม
+}
+function openStockAlert() { _alertRender(); }
+
+const _alertSecs = () => ["COLDROOM", "SQF", "MLM"].map(m => _alertSections[m]).filter(Boolean);
+const _alertCount = s => s.expItems.length + s.lowItems.length + s.nearItems.length + (s.soonItems || []).length;
+
+function _alertRenderHome() {
+  const box = document.getElementById("homeTodo");
+  if (!box) return;
+  const secs = _alertSecs();
+  if (!secs.length) { box.style.display = "none"; box.innerHTML = ""; return; }
+  const total = secs.reduce((a, s) => a + _alertCount(s), 0);
+  const part = (n, t) => n ? t + " " + n : "";
+  box.innerHTML = `<div class="home-todo-head">⚠️ ต้องจัดการ <b>${total}</b> รายการ</div>` +
+    secs.map(s => {
+      const meta = ALERT_META[s.module] || ALERT_META.MLM;
+      const bits = [part(s.expItems.length, "หมดอายุ"), part(s.nearItems.length, "ใกล้หมดอายุ"),
+                    part(s.lowItems.length, "ต่ำกว่าจุดสั่งซื้อ"), part((s.soonItems || []).length, "ต้องสั่ง")].filter(Boolean).join(" · ");
+      return `<button type="button" class="home-todo-row" onclick="switchModule('${s.module}')">
+        <span class="home-todo-dot" style="background:${meta.color}"></span><b>${meta.label}</b><span class="home-todo-bits">${bits}</span><span class="home-todo-go" aria-hidden="true">›</span></button>`;
+    }).join("") +
+    `<button type="button" class="home-todo-all" onclick="openStockAlert()">ดูรายการทั้งหมด</button>`;
+  box.style.display = "";
 }
 
 function _alertRender() {
   const modal = document.getElementById("stockAlertModal");
-  const secs = ["COLDROOM", "SQF", "MLM"].map(m => _alertSections[m]).filter(Boolean);
+  const secs = _alertSecs();
   if (!secs.length) { modal.classList.add("hidden"); return; }
-  const n = s => s.expItems.length + s.lowItems.length + s.nearItems.length + (s.soonItems || []).length;
-  const total = secs.reduce((a, s) => a + n(s), 0);
+  const total = secs.reduce((a, s) => a + _alertCount(s), 0);
   const one = secs.length === 1 ? (ALERT_META[secs[0].module] || ALERT_META.MLM) : null;
 
   const head = document.getElementById("alertModalHeader");
   head.className = "p-6 text-white";
   head.style.background = one ? one.color : "var(--sq-ink)";
-  document.getElementById("alertModalIcon").textContent  = "🚨";
-  document.getElementById("alertModalTitle").textContent = one ? "แจ้งเตือนสต๊อก — " + one.label : "แจ้งเตือนสต๊อก — " + secs.length + " คลัง";
+  document.getElementById("alertModalIcon").textContent  = "⚠️";
+  document.getElementById("alertModalTitle").textContent = one ? "ต้องจัดการ — " + one.label : "ต้องจัดการ — " + secs.length + " คลัง";
   document.getElementById("alertModalSubtitle").textContent = `พบ ${total} รายการ • ${new Date().toLocaleString("th-TH")}`;
 
   const sum = k => secs.reduce((a, s) => a + (s[k] || []).length, 0);
   const chip = (txt, c) => `<span class="text-white text-xs font-black px-3 py-1 rounded-full" style="background:${c};">${txt}</span>`;
   const chips = [];
-  if (sum("expItems"))  chips.push(chip("🔴 หมดอายุ " + sum("expItems"), "var(--sq-crit)"));
+  if (sum("expItems"))  chips.push(chip("⛔ หมดอายุ " + sum("expItems"), "var(--sq-crit)"));
   if (sum("nearItems")) chips.push(chip("⏳ ใกล้หมดอายุ " + sum("nearItems"), "var(--sq-warn)"));
   if (sum("lowItems"))  chips.push(chip("🟠 ต่ำกว่าจุดสั่งซื้อ " + sum("lowItems"), "var(--sq-high)"));
-  if (sum("soonItems")) chips.push(chip("📉 ใกล้หมด " + sum("soonItems"), "var(--sq-high)"));
+  if (sum("soonItems")) chips.push(chip("🛒 ต้องสั่ง " + sum("soonItems"), "var(--sq-high)"));
   document.getElementById("alertModalChips").innerHTML = chips.join("");
 
   const group = (title, color, items, right) => !items.length ? "" :
@@ -89,44 +98,31 @@ function _alertRender() {
   let html = "";
   secs.forEach(s => {
     const meta = ALERT_META[s.module] || ALERT_META.MLM;
-    if (!one) html += `<div class="font-black text-base mt-4 pb-1" style="color:${meta.color};border-bottom:2px solid ${meta.color};">${meta.label} · ${n(s)} รายการ</div>`;
-    html += group("🔴 หมดอายุแล้ว", "var(--sq-crit)", s.expItems, i => `<span style="color:var(--sq-crit);">${label(i)}</span>`);
+    if (!one) html += `<div class="font-black text-base mt-4 pb-1" style="color:${meta.color};border-bottom:2px solid ${meta.color};">${meta.label} · ${_alertCount(s)} รายการ</div>`;
+    html += group("⛔ หมดอายุแล้ว", "var(--sq-crit)", s.expItems, i => `<span style="color:var(--sq-crit);">${label(i)}</span>`);
     html += group("⏳ ใกล้หมดอายุ", "var(--sq-warn)", s.nearItems, i => `<span style="color:var(--sq-warn);">${label(i)}</span>`);
     html += group("🟠 ต่ำกว่าจุดสั่งซื้อ", "var(--sq-high)", s.lowItems, i => `
         <div class="text-right shrink-0">
           <span class="font-black" style="color:var(--sq-high);">${Number(i.qty||i.Qty||0).toLocaleString()} ${escapeHtml(i.unit||i.Unit||"")}</span>
           <span class="text-xs block" style="color:var(--sq-muted);">จุดสั่งซื้อ ${Number(i.min||i.Min||0).toLocaleString()}</span>
         </div>`);
-    html += group("📉 ใกล้หมด — ใช้ได้อีกไม่กี่วัน", "var(--sq-high)", s.soonItems || [], i => `
+    html += group("🛒 ต้องสั่ง — ตามจอวางแผนสั่งซื้อ", "var(--sq-high)", s.soonItems || [], i => `
         <div class="text-right shrink-0">
           <span class="font-black" style="color:var(--sq-high);">${Number(i.qty||0).toLocaleString()} ${escapeHtml(i.unit||"")}</span>
           <span class="text-xs block" style="color:var(--sq-muted);">${escapeHtml(i.expLabel || "")}</span>
         </div>`);
   });
   document.getElementById("alertModalContent").innerHTML = html;
-
-  const wasHidden = modal.classList.contains("hidden");
   modal.classList.remove("hidden");
-  if (wasHidden && navigator.vibrate) navigator.vibrate([200, 100, 200]);
 }
 
-// ack = "รับทราบ" → จำรายการที่เห็นแล้ว ไม่เด้งซ้ำในรอบนี้ · ไม่ ack = "ปิดชั่วคราว"
+// ปิดหน้าต่าง (ไม่มี "รับทราบ" แล้ว — ไม่เด้งเองจึงไม่ต้องจำว่าเห็นแล้ว) · ack คงไว้ให้โค้ดเดิมที่ส่งมา
 function closeStockAlert(ack = false) {
-  if (ack) {
-    const m = _alertAckGet();
-    Object.values(_alertSections).forEach(s => { m[s.module] = Array.from(new Set([...(m[s.module] || []), ..._alertKeys(s)])); });
-    _alertAckSave(m);
-  }
-  _alertSections = {};
   document.getElementById("stockAlertModal").classList.add("hidden");
 }
 
-// ── ตรวจทุกคลังทันทีหลังเข้าระบบ → ป๊อปอัปใบเดียว ──
-let _suppressCrLoginAlert = false; // ป้องกัน crCheckCritical แสดง popup ซ้ำระหว่างนี้
-
+// ── นับทุกคลังตอนเปิดแอป (checkAuth) → ตัวเลขบนเมนู/การ์ด + แผงหน้าแรก ──
 async function checkRawAlertsOnLogin() {
-  _suppressCrLoginAlert = true;
-  _alertBatch = {};
   try {
     const [crRes, sqfRes, mlmRes] = await Promise.all([
       fetch(GAS_URL, { method:"POST", headers:{"Content-Type":"text/plain;charset=utf-8"},
@@ -134,44 +130,25 @@ async function checkRawAlertsOnLogin() {
       fetch(GAS_URL + "?module=SQF").then(r => r.json()),
       fetch(GAS_URL + "?module=MLM").then(r => r.json())
     ]);
-    if (crRes.ok) {
-      const exp  = (crRes.expiredLots  || []).map(l => ({ name: l.ProductName, expLabel: `EXP ${isoToDdmmyy(l.EXP)}` }));
-      const near = (crRes.expiringLots || []).map(l => ({ name: l.ProductName, expLabel: `เหลือ ${l.ExpireDays} วัน` }));
-      updateNavBadge("COLDROOM", exp.length + near.length);
-      showStockAlert("COLDROOM", exp, [], near);
-    }
-    if (sqfRes.status === "success") rawCheckCritical(sqfRes.materials || [], "SQF", true);
-    if (mlmRes.status === "success") rawCheckCritical(mlmRes.materials || [], "MLM", true);
+    crCheckCritical(crRes);
+    if (sqfRes.status === "success") rawCheckCritical(sqfRes.materials || [], "SQF");
+    if (mlmRes.status === "success") rawCheckCritical(mlmRes.materials || [], "MLM");
   } catch(e) { console.warn("checkRawAlertsOnLogin:", e); }
-  finally {
-    const batch = _alertBatch || {};
-    _alertBatch = null;
-    _suppressCrLoginAlert = false;
-    Object.values(batch).forEach(s => showStockAlert(s.module, s.expItems, s.lowItems, s.nearItems, s.soonItems));
-  }
 }
 
-// ── Raw Materials critical check (ใช้ unified) ──
-function rawCheckCritical(items, module = rawCurrentModule, showPopup = true) {
-  const today = new Date(); today.setHours(0,0,0,0);
-
-  const exp  = items.filter(i => { const d=rawParseDate(i.ExpiryDate); return d && d < today; })
-                    .map(i => ({ name: i.Name, expLabel: rawForceThaiDate(i.ExpiryDate) }));
-  const near = items.filter(i => rawNearExpiry(i, Number(i.AlertDays) || rawAlertDays) && !exp.find(e => e.name===i.Name))
-                    .map(i => ({ name: i.Name, expLabel: "หมดอายุ " + rawForceThaiDate(i.ExpiryDate) }));
+// ── วัตถุดิบ: หมวดมาจากหลังบ้านทั้งหมด (ตรงกับตาราง จอต้องสั่ง และมือถือ) ──
+function rawCheckCritical(items, module = rawCurrentModule) {
+  const exp  = items.filter(i => i.ExpStatus === "expired").map(i => ({ name: i.Name, expLabel: rawForceThaiDate(i.ExpiryDate) }));
+  const near = items.filter(i => i.ExpStatus === "near")
+                    .map(i => ({ name: i.Name, expLabel: Number(i.ExpDays) === 0 ? "หมดอายุวันนี้" : "หมดอายุใน " + i.ExpDays + " วัน" }));
   // ต่ำกว่าจุดสั่งซื้อ — เงื่อนไขเดียวกับตัวกรองและการ์ดสรุปในหน้าวัตถุดิบ (rawIsLow)
   const low  = items.filter(rawIsLow).map(i => ({ name: i.Name, qty: i.Qty, unit: i.Unit, min: i.Min }));
-  // ใช้ได้อีกไม่เกิน rawAlertDays วัน (จาก "ใช้ต่อวัน") — แยกหัวข้อ ไม่ปนกับต่ำกว่าจุดสั่งซื้อ (เดิมขึ้น "min: 30" ทั้งที่ยังไม่ต่ำ)
-  const soon = items.filter(i => {
-    const daily = Number(i.DailyUsage||0);
-    if (daily <= 0) return false;
-    if (Math.floor(Number(i.Qty||0) / daily) > rawAlertDays) return false;
-    return !exp.find(e => e.name === i.Name) && !low.find(e => e.name === i.Name);
-  }).map(i => ({ name: i.Name, qty: i.Qty, unit: i.Unit, expLabel: `ใช้ได้อีก ${Math.floor(Number(i.Qty||0) / Number(i.DailyUsage||1))} วัน` }));
-
-  const total = exp.length + near.length + low.length + soon.length;
-  updateNavBadge(module, total);
-  if (showPopup) showStockAlert(module, exp, low, near, soon);
+  // ต้องสั่ง = จอต้องสั่งบอก "สั่งวันนี้ก็ไม่ทัน / ต้องสั่งวันนี้" (ไม่ซ้ำกับต่ำกว่าจุดสั่งซื้อ/หมดอายุ)
+  const order = items.filter(i => (i.PlanStatus === "late" || i.PlanStatus === "now") && !rawIsLow(i) && i.ExpStatus !== "expired")
+                     .map(i => ({ name: i.Name, qty: i.Qty, unit: i.Unit,
+                                  expLabel: (i.PlanStatusText || "") + (i.DaysCover != null ? " · พอ " + Number(i.DaysCover).toLocaleString() + " วัน" : "") }));
+  updateNavBadge(module, exp.length + near.length + low.length + order.length);
+  showStockAlert(module, exp, low, near, order);
 }
 
 // ── Cold Room critical check ──
@@ -180,8 +157,7 @@ function crCheckCritical(res) {
   const exp  = (res.expiredLots  || []).map(l => ({ name: l.ProductName, expLabel: `EXP ${isoToDdmmyy(l.EXP)}` }));
   const near = (res.expiringLots || []).map(l => ({ name: l.ProductName, expLabel: `เหลือ ${l.ExpireDays} วัน` }));
   updateNavBadge("COLDROOM", exp.length + near.length);
-  // ถ้า checkRawAlertsOnLogin กำลังจัดการ popup อยู่ → ไม่แสดงซ้ำ
-  if (!_suppressCrLoginAlert) showStockAlert("COLDROOM", exp, [], near);
+  showStockAlert("COLDROOM", exp, [], near);
 }
 
 // backward compat

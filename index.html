@@ -166,6 +166,14 @@
       background:var(--sq-crit);color:#fff;font-size:13px;font-weight:900;animation:badgePop .3s ease;
     }
     .home-hint { margin-top:30px;font-size:12.5px;font-weight:600;color:var(--sq-muted); }
+    .home-todo { margin-top:22px;text-align:left;background:#fff;border:1.5px solid var(--sq-line);border-radius:12px;padding:14px 16px; }
+    .home-todo-head { font-weight:800;font-size:15px;color:var(--sq-ink);margin-bottom:8px; }
+    .home-todo-row { display:flex;align-items:center;gap:10px;width:100%;text-align:left;padding:10px 8px;border-top:1px solid var(--sq-line-soft);font-size:14px;color:var(--sq-ink);background:none;min-height:44px; }
+    .home-todo-row:hover { background:var(--sq-line-soft); }
+    .home-todo-dot { width:12px;height:12px;border-radius:6px;flex:none; }
+    .home-todo-bits { color:var(--sq-ink2);font-weight:600;flex:1; }
+    .home-todo-go { font-size:20px;font-weight:800;color:var(--sq-muted); }
+    .home-todo-all { margin-top:8px;font-weight:800;font-size:13px;color:var(--sq-accent);background:none;border:none;padding:8px 4px;min-height:44px; }
     .home-links { margin-top:34px;display:flex;justify-content:center;gap:10px;flex-wrap:wrap; }
     .home-links button, .home-links a {
       background:var(--sq-surface);border:1px solid var(--sq-line);border-radius:999px;
@@ -214,7 +222,13 @@
     #module-COLDROOM .cr-topbar { display:flex;justify-content:space-between;align-items:flex-start;gap:12px;flex-wrap:wrap;margin-bottom:14px; }
     #module-COLDROOM .cr-badge { background:var(--sq-none-bg);color:var(--sq-ink2);padding:3px 10px;border-radius:20px;font-size:12px;font-weight:700; }
     /* แท็บแบบขีดเส้นใต้ ให้เหมือนหน้าอื่น */
-    #module-COLDROOM .cr-tabbar { display:flex;gap:4px;margin-bottom:14px;border-bottom:1px solid var(--sq-line);overflow-x:auto; }
+    #module-COLDROOM .cr-mode-row { display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px; }
+    #module-COLDROOM .cr-mode-row .cr-btn { line-height:1.25;padding:10px 8px;font-size:15px; }
+    #module-COLDROOM .cr-mode-row .cr-btn small { font-size:12px;font-weight:600; }
+    #module-COLDROOM .cr-mode-row .cr-btn[aria-pressed="true"]#crModeIn { background:#047857;border-color:#047857;color:#fff; }
+    #module-COLDROOM .cr-mode-row .cr-btn[aria-pressed="true"]#crModeCount { background:#0e7490;border-color:#0e7490;color:#fff; }
+    #module-COLDROOM .cr-qty-preview { margin-top:8px;font-weight:800;font-size:15px;min-height:22px;color:var(--sq-ink); }
+    #module-COLDROOM .cr-tabbar { display:flex;flex-wrap:wrap;gap:4px;margin-bottom:14px;border-bottom:1px solid var(--sq-line); }  /* ขึ้นบรรทัดใหม่แทนเลื่อนข้าง (เจ้าของสั่ง 2026-10-20 · เดิมล้น 1px โผล่ลูกศร ▲▼) */
     #module-COLDROOM .cr-tab-btn {
       flex:0 0 auto;border:none;border-bottom:2px solid transparent;margin-bottom:-1px;
       padding:8px 14px;background:none;color:var(--sq-muted);
@@ -1181,7 +1195,9 @@
           <span id="homeBadge-MLM" class="home-badge" style="display:none"></span>
         </button>
       </div>
-      <p class="home-hint">🔴 ตัวเลขแดง = รายการที่รอจัดการ (หมดอายุ / ใกล้หมดอายุ / ต่ำกว่าจุดสั่งซื้อ)</p>
+      <!-- ต้องจัดการ — แทนป๊อปอัปที่เคยเด้งเอง (js/alerts.js _alertRenderHome · critique 2026-10-20) -->
+      <div id="homeTodo" class="home-todo" style="display:none" aria-live="polite"></div>
+      <p class="home-hint">🔴 ตัวเลขแดง = รายการที่ต้องจัดการ (หมดอายุ / ใกล้หมดอายุ / ต่ำกว่าจุดสั่งซื้อ / ต้องสั่ง)</p>
       <div class="home-links">
         <button id="homeLink-EXEC" onclick="switchModule('EXEC')" style="display:none">📊 ภาพรวมทั้งระบบ</button>
         <button id="homeLink-ROLES" onclick="switchModule('ROLES')" style="display:none">✅ อนุมัติผู้ใช้</button>
@@ -1229,7 +1245,7 @@
 
         <div class="card">
           <div style="display:flex;justify-content:space-between;align-items:center;">
-            <h2>💾 รับเข้า / ตรวจนับสต๊อก</h2>
+            <h2>💾 รับเข้า / นับสต๊อก</h2>
             <button class="cr-btn btn-light" onclick="crClearLotOnly()" style="padding:8px 12px;font-size:12px;">🧹 ล้างข้อมูล</button>
           </div>
           <div class="big-stat-box">
@@ -1251,15 +1267,21 @@
             <input aria-label="ชื่อสินค้า (แสดงหลังค้นหา)" type="text" id="crProductName" readonly autocomplete="off" placeholder="(จะแสดงหลังค้นหา / เลือกสินค้า)" style="font-weight:700;color:var(--sq-accent);">
           </div></div>
           <div class="row">
-            <div class="field"><label for="crMfg">📅 วันผลิต (MFG) 6 หลัก *</label><input type="text" id="crMfg" placeholder="เช่น 170326" maxlength="6" inputmode="numeric" autocomplete="off"></div>
+            <div class="field"><label for="crMfg">📅 วันผลิต (MFG) 6 หลัก *</label><input type="text" id="crMfg" placeholder="เช่น 170326" maxlength="6" inputmode="numeric" autocomplete="off" oninput="crQtyPreview()"></div>
             <div class="field"><label for="crExp">⏳ วันหมดอายุ (EXP) *</label><input type="text" id="crExp" placeholder="คำนวณอัตโนมัติ" maxlength="6" inputmode="numeric" autocomplete="off"></div>
           </div>
           <div style="background:var(--sq-line-soft);padding:15px;border-radius:15px;">
-            <div class="field full"><label for="crNewQty">📦 จำนวน *</label><input type="text" id="crNewQty" placeholder="เช่น 16*48+5" style="font-size:24px;height:60px;border:2px solid var(--primary);" autocomplete="off"></div>
+            <!-- ต้องเลือกก่อนว่ารับเข้าหรือนับ — เดิมช่องเดียว "จำนวน" แทนที่ยอดทั้งล็อตเสมอ รับของซ้ำวันผลิตเดียวกันทับยอดเดิม (critique 2026-10-20) -->
+            <div class="cr-mode-row" role="group" aria-label="บันทึกแบบไหน">
+              <button type="button" id="crModeIn" class="cr-btn btn-light" aria-pressed="false" onclick="crSetMode('in')">📥 รับเข้า<br><small>บวกเพิ่มเข้าล็อต</small></button>
+              <button type="button" id="crModeCount" class="cr-btn btn-light" aria-pressed="false" onclick="crSetMode('count')">📊 นับ<br><small>ยอดที่นับได้ทั้งล็อต</small></button>
+            </div>
+            <div class="field full"><label for="crNewQty" id="crNewQtyLabel">📦 จำนวน *</label><input type="text" id="crNewQty" placeholder="เช่น 16*48+5" oninput="crQtyPreview()" style="font-size:24px;height:60px;border:2px solid var(--primary);" autocomplete="off"></div>
+            <div id="crQtyPreview" class="cr-qty-preview" aria-live="polite"></div>
             <div class="field full" style="margin-top:10px;"><label for="crNote">💬 หมายเหตุ</label><textarea id="crNote" placeholder="เช่น รับสินค้าใหม่, ส่งขายหมดแล้ว" autocomplete="off"></textarea></div>
           </div>
           <div class="sticky-actions">
-            <button class="cr-btn btn-primary" onclick="crSaveCount()" style="flex:2;">✅ บันทึกข้อมูล</button>
+            <button class="cr-btn btn-primary" id="crSaveBtn" onclick="crSaveCount()" style="flex:2;">✅ บันทึกข้อมูล</button>
             <button class="cr-btn btn-light"   onclick="crClearAll()"  style="flex:1;">🧹 เริ่มใหม่</button>
           </div>
         </div>
@@ -2291,7 +2313,7 @@
           <div class="text-5xl alert-pulse" id="alertModalIcon">🚨</div>
           <div>
             <div class="font-black text-2xl uppercase tracking-tight" id="alertModalTitle">แจ้งเตือนสต๊อก</div>
-            <div class="text-sm opacity-80 font-bold mt-1" id="alertModalSubtitle"></div>
+            <div class="text-sm font-bold mt-1" id="alertModalSubtitle"></div>
           </div>
         </div>
         <div class="flex gap-2 mt-4 flex-wrap" id="alertModalChips"></div>
@@ -2299,11 +2321,10 @@
       <div class="max-h-[50vh] overflow-y-auto custom-scrollbar px-6 py-4" id="alertModalContent"></div>
       <div class="p-6 bg-slate-50 border-t">
         <div class="flex gap-3">
-          <!-- รับทราบ = ไม่เด้งซ้ำรอบนี้จนกว่าจะมีรายการใหม่ · ปิดชั่วคราว = เปิดคลังนั้นอีกครั้งจะเด้งอีก (js/alerts.js · QA M1) -->
-          <button onclick="closeStockAlert(true)" class="flex-1 bg-slate-900 text-white py-4 rounded-2xl font-black text-lg hover:bg-emerald-700 transition-all">รับทราบ ✅</button>
-          <button onclick="closeStockAlert(false)" class="bg-slate-200 text-slate-700 px-6 py-4 rounded-2xl font-black text-sm hover:bg-slate-300 transition-all">ปิดชั่วคราว</button>
+          <!-- เปิดจาก "ดูรายการทั้งหมด" บนหน้าแรกเท่านั้น (ไม่เด้งเองแล้ว · critique 2026-10-20) -->
+          <button onclick="closeStockAlert()" class="flex-1 bg-slate-900 text-white py-4 rounded-2xl font-black text-lg hover:bg-emerald-700 transition-all">ปิด</button>
         </div>
-        <p class="text-xs font-bold text-slate-600 mt-3 text-center">รับทราบ = ไม่เตือนซ้ำรอบนี้ จนกว่าจะมีรายการใหม่ · ตัวเลขบนเมนูยังบอกจำนวนเสมอ</p>
+        <p class="text-xs font-bold text-slate-600 mt-3 text-center">แตะคลังในแผง "ต้องจัดการ" บนหน้าแรกเพื่อเข้าไปจัดการ · ตัวเลขบนเมนูบอกจำนวนเสมอ</p>
       </div>
     </div>
   </div>

@@ -212,6 +212,36 @@ console.log("7) ห้องเย็น");
   T("เก็บถาวรล็อตที่ยอดเป็น 0", ar.ok && ar.archived >= 1, ar);
 }
 
+console.log("7b) ห้องเย็น: รับเข้าบวกเพิ่ม (mode add) · เบิกตรวจยอดใน SQL (mode sub) — critique 2026-10-20");
+{
+  const bc = "TA" + Date.now();
+  await cr("saveNewProduct", { barcode: bc, productName: "สินค้าทดสอบบวก " + bc, sku: "SA" + bc, defaultUnit: "ถ้วย", standardShelfLifeDays: 30 });
+  const th = new Date(Date.now() + 7 * 3600000), dd = (d) => String(d.getUTCDate()).padStart(2, "0") + String(d.getUTCMonth() + 1).padStart(2, "0") + String(d.getUTCFullYear()).slice(2);
+  const mfg = dd(th), exp = dd(new Date(th.getTime() + 30 * 86400000));
+  const qty = async () => { const b = (await cr("getProductAndBalances", { barcode: bc })).balances; return b.length ? b[0].Qty : 0; };
+  const save = (q, mode, extra) => cr("saveOrUpdateCount", Object.assign({ barcode: bc, mfg, exp, newQty: q, note: "ทดสอบ", opId: op() }, mode ? { mode } : {}, extra || {}));
+  const a1 = await save(36, "add");
+  T("รับเข้า (add) ล็อตใหม่ 36", a1.ok && a1.balances[0].Qty === 36, a1);
+  const oA = op();
+  const a2 = await save(24, "add", { opId: oA });
+  T("รับเข้าวันผลิตเดิมอีกรอบ → บวกเป็น 60 (เดิมทับเหลือ 24)", a2.ok && a2.balances[0].Qty === 60, a2);
+  const a2b = await save(24, "add", { opId: oA });
+  T("รับเข้าส่งซ้ำ opId เดิม → ไม่บวกซ้ำ", a2b.ok && a2b.duplicate === true && (await qty()) === 60, a2b);
+  const s1 = await save(15, "sub");
+  T("เบิก (sub) 15 → เหลือ 45", s1.ok && s1.balances[0].Qty === 45, s1);
+  const s2 = await save(999, "sub");
+  T("เบิกเกินยอด → ปฏิเสธ ยอดไม่เปลี่ยน", s2.ok === false && /ไม่พอ/.test(s2.message) && (await qty()) === 45, s2);
+  T("เบิกล็อตที่ไม่มี → ปฏิเสธ", (await save(1, "sub", { mfg: "010125", exp: "010225" })).ok === false);
+  T("รับเข้า 0 → ปฏิเสธ", (await save(0, "add")).ok === false);
+  const both = await Promise.all([1, 2].map(() => save(30, "sub")));
+  T("สองเครื่องเบิก 30 พร้อมกันจาก 45 → ผ่านครั้งเดียว เหลือ 15", both.filter((r) => r.ok).length === 1 && (await qty()) === 15, both.map((r) => r.ok + ":" + (r.message || "")));
+  const n1 = await save(14);
+  T("นับ (ไม่ส่ง mode) ยังตั้งยอดทั้งล็อตแบบเดิม → 14", n1.ok && n1.balances[0].Qty === 14, n1);
+  const acts = ((await cr("getLotHistory", { barcode: bc })).rows || []).map((r) => r.Action);
+  T("ประวัติล็อต 5 แถว: ล็อตใหม่ · เพิ่มเข้าล็อตเดิม · เบิก 2 (ที่ถูกปฏิเสธไม่ลง) · นับ", acts.length === 5 && acts.filter((a) => a === "เบิกออก").length === 2 && acts.includes("รับเข้า (เพิ่มเข้าล็อตเดิม)"), acts);
+  for (const b of (await cr("getProductAndBalances", { barcode: bc })).balances) await cr("clearLotStock", { barcode: bc, mfg: b.MFG, reason: "ล้างของทดสอบ" });
+}
+
 console.log("8) ผู้ใช้");
 {
   const nu = "ทดสอบ" + Date.now();
@@ -300,6 +330,10 @@ console.log("10) วางแผนสั่งซื้อ — วิเคร�
   const a = find(p0);
   // ของเพิ่งสร้าง: ยังไม่มีประวัติเบิก → ใช้ค่าที่ตั้งไว้ 10/วัน · 100 ÷ 10 = 10 วัน
   T("ประวัติน้อย → ใช้ 'ใช้ต่อวัน' ที่ตั้งไว้", a && a.rateSource === "plan" && a.rate === 10 && a.daysCover === 10, a);
+  // รายการวัตถุดิบ (GET) แนบวันพอใช้/สถานะการสั่งชุดเดียวกับจอต้องสั่ง — หน้าคอม/มือถือไม่คิดเอง (critique 2026-10-20)
+  const gm = (g0.materials || []).find((m) => m.SKU === sku);
+  T("รายการวัตถุดิบมีวันพอใช้ + สถานะการสั่ง ตรงกับจอต้องสั่งทุกตัว", !!gm && gm.DaysCover === a.daysCover && gm.PlanStatus === a.status &&
+    p0.items.every((i) => { const m = g0.materials.find((x) => x.SKU === i.sku); return m && m.DaysCover === i.daysCover && m.PlanStatus === i.status; }), gm);
   const lead7 = find(await plan({ leadDays: 7, safetyDays: 3, coverDays: 30 }));
   T("พอ 10 วัน รอของ 7 + กันชน 3 → ต้องสั่งวันนี้", lead7.status === "now" && lead7.orderInDays === 0 && lead7.orderByDate === p0.today, lead7);
   T("แนะนำสั่ง = ใช้ 33 วัน − ของที่เหลือตอนของมาถึง (100−70)", lead7.suggestQty === 300, lead7.suggestQty);

@@ -22,6 +22,7 @@ assets/*.pdf
 .impeccable/mocks/
 .impeccable/build/
 .impeccable/live/
+.impeccable/critique/
 .impeccable/*.local.json
 
 # Cloudflare Worker — ฐานข้อมูลทดสอบในเครื่อง (มีข้อมูลจริง) และความลับ ห้ามขึ้น git

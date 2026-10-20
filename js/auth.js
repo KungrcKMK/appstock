@@ -195,7 +195,7 @@ function selectMode(mode, remember) {
   sessionStorage.setItem("appstock_mode_session", mode); // จดจำสำหรับ session นี้เสมอ
   document.getElementById("modePicker").style.display = "none";
   if (mode === "mobile") { window.location.replace("mobile.html"); }
-  else                   { checkAuth(); checkRawAlertsOnLogin(); }
+  else                   { checkAuth(); }   // checkAuth นับตัวเลขที่ต้องจัดการให้เอง
 }
 
 function switchToMobile() {

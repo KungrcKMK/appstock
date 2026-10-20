@@ -93,12 +93,38 @@ export async function crSaveOrUpdateCount(c, payload) {
   if (!mfgIso || !expIso) return { ok: false, message: "รูปแบบวันที่ไม่ถูกต้อง (DDMMYY)" };
   if (expIso <= mfgIso) return { ok: false, message: "วันหมดอายุต้องมากกว่าวันผลิต" };
 
+  // mode: ไม่ส่ง/"set" = นับ (ตั้งยอดทั้งล็อต · แบบเดิม เครื่องรุ่นเก่ายังใช้) · "add" = รับเข้าบวกเพิ่ม · "sub" = เบิกออก
+  // เดิมรับเข้าก็ "ตั้งยอด" → รับของ 2 รอบวันผลิตเดียวกัน รอบหลังทับรอบแรก (critique 2026-10-20 · เจ้าของเลือก "บวกเพิ่ม")
+  const mode = payload.mode === "add" || payload.mode === "sub" ? payload.mode : "set";
+  if (mode !== "set" && !(newQty > 0)) return { ok: false, message: "จำนวนต้องมากกว่า 0" };
+
   const prod = await first(c, "SELECT product_name FROM cr_products WHERE barcode = ?", String(barcode));
   const productName = prod ? prod.product_name : "";
   const lot = await first(c, "SELECT * FROM cr_stock WHERE archived = 0 AND barcode = ? AND mfg = ?", String(barcode), mfgIso);
   const nowStr = nowIso();
+  const who = c.deviceName || "";
   try {
-    if (lot) {
+    if (mode === "sub" || (mode === "add" && lot)) {
+      if (!lot) return { ok: false, message: "ไม่พบล็อตนี้ในคลัง — กดรีเฟรชแล้วลองใหม่" };
+      // บวก/ลบในฐานข้อมูลเอง ไม่เชื่อยอดที่หน้าจออ่านมา (สองเครื่องทำพร้อมกันยอดไม่หาย) · เบิกต้องมียอดพอ ตรวจใน SQL
+      const add = mode === "add", d = add ? Number(newQty) : -Number(newQty);
+      const guard = add ? "" : " AND qty >= ?", gArgs = add ? [] : [Number(newQty)];
+      const r = await c.env.DB.batch([
+        // ประวัติลงก่อน (อ่านยอดจริงในธุรกรรมเดียวกัน) และลงเฉพาะเมื่อยอดพอ
+        stmt(c, "INSERT INTO cr_lot_history (ts, barcode, product_name, mfg, action, qty_before, qty_after, reason, employee_name, device_info, op_id) " +
+          "SELECT ?, ?, ?, ?, ?, qty, qty + ?, ?, ?, ?, ? FROM cr_stock WHERE row_id = ?" + guard,
+          nowStr, String(barcode), String(productName || ""), mfgIso, add ? "รับเข้า (เพิ่มเข้าล็อตเดิม)" : "เบิกออก", d,
+          String(note || ""), String(employeeName || "-"), who, opId, lot.row_id, ...gArgs),
+        stmt(c, "UPDATE cr_stock SET qty = qty + ?, note = ?, employee_name = ?, device_info = ?, updated_at = ? WHERE row_id = ?" + guard,
+          d, note || "", employeeName || "", who, nowStr, lot.row_id, ...gArgs),
+      ]);
+      if (!changed(r[1])) {
+        const cur = await first(c, "SELECT qty FROM cr_stock WHERE row_id = ?", lot.row_id);
+        return { ok: false, message: "ยอดในล็อตไม่พอ (มี " + (cur ? Number(cur.qty) : 0) + ") — กดรีเฟรชแล้วลองใหม่" };
+      }
+      const after = await first(c, "SELECT qty FROM cr_stock WHERE row_id = ?", lot.row_id);
+      tgNotify(c, `${add ? "📥 รับเข้าห้องเย็น" : "📤 เบิกออกห้องเย็น"} ❄️\n📦 ${productName}\n📅 MFG: ${mfg} | EXP: ${exp}\n${add ? "➕" : "➖"} ${newQty} → ล็อตนี้เหลือ ${after ? Number(after.qty) : "?"}\n👤 ${employeeName}${deviceTag(c)}${note ? "\n💬 " + note : ""}`);
+    } else if (lot) {
       // นับตอนออฟไลน์แล้วส่งทีหลัง ถ้าล็อตถูกแก้หลังเวลานับ = รายการนี้เก่า ไม่ทับ
       const prevQty = Number(lot.qty || 0);
       const updMs = lot.updated_at ? new Date(lot.updated_at).getTime() : NaN;
@@ -111,13 +137,13 @@ export async function crSaveOrUpdateCount(c, payload) {
       ]);
       tgNotify(c, `✅ อัปเดตสต๊อก ❄️\n📦 ${productName}\n📅 MFG: ${mfg} | EXP: ${exp}\n🔢 จำนวน: ${newQty}\n👤 ${employeeName}${deviceTag(c)}${note ? "\n💬 " + note : ""}`);
     } else {
-      // ไม่พบล็อตเดิม → สร้างใหม่ (สองเครื่องสร้างล็อตเดียวกันพร้อมกัน = แถวเดียว ยอดของคนหลัง)
+      // ไม่พบล็อตเดิม → สร้างใหม่ (สองเครื่องสร้างล็อตเดียวกันพร้อมกัน = แถวเดียว · นับ: ยอดของคนหลัง · รับเข้า: บวกกัน)
       await c.env.DB.batch([
         lotLogStmt(c, barcode, productName, mfgIso, "รับเข้า (ล็อตใหม่)", 0, newQty, note, employeeName, opId),
         stmt(c,
           "INSERT INTO cr_stock (row_id, barcode, product_name, mfg, exp, qty, note, employee_name, device_info, updated_at, seq) " +
           "VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, (SELECT COALESCE(MAX(seq), 0) + 1 FROM cr_stock)) " +
-          "ON CONFLICT(barcode, mfg) WHERE archived = 0 DO UPDATE SET qty = excluded.qty, note = excluded.note, " +
+          "ON CONFLICT(barcode, mfg) WHERE archived = 0 DO UPDATE SET qty = " + (mode === "add" ? "cr_stock.qty + " : "") + "excluded.qty, note = excluded.note, " +
           "employee_name = excluded.employee_name, device_info = excluded.device_info, updated_at = excluded.updated_at",
           uuid(), String(barcode), productName, mfgIso, expIso, Number(newQty), note || "", employeeName || "", c.deviceName || "", nowStr),
       ]);

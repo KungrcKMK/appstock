@@ -232,6 +232,21 @@ export async function planCompute(c, module, over) {
 /** action USAGEPLAN — หน้าจอส่ง leadDays/safetyDays/coverDays มาลองดูได้ (ไม่บันทึก) */
 export const usagePlan = (c, data, module) => planCompute(c, module, data);
 
+// วันพอใช้ + สถานะการสั่ง ชุดเดียวกับจอต้องสั่ง แนบไปกับรายการวัตถุดิบ (GET ?module=)
+// เดิมตารางหน้าคอม/รายการมือถือคิด "พอใช้อีก" เองจากค่าที่ตั้งไว้ → ไม่ตรงกับจอต้องสั่งที่ใช้ยอดเบิกจริง (critique 2026-10-20)
+export async function attachPlan(c, module, res) {
+  try {
+    const p = await planCompute(c, module), by = {};
+    (p.items || []).forEach((i) => { by[i.sku] = i; });
+    (res.materials || []).forEach((m) => {
+      const i = by[String(m.SKU)];
+      if (!i) return;
+      m.DaysCover = i.daysCover; m.PlanStatus = i.status; m.PlanStatusText = i.statusText; m.PlanRate = i.rate; m.RunOutDate = i.runOutDate || "";
+    });
+  } catch (e) { /* คิดแผนไม่ได้ = รายการยังมาครบ หน้าจอแค่ไม่มีวันพอใช้ */ }
+  return res;
+}
+
 // ───────────── สรุปเข้ากลุ่ม Telegram + LINE ─────────────
 // วัน / เวลา / หัวข้อ / แบบย่อ-ละเอียด / ส่งทุกครั้ง-เฉพาะตอนเปลี่ยน ตั้งแยกต่อช่องในหน้า ⚙️ ตั้งค่าการแจ้งเตือน (notify.js)
 // โหมด "เฉพาะตอนเปลี่ยน" = จำ "ลายเซ็น" ของรายการที่ส่งล่าสุด แยกต่อหัวข้อ/โรงงาน/ช่อง — ไม่ส่งข้อความเดิมซ้ำทุกเช้าจนคนเลิกอ่าน

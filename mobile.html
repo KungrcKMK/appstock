@@ -369,6 +369,8 @@
           <div class="m-ink2 text-xs font-bold mt-1">วันที่ใช้ได้</div>
         </div>
       </div>
+      <!-- หน้างานไม่ได้เบิกทุกวัน → บอกด้วยว่าวันที่เบิกจริงใช้เท่าไร (ตัวเลขจากหลังบ้าน ชุดเดียวกับจอต้องสั่ง) -->
+      <p id="aUseLine" class="hidden m-ink2 text-xs font-bold mt-2"></p>
       <div id="aWarn" class="hidden m-warnbar mt-3 inline-flex items-center gap-2">
         <svg width="20" height="20" viewBox="0 0 34 34" aria-hidden="true"><path d="M17 2.5 32.5 30.5H1.5Z" fill="#ffd100" stroke="#111" stroke-width="2.5" stroke-linejoin="round"/><path d="M17 11v10" stroke="#111" stroke-width="3.5" stroke-linecap="round"/><circle cx="17" cy="25.6" r="2" fill="#111"/></svg>
         ต่ำกว่าจุดสั่งซื้อ
@@ -1199,6 +1201,7 @@ async function loadData(opts) {
           // วันพอใช้/สถานะการสั่ง คิดที่หลังบ้าน (เดิมคิด qty ÷ ใช้ต่อวัน ที่เครื่อง → ไม่ตรงจอต้องสั่ง · critique 2026-10-20)
           daysCover: m.DaysCover === undefined || m.DaysCover === "" ? null : m.DaysCover,
           planStatus: m.PlanStatus || "", planText: m.PlanStatusText || "",
+          avgDay: Number(m.PlanActual30) || 0, perUse: Number(m.PlanPerUse) || 0, useDays: Number(m.PlanUseDays) || 0, obsDays: Number(m.PlanObsDays) || 30,
           idle:  m.IdleDays === undefined ? undefined : m.IdleDays,   // ⏰ วันที่ไม่มีการอัปเดต (หลังบ้านนับให้)
           expDays: m.ExpDays === undefined ? null : m.ExpDays,        // ⛔ อีกกี่วันหมดอายุ (หลังบ้านคิดให้ · ติดลบ = เลยแล้ว)
           expStatus: m.ExpStatus || "",                              //    "expired" | "near" | ""
@@ -1402,6 +1405,13 @@ function pickItem(sku) {
   } else { hide("aDaysWrap"); }
 
   if (sel.min > 0 && sel.qty <= sel.min) show("aWarn"); else hide("aWarn");
+  const ul = $("aUseLine");
+  if (ul) {
+    const f = n => fmtNum(n < 10 ? Math.round(n * 10) / 10 : Math.round(n));
+    const on = !sel.cr && sel.perUse > 0 && sel.useDays < sel.obsDays;
+    ul.textContent = on ? `เบิกเฉลี่ย ${f(sel.avgDay)}/วัน · วันที่เบิก ~${f(sel.perUse)} (${sel.useDays} จาก ${sel.obsDays} วัน)` : "";
+    ul.classList.toggle("hidden", !on);
+  }
 
   const isViewer = (role || "").toLowerCase() === "viewer";
   // 🏷️ ล็อต: แผงล็อตคงเหลือ (พับไว้) + ช่องข้อมูลล็อตตอนรับเริ่มใหม่ทุกครั้ง

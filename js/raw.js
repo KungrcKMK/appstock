@@ -334,15 +334,21 @@ function rawApplyTrends() {
     const pts = arr.map((v, i) =>
       `${(i * step).toFixed(1)},${(h - 2 - (v / max) * (h - 4)).toFixed(1)}`).join(" ");
     const last = arr[arr.length - 1];
-    const avg = arr.reduce((a, b) => a + b, 0) / arr.length;
-    const avgTxt = avg.toLocaleString("th-TH", { maximumFractionDigits: avg < 10 ? 1 : 0 });
+    // ตัวเลขมาจากหลังบ้าน (ชุดเดียวกับจอวางแผนสั่งซื้อ) · หลังบ้านคิดแผนไม่ได้ = ถอยไปเฉลี่ยจากเส้นกราฟแบบเดิม
+    const it = rawItemOf(el.dataset.sku) || {};
+    const fmt = n => Number(n).toLocaleString("th-TH", { maximumFractionDigits: n < 10 ? 1 : 0 });
+    const avg = it.PlanActual30 !== undefined ? Number(it.PlanActual30) : arr.reduce((a, b) => a + b, 0) / arr.length;
+    const avgTxt = fmt(avg);
+    // หน้างานไม่ได้เบิกทุกวัน → บอกด้วยว่าวันที่เบิกจริงใช้เท่าไร (เจ้าของสั่ง 2026-10-26)
+    const perUse = Number(it.PlanPerUse) > 0 && Number(it.PlanUseDays) < Number(it.PlanObsDays)
+      ? `<span class="tr-avg">วันที่เบิก ~${fmt(Number(it.PlanPerUse))} (${it.PlanUseDays} จาก ${it.PlanObsDays} วัน)</span>` : "";
     el.innerHTML = `
       <svg width="${w}" height="${h}" viewBox="0 0 ${w} ${h}" aria-hidden="true">
         <polyline points="${pts}" fill="none" stroke="var(--sq-accent)" stroke-width="1.5"
                   stroke-linejoin="round" stroke-linecap="round" opacity=".85"/>
         <circle cx="${w}" cy="${(h - 2 - (last / max) * (h - 4)).toFixed(1)}" r="2" fill="var(--sq-accent)"/>
       </svg>
-      <span class="tr-avg">เบิกเฉลี่ย ${avgTxt}/วัน</span>`;
+      <span class="tr-avg">เบิกเฉลี่ย ${avgTxt}/วัน</span>${perUse}`;
     el.title = `ยอดเบิกสุทธิรายวันย้อนหลัง ${t.days} วัน (เบิก − คืน)`;
   });
 }

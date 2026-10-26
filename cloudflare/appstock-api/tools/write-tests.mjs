@@ -1029,5 +1029,29 @@ console.log("17) 🏷️ ล็อตวัตถุดิบ (วันที�
   await raw("DELETE", { sku: SKU }, tok, M);
 }
 
+console.log("18) หน้างานไม่ได้เบิกทุกวัน — เบิกต่อวันที่เบิก + เตือน \"ไม่พอเบิกวันผลิตถัดไป\" (2026-10-26)");
+{
+  const SKU = "PU" + Date.now(), M = "SQF", NAME = "ทดสอบวันผลิต " + SKU;
+  await raw("CREATE", { sku: SKU, name: NAME, unit: "ใบ", qty: 400, min: 0 }, tok, M);
+  await raw("EDIT", { sku: SKU, name: NAME, unit: "ใบ", min: 0, dailyUsage: 0, leadDays: 7 }, tok, M);
+  // ย้อนเวลาในฐานข้อมูลในเครื่อง: รายการเริ่มเมื่อ 25 วันก่อน · เบิก 5 ใบเบิก รวม 600 ในวันเดียว (10 วันก่อน)
+  const ago = (d, min) => new Date(Date.now() - d * 86400000 + (min || 0) * 60000).toISOString();
+  let sql = "UPDATE history SET ts = '" + ago(25) + "' WHERE module = 'SQF' AND sku = '" + SKU + "';\n";
+  for (let i = 0; i < 5; i++)
+    sql += "INSERT INTO history (module, ts, name, action, qty, user, sku, unit, op_id) VALUES ('SQF', '" + ago(10, i) + "', '" + NAME + "', 'เบิกออก', 120, 'test', '" + SKU + "', 'ใบ', 'pu-" + SKU + "-" + i + "');\n";
+  await sqlLocal(sql);
+  let it = (await raw("USAGEPLAN", {}, tok, M)).items.find((x) => x.sku === SKU);
+  T("เบิก 600 ในวันเดียว · เหลือ 400 → วันที่เบิกใช้ 600 (1 วัน) → ไม่พอเบิกวันผลิตถัดไป = ต้องสั่งวันนี้ (ทั้งที่พอใช้ ~17 วัน)",
+    it && it.perUse === 600 && it.activeDays30 === 1 && it.shortNext === true && it.status === "now" && it.daysCover > 10 &&
+    it.reasons.some((r) => /ไม่พอเบิกวันผลิตถัดไป/.test(r)) && it.suggestQty >= 200, it);
+  const m = await matOf(M, SKU);
+  T("รายการวัตถุดิบแนบ เบิกเฉลี่ย/วัน · ต่อวันที่เบิก · เบิกกี่วันจากกี่วัน (หน้าจอแค่แสดง)", m.PlanPerUse === 600 && m.PlanUseDays === 1 && m.PlanObsDays >= 25 && m.PlanObsDays <= 30 && m.PlanActual30 > 0 && m.PlanStatus === "now",
+    [m.PlanActual30, m.PlanPerUse, m.PlanUseDays, m.PlanObsDays, m.PlanStatus]);
+  await raw("VERIFY", { sku: SKU, qty: 700 }, tok, M);
+  it = (await raw("USAGEPLAN", {}, tok, M)).items.find((x) => x.sku === SKU);
+  T("นับได้ 700 (มากกว่า 1 วันผลิต) → ไม่เตือน กลับเป็นยังพอ", it && it.shortNext === false && it.status === "ok" && !it.reasons.some((r) => /ไม่พอเบิกวันผลิตถัดไป/.test(r)), it);
+  await raw("DELETE", { sku: SKU }, tok, M);
+}
+
 console.log(`\nสรุป: ผ่าน ${pass} · ไม่ผ่าน ${fail}`);
 process.exit(fail ? 1 : 0);

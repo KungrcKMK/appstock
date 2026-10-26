@@ -31,6 +31,7 @@ const STATUS_ICON = { late: "🔴", now: "🟠", soon: "🟡", ok: "🟢", nodat
 
 const r3 = (n) => Math.round(n * 1000) / 1000;
 const r1 = (n) => Math.round(n * 10) / 10;
+const rn = (n) => (Math.abs(n) < 10 ? r1(n) : Math.round(n));   // ตัวเลขให้คนอ่าน: น้อยกว่า 10 เก็บทศนิยม 1 ตำแหน่ง
 function clampNum(v, min, max, def) {
   const n = Number(v);
   if (v === "" || v === null || v === undefined || !isFinite(n)) return def;
@@ -195,6 +196,16 @@ export async function planCompute(c, module, over) {
     // ต่ำกว่าจุดสั่งซื้อที่คนตั้งไว้เอง = ถึงเวลาสั่งตามกติกาของเขา แม้ตัวเลขการใช้จะบอกว่ายังพอ
     if (belowMin && (STATUS_RANK[status] > STATUS_RANK.now)) { status = "now"; reasons.push("ต่ำกว่าจุดสั่งซื้อที่ตั้งไว้ (" + fmtN(min) + ")"); }
     else if (belowMin) reasons.push("ต่ำกว่าจุดสั่งซื้อที่ตั้งไว้ (" + fmtN(min) + ")");
+    // หน้างานไม่ได้เบิกทุกวัน (ผลิตเป็นรอบ) — "พอใช้ X วัน" เฉลี่ยวันที่ไม่ผลิตเข้าไปด้วย
+    // คงเหลือน้อยกว่าที่วันผลิตหนึ่งวันเบิกตามปกติ = วันผลิตถัดไปของไม่พอแล้ว (เจ้าของสั่ง 2026-10-26)
+    const activeDays = s ? Object.keys(s.days30).length : 0;
+    const perUse = activeDays ? Math.max(0, s.n30) / activeDays : 0;   // เบิกสุทธิ (เบิก − คืน) ต่อวันที่มีการเบิก
+    const shortNext = enough && qty > 0 && qty < perUse;   // ของหมดแล้วมีเหตุผล "ของหมดแล้ว" อยู่แล้ว ไม่ต้องซ้ำ
+    if (shortNext) {
+      if (STATUS_RANK[status] > STATUS_RANK.now) status = "now";
+      reasons.push("ไม่พอเบิกวันผลิตถัดไป — เหลือ " + fmtN(rn(qty)) + " แต่วันที่เบิกใช้เฉลี่ย " + fmtN(rn(perUse)) + " (" + activeDays + " วันใน " + Math.min(30, obsDays || 30) + " วัน)");
+      need = Math.max(need, perUse - qty);   // อย่างน้อยให้พอวันผลิตถัดไป
+    }
 
     let suggestQty = 0;
     if (status !== "ok" && status !== "nodata" && need > 0) {
@@ -225,6 +236,7 @@ export async function planCompute(c, module, over) {
       leadDays, leadOwn: own > 0, moq, packSize: pack, suggestQty, belowMin,
       out30: r3(out30), prev30: r3(prev30), trendPct: prev30 > 0 ? Math.round((out30 - prev30) / prev30 * 100) : null,
       peakDay30: dayVals.length ? r3(Math.max.apply(null, dayVals)) : 0, activeDays30: dayVals.length, tx30, obsDays,
+      perUse: r3(perUse), shortNext,
       lastOut: s && s.lastOut ? dayTH(s.lastOut) : "",
       lastUpdate: lastUpd[sku] ? dayTH(lastUpd[sku]) : "", idleDays, stale,
       topPurposes: s ? Object.keys(s.purposes).map((p) => ({ purpose: p, qty: r3(s.purposes[p]) })).sort((a, b) => b.qty - a.qty).slice(0, 3) : [],
@@ -249,6 +261,8 @@ export async function attachPlan(c, module, res) {
       if (!i) return;
       m.DaysCover = i.daysCover; m.PlanStatus = i.status; m.PlanStatusText = i.statusText; m.PlanRate = i.rate; m.RunOutDate = i.runOutDate || "";
       m.PlanSuggest = i.suggestQty;   // ใบขอซื้อหน้าคอมใช้ (เดิมคิดเอง ใช้/วัน × 30 ไม่ตรงจอวางแผน)
+      // เบิกเฉลี่ย/วัน · ต่อวันที่เบิก · เบิกกี่วันจากกี่วัน — ข้อความใต้ชื่อ (หน้าคอม) / แผ่นทำรายการ (มือถือ) · คิดที่นี่ที่เดียว
+      m.PlanActual30 = i.actual30; m.PlanPerUse = i.perUse; m.PlanUseDays = i.activeDays30; m.PlanObsDays = Math.min(30, i.obsDays || 30);
     });
   } catch (e) { /* คิดแผนไม่ได้ = รายการยังมาครบ หน้าจอแค่ไม่มีวันพอใช้ */ }
   return res;
@@ -277,7 +291,8 @@ function planMessage(module, p, detail) {
   const lines = urgent.slice(0, 15).map((x) => {
     const cover = x.daysCover === null ? "" : " · พอใช้ " + fmtN(x.daysCover) + " วัน";
     const sug = showSug(x) ? "\n     → แนะนำสั่ง " + fmtN(x.suggestQty) + " " + x.unit : "";
-    return x.icon + " " + x.name + " — เหลือ " + fmtN(x.qty) + " " + x.unit + cover + " (รอของ " + x.leadDays + " วัน)" + sug;
+    const next = x.shortNext ? "\n     ⚠️ ไม่พอเบิกวันผลิตถัดไป (วันที่เบิกใช้ ~" + fmtN(rn(x.perUse)) + " " + x.unit + ")" : "";
+    return x.icon + " " + x.name + " — เหลือ " + fmtN(x.qty) + " " + x.unit + cover + " (รอของ " + x.leadDays + " วัน)" + next + sug;
   });
   return head + "\n\n" + lines.join("\n") + more(urgent.length, 15) + "\n\nดูรายละเอียดและจำนวนที่แนะนำ: เปิดแอป → 📈 วางแผนสั่งซื้อ";
 }

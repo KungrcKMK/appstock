@@ -257,7 +257,7 @@ export async function ticks(c, via) {
       if (!tok) continue;
       try {
         const r = await planDigest(c, { channels: [ch], day });
-        // พลาดแบบชั่วคราว (เครือข่าย/หมดเวลา/5xx) → คืนสิทธิ์ ให้ cron รอบถัดไปในชั่วโมงเดียวกันลองใหม่ · 429/4xx ไม่คืน (ลองซ้ำก็ไม่ผ่าน + LINE กินโควตา)
+        // พลาดแบบชั่วคราว (เครือข่าย/หมดเวลา/5xx · Telegram 429 = รอ N วินาที) → คืนสิทธิ์ ให้ cron รอบถัดไปในชั่วโมงเดียวกันลองใหม่ · LINE 429 (โควตาหมด)/4xx ไม่คืน
         if (r && r.retry && r.retry.indexOf(ch) >= 0) await release(c, ck, tok);
       } catch (e) { await sysLog(c, "cron-error", "planDigest(" + ch + "): " + e, "-", "error"); }
     }

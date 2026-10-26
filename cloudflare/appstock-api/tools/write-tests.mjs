@@ -754,7 +754,7 @@ console.log("15) QA 2026-10-10 — ยอดติดลบตอนสร้า
   for (const [sku] of cases) await raw("DELETE", { sku });
 }
 
-console.log("16) ส่งสรุปเข้ากลุ่ม: บันทึกทุกรอบ · พลาดชั่วคราวคืนสิทธิ์ให้ลองใหม่ · 429/4xx ไม่ลองซ้ำ · ลายเซ็นเขียนเฉพาะตอนสำเร็จ · สำเนาชีตลองซ้ำ (2026-10-20)");
+console.log("16) ส่งสรุปเข้ากลุ่ม: บันทึกทุกรอบ · พลาดชั่วคราวคืนสิทธิ์ให้ลองใหม่ (Telegram 429 ด้วย) · LINE 429/4xx ไม่ลองซ้ำ · ลายเซ็นเขียนเฉพาะตอนสำเร็จ · สำเนาชีตลองซ้ำ (2026-10-20)");
 {
   const { createServer } = await import("node:http");
   const { createHmac } = await import("node:crypto");
@@ -775,8 +775,11 @@ console.log("16) ส่งสรุปเข้ากลุ่ม: บันท�
     try { return await tgSendRaw(fc, "ทดสอบ", true); } finally { globalThis.fetch = realFetch; }
   };
   const t500 = await tgWith([500, 502]), tNet = await tgWith(["net", "net"]), t429 = await tgWith([429, 429]), t403 = await tgWith([403, 400]), tHalf = await tgWith([200, 500]), tOk = await tgWith([200, 200]);
+  const tMix = await tgWith([429, 403]);
   T("Telegram 5xx / เครือข่ายล่ม → ลองใหม่ได้ (retry)", t500.sent === false && t500.retry === true && tNet.retry === true, [t500, tNet]);
-  T("Telegram 429 / 4xx → ไม่ลองซ้ำ", t429.retry === false && t403.retry === false, [t429, t403]);
+  // 429 ของ Telegram = "รอ N วินาที" ชั่วคราว (24 ต.ค. 2026 เจอจริงหลังหมดเวลาหลายรอบ แล้วระบบหยุดลองทั้งวัน) → ลองใหม่ได้
+  T("Telegram 429 (ส่งถี่ไป) → ลองใหม่ได้ · 4xx อื่น (token ผิด/บอทถูกเตะ) → ไม่ลองซ้ำ · ปนกัน → ไม่ลองซ้ำ",
+    t429.retry === true && t403.retry === false && tMix.retry === false, [t429, t403, tMix]);
   T("Telegram ได้บางแชทแล้ว → ไม่ลองซ้ำ (กันแชทที่ได้แล้วได้ซ้ำ)", tHalf.sent === false && tHalf.retry === false, tHalf);
   T("Telegram สำเร็จ → บอกจำนวนแชทที่ส่งถึง", tOk.sent === true && tOk.chats === 2, tOk);
 

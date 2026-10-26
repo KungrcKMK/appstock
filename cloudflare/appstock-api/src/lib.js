@@ -280,7 +280,9 @@ export async function tgSendRaw(c, message, force) {
         if (result.ok) { okN++; return; }
         errors.push(chatId + ": " + result.description);
       } catch (ex) { errors.push(chatId + ": " + String(ex)); }
-      if (st === 0 || st >= 500) soft++;   // เครือข่าย/หมดเวลา/5xx = ลองใหม่ได้ · 429 และ 4xx อื่น ลองซ้ำก็ไม่ผ่าน
+      // เครือข่าย/หมดเวลา/5xx/429 = ลองใหม่ได้ · 4xx อื่น (token ผิด/บอทถูกเตะ) ลองซ้ำก็ไม่ผ่าน
+      // 429 ของ Telegram = "รอ N วินาที" ชั่วคราว ไม่มีโควตาแบบ LINE (24 ต.ค. 2026 หมดเวลา 7 รอบแล้วเจอ 429 → หยุดลองทั้งวัน สรุป SQF ไม่ได้ส่ง)
+      if (st === 0 || st === 429 || st >= 500) soft++;
     }));
     // retry = พลาดแบบชั่วคราวทุกแชท และยังไม่มีแชทไหนได้รับ (ได้บางแชทแล้วส่งซ้ำ = แชทนั้นได้ 2 รอบ)
     if (errors.length) return { sent: false, reason: errors.join(", "), chats: chatIds.length, retry: !okN && soft === errors.length };

@@ -225,6 +225,29 @@ console.log("4) ตรรกะคิวออฟไลน์ (js/offline.js)");
     else bad(f + " ไม่มีหรือว่าง — รัน npm run build:css");
   }
 
+  // ── 6. เครื่องมือกู้คืนจากไฟล์สำรอง (ไฟล์สำรองปลอมใน temp — ไม่มีข้อมูลจริง) ──
+  console.log("6) เครื่องมือกู้คืน (cloudflare/appstock-api/tools/restore-from-backup.mjs)");
+  {
+    const os = require("os"), tool = path.join(root, "cloudflare/appstock-api/tools/restore-from-backup.mjs");
+    const dir = fs.mkdtempSync(path.join(os.tmpdir(), "appstock_restore_"));
+    const run = (sheets, out) => {
+      fs.writeFileSync(path.join(dir, "b.json"), JSON.stringify({ sheets }));
+      try { return { code: 0, out: execFileSync(process.execPath, [tool, path.join(dir, "b.json"), out], { stdio: "pipe" }).toString() }; }
+      catch (e) { return { code: e.status, out: String(e.stderr || "") }; }
+    };
+    const sheets = {
+      SQF_Materials: [["module", "sku", "name", "qty", "lead_days", "expiry_date"], ["SQF", "A'1", "แป้ง", 5, "", ""]],
+      RM_Lots: [["id", "module", "sku", "recv_date", "qty_left", "name", "unit"], [1, "SQF", "A'1", "", 5, "แป้ง", "กก."]],
+    };
+    const sql = path.join(dir, "r.sql"), r = run(sheets, sql), txt = r.code === 0 ? fs.readFileSync(sql, "utf8") : "";
+    T("แปลงได้ · ช่องที่ว่างได้กลับเป็น NULL · ช่องข้อความว่างยังเป็น '' · escape ' ในข้อความ",
+      r.code === 0 && txt.includes("VALUES ('SQF', 'A''1', 'แป้ง', 5, NULL, '')") && /"materials":1/.test(r.out));
+    T("ตัดคอลัมน์ที่ไม่ใช่ของตาราง (ชื่อ/หน่วยใน RM_Lots)", /INSERT INTO rm_lots \(id, module, sku, recv_date, qty_left\) VALUES/.test(txt));
+    T("ไฟล์สำรองมีแผ่นที่ไม่รู้จัก → หยุด", run({ Mystery: [["a"], [1]] }, sql).code === 1);
+    T("ห้ามเขียน SQL ลงใน repo", run(sheets, path.join(root, "restore-test.sql")).code === 1 && !fs.existsSync(path.join(root, "restore-test.sql")));
+    fs.rmSync(dir, { recursive: true, force: true });
+  }
+
   console.log(`\nสรุป: ผ่าน ${passes} · ไม่ผ่าน ${fails}`);
   process.exit(fails ? 1 : 0);
 })();

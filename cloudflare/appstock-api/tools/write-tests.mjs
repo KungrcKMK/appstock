@@ -1146,5 +1146,49 @@ console.log("20) ผู้ขาย (AVL) — รับเข้าพร้อ�
   await raw("DELETE", { sku: SKU }, tok, M);
 }
 
+console.log("21) สืบย้อนกลับ (QP-QC-17 / FM-QC-07 ข้อ 5.4) — ผลิตภัณฑ์+วันผลิต → วัตถุดิบ/ล็อต/ผู้ขาย · ล็อต → ผลิตภัณฑ์ (2026-11-27)");
+{
+  const M = "SQF", SKU = "TRC" + Date.now(), t = String(Date.now()).slice(-6);
+  const S1 = "ผู้ขายสืบ ก " + t, S2 = "ผู้ขายสืบ ข " + t, P1 = "เก๊กฮวยทดสอบ" + t, P1b = "เก็กฮวย ทดสอบ" + t, P2 = "แห้วทดสอบ" + t;
+  const thDay = (add) => new Date(Date.now() + 7 * 3600000 + add * 86400000).toISOString().slice(0, 10);
+  const today = thDay(0), be = (d) => d.slice(8, 10) + "/" + d.slice(5, 7) + "/" + String(Number(d.slice(0, 4)) + 543).slice(-2);
+  await raw("CREATE", { sku: SKU, name: "ทดสอบสืบ " + SKU, unit: "กก.", qty: 0, min: 0 }, tok, M);
+  const rA = await raw("UPDATE", { sku: SKU, type: "IN", qty: 5, recvDate: thDay(-3), lotNo: "LA", supplier: S1 }, tok, M);
+  const rB = await raw("UPDATE", { sku: SKU, type: "IN", qty: 10, recvDate: thDay(-1), supplier: S2 }, tok, M);
+  // เมื่อวาน: เบิก 1 ให้ P1 (ส่งช้า — ทดสอบตัวเลือกรวมวันก่อนหน้า)
+  const oY = await raw("UPDATE", { sku: SKU, type: "OUT", qty: 1, purpose: P1, clientAt: new Date(Date.now() - 86400000).toISOString() }, tok, M);
+  const o1 = await raw("UPDATE", { sku: SKU, type: "OUT", qty: 6, purpose: P1 }, tok, M);    // ตัดล็อต ก ที่เหลือ 4 + ล็อต ข 2
+  const o2 = await raw("UPDATE", { sku: SKU, type: "OUT", qty: 2, purpose: P2 }, tok, M);
+  const o3 = await raw("UPDATE", { sku: SKU, type: "OUT", qty: 3, purpose: P1b }, tok, M);   // สะกดต่าง = ผลิตภัณฑ์เดียวกัน
+  T("เตรียมข้อมูล: รับ 2 ล็อต (2 ผู้ขาย) · เบิก 4 ใบ", [rA, rB, oY, o1, o2, o3].every((r) => r.status === "success"), [rA, rB, oY, o1, o2, o3].map((r) => r.status + ":" + (r.message || "")));
+  const pl = await raw("TRACE", {}, tok, M);
+  const pk = (pl.products || []).find((p) => p.variants.includes(P1));
+  T("รายชื่อผลิตภัณฑ์: รวม เก๊กฮวย/เก็กฮวย ที่ต่างแค่วรรณยุกต์และช่องว่าง เป็นตัวเดียว", pl.status === "success" && pk && pk.variants.includes(P1b) && pk.n === 3, pk);
+  const b0 = await raw("TRACE", { product: P1, date: today }, tok, M);
+  const mine = (b0.items || []).filter((i) => i.sku === SKU), oth = (b0.others || []).filter((o) => o.name.endsWith(SKU));
+  const iA = mine.find((i) => i.supplier === S1), iB = mine.find((i) => i.supplier === S2);
+  T("ผลิตภัณฑ์+วันผลิต (วันนี้) → ล็อต ก 4 + ล็อต ข 5 (รวมใบที่สะกดต่าง) · ไม่รวมของเมื่อวาน", b0.status === "success" && mine.length === 2 && iA && iA.qty === 4 && iB && iB.qty === 5 && b0.lotCode === be(today), mine);
+  T("ล็อตบอกวันรับ/เลขล็อต/ผู้ขาย + ใบรับ/ผู้ตรวจรับ + ใบเบิก", iA && iA.lot === "รับ " + be(thDay(-3)) + " · LA · " + S1 && iA.lotNo === "LA" &&
+    iA.receipts.length === 1 && iA.receipts[0].docNo === rA.docNo && iA.receipts[0].user === USER && iA.outDocs.includes(o1.docNo) && iB.outDocs.length === 2, [iA, iB]);
+  T("ใบเบิกวันเดียวกันที่ระบุงานอื่น แสดงแยก ไม่ซ่อน", oth.length === 1 && oth[0].product === P2 && oth[0].qty === 2 && oth[0].docNo === o2.docNo, oth);
+  T("บอกคำที่รวมเข้ามา", b0.variants.includes(P1) && b0.variants.includes(P1b), b0.variants);
+  const b1 = await raw("TRACE", { product: P1b, date: today, prevDays: 1 }, tok, M);
+  const iA1 = (b1.items || []).find((i) => i.sku === SKU && i.supplier === S1);
+  T("ติ๊กรวมวันก่อนหน้า → รวมใบเบิกเมื่อวาน (ล็อต ก 5)", b1.status === "success" && iA1 && iA1.qty === 5 && iA1.outDocs.includes(oY.docNo), iA1);
+  const bad1 = await raw("TRACE", { product: P1, date: "2569-11-01x" }, tok, M), bad2 = await raw("TRACE", { product: " ", date: today }, tok, M);
+  T("วันผลิตผิดรูปแบบ / ไม่เลือกผลิตภัณฑ์ → ปฏิเสธ", bad1.status === "error" && bad2.status === "error", [bad1.message, bad2.message]);
+  // Forword: ล็อต → ผลิตภัณฑ์ (รวมล็อตที่หมดแล้ว)
+  const fl = await raw("TRACE", { mode: "fwd", sku: SKU }, tok, M);
+  const lotA = (fl.lots || []).find((l) => l.Supplier === S1);
+  T("รายการล็อตให้เลือก รวมล็อตที่หมดแล้ว (ล็อต ก เหลือ 0)", fl.status === "success" && fl.lots.length === 2 && lotA && lotA.Qty === 0 && lotA.QtyIn === 5, fl.lots);
+  const fw = await raw("TRACE", { mode: "fwd", sku: SKU, lotId: lotA.Id }, tok, M);
+  T("ล็อต ก → ใบเบิก 2 ใบ: เมื่อวาน 1 + วันนี้ 4 พร้อมผลิตภัณฑ์/วันที่ (= Lot ผลิต) · ใบรับ/ผู้ตรวจรับ",
+    fw.status === "success" && fw.uses.length === 2 && fw.uses.map((u) => u.qty).join(",") === "1,4" && fw.uses.every((u) => u.product === P1) &&
+    fw.uses[1].date === be(today) && fw.uses[1].docNo === o1.docNo && fw.lot.receipts[0].docNo === rA.docNo && fw.lot.Supplier === S1, fw);
+  T("ล็อต/วัตถุดิบไม่มีจริง → ปฏิเสธ", (await raw("TRACE", { mode: "fwd", sku: SKU, lotId: 999999999 }, tok, M)).status === "error" &&
+    (await raw("TRACE", { mode: "fwd", sku: "NOPE-X" }, tok, M)).status === "error");
+  await raw("DELETE", { sku: SKU }, tok, M);
+}
+
 console.log(`\nสรุป: ผ่าน ${pass} · ไม่ผ่าน ${fail}`);
 process.exit(fail ? 1 : 0);

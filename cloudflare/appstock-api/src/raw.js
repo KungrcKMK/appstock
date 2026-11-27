@@ -67,6 +67,8 @@ async function addHistory(c, module, row) {
 
 // ───────────── ผู้ขาย (AVL · SD-PC-01) ─────────────
 //   ชื่อผู้ขายเก็บเป็นข้อความในล็อต (rm_lots.supplier) — รายชื่อนี้มีไว้เติมให้เลือก + บอก "นอก AVL" ไม่บล็อกการรับ
+const noDevice = (u) => String(u || "").replace(/\s*\(\s*📱[\s\S]*$/, "").trim();   // ตัดชื่อเครื่อง "(📱 ...)" แบบเดียวกับ personName (js/utils.js)
+const beDate = (ymd) => { const m = String(ymd || "").match(/^(\d{4})-(\d{2})-(\d{2})$/); return m ? m[3] + "/" + m[2] + "/" + String(Number(m[1]) + 543).slice(-2) : ""; };
 const supName = (v) => String(v == null ? "" : v).replace(/\s+/g, " ").trim().slice(0, 80);
 const supList = async (c, module) =>
   (await all(c, "SELECT name, active FROM suppliers WHERE module = ? ORDER BY name", module)).map((r) => ({ Name: r.name, Active: Number(r.active) === 1 }));
@@ -91,18 +93,93 @@ export async function rmRecvReg(c, data, module) {
   const rows = await all(c, "SELECT h.ts, h.doc_no, h.sku, h.name, h.qty, h.unit, h.user, l.recv_date, l.lot_no, l.exp_date, l.supplier FROM history h " +
     "LEFT JOIN rm_lots l ON l.id = (SELECT mv.lot_id FROM rm_lot_moves mv WHERE mv.module = h.module AND mv.op_id = h.op_id AND mv.qty > 0 ORDER BY mv.id LIMIT 1) " +
     "WHERE h.module = ? AND h.action = ? ORDER BY h.id", module, RM_TYPES.IN.label);
-  const be = (ymd) => { const m = String(ymd || "").match(/^(\d{4})-(\d{2})-(\d{2})$/); return m ? m[3] + "/" + m[2] + "/" + String(Number(m[1]) + 543).slice(-2) : ""; };
   const out = [];
   for (const h of rows) {
     const day = h.recv_date || fmtTH(h.ts, "yyyy-MM-dd");
     if (!day.startsWith(ym + "-")) continue;
     const sup = h.supplier || "";
-    out.push({ day, date: be(day), docNo: h.doc_no || "", sku: String(h.sku || ""), name: h.name, qty: Number(h.qty), unit: h.unit || "",
-               user: String(h.user || "").replace(/\s*\(\s*📱[\s\S]*$/, "").trim(), lotNo: h.lot_no || "", exp: be(h.exp_date), supplier: sup,
+    out.push({ day, date: beDate(day), docNo: h.doc_no || "", sku: String(h.sku || ""), name: h.name, qty: Number(h.qty), unit: h.unit || "",
+               user: noDevice(h.user), lotNo: h.lot_no || "", exp: beDate(h.exp_date), supplier: sup,
                flag: !sup ? "ไม่ระบุผู้ขาย" : avl.size && !avl.has(sup) ? "นอก AVL" : "" });
   }
   out.sort((a, b) => (a.day < b.day ? -1 : a.day > b.day ? 1 : 0));   // วันที่รับก่อนหลัง · วันเดียวกันคงลำดับที่บันทึก
   return { status: "success", month: ym, rows: out, avlCount: avl.size };
+}
+
+// ───────────── 🔎 สืบย้อนกลับ (QP-QC-17 · ใบแนบ FM-QC-07 ข้อ 5.4) — อ่านอย่างเดียว ─────────────
+//   back = ผลิตภัณฑ์ + วันผลิต → ใบเบิกวันนั้นที่ "ใช้กับงาน" ตรง + ล็อตที่ตัด ผู้ขาย ใบรับ (ใบเบิกวันเดียวกันที่ระบุงานอื่น = others ไม่ซ่อน)
+//   fwd  = วัตถุดิบ + ล็อต → ทุกใบเบิกที่ตัดจากล็อตนั้น (วันที่เบิก = Lot ผลิต วว/ดด/ปป)
+//   ชื่อผลิตภัณฑ์ = ช่อง "ใช้กับงาน" ที่ตัดวรรณยุกต์/ไม้ไต่คู้/การันต์/ช่องว่าง (เก็กฮวย = เก๊กฮวย)
+const trKey = (s) => String(s == null ? "" : s).replace(/[็-์\s]/g, "").toLowerCase();
+async function trReceipts(c, module) {   // ล็อต → ใบรับที่เติมเข้าล็อตนั้น (ล็อตเดียวรวมได้หลายใบ: วัน/เลขล็อต/วันหมดอายุ/ผู้ขายเดียวกัน)
+  const map = {};
+  for (const r of await all(c, "SELECT mv.lot_id, h.doc_no, h.user FROM rm_lot_moves mv JOIN history h ON h.module = mv.module AND h.op_id = mv.op_id " +
+      "WHERE mv.module = ? AND mv.qty > 0 AND h.action = ? ORDER BY mv.id", module, RM_TYPES.IN.label))
+    (map[r.lot_id] = map[r.lot_id] || []).push({ docNo: r.doc_no, user: noDevice(r.user) });
+  return map;
+}
+export async function rmTrace(c, data, module) {
+  const OUT = RM_TYPES.OUT.label;
+  if (data.mode === "fwd") {
+    const sku = String(data.sku == null ? "" : data.sku);
+    const m = await first(c, "SELECT sku, name, unit FROM materials WHERE module = ? AND sku = ?", module, sku);
+    if (!m) return { status: "error", message: "ไม่พบวัตถุดิบนี้" };
+    if (!data.lotId) {   // รายการล็อตให้เลือก — รวมล็อตที่หมดแล้ว (เรียกคืนต้องดูของที่ใช้ไปแล้วด้วย)
+      const lots = await all(c, "SELECT id, recv_date, lot_no, exp_date, supplier, qty_in, qty_left FROM rm_lots WHERE module = ? AND sku = ? ORDER BY recv_date DESC, id DESC", module, sku);
+      return { status: "success", mode: "fwd", sku, lots: lots.map((l) => ({ Id: l.id, Label: lotLabel(l), Supplier: l.supplier, QtyIn: Number(l.qty_in), Qty: Number(l.qty_left) })) };
+    }
+    const lot = await lotGet(c, module, sku, data.lotId);
+    if (!lot) return { status: "error", message: "ไม่พบล็อตนี้" };
+    const moves = await all(c, "SELECT h.ts, h.action, h.doc_no, h.purpose, h.user, mv.qty FROM rm_lot_moves mv JOIN history h ON h.module = mv.module AND h.op_id = mv.op_id " +
+      "WHERE mv.module = ? AND mv.lot_id = ? ORDER BY mv.id", module, lot.id);
+    const uses = [], other = [];
+    for (const r of moves) {
+      const row = { day: fmtTH(r.ts, "yyyy-MM-dd"), date: beDate(fmtTH(r.ts, "yyyy-MM-dd")), action: r.action, docNo: r.doc_no || "", product: r.purpose || "", qty: Math.abs(Number(r.qty)), user: noDevice(r.user) };
+      if (r.action === OUT && Number(r.qty) < 0) uses.push(row);
+      else if (r.action !== RM_TYPES.IN.label) other.push(Object.assign(row, { sign: Number(r.qty) < 0 ? "-" : "+" }));   // คืน / ตรวจนับ / แก้ล็อต
+    }
+    return { status: "success", mode: "fwd", sku, name: m.name, unit: m.unit || "",
+             lot: { Id: lot.id, Label: lotLabel(lot), RecvDate: lot.recv_date, LotNo: lot.lot_no, ExpDate: lot.exp_date, Supplier: lot.supplier, QtyIn: Number(lot.qty_in), Qty: Number(lot.qty_left),
+                    receipts: (await trReceipts(c, module))[lot.id] || [] },
+             uses, other };
+  }
+  // back — ไม่ส่งผลิตภัณฑ์มา = ขอรายชื่อผลิตภัณฑ์ (จากช่องใช้กับงานของใบเบิก รวมคำที่สะกดต่าง)
+  if (!data.product) {
+    const g = {};
+    for (const r of await all(c, "SELECT purpose, COUNT(*) AS n FROM history WHERE module = ? AND action = ? AND purpose <> '' GROUP BY purpose", module, OUT)) {
+      const k = trKey(r.purpose);
+      if (!k) continue;
+      const x = g[k] || (g[k] = { key: k, label: r.purpose, top: 0, n: 0, variants: [] });
+      x.n += Number(r.n); x.variants.push(r.purpose);
+      if (Number(r.n) > x.top) { x.top = Number(r.n); x.label = r.purpose; }   // ชื่อที่ใช้บ่อยสุดเป็นชื่อแสดง
+    }
+    return { status: "success", mode: "back", products: Object.values(g).sort((a, b) => b.n - a.n).map(({ key, label, n, variants }) => ({ key, label, n, variants })) };
+  }
+  const key = trKey(data.product), day = lotYmd(data.date), prev = data.prevDays ? 1 : 0;
+  if (!key) return { status: "error", message: "เลือกผลิตภัณฑ์" };
+  if (!day) return { status: "error", message: "วันผลิตไม่ถูกต้อง" };
+  const endMs = Date.parse(day + "T00:00:00Z") + DAY_MS - TZ_MS, startMs = endMs - (prev + 1) * DAY_MS;   // วันไทย → ช่วงเวลา UTC
+  const rows = await all(c, "SELECT h.id, h.ts, h.sku, h.name, h.qty, h.unit, h.user, h.doc_no, h.purpose, l.id AS lot_id, l.recv_date, l.lot_no, l.exp_date, l.supplier, mv.qty AS mq " +
+    "FROM history h LEFT JOIN rm_lot_moves mv ON mv.module = h.module AND mv.op_id = h.op_id AND mv.qty < 0 LEFT JOIN rm_lots l ON l.id = mv.lot_id " +
+    "WHERE h.module = ? AND h.action = ? AND h.ts >= ? AND h.ts < ? ORDER BY h.id, mv.id",
+    module, OUT, new Date(startMs).toISOString(), new Date(endMs).toISOString());
+  const rec = await trReceipts(c, module), items = {}, others = [], variants = new Set();
+  for (const r of rows) {
+    const q = r.lot_id ? Math.abs(Number(r.mq)) : Number(r.qty);
+    const lotTxt = r.lot_id ? lotLabel(r) : "ไม่มีข้อมูลล็อต";
+    if (trKey(r.purpose) !== key) {
+      others.push({ date: beDate(fmtTH(r.ts, "yyyy-MM-dd")), name: r.name, product: r.purpose || "", qty: q, unit: r.unit || "", docNo: r.doc_no || "", lot: lotTxt });
+      continue;
+    }
+    variants.add(r.purpose);
+    const k = r.sku + "|" + (r.lot_id || "none");
+    const it = items[k] || (items[k] = { sku: String(r.sku), name: r.name, unit: r.unit || "", lot: lotTxt, lotNo: r.lot_no || "", exp: beDate(r.exp_date), supplier: r.supplier || "",
+      old: !!r.lot_id && !r.recv_date, noLot: !r.lot_id, qty: 0, outDocs: [], receipts: r.lot_id ? rec[r.lot_id] || [] : [] });
+    it.qty = Math.round((it.qty + q) * 1000) / 1000;
+    if (r.doc_no && !it.outDocs.includes(r.doc_no)) it.outDocs.push(r.doc_no);
+  }
+  return { status: "success", mode: "back", product: String(data.product), variants: [...variants], date: day, lotCode: beDate(day), prevDays: prev,
+           items: Object.values(items).sort((a, b) => a.name.localeCompare(b.name, "th")), others };
 }
 
 // ───────────── อ่านคลัง (GET ?module=) ─────────────
@@ -632,7 +709,7 @@ export async function rmPd07(c, data, module) {
   const lotOf = {};   // op_id → "ยอดยกมา 30 · รับ 02/10/69 20"
   for (const r of await all(c, "SELECT mv.op_id, mv.qty, l.recv_date, l.lot_no, l.supplier FROM rm_lot_moves mv JOIN rm_lots l ON l.id = mv.lot_id WHERE mv.module = ? ORDER BY mv.id", module))
     (lotOf[r.op_id] = lotOf[r.op_id] || []).push(lotLabel(r) + " " + Math.abs(Number(r.qty)).toLocaleString("en-US", { maximumFractionDigits: 3 }));
-  const r3 = (n) => Math.round(n * 1000) / 1000, who = (u) => String(u || "").replace(/\s*\(\s*📱[\s\S]*$/, "").trim();   // ตัดชื่อเครื่องแบบเดียวกับ personName (js/utils.js)
+  const r3 = (n) => Math.round(n * 1000) / 1000, who = noDevice;
   const st = {}, months = {};
   for (const h of rows) {
     const sku = String(h.sku || "").trim() || nameToSku[String(h.name || "").trim()] || "";
@@ -836,6 +913,7 @@ export async function handleRaw(c, action, data, module, extra) {
     case "SLIPINFO": return rmSlipInfo(c, data, module);
     case "PD07": return rmPd07(c, data, module);
     case "RECVREG": return rmRecvReg(c, data, module);
+    case "TRACE": return rmTrace(c, data, module);
     case "SUPPLIERSET": return rmSupplierSet(c, data, module);
     case "DOCREVSET": return rmDocRevSet(c, data);
     case "ACKDOC": return rmAckDocs(c, data, module);

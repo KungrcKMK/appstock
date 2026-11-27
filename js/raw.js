@@ -255,6 +255,7 @@ function _rawApplyData(data, startup, source, at, opts = {}) {
   window._rawDiscontinued = data.discontinued || [];
   if (data.staleDays !== undefined) window._rawStaleDays = Number(data.staleDays) || 0;
   if (data.lotAgeDays !== undefined) window._rawLotAgeDays = Number(data.lotAgeDays) || 0;
+  if (Array.isArray(data.suppliers)) { window._rawSuppliers = data.suppliers; rawSupFillList(); }   // 🏭 รายชื่อผู้ขายของโรงงานนี้
   rawUpdateStaleUi();
   window._rawDataAt = at || Date.now();   // เวลาของข้อมูลที่อยู่บนจอ (ไว้ขึ้นป้ายเมื่อตรวจข้อมูลใหม่ไม่ได้)
   rawSetDataAge(source || "server", at);
@@ -1019,6 +1020,9 @@ function openRawAction(sku, name, unit, currentQty) {
   const _lw = document.getElementById("rawLotWrap");
   if (_lw) _lw.open = false;
   [["rawLotRecv", rawTodayYmd()], ["rawLotNo", ""], ["rawLotExp", ""]].forEach(([id, v]) => { const el = document.getElementById(id); if (el) el.value = v; });
+  // 🏭 ผู้ขาย: เติมรายล่าสุดของรายการนี้ (แก้ได้)
+  const _sup = document.getElementById("rawSupIn");
+  if (_sup) { _sup.value = (rawItemOf(sku) || {}).LastSupplier || ""; rawSupCheck("rawSupIn", "rawSupNote"); }
   rawFillPurposeList();
   rawFillWorkOrders();
   document.getElementById("rawModalStock").style.color =
@@ -1137,13 +1141,15 @@ function rawLotFormOpen(id) {
   document.getElementById("rawLotEdRecv").value = l.RecvDate || "";
   document.getElementById("rawLotEdNo").value = l.LotNo || "";
   document.getElementById("rawLotEdExp").value = l.ExpDate || "";
+  document.getElementById("rawLotEdSup").value = l.Supplier || "";
   document.getElementById("rawLotEdQty").value = l.Qty;
   document.getElementById("rawLotEdUnit").textContent = "(" + (item.Unit || "") + ")";
   rawFieldErrorsClear("rawLotEdQty");
   const f = document.getElementById("rawLotForm");
   f.hidden = false;
   f.scrollIntoView({ block: "nearest" });
-  setTimeout(() => document.getElementById("rawLotEdRecv")?.focus(), 30);
+  // ไม่โฟกัสช่องวันที่ให้เอง — เจอเบราว์เซอร์ล้างค่าช่องวันที่ที่ถูกโฟกัสด้วยโค้ดแล้วคลิกที่อื่น (ล็อตกลายเป็นยอดยกมา · 2026-11-27)
+  setTimeout(() => document.getElementById("rawLotEdNo")?.focus(), 30);
 }
 function rawLotFormClose() { _rawLotEditId = null; const f = document.getElementById("rawLotForm"); if (f) f.hidden = true; }
 async function rawLotSend(body, label) {
@@ -1164,15 +1170,17 @@ async function rawLotSave() {
   const rd = document.getElementById("rawLotEdRecv").value || "";
   const ln = document.getElementById("rawLotEdNo").value.trim();
   const ex = document.getElementById("rawLotEdExp").value || "";
+  const sp = document.getElementById("rawLotEdSup").value.trim();
   const qs = String(document.getElementById("rawLotEdQty").value || "").replace(/,/g, "").trim();
   const q = Number(qs);
   if (qs === "" || isNaN(q) || q < 0) { rawFieldError("rawLotEdQty", "ใส่จำนวนที่เหลือจริงเป็นตัวเลข 0 ขึ้นไป"); return; }
   if (rd && rd > rawTodayYmd() && !confirm("วันที่รับเข้า " + rawYmdThai(rd) + " เป็นวันในอนาคต\n\nยืนยันบันทึกตามนี้?")) return;
+  if (l.RecvDate && !rd && !confirm("ช่องวันที่รับว่าง — ล็อตนี้จะกลายเป็น \"ยอดยกมา\" (ไม่รู้วันรับ)\n\nยืนยัน? ถ้าไม่ได้ตั้งใจ กดยกเลิกแล้วใส่วันที่รับ " + rawYmdThai(l.RecvDate))) return;
   const diff = Math.round((q - l.Qty) * 1000) / 1000, u = item.Unit || "";
-  if (!diff && rd === (l.RecvDate || "") && ln === (l.LotNo || "") && ex === (l.ExpDate || "")) { showToast("ยังไม่ได้แก้อะไร", "warn"); return; }
+  if (!diff && rd === (l.RecvDate || "") && ln === (l.LotNo || "") && ex === (l.ExpDate || "") && sp === (l.Supplier || "")) { showToast("ยังไม่ได้แก้อะไร", "warn"); return; }
   if (diff && !confirm(`แก้จำนวนล็อต ${l.Label} จาก ${rawLotNum(l.Qty)} เป็น ${rawLotNum(q)} ${u}\n\nยอดคงเหลือของรายการจะ${diff > 0 ? "เพิ่ม" : "ลด"} ${rawLotNum(Math.abs(diff))} ${u} (ลงประวัติเป็น ตรวจนับ/ปรับยอด)\n\nยืนยัน?`)) return;
   setRawBusy("rawLotSaveBtn", true, "กำลังบันทึก...");
-  const ok = await rawLotSend({ lotId: l.Id, recvDate: rd, lotNo: ln, expDate: ex, qty: q, seenQty: l.Qty }, `แก้ล็อต ${item.Name} ${l.Label}`);
+  const ok = await rawLotSend({ lotId: l.Id, recvDate: rd, lotNo: ln, expDate: ex, supplier: sp, qty: q, seenQty: l.Qty }, `แก้ล็อต ${item.Name} ${l.Label}`);
   setRawBusy("rawLotSaveBtn", false);
   if (ok) { rawLotFormClose(); showToast("บันทึกล็อตแล้ว", "success"); }
 }
@@ -1225,9 +1233,11 @@ function setRawType(t) {
   if (_req) _req.style.display = (t === "OUT") ? "" : "none";
   if (_pin) _pin.placeholder = (t === "OUT")
     ? "เช่น ผลิตวุ้นมะพร้าว ล็อต 3"
-    : "ระบุหรือไม่ก็ได้ เช่น รับจากซัพพลายเออร์ ก";
+    : "ระบุหรือไม่ก็ได้";
   const _lw = document.getElementById("rawLotWrap");
   if (_lw) _lw.hidden = t !== "IN";   // ข้อมูลล็อตมีเฉพาะตอนรับเข้า
+  const _sw = document.getElementById("rawSupWrap");
+  if (_sw) _sw.hidden = t !== "IN";   // ผู้ขายมีเฉพาะตอนรับเข้า
   rawUpdateAfter();
 }
 
@@ -1433,7 +1443,8 @@ async function rawSubmitAction() {
   if (type === "IN") {
     const rd = document.getElementById("rawLotRecv")?.value || "";
     if (rd && rd > rawTodayYmd() && !confirm("วันที่รับเข้า " + rawYmdThai(rd) + " เป็นวันในอนาคต\n\nยืนยันบันทึกตามนี้?")) return;
-    lot = { recvDate: rd, lotNo: (document.getElementById("rawLotNo")?.value || "").trim(), expDate: document.getElementById("rawLotExp")?.value || "" };
+    lot = { recvDate: rd, lotNo: (document.getElementById("rawLotNo")?.value || "").trim(), expDate: document.getElementById("rawLotExp")?.value || "",
+            supplier: (document.getElementById("rawSupIn")?.value || "").trim() };
   }
   setRawBusy("rawBtnSubmit",true,"กำลังบันทึก...");
   const _busyText = { IN:"กำลังบันทึกรับเข้า...", RETURN:"กำลังบันทึกการคืน...", OUT:"กำลังบันทึกการเบิก..." };
@@ -1653,4 +1664,61 @@ function rawSlipFromHistory(payload) {
     s.balance = null;
     if (typeof openWithdrawSlip === "function") openWithdrawSlip(s);
   } catch (e) { showToast("เปิดใบไม่สำเร็จ", "error"); }
+}
+
+// ═══════════════════════════════════════════════════════════
+// 🏭 ผู้ขาย (AVL · SD-PC-01) — รายชื่อมาจากหลังบ้านพร้อมข้อมูลคลัง (data.suppliers)
+//   ตอนรับ: เลือกหรือพิมพ์เอง · ไม่อยู่ในรายชื่อ = เตือน "นอก AVL" แต่บันทึกได้ (ไม่บล็อกงาน)
+// ═══════════════════════════════════════════════════════════
+const rawSupActive = () => (window._rawSuppliers || []).filter(s => s.Active).map(s => s.Name);
+function rawSupFillList() {
+  const dl = document.getElementById("rawSupList");
+  if (dl) dl.innerHTML = rawSupActive().map(n => `<option value="${escapeAttr(n)}">`).join("");
+  if (!document.getElementById("supModal")?.classList.contains("hidden")) rawSupRender();
+}
+function rawSupCheck(inputId, noteId) {
+  const v = (document.getElementById(inputId)?.value || "").replace(/\s+/g, " ").trim(), note = document.getElementById(noteId);
+  if (!note) return;
+  const list = rawSupActive();
+  const out = !!v && list.length > 0 && !list.includes(v);   // โรงงานที่ยังไม่มีรายชื่อ ไม่เตือน
+  note.hidden = !out;
+  note.textContent = out ? "นอก AVL — ไม่มีในรายชื่อผู้ขายที่อนุมัติ · บันทึกได้ แต่ทะเบียนรับจะขึ้นว่า นอก AVL" : "";
+}
+function rawSupOpen() {
+  document.getElementById("supTarget").textContent = rawCurrentModule === "SQF" ? "วัตถุดิบ SQF (สุพรรณคิวฟู้ดส์)" : "วัตถุดิบ MLM (แม่ละมาย)";
+  document.getElementById("supNewName").value = "";
+  rawSupRender();
+  document.getElementById("supModal").classList.remove("hidden");
+  setTimeout(() => document.getElementById("supNewName")?.focus(), 30);
+}
+function rawSupClose() { document.getElementById("supModal")?.classList.add("hidden"); }
+function rawSupRender() {
+  const box = document.getElementById("supList");
+  if (!box) return;
+  const all = (window._rawSuppliers || []).slice().sort((a, b) => (b.Active - a.Active) || a.Name.localeCompare(b.Name, "th"));
+  box.innerHTML = all.length ? all.map(s => `<div style="display:flex;align-items:center;gap:8px;padding:8px 10px;border:1.5px solid var(--sq-line);border-radius:6px;${s.Active ? "" : "background:var(--sq-raised);"}">
+      <span style="flex:1;min-width:0;font-weight:700;${s.Active ? "color:var(--sq-ink);" : "color:var(--sq-muted);text-decoration:line-through;"}">${escapeHtml(s.Name)}</span>
+      <button type="button" class="sq-btn" onclick="rawSupToggle('${escapeJsAttr(s.Name)}', ${s.Active ? "false" : "true"})">${s.Active ? "ยกเลิก" : "ใช้อีกครั้ง"}</button>
+    </div>`).join("")
+    : '<p class="sq-card-note" style="margin:0;">ยังไม่มีรายชื่อผู้ขายของโรงงานนี้ — ตอนรับพิมพ์ชื่อเองได้ (ไม่ขึ้นเตือน นอก AVL จนกว่าจะมีรายชื่อ)</p>';
+}
+async function rawSupSend(name, active) {
+  const r = await rawFetch({ action: "SUPPLIERSET", name, active, user: currentUser });
+  if (r && r.status === "success") { window._rawSuppliers = r.suppliers; rawSupFillList(); rawSupRender(); return true; }
+  if (r && r.needLogin) { handleTokenExpired(r); return false; }
+  showToast((r && r.message) || "บันทึกไม่สำเร็จ", "error");
+  return false;
+}
+async function rawSupAdd() {
+  if (rawIsBusy("supAddBtn")) return;
+  const inp = document.getElementById("supNewName"), name = inp.value.replace(/\s+/g, " ").trim();
+  if (!name) { rawFieldError("supNewName", "ใส่ชื่อผู้ขาย"); return; }
+  setRawBusy("supAddBtn", true, "กำลังเพิ่ม...");
+  const ok = await rawSupSend(name, true);
+  setRawBusy("supAddBtn", false);
+  if (ok) { inp.value = ""; showToast("เพิ่ม " + name + " แล้ว", "success"); inp.focus(); }
+}
+async function rawSupToggle(name, active) {
+  if (!active && !confirm("ยกเลิกผู้ขาย " + name + "?\n\nตอนรับจะไม่ขึ้นให้เลือก · ล็อตเก่ายังเป็นชื่อเดิม")) return;
+  if (await rawSupSend(name, active)) showToast((active ? "ใช้ " : "ยกเลิก ") + name + " แล้ว", "success");
 }

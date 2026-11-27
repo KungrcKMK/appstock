@@ -365,3 +365,63 @@ function drPd07Print() {
   </body></html>`);
   w.document.close();
 }
+
+// ทะเบียนรับวัตถุดิบ (ผู้ขาย) — ทุกใบรับของเดือนที่เลือก ตามวันที่รับจริง ไว้เทียบกับ FM-PD-03 กระดาษ · ตัวเลข/ป้าย นอก AVL คิดที่หลังบ้าน (RECVREG)
+//   เปิดหน้าต่างก่อนรอข้อมูล — เปิดหลัง await แล้วเบราว์เซอร์อาจบล็อกว่าไม่ได้มาจากการกด
+async function drRecvRegPrint() {
+  const month = document.getElementById("pd07Month").value, sku = document.getElementById("pd07Item").value;
+  if (!month) { showToast("เลือกเดือนก่อน", "warn"); return; }
+  const w = window.open("", "", "width=1200,height=820");
+  if (!w) { showToast("เบราว์เซอร์บล็อกหน้าต่างใหม่", "warn"); return; }
+  w.document.write('<p style="font-family:sans-serif;padding:20px;">กำลังโหลดทะเบียนรับ...</p>');
+  let r;
+  try { r = await rawFetch({ action: "RECVREG", month }); } catch (e) { r = { message: "เชื่อมต่อไม่สำเร็จ: " + e.message }; }
+  if (!r || r.status !== "success") { w.close(); showToast((r && r.message) || "โหลดไม่สำเร็จ", "error"); return; }
+  const rows = r.rows.filter(x => !sku || x.sku === sku);
+  const company = rawCurrentModule === "SQF" ? "บริษัท สุพรรณคิวฟู้ดส์ จำกัด" : "หจก.แม่ละมาย";
+  const p = String(month).split("-"), monthName = _drMonthLabel(month).split(" ")[0], yearBE = Number(p[0]) + 543;
+  const itemName = sku ? ((rows[0] || {}).name || (rawItemOf(sku) || {}).Name || sku) : "";
+  const num = n => Number(n || 0).toLocaleString("th-TH", { maximumFractionDigits: 3 });
+  const nOut = rows.filter(x => x.flag === "นอก AVL").length, nNone = rows.filter(x => x.flag === "ไม่ระบุผู้ขาย").length;
+  const body = rows.length ? rows.map((x, i) => `<tr${x.flag ? ' class="fl"' : ""}>
+      <td class="c">${i + 1}</td><td class="c">${escapeHtml(x.date)}</td><td class="c">${escapeHtml(x.docNo)}</td><td>${escapeHtml(x.name)}</td>
+      <td>${escapeHtml(x.supplier || "-")}</td><td class="n">${num(x.qty)}</td><td class="c">${escapeHtml(x.unit)}</td>
+      <td>${escapeHtml(x.lotNo)}</td><td class="c">${escapeHtml(x.exp)}</td><td>${escapeHtml(personName(x.user))}</td><td>${escapeHtml(x.flag)}</td></tr>`).join("")
+    : '<tr><td colspan="11" class="c">ไม่มีการรับวัตถุดิบในเดือนนี้</td></tr>';
+  w.document.open();
+  w.document.write(`<!DOCTYPE html><html lang="th"><head><meta charset="UTF-8">
+  <title>ทะเบียนรับวัตถุดิบ ${escapeHtml(_drMonthLabel(month))}</title>
+  <style>@import url('${fontCssUrl()}');
+    @page{size:A4 landscape;margin:10mm;}
+    body{font-family:'Sarabun','Leelawadee UI',sans-serif;font-size:13px;color:#111;margin:0;padding:16px;}
+    table{width:100%;border-collapse:collapse;table-layout:fixed;}
+    thead{display:table-header-group;} tr{page-break-inside:avoid;}
+    th,td{border:1px solid #111;padding:3px 5px;vertical-align:top;word-break:break-word;}
+    th{font-weight:700;text-align:center;background:#f2f2ef;}
+    tr.hd th{border:none;background:none;padding:0 0 6px;font-weight:400;}
+    .top{display:grid;grid-template-columns:1fr auto 1fr;align-items:end;gap:12px;text-align:left;}
+    .ttl{font-size:17px;font-weight:700;text-align:center;} .mon{text-align:center;margin-top:4px;}
+    td.n{text-align:right;font-variant-numeric:tabular-nums;} td.c{text-align:center;}
+    tr.fl td:last-child{font-weight:700;}   /* ตัวหนาเฉพาะหมายเหตุ — เดือนก่อนมีช่องผู้ขาย ทุกแถวเป็น "ไม่ระบุผู้ขาย" */
+    .ft{margin-top:6px;font-size:10.5px;color:#5c5c57;}
+    @media print{body{padding:0;} .noprint{display:none;}}
+  </style></head><body>
+  <div class="noprint" style="margin-bottom:12px;">
+    <button onclick="window.print()" style="background:#006b31;color:#fff;border:none;padding:9px 22px;border-radius:8px;font-weight:700;font-size:13px;cursor:pointer;">พิมพ์ / บันทึกเป็น PDF</button>
+    <span style="margin-left:10px;color:#5c5c57;">ตั้งกระดาษ A4 แนวนอน</span>
+  </div>
+  <table>
+    <colgroup><col style="width:4%"><col style="width:7%"><col style="width:11%"><col style="width:14%"><col style="width:16%">
+      <col style="width:7%"><col style="width:5%"><col style="width:9%"><col style="width:7%"><col style="width:9%"><col></colgroup>
+    <thead>
+      <tr class="hd"><th colspan="11"><div class="top"><div>${escapeHtml(company)}</div>
+        <div class="ttl">ทะเบียนรับวัตถุดิบ${itemName ? " " + escapeHtml(itemName) : ""}</div><div></div></div>
+        <div class="mon">ประจำเดือน <u>${escapeHtml(monthName)}</u> ปี <u>${yearBE}</u></div></th></tr>
+      <tr><th>ที่</th><th>วันที่รับ</th><th>เลขที่ใบรับ</th><th>วัตถุดิบ</th><th>ผู้ขาย</th><th>จำนวน</th><th>หน่วย</th><th>เลขล็อตผู้ขาย</th><th>วันหมดอายุ</th><th>ผู้ตรวจรับ</th><th>หมายเหตุ</th></tr>
+    </thead>
+    <tbody>${body}</tbody>
+  </table>
+  <div class="ft">รับ ${rows.length} ครั้ง${nOut ? " · นอก AVL " + nOut + " ครั้ง" : ""}${nNone ? " · ไม่ระบุผู้ขาย " + nNone + " ครั้ง" : ""}${r.avlCount ? "" : " · โรงงานนี้ยังไม่มีรายชื่อผู้ขาย (AVL) ในระบบ"} · ใช้เทียบกับ FM-PD-03 การตรวจรับวัตถุดิบ · พิมพ์จากระบบสต๊อก (AppStock) เมื่อ ${escapeHtml(_drTime(new Date().toISOString()))}</div>
+  </body></html>`);
+  w.document.close();
+}

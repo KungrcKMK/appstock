@@ -807,6 +807,7 @@
     /* ช่องติ๊กในตารางวัตถุดิบ 13px → 18px (กดง่ายขึ้น · QA L1) */
     #module-RAW .raw-checkbox, #rawSelectAll { width:18px;height:18px;cursor:pointer; }
     /* โฟกัสด้วยคีย์บอร์ดต้องเห็น (QA L5/M7) */
+    .rm-purpose-in { width:100%;padding:14px 16px;border:2px solid var(--sq-line);border-radius:6px;font-family:inherit;font-size:16px;font-weight:700;outline:none;box-sizing:border-box;background:var(--sq-surface);color:var(--sq-ink); }   /* ใช้กับงาน + ผู้ขาย */
     .rm-purpose-in:focus { border-color:var(--sq-green) !important;box-shadow:0 0 0 3px #fde0bd; }
     [role="button"]:focus-visible, th.s:focus-visible, .imp-drop:focus-visible { outline:3px solid var(--sq-accent);outline-offset:2px; }
     /* ข้อผิดพลาดใต้ช่องกรอก (rawFieldError ใน js/raw.js · QA M12) */
@@ -1969,6 +1970,15 @@
             <!-- 🏷️ เบิก: ระบบตัดล็อตเก่าก่อนให้เอง — บอกให้เห็นก่อนกด (หลังบ้านตัดจริงตามยอด ณ ตอนบันทึก) -->
             <div id="rawModalLots" class="rm-lotpv" hidden></div>
           </div>
+          <!-- 🏭 รับเข้า: ผู้ขาย (AVL) — เติมรายล่าสุดของรายการนี้ให้ แก้ได้ · ไม่อยู่ในรายชื่อ = ขึ้นป้าย นอก AVL แต่ยังบันทึกได้ (ไม่บล็อก) -->
+          <div id="rawSupWrap" hidden style="text-align:left;">
+            <label for="rawSupIn" style="font-size:13px;font-weight:800;color:var(--sq-ink2);display:block;margin:0 0 6px 4px;">ผู้ขาย</label>
+            <input type="text" id="rawSupIn" list="rawSupList" maxlength="80" autocomplete="off"
+                   placeholder="เลือกจากรายชื่อ หรือพิมพ์เอง" oninput="rawSupCheck('rawSupIn', 'rawSupNote')"
+                   class="rm-purpose-in">
+            <div id="rawSupNote" class="sq-note warn" hidden style="margin:6px 0 0;"></div>
+          </div>
+          <datalist id="rawSupList"></datalist>
           <!-- 🏷️ รับเข้า: ข้อมูลล็อต ไม่บังคับ — ไม่เปิด = ล็อตตามวันนี้ -->
           <details id="rawLotWrap" class="rm-lotbox" hidden>
             <summary>ข้อมูลล็อต <span>(ถ้ามี)</span></summary>
@@ -1988,10 +1998,7 @@
             </label>
             <input type="text" id="rawModalPurpose" list="rawPurposeList" maxlength="120"
                    placeholder="เช่น ผลิตวุ้นมะพร้าว ล็อต 3"
-                   class="rm-purpose-in"
-                   style="width:100%;padding:14px 16px;border:2px solid var(--sq-line);border-radius:6px;
-                          font-family:inherit;font-size:16px;font-weight:700;outline:none;box-sizing:border-box;
-                          background:var(--sq-surface);color:var(--sq-ink);">
+                   class="rm-purpose-in">
             <datalist id="rawPurposeList"></datalist>
             <!-- งานที่ใช้บ่อย — กดเลือกแทนพิมพ์ -->
             <div id="rawPurposeChips" style="display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;"></div>
@@ -2029,6 +2036,8 @@
             <input type="text" id="rawLotEdNo" maxlength="40" class="ui-field" placeholder="ว่างได้" autocomplete="off">
             <label for="rawLotEdExp">วันหมดอายุ</label>
             <input type="date" id="rawLotEdExp" lang="en-GB" class="ui-field">
+            <label for="rawLotEdSup">ผู้ขาย</label>
+            <input type="text" id="rawLotEdSup" list="rawSupList" maxlength="80" class="ui-field" placeholder="ว่างได้" autocomplete="off">
             <label for="rawLotEdQty">เหลือ <span id="rawLotEdUnit"></span></label>
             <input type="text" inputmode="decimal" id="rawLotEdQty" class="ui-field ui-k" autocomplete="off">
           </div>
@@ -2182,11 +2191,12 @@
               <button onclick="openPurchaseRequest()" class="viewer-hide">ใบขอซื้อ</button>
               <button onclick="openStockReport()" class="viewer-hide">ใบรายงานสต๊อกคงเหลือ</button>
               <button onclick="openDocReport()" class="viewer-hide">ตรวจใบเบิกรายเดือน</button>
-              <button onclick="openPd07()" class="viewer-hide">บันทึกการรับ-เบิก (FM-PD-07)</button>
+              <button onclick="openPd07()" class="viewer-hide">เอกสารรับ-เบิก (FM-PD-07 · ทะเบียนรับ)</button>
               <button onclick="rawPrintQrAll()" class="viewer-hide">พิมพ์ QR ทั้งหมด</button>
               <div class="rm-more-h viewer-hide">ข้อมูล</div>
               <button onclick="openRawImport()" class="viewer-hide">นำเข้าจากไฟล์</button>
               <button onclick="openRopModal()" class="viewer-hide">จุดสั่งซื้อแนะนำ</button>
+              <button onclick="rawSupOpen()" id="rawSupplierBtn" style="display:none;">รายชื่อผู้ขาย (AVL)</button>
               <button onclick="rawRunBackup()" id="rawBackupBtn" style="display:none;">สำรองข้อมูล</button>
             </div>
           </details>
@@ -2390,7 +2400,7 @@
     <div class="sq-page my-auto" style="width:100%;max-width:520px;border-radius:6px;overflow:hidden;">
       <div class="ui-plate-head" style="display:flex;align-items:flex-start;gap:10px;">
         <div style="flex:1;min-width:0;">
-          <div class="sq-card-title">บันทึกการรับ-เบิกวัตถุดิบ (FM-PD-07)</div>
+          <div class="sq-card-title">เอกสารรับ-เบิกวัตถุดิบ (ออดิท)</div>
           <div class="sq-card-note" id="pd07Target">—</div>
         </div>
         <button type="button" onclick="closePd07()" aria-label="ปิดหน้าต่าง" title="ปิด (Esc)" class="ui-x"><i class="ic ic-x" aria-hidden="true"></i></button>
@@ -2406,8 +2416,32 @@
           <input type="text" id="pd07Rev" maxlength="60" class="ui-field" style="padding:8px 10px;min-height:40px;">
           <button type="button" onclick="drPd07SaveRev()" id="pd07RevBtn" class="sq-btn">บันทึก</button>
         </div>
-        <button type="button" onclick="drPd07Print()" id="pd07PrintBtn" class="sq-btn sq-btn-primary" style="margin-top:10px;min-height:44px;">พิมพ์</button>
+        <button type="button" onclick="drPd07Print()" id="pd07PrintBtn" class="sq-btn sq-btn-primary" style="margin-top:10px;min-height:44px;">พิมพ์ FM-PD-07 บันทึกการรับ-เบิก</button>
+        <!-- ทะเบียนรับวัตถุดิบ — ทุกใบรับของเดือน (ตามวันที่รับจริง) พร้อมผู้ขาย ไว้เทียบกับ FM-PD-03 กระดาษ · ใช้เดือนที่เลือกด้านบน -->
+        <button type="button" onclick="drRecvRegPrint()" id="recvRegPrintBtn" class="sq-btn" style="min-height:44px;">พิมพ์ทะเบียนรับวัตถุดิบ (ผู้ขาย)</button>
         <button type="button" onclick="closePd07()" class="ui-cancel" style="margin-top:0;">ปิดหน้าต่าง</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 🏭 รายชื่อผู้ขาย (AVL · SD-PC-01) แยกโรงงาน — หัวหน้าขึ้นไป · ยกเลิก = ไม่ขึ้นให้เลือกตอนรับ (ไม่ลบ ล็อตเก่ายังอ้างชื่อเดิม) -->
+  <div id="supModal" class="ui-modal hidden fixed inset-0 z-[630] flex justify-center p-4 overflow-y-auto">
+    <div class="sq-page my-auto" style="width:100%;max-width:520px;border-radius:6px;overflow:hidden;">
+      <div class="ui-plate-head" style="display:flex;align-items:flex-start;gap:10px;">
+        <div style="flex:1;min-width:0;">
+          <div class="sq-card-title">รายชื่อผู้ขาย (AVL)</div>
+          <div class="sq-card-note" id="supTarget">—</div>
+        </div>
+        <button type="button" onclick="rawSupClose()" aria-label="ปิดหน้าต่าง" title="ปิด (Esc)" class="ui-x"><i class="ic ic-x" aria-hidden="true"></i></button>
+      </div>
+      <div style="padding:16px 20px;display:grid;gap:10px;">
+        <form onsubmit="event.preventDefault();rawSupAdd();" style="display:grid;grid-template-columns:1fr auto;gap:8px;">
+          <input type="text" id="supNewName" maxlength="80" class="ui-field" aria-label="ชื่อผู้ขายใหม่" placeholder="ชื่อผู้ขายตามทะเบียน AVL" autocomplete="off" style="padding:8px 10px;min-height:40px;">
+          <button type="submit" id="supAddBtn" class="sq-btn sq-btn-primary">เพิ่ม</button>
+        </form>
+        <p class="sq-card-note" style="margin:0;">ตอนรับเข้า พิมพ์ชื่อที่ไม่อยู่ในรายชื่อได้ แต่จะขึ้นว่า "นอก AVL" ในทะเบียนรับ · เปลี่ยนชื่อ = เพิ่มชื่อใหม่แล้วยกเลิกชื่อเดิม</p>
+        <div id="supList" style="display:grid;gap:6px;max-height:50vh;overflow-y:auto;"></div>
+        <button type="button" onclick="rawSupClose()" class="ui-cancel" style="margin-top:0;">ปิดหน้าต่าง</button>
       </div>
     </div>
   </div>

@@ -296,6 +296,8 @@ function checkAuth() {
     // สำรองข้อมูลทั้งระบบ = หัวหน้าขึ้นไป (หลังบ้านตรวจ BACKUP: manager) — คนอื่นไม่ต้องเห็นปุ่มที่กดแล้วได้แค่ error (QA M24)
     const bkBtn = document.getElementById("rawBackupBtn");
     if (bkBtn) bkBtn.style.display = (isAdmin || isManager) ? "" : "none";
+    const supBtn = document.getElementById("rawSupplierBtn");   // รายชื่อผู้ขาย (AVL) — หลังบ้านตรวจ SUPPLIERSET: manager
+    if (supBtn) supBtn.style.display = (isAdmin || isManager) ? "" : "none";
     // viewer: บอกบนแถบเมนูว่าดูได้อย่างเดียว (เดิมปุ่มหายเฉยๆ ไม่รู้ว่าทำไม)
     if (isViewer) { const nu = document.getElementById("navUser"); if (nu && !/ดูอย่างเดียว/.test(nu.innerText)) nu.innerText = nu.innerText + " · ดูอย่างเดียว"; }
     _watchNavHeight();   // ปุ่มถูกซ่อน/แสดงตาม role ครบแล้ว ค่อยวัดความสูงเมนู

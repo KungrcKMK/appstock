@@ -339,6 +339,7 @@ const UI_MODALS = {
   drModal:              { close: "closeDocReport", backdrop: true },
   pd07Modal:            { close: "closePd07" },
   supModal:             { close: "rawSupClose" },
+  trModal:              { close: "drTraceClose" },
   slipModal:            { close: "closeWithdrawSlip", backdrop: true },
   rawHistModal:         { close: "closeRawHistory", backdrop: true },
   impModal:             { close: "closeRawImport" },

@@ -2192,6 +2192,7 @@
               <button onclick="openStockReport()" class="viewer-hide">ใบรายงานสต๊อกคงเหลือ</button>
               <button onclick="openDocReport()" class="viewer-hide">ตรวจใบเบิกรายเดือน</button>
               <button onclick="openPd07()" class="viewer-hide">เอกสารรับ-เบิก (FM-PD-07 · ทะเบียนรับ)</button>
+              <button onclick="drTraceOpen()" class="viewer-hide">สืบย้อนกลับ (FM-QC-07)</button>
               <button onclick="rawPrintQrAll()" class="viewer-hide">พิมพ์ QR ทั้งหมด</button>
               <div class="rm-more-h viewer-hide">ข้อมูล</div>
               <button onclick="openRawImport()" class="viewer-hide">นำเข้าจากไฟล์</button>
@@ -2420,6 +2421,45 @@
         <!-- ทะเบียนรับวัตถุดิบ — ทุกใบรับของเดือน (ตามวันที่รับจริง) พร้อมผู้ขาย ไว้เทียบกับ FM-PD-03 กระดาษ · ใช้เดือนที่เลือกด้านบน -->
         <button type="button" onclick="drRecvRegPrint()" id="recvRegPrintBtn" class="sq-btn" style="min-height:44px;">พิมพ์ทะเบียนรับวัตถุดิบ (ผู้ขาย)</button>
         <button type="button" onclick="closePd07()" class="ui-cancel" style="margin-top:0;">ปิดหน้าต่าง</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 🔎 สืบย้อนกลับ (QP-QC-17) — ผลิตภัณฑ์+วันผลิต → วัตถุดิบ/ล็อต/ผู้ขาย หรือ ล็อตวัตถุดิบ → ผลิตภัณฑ์ · พิมพ์เป็นใบแนบ FM-QC-07 ข้อ 5.4 (หลังบ้าน TRACE คิดให้) -->
+  <div id="trModal" class="ui-modal hidden fixed inset-0 z-[630] flex justify-center p-4 overflow-y-auto">
+    <div class="sq-page my-auto" style="width:100%;max-width:760px;border-radius:6px;overflow:hidden;">
+      <div class="ui-plate-head" style="display:flex;align-items:flex-start;gap:10px;">
+        <div style="flex:1;min-width:0;">
+          <div class="sq-card-title">สืบย้อนกลับ (FM-QC-07 ข้อ 5.4)</div>
+          <div class="sq-card-note" id="trTarget">—</div>
+        </div>
+        <button type="button" onclick="drTraceClose()" aria-label="ปิดหน้าต่าง" title="ปิด (Esc)" class="ui-x"><i class="ic ic-x" aria-hidden="true"></i></button>
+      </div>
+      <div style="padding:16px 20px;display:grid;gap:8px;">
+        <label for="trMode" class="sq-card-note" style="font-weight:800;color:var(--sq-ink2);">สืบจาก</label>
+        <select id="trMode" class="sq-select" onchange="drTraceMode()">
+          <option value="back">ผลิตภัณฑ์ + วันผลิต → วัตถุดิบที่ใช้ (Back Word)</option>
+          <option value="fwd">ล็อตวัตถุดิบ → ผลิตภัณฑ์ที่ใช้ล็อตนี้ (Forword)</option>
+        </select>
+        <div id="trBack" style="display:grid;gap:8px;">
+          <label for="trProduct" class="sq-card-note" style="font-weight:800;color:var(--sq-ink2);margin-top:6px;">ผลิตภัณฑ์ (จากช่อง "ใช้กับงาน" ของใบเบิก)</label>
+          <select id="trProduct" class="sq-select"></select>
+          <label for="trDate" class="sq-card-note" style="font-weight:800;color:var(--sq-ink2);margin-top:6px;">วันผลิต (Lot การผลิต)</label>
+          <input type="date" id="trDate" lang="en-GB" class="ui-field" style="padding:8px 10px;min-height:40px;">
+          <label style="display:flex;align-items:center;gap:8px;font-size:14px;font-weight:700;color:var(--sq-ink);cursor:pointer;min-height:40px;">
+            <input type="checkbox" id="trPrev" style="width:18px;height:18px;"> รวมใบเบิกวันก่อนหน้า 1 วันด้วย (เบิกล่วงหน้า)
+          </label>
+        </div>
+        <div id="trFwd" style="display:none;gap:8px;">
+          <label for="trSku" class="sq-card-note" style="font-weight:800;color:var(--sq-ink2);margin-top:6px;">วัตถุดิบ</label>
+          <select id="trSku" class="sq-select" onchange="drTraceLots()"></select>
+          <label for="trLot" class="sq-card-note" style="font-weight:800;color:var(--sq-ink2);margin-top:6px;">ล็อต (รวมล็อตที่ใช้หมดแล้ว)</label>
+          <select id="trLot" class="sq-select"></select>
+        </div>
+        <button type="button" onclick="drTraceRun()" id="trRunBtn" class="sq-btn sq-btn-primary" style="margin-top:10px;min-height:44px;">ค้นหา</button>
+        <div id="trResult" class="sq-card-note" style="min-height:18px;"></div>
+        <button type="button" onclick="drTracePrint()" id="trPrintBtn" class="sq-btn" style="min-height:44px;" disabled>พิมพ์ใบแนบ FM-QC-07 ข้อ 5.4</button>
+        <button type="button" onclick="drTraceClose()" class="ui-cancel" style="margin-top:0;">ปิดหน้าต่าง</button>
       </div>
     </div>
   </div>

@@ -49,6 +49,7 @@ D1 "appstock" (SQLite, 16 ตาราง — โครงใน cloudflare/apps
 
 ไฟล์เสริมที่เปิดเป็น modal จากหน้าวัตถุดิบ: `js/import.js` (นำเข้า CSV), `js/slip.js` (ใบเบิก canvas),
 `js/docreport.js` (รายงานรายเดือน + พิมพ์ FM-PD-07 บันทึกการรับ-เบิกวัตถุดิบ: `PD07` อ่านอย่างเดียว คิดที่ `rmPd07` · หัวกระดาษ Rev แก้ด้วย `DOCREVSET` (manager+) เก็บที่ config `docRev_FM-PD-07` · ทะเบียนรับวัตถุดิบ `RECVREG` อ่านอย่างเดียว คิดที่ `rmRecvReg`),
+สืบย้อนกลับ QP-QC-17: `TRACE` อ่านอย่างเดียว คิดที่ `rmTrace` (back = ผลิตภัณฑ์+วันผลิต → วัตถุดิบ/ล็อต/ผู้ขาย/ใบรับ · fwd = ล็อต → ใบเบิก/ผลิตภัณฑ์ · ผลิตภัณฑ์ = ช่องใช้กับงานที่ตัดวรรณยุกต์) หน้าต่าง `#trModal` ใน js/docreport.js `drTrace*` พิมพ์ใบแนบ FM-QC-07 ข้อ 5.4,
 ผู้ขาย (AVL): ตาราง `suppliers` แยกโรงงาน แก้ด้วย `SUPPLIERSET` (manager+ · หน้าต่าง `#supModal` ใน js/raw.js `rawSup*`) · ชื่อผู้ขายเก็บใน `rm_lots.supplier` และเป็นส่วนของคีย์ล็อต · อ่านคลังส่ง `suppliers` + `LastSupplier` ต่อรายการ, `js/share.js` (แชร์ QR), `js/myhistory.js` (ประวัติของฉัน),
 `js/alerts.js` (แจ้งเตือนสต๊อก), `js/auth.js` (login + ขอสิทธิ์), `js/rop.js` (จุดสั่งซื้อแนะนำ `rop*`),
 `js/crimport.js` (นำเข้าล็อตห้องเย็นจาก CSV), `js/plan.js` (📈 วางแผนสั่งซื้อ `plan*` — ดูหัวข้อด้านล่าง), `js/offline.js` (คิวออฟไลน์ `offline*` — **ไฟล์เดียวที่ mobile.html ใช้ร่วมกับหน้าคอม**)

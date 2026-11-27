@@ -139,7 +139,7 @@ export async function rmTrace(c, data, module) {
       else if (r.action !== RM_TYPES.IN.label) other.push(Object.assign(row, { sign: Number(r.qty) < 0 ? "-" : "+" }));   // คืน / ตรวจนับ / แก้ล็อต
     }
     return { status: "success", mode: "fwd", sku, name: m.name, unit: m.unit || "",
-             lot: { Id: lot.id, Label: lotLabel(lot), RecvDate: lot.recv_date, LotNo: lot.lot_no, ExpDate: lot.exp_date, Supplier: lot.supplier, QtyIn: Number(lot.qty_in), Qty: Number(lot.qty_left),
+             lot: { Id: lot.id, Label: lotLabel(lot), Recv: beDate(lot.recv_date), LotNo: lot.lot_no, Exp: beDate(lot.exp_date), Supplier: lot.supplier, QtyIn: Number(lot.qty_in), Qty: Number(lot.qty_left),
                     receipts: (await trReceipts(c, module))[lot.id] || [] },
              uses, other };
   }
@@ -173,8 +173,8 @@ export async function rmTrace(c, data, module) {
     }
     variants.add(r.purpose);
     const k = r.sku + "|" + (r.lot_id || "none");
-    const it = items[k] || (items[k] = { sku: String(r.sku), name: r.name, unit: r.unit || "", lot: lotTxt, lotNo: r.lot_no || "", exp: beDate(r.exp_date), supplier: r.supplier || "",
-      old: !!r.lot_id && !r.recv_date, noLot: !r.lot_id, qty: 0, outDocs: [], receipts: r.lot_id ? rec[r.lot_id] || [] : [] });
+    const it = items[k] || (items[k] = { sku: String(r.sku), name: r.name, unit: r.unit || "", lot: lotTxt, recv: beDate(r.recv_date), lotNo: r.lot_no || "", exp: beDate(r.exp_date), supplier: r.supplier || "",
+      old: !!r.lot_id && !r.recv_date && !(rec[r.lot_id] || []).length, noLot: !r.lot_id, qty: 0, outDocs: [], receipts: r.lot_id ? rec[r.lot_id] || [] : [] });
     it.qty = Math.round((it.qty + q) * 1000) / 1000;
     if (r.doc_no && !it.outDocs.includes(r.doc_no)) it.outDocs.push(r.doc_no);
   }

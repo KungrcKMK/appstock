@@ -425,3 +425,142 @@ async function drRecvRegPrint() {
   </body></html>`);
   w.document.close();
 }
+
+// ═══════════════════════════════════════════════════════════
+// 🔎 สืบย้อนกลับ (QP-QC-17) → ใบแนบ FM-QC-07 ข้อ 5.4 ข้อมูลวัตถุดิบ — หลังบ้าน TRACE คิดทั้งหมด ที่นี่แค่แสดง/จัดหน้าพิมพ์
+//   ส่วนอื่นของ FM-QC-07 (ร้องเรียน ลูกค้า FM-QC-10 บันทึกผลิต สรุป %) ยังกรอกฟอร์มเดิม
+// ═══════════════════════════════════════════════════════════
+let _tr = null;
+const _trCompany = () => rawCurrentModule === "SQF" ? "บริษัท สุพรรณคิวฟู้ดส์ จำกัด" : "หจก.แม่ละมาย";
+async function drTraceOpen() {
+  document.getElementById("trTarget").textContent = rawCurrentModule === "SQF" ? "วัตถุดิบ SQF (สุพรรณคิวฟู้ดส์)" : "วัตถุดิบ MLM (แม่ละมาย)";
+  document.getElementById("trMode").value = "back";
+  document.getElementById("trDate").value = rawTodayYmd();
+  document.getElementById("trPrev").checked = false;
+  const mats = [...(rawLastData || []), ...(window._rawDiscontinued || [])].sort((a, b) => String(a.Name).localeCompare(String(b.Name), "th"));
+  document.getElementById("trSku").innerHTML = '<option value="">— เลือกวัตถุดิบ —</option>' +
+    mats.map(m => `<option value="${escapeAttr(m.SKU)}">${escapeHtml(m.Name)} (${escapeHtml(m.SKU)})</option>`).join("");
+  document.getElementById("trLot").innerHTML = "";
+  drTraceMode();
+  document.getElementById("trModal").classList.remove("hidden");
+  const sel = document.getElementById("trProduct");
+  sel.innerHTML = '<option value="">กำลังโหลด...</option>';
+  try {
+    const r = await rawFetch({ action: "TRACE" });
+    if (!r || r.status !== "success") { sel.innerHTML = '<option value="">โหลดไม่สำเร็จ</option>'; return; }
+    sel.innerHTML = '<option value="">— เลือกผลิตภัณฑ์ —</option>' + r.products.map(p =>
+      `<option value="${escapeAttr(p.label)}">${escapeHtml(p.label)}${p.variants.length > 1 ? " (รวม " + escapeHtml(p.variants.join(", ")) + ")" : ""} · เบิก ${p.n} ครั้ง</option>`).join("");
+  } catch (e) { sel.innerHTML = '<option value="">เชื่อมต่อไม่สำเร็จ</option>'; }
+}
+function drTraceClose() { document.getElementById("trModal")?.classList.add("hidden"); }
+function drTraceMode() {
+  const fwd = document.getElementById("trMode").value === "fwd";
+  document.getElementById("trBack").style.display = fwd ? "none" : "grid";
+  document.getElementById("trFwd").style.display = fwd ? "grid" : "none";
+  _tr = null;
+  document.getElementById("trResult").innerHTML = "";
+  document.getElementById("trPrintBtn").disabled = true;
+}
+async function drTraceLots() {
+  const sku = document.getElementById("trSku").value, sel = document.getElementById("trLot");
+  _tr = null; document.getElementById("trPrintBtn").disabled = true; document.getElementById("trResult").innerHTML = "";
+  if (!sku) { sel.innerHTML = ""; return; }
+  sel.innerHTML = '<option value="">กำลังโหลด...</option>';
+  const r = await rawFetch({ action: "TRACE", mode: "fwd", sku });
+  if (document.getElementById("trSku").value !== sku) return;   // เปลี่ยนวัตถุดิบระหว่างรอ
+  if (!r || r.status !== "success") { sel.innerHTML = '<option value="">' + escapeHtml((r && r.message) || "โหลดไม่สำเร็จ") + "</option>"; return; }
+  sel.innerHTML = r.lots.length ? r.lots.map(l => `<option value="${Number(l.Id)}">${escapeHtml(l.Label)} · รับ ${rawLotNum(l.QtyIn)} · เหลือ ${rawLotNum(l.Qty)}</option>`).join("")
+    : '<option value="">วัตถุดิบนี้ยังไม่มีล็อต (ระบบล็อตเริ่ม 20/10/69)</option>';
+}
+async function drTraceRun() {
+  if (rawIsBusy("trRunBtn")) return;
+  const fwd = document.getElementById("trMode").value === "fwd", out = document.getElementById("trResult");
+  const q = fwd ? { action: "TRACE", mode: "fwd", sku: document.getElementById("trSku").value, lotId: document.getElementById("trLot").value }
+                : { action: "TRACE", product: document.getElementById("trProduct").value, date: document.getElementById("trDate").value, prevDays: document.getElementById("trPrev").checked ? 1 : 0 };
+  if (fwd && (!q.sku || !q.lotId)) { out.textContent = "เลือกวัตถุดิบและล็อตก่อน"; return; }
+  if (!fwd && (!q.product || !q.date)) { out.textContent = "เลือกผลิตภัณฑ์และวันผลิตก่อน"; return; }
+  setRawBusy("trRunBtn", true, "กำลังค้นหา...");
+  let r;
+  try { r = await rawFetch(q); } catch (e) { r = { message: "เชื่อมต่อไม่สำเร็จ: " + e.message }; }
+  setRawBusy("trRunBtn", false);
+  if (!r || r.status !== "success") { _tr = null; out.textContent = (r && r.message) || "ค้นหาไม่สำเร็จ"; document.getElementById("trPrintBtn").disabled = true; return; }
+  _tr = r;
+  const n = v => rawLotNum(v);
+  if (fwd) {
+    out.innerHTML = `<b>${escapeHtml(r.name)} · ${escapeHtml(r.lot.Label)}</b><br>ใช้ไป ${r.uses.length} ใบเบิก` +
+      (r.uses.length ? " — " + escapeHtml([...new Set(r.uses.map(u => u.product || "ไม่ระบุงาน"))].join(", ")) +
+        " · วันผลิต " + escapeHtml([...new Set(r.uses.map(u => u.date))].join(", ")) : "") +
+      ` · รับเข้า ${n(r.lot.QtyIn)} เหลือ ${n(r.lot.Qty)} ${escapeHtml(r.unit)}`;
+  } else {
+    const noLot = r.items.filter(i => i.noLot || i.old).length;
+    out.innerHTML = `<b>${escapeHtml(r.product)} · Lot ผลิต ${escapeHtml(r.lotCode)}</b><br>วัตถุดิบ ${r.items.length} รายการ/ล็อต` +
+      (noLot ? ` · ${noLot} รายการเป็นของก่อนระบบล็อต (ดูสมุดกระดาษ)` : "") +
+      (r.others.length ? ` · ใบเบิกวันเดียวกันที่ระบุงานอื่น ${r.others.length} ใบ (แยกไว้ท้ายใบแนบ)` : "") +
+      (r.items.length ? "" : " — ไม่พบใบเบิกของผลิตภัณฑ์นี้ในวันนั้น ลองติ๊กรวมวันก่อนหน้า");
+  }
+  document.getElementById("trPrintBtn").disabled = false;
+}
+function drTracePrint() {
+  if (!_tr) return;
+  const r = _tr, n = v => Number(v || 0).toLocaleString("th-TH", { maximumFractionDigits: 3 }), e = escapeHtml;
+  let title, info, body;
+  if (r.mode === "fwd") {
+    const L = r.lot;
+    title = "ใบแนบ FM-QC-07 ข้อ 5.4 ข้อมูลวัตถุดิบ — สืบไปข้างหน้า (Forword)";
+    info = `<table class="kv"><tr><th>วัตถุดิบ</th><td>${e(r.name)} (${e(r.sku)})</td><th>ชื่อผู้ขาย/บริษัท</th><td>${e(L.Supplier || "-")}</td></tr>
+      <tr><th>Lot วัตถุดิบ (วันที่รับ)</th><td>${L.Recv ? e(L.Recv) : L.receipts.length ? "ไม่ระบุวันรับ (ดูใบรับ)" : "ยอดยกมา (ก่อนระบบล็อต)"}${L.LotNo ? " · เลขล็อตผู้ขาย " + e(L.LotNo) : ""}${L.Exp ? " · หมดอายุ " + e(L.Exp) : ""}</td>
+        <th>รับเข้า / คงเหลือ</th><td>${n(L.QtyIn)} / ${n(L.Qty)} ${e(r.unit)}</td></tr>
+      <tr><th>ใบรับ · ผู้ตรวจรับ</th><td colspan="3">${e(L.receipts.map(x => x.docNo + " · " + personName(x.user)).join(", ") || "-")}</td></tr></table>`;
+    body = `<h3>ผลิตภัณฑ์ที่ใช้วัตถุดิบล็อตนี้</h3><table><thead><tr><th style="width:5%">ที่</th><th style="width:16%">วันที่เบิก (Lot ผลิต)</th><th>ผลิตภัณฑ์ (ใช้กับงาน)</th>
+      <th style="width:13%">จำนวน</th><th style="width:20%">เลขที่ใบเบิก</th><th style="width:16%">ผู้เบิก</th></tr></thead><tbody>${r.uses.length ? r.uses.map((u, i) =>
+        `<tr><td class="c">${i + 1}</td><td class="c">${e(u.date)}</td><td>${e(u.product || "ไม่ระบุงาน")}</td><td class="n">${n(u.qty)} ${e(r.unit)}</td><td class="c">${e(u.docNo)}</td><td>${e(personName(u.user))}</td></tr>`).join("")
+        : '<tr><td colspan="6" class="c">ยังไม่มีการเบิกจากล็อตนี้</td></tr>'}</tbody></table>` +
+      (r.other.length ? `<h3>ความเคลื่อนไหวอื่นของล็อตนี้ (คืน / ตรวจนับ / แก้ล็อต)</h3><table><thead><tr><th style="width:16%">วันที่</th><th>รายการ</th><th style="width:13%">จำนวน</th><th style="width:16%">ผู้บันทึก</th></tr></thead><tbody>` +
+        r.other.map(o => `<tr><td class="c">${e(o.date)}</td><td>${e(o.action)}${o.product ? " · " + e(o.product) : ""}</td><td class="n">${e(o.sign)}${n(o.qty)}</td><td>${e(personName(o.user))}</td></tr>`).join("") + "</tbody></table>" : "");
+  } else {
+    title = "ใบแนบ FM-QC-07 ข้อ 5.4 ข้อมูลวัตถุดิบ — สืบย้อนกลับ (Back Word)";
+    info = `<table class="kv"><tr><th>ผลิตภัณฑ์</th><td>${e(r.product)}${r.variants.length > 1 ? " (รวมคำที่สะกดต่าง: " + e(r.variants.join(", ")) + ")" : ""}</td>
+      <th>ผลิตวันที่ / Lot การผลิต</th><td>${e(r.lotCode)}${r.prevDays ? " (รวมใบเบิกวันก่อนหน้า 1 วัน)" : ""}</td></tr></table>`;
+    const lotTxt = i => i.noLot ? "ไม่มีข้อมูลล็อต (ก่อนระบบล็อต)" : i.old ? "ยอดยกมา (ก่อนระบบล็อต)" : (i.recv ? "รับ " + e(i.recv) : "ไม่ระบุวันรับ (ดูใบรับ)") + (i.lotNo ? " · " + e(i.lotNo) : "") + (i.exp ? "<br>หมดอายุ " + e(i.exp) : "");
+    body = `<table><thead><tr><th style="width:4%">ที่</th><th style="width:14%">ชื่อวัตถุดิบ</th><th style="width:14%">Lot วัตถุดิบ</th><th style="width:14%">ชื่อผู้ขาย/บริษัท</th>
+      <th style="width:9%">จำนวนที่ใช้</th><th style="width:13%">เลขที่ใบเบิก</th><th style="width:16%">ใบรับ · ผู้ตรวจรับ</th><th style="width:16%">ผลการตรวจรับ<br><small>(เทียบ FM-PD-03)</small></th></tr></thead><tbody>${r.items.length ? r.items.map((i, k) =>
+        `<tr><td class="c">${k + 1}</td><td>${e(i.name)}</td><td>${lotTxt(i)}</td><td>${e(i.supplier || "-")}</td><td class="n">${n(i.qty)} ${e(i.unit)}</td>
+         <td>${e(i.outDocs.join(", "))}</td><td>${e(i.receipts.map(x => x.docNo + " · " + personName(x.user)).join(", ") || "-")}</td><td></td></tr>`).join("")
+        : '<tr><td colspan="8" class="c">ไม่พบใบเบิกของผลิตภัณฑ์นี้ในวันที่เลือก</td></tr>'}</tbody></table>` +
+      (r.others.length ? `<h3>ใบเบิกวันเดียวกันที่ระบุงานอื่น / ไม่ระบุงาน — ตรวจว่าเกี่ยวข้องกับ Lot นี้หรือไม่</h3><table><thead><tr><th style="width:11%">วันที่</th><th style="width:20%">วัตถุดิบ</th>
+        <th style="width:16%">ใช้กับงาน</th><th style="width:11%">จำนวน</th><th style="width:16%">เลขที่ใบเบิก</th><th>Lot</th></tr></thead><tbody>` +
+        r.others.map(o => `<tr><td class="c">${e(o.date)}</td><td>${e(o.name)}</td><td>${e(o.product || "ไม่ระบุงาน")}</td><td class="n">${n(o.qty)} ${e(o.unit)}</td><td class="c">${e(o.docNo)}</td><td>${e(o.lot)}</td></tr>`).join("") + "</tbody></table>" : "");
+  }
+  const w = window.open("", "", "width=1200,height=820");
+  if (!w) { showToast("เบราว์เซอร์บล็อกหน้าต่างใหม่", "warn"); return; }
+  w.document.write(`<!DOCTYPE html><html lang="th"><head><meta charset="UTF-8">
+  <title>${e(title)}</title>
+  <style>@import url('${fontCssUrl()}');
+    @page{size:A4 landscape;margin:10mm;}
+    body{font-family:'Sarabun','Leelawadee UI',sans-serif;font-size:13px;color:#111;margin:0;padding:16px;}
+    .top{display:grid;grid-template-columns:auto 1fr auto;align-items:end;gap:12px;margin-bottom:8px;} .top > div:first-child{white-space:nowrap;}
+    .ttl{font-size:16px;font-weight:700;text-align:center;}
+    .code{justify-self:end;border:1px solid #111;padding:3px 10px;text-align:center;font-size:12px;line-height:1.35;white-space:nowrap;}
+    h3{font-size:14px;margin:14px 0 6px;}
+    table{width:100%;border-collapse:collapse;table-layout:fixed;margin-bottom:6px;}
+    thead{display:table-header-group;} tr{page-break-inside:avoid;}
+    th,td{border:1px solid #111;padding:3px 5px;vertical-align:top;word-break:break-word;}
+    th{font-weight:700;text-align:center;background:#f2f2ef;}
+    table.kv th{text-align:left;width:16%;} table.kv td{width:34%;}
+    td.n{text-align:right;font-variant-numeric:tabular-nums;} td.c{text-align:center;}
+    .sign{margin-top:14px;display:grid;grid-template-columns:repeat(3,1fr);gap:16px;font-size:13px;}
+    .ft{margin-top:8px;font-size:10.5px;color:#5c5c57;}
+    @media print{body{padding:0;} .noprint{display:none;}}
+  </style></head><body>
+  <div class="noprint" style="margin-bottom:12px;">
+    <button onclick="window.print()" style="background:#006b31;color:#fff;border:none;padding:9px 22px;border-radius:8px;font-weight:700;font-size:13px;cursor:pointer;">พิมพ์ / บันทึกเป็น PDF</button>
+    <span style="margin-left:10px;color:#5c5c57;">ตั้งกระดาษ A4 แนวนอน · แนบกับ FM-QC-07</span>
+  </div>
+  <div class="top"><div>${e(_trCompany())}</div><div class="ttl">${e(title)}</div><div class="code"><b>ใบแนบ FM-QC-07</b><br>อ้างอิง QP-QC-17</div></div>
+  ${info}
+  ${body}
+  <div class="sign"><div>ผู้สืบค้น ____________________________</div><div>เริ่ม ______:______ น.</div><div>เสร็จ ______:______ น.</div></div>
+  <div class="ft">Lot วัตถุดิบ = วันที่รับเข้า (QP-QC-17 ข้อ 5.1.1) · "ยอดยกมา / ไม่มีข้อมูลล็อต" = ของที่มีก่อนเริ่มระบบล็อต 20/10/69 สืบต่อจากสมุด FM-PD-07 และ FM-PD-03 กระดาษ · พิมพ์จากระบบสต๊อก (AppStock) เมื่อ ${e(_drTime(new Date().toISOString()))}</div>
+  </body></html>`);
+  w.document.close();
+}

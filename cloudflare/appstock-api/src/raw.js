@@ -1,6 +1,6 @@
 // วัตถุดิบ (SQF / MLM): อ่านคลัง · เบิก/รับ/คืน · ตรวจนับ · แก้ไข · นำเข้า · รายงานใบเบิก · จุดสั่งซื้อ · เทรนด์
 // คำตอบทุกตัวคงรูปแบบเดิมของหลังบ้าน Apps Script — หน้าจอทั้งสองไม่ต้องแก้
-import { all, first, run, stmt, changed, kvGet, kvPut, uuid, getCfg, nowIso, fmtTH, dayTH, thaiMidnightMs, eventTime, qtyStrict,
+import { all, first, run, stmt, changed, kvGet, kvPut, uuid, getCfg, cfgSet, nowIso, fmtTH, dayTH, thaiMidnightMs, eventTime, qtyStrict,
          numOrBlank, userWithDevice, deviceTag, sendAlert, stockSummaryLines, sysLog, expiryInfoTH, TZ_MS, DAY_MS } from "./lib.js";
 import { lotSync, lotReceive, lotReturn, lotMovesOf, lotMovesText, lotOpenMap, lotOut, lotEarliestExp, lotAgeDaysOf, lotYmd, lotGet, lotLabel } from "./lots.js";
 
@@ -571,6 +571,71 @@ export async function rmDocReport(c, data, module) {
   return { status: "success", rows: out, months: Object.keys(monthSet).sort().reverse() };
 }
 
+// ───────────── FM-PD-07 บันทึกการรับ-เบิกวัตถุดิบ (รายเดือน · 1 แถว = 1 รายการ) ─────────────
+//   ไล่ยอดทุกรายการตามลำดับที่บันทึกจริง (id) ต่อวัตถุดิบ — ยอดหลังรายการ (balance_after) เป็นหลัก ไม่มีจึงคิดต่อจากแถวก่อน
+//   ทุกแถว: ยอดยกมา + รับเข้า − เบิกใช้ = คงเหลือ · ตรวจนับ/สร้าง/นำเข้า ที่ยอดเปลี่ยน = แถวปรับยอด (ส่วนต่างลงช่องรับหรือเบิก)
+//   ยอดไม่ต่อจากแถวก่อน (ข้อมูลยุคก่อนมียอดหลังรายการ) = แถว "ปรับยอดให้ตรงระบบ" ไม่ซ่อนส่วนต่าง
+//   shortcut: แถวที่บันทึกตอนออฟไลน์แล้วส่งข้ามเดือน อยู่เดือนตามวันที่ทำจริง แต่ยอดคิดตามลำดับที่เข้าระบบ — ถ้าเจอบ่อยค่อยเรียงตามเวลาจริง
+const PD07_REV_DEFAULT = "REV : 01 Date : 23/08/62";
+export async function rmPd07(c, data, module) {
+  const ym = String(data.month || "").trim();
+  if (ym && !/^\d{4}-\d{2}$/.test(ym)) return { status: "error", message: "เดือนไม่ถูกต้อง" };
+  const { nameToSku } = await skuMaps(c, module);
+  const mats = await all(c, "SELECT sku, name, unit, qty, discontinued FROM materials WHERE module = ? ORDER BY seq, rowid", module);
+  const rows = await all(c, "SELECT id, ts, name, action, qty, user, doc_no, sku, purpose, op_id, balance_after FROM history WHERE module = ? AND " +
+    STOCK_ACTION_SQL + " ORDER BY id", module);
+  const lotOf = {};   // op_id → "ยอดยกมา 30 · รับ 02/10/69 20"
+  for (const r of await all(c, "SELECT mv.op_id, mv.qty, l.recv_date, l.lot_no FROM rm_lot_moves mv JOIN rm_lots l ON l.id = mv.lot_id WHERE mv.module = ? ORDER BY mv.id", module))
+    (lotOf[r.op_id] = lotOf[r.op_id] || []).push(lotLabel(r) + " " + Math.abs(Number(r.qty)).toLocaleString("en-US", { maximumFractionDigits: 3 }));
+  const r3 = (n) => Math.round(n * 1000) / 1000, who = (u) => String(u || "").split(" (")[0];
+  const st = {}, months = {};
+  for (const h of rows) {
+    const sku = String(h.sku || "").trim() || nameToSku[String(h.name || "").trim()] || "";
+    const m = fmtTH(h.ts, "yyyy-MM");
+    if (!sku || !m) continue;
+    months[m] = true;
+    const s = st[sku] || (st[sku] = { bal: 0, open: null, rows: [] });
+    const q = Number(h.qty), type = TYPE_BY_LABEL[h.action];
+    const after = h.balance_after !== null && h.balance_after !== undefined ? Number(h.balance_after)
+      : type ? r3(s.bal + (type === "OUT" ? -q : q)) : isFinite(q) && String(h.qty) !== "" ? q : s.bal;   // ตรวจนับ/สร้าง/นำเข้า = ยอดที่ตั้ง
+    const delta = type ? (type === "OUT" ? -q : q) : r3(after - s.bal);
+    const before = r3(after - delta);
+    if (m < ym) { s.bal = after; continue; }
+    if (m > ym) continue;
+    if (s.open === null) s.open = s.bal;
+    const push = (o) => s.rows.push(Object.assign({ date: fmtTH(h.ts, "dd/MM/") + String(Number(fmtTH(h.ts, "yyyy")) + 543).slice(-2) }, o));
+    if (Math.abs(before - s.bal) > 0.0005)
+      push({ open: s.bal, in: before > s.bal ? r3(before - s.bal) : 0, out: before < s.bal ? r3(s.bal - before) : 0, bal: before, recv: "", wd: "", note: "ปรับยอดให้ตรงระบบ (ข้อมูลก่อนหน้าไม่ครบ)" });
+    if (type || Math.abs(delta) > 0.0005) {
+      const note = type ? [h.doc_no, type === "OUT" ? h.purpose : "", lotOf[h.op_id] ? "Lot " + lotOf[h.op_id].join(" · ") : ""].filter(Boolean).join(" · ")
+        : (h.action === COUNT_LABEL ? "ปรับยอดจากตรวจนับ (นับได้ " + after.toLocaleString("en-US", { maximumFractionDigits: 3 }) + ")" + (h.purpose ? " · " + h.purpose : "")
+          : h.action === "สร้างรายการ" ? "ยอดตั้งต้น (สร้างรายการ)" : h.action);
+      push({ open: before, in: delta > 0 ? r3(delta) : 0, out: delta < 0 ? r3(-delta) : 0, bal: after,
+             recv: delta > 0 ? who(h.user) : "", wd: delta < 0 ? who(h.user) : "", note });
+    }
+    s.bal = after;
+  }
+  const items = [];
+  for (const mt of ym ? mats : []) {   // ไม่ระบุเดือน = ขอรายชื่อเดือนอย่างเดียว (หน้าจอเลือกเดือนล่าสุดเอง)
+    const s = st[mt.sku] || { bal: 0, open: null, rows: [] };
+    const open = s.open === null ? s.bal : s.open;
+    if (!s.rows.length && (Number(mt.discontinued) !== 0 || Math.abs(open) < 0.0005)) continue;   // ไม่มีรับ-เบิกและไม่มียอด / ยกเลิกใช้แล้ว
+    items.push({ sku: mt.sku, name: mt.name, unit: mt.unit, open, rows: s.rows });
+  }
+  const cfg = await getCfg(c);
+  return { status: "success", month: ym, months: Object.keys(months).sort().reverse(), items, rev: String(cfg["docRev_FM-PD-07"] || PD07_REV_DEFAULT) };
+}
+
+// หัวกระดาษ (รหัส/Rev) ของเอกสารที่พิมพ์จากระบบ — QC แก้เองได้เมื่อขึ้น Rev ไม่ต้องแก้โค้ด
+export async function rmDocRevSet(c, data) {
+  const code = String(data.code || "").trim(), text = String(data.text || "").trim();
+  if (!/^FM-[A-Z]{2}-\d{2}$/.test(code)) return { status: "error", message: "รหัสเอกสารไม่ถูกต้อง" };
+  if (!text || text.length > 60) return { status: "error", message: "ใส่ข้อความหัวกระดาษ 1–60 ตัวอักษร เช่น REV : 01 Date : 23/08/62" };
+  await cfgSet(c, "docRev_" + code, text);
+  await sysLog(c, "doc-rev", code + " → " + text, data.user || c.user || "-", "ok");
+  return { status: "success", code, text };
+}
+
 // ใบเอกสารย้อนหลัง (จากประวัติ / รายงานรายเดือน) — ล็อตที่ตัด + ยอดหลังทำรายการ ให้ตรงกับใบที่ออกตอนบันทึก (อ่านอย่างเดียว)
 export async function rmSlipInfo(c, data, module) {
   const doc = String(data.docNo || "").trim();
@@ -724,6 +789,8 @@ export async function handleRaw(c, action, data, module, extra) {
     case "LEDGERAUDIT": return rmLedgerAudit(c, data, module);
     case "DOCREPORT": return rmDocReport(c, data, module);
     case "SLIPINFO": return rmSlipInfo(c, data, module);
+    case "PD07": return rmPd07(c, data, module);
+    case "DOCREVSET": return rmDocRevSet(c, data);
     case "ACKDOC": return rmAckDocs(c, data, module);
     case "ROPSTATS": return rmRopStats(c, data, module);
     case "SETMIN": return rmSetMin(c, data, module);

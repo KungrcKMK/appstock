@@ -986,8 +986,8 @@ console.log("17) 🏷️ ล็อตวัตถุดิบ (วันที�
   const e3 = await raw("LOTEDIT", { sku: SKU, lotId: L1.Id, qty: 20, seenQty: 5 }, tok, M);
   x = await mat();
   T("แก้จำนวนล็อต 5 → 20 → คงเหลือ +15 (= 45)", e3.status === "success" && e3.balance === 45 && x.Qty === 45 && x.Lots[0].Qty === 20 && sumOk(x), [e3, lotsTxt(x)]);
-  const rIn = await raw("UPDATE", { sku: SKU, type: "IN", qty: 2, recvDate: "2026-10-05" }, tok, M);
-  const L5 = (await mat()).Lots.find((l) => l.RecvDate === "2026-10-05");
+  const rIn = await raw("UPDATE", { sku: SKU, type: "IN", qty: 2, recvDate: thDay(-5) }, tok, M);
+  const L5 = (await mat()).Lots.find((l) => l.RecvDate === thDay(-5));
   const e4 = await raw("LOTEDIT", { sku: SKU, lotId: L5.Id, recvDate: today, lotNo: "L2", seenQty: L5.Qty }, tok, M);
   T("แก้จนซ้ำกับล็อตอื่น (วัน+เลขล็อต+วันหมดอายุเดียวกัน) → ปฏิเสธ ไม่มีอะไรเปลี่ยน", rIn.status === "success" && e4.status === "error" && /ตรงกันอยู่แล้ว/.test(e4.message) && (await mat()).Qty === 47, e4);
   const e5 = await raw("LOTEDIT", { sku: SKU, lotId: L1.Id, remove: true, seenQty: 20 }, tok, M);
@@ -1053,6 +1053,47 @@ console.log("18) หน้างานไม่ได้เบิกทุกว
   await raw("VERIFY", { sku: SKU, qty: 700 }, tok, M);
   it = (await raw("USAGEPLAN", {}, tok, M)).items.find((x) => x.sku === SKU);
   T("นับได้ 700 (มากกว่า 1 วันผลิต) → ไม่เตือน กลับเป็นยังพอ", it && it.shortNext === false && it.status === "ok" && !it.reasons.some((r) => /ไม่พอเบิกวันผลิตถัดไป/.test(r)), it);
+  await raw("DELETE", { sku: SKU }, tok, M);
+}
+
+console.log("19) FM-PD-07 บันทึกการรับ-เบิกวัตถุดิบ — 1 แถวต่อรายการ · ยอดต่อกันทุกแถว · ตรวจนับเป็นแถวปรับยอด · หัวกระดาษแก้ได้ (2026-11-27)");
+{
+  const SKU = "PD7" + Date.now(), M = "SQF", NAME = "ทดสอบ FM-PD-07 " + SKU;
+  const ym = new Date(Date.now() + 7 * 3600000).toISOString().slice(0, 7);   // เดือนปัจจุบันตามเวลาไทย
+  await raw("CREATE", { sku: SKU, name: NAME, unit: "กก.", qty: 0, min: 0 }, tok, M);
+  const rIn = await raw("UPDATE", { sku: SKU, type: "IN", qty: 100 }, tok, M);
+  const rOut = await raw("UPDATE", { sku: SKU, type: "OUT", qty: 30, purpose: "ลูกตาล" }, tok, M);
+  await raw("VERIFY", { sku: SKU, qty: 60 }, tok, M);   // นับขาด 10 → แถวปรับยอด
+  await raw("VERIFY", { sku: SKU, qty: 60 }, tok, M);   // นับตรง → ไม่ขึ้นแถว
+  const pick = async () => ((await raw("PD07", { month: ym }, tok, M)).items || []).find((i) => i.sku === SKU);
+  let it = await pick();
+  const chain = (rows, open) => rows.every((r, i) => Math.abs(r.open + r.in - r.out - r.bal) < 0.0005 && Math.abs(r.open - (i ? rows[i - 1].bal : open)) < 0.0005);
+  T("รับ 100 · เบิก 30 · นับได้ 60 → 3 แถว (สร้างยอด 0 และนับตรงไม่ขึ้นแถว)", it && it.rows.length === 3, it && it.rows);
+  const [a, b, c3] = it ? it.rows : [];
+  T("แถวรับ: ยอดยกมา 0 รับ 100 คงเหลือ 100 · ผู้รับ = ผู้บันทึก · หมายเหตุมีเลขที่ใบรับ + Lot",
+    a && a.open === 0 && a.in === 100 && a.bal === 100 && a.recv === USER && a.wd === "" && a.note.includes(rIn.docNo) && /Lot รับ /.test(a.note), a);
+  T("แถวเบิก: ยอดยกมา 100 เบิก 30 คงเหลือ 70 · ผู้เบิก · หมายเหตุมีเลขที่ใบเบิก + ใช้กับงาน + Lot ที่ตัด",
+    b && b.open === 100 && b.out === 30 && b.bal === 70 && b.wd === USER && b.note.includes(rOut.docNo) && b.note.includes("ลูกตาล") && /Lot /.test(b.note), b);
+  T("ตรวจนับขาด 10: เบิกใช้ 10 คงเหลือ 60 · หมายเหตุ ปรับยอดจากตรวจนับ (นับได้ 60)", c3 && c3.open === 70 && c3.out === 10 && c3.bal === 60 && /ปรับยอดจากตรวจนับ \(นับได้ 60\)/.test(c3.note), c3);
+  T("ทุกแถว ยอดยกมา + รับ − เบิก = คงเหลือ และต่อจากแถวก่อน", it && chain(it.rows, it.open), it && it.rows);
+  // ข้อมูลเก่าที่ยอดไม่ต่อกัน (ยุคก่อนมียอดหลังรายการ) → ต้องมีแถว "ปรับยอดให้ตรงระบบ" ไม่ซ่อนส่วนต่าง
+  await sqlLocal("INSERT INTO history (module, ts, name, action, qty, user, sku, unit, op_id, balance_after) VALUES ('SQF', '" + new Date().toISOString() +
+    "', '" + NAME + "', 'เบิกออก', 5, 'test', '" + SKU + "', 'กก.', 'pd7-" + SKU + "', 40);");
+  it = await pick();
+  const fix = it && it.rows[3], last = it && it.rows[4];
+  T("ยอดไม่ต่อกัน (60 → ใบถัดไปบอกเหลือ 40 หลังเบิก 5) → แถวปรับยอดให้ตรงระบบ 60→45 แล้วแถวเบิก 45→40 · ยังต่อกันทุกแถว",
+    it && it.rows.length === 5 && fix.open === 60 && fix.out === 15 && fix.bal === 45 && /ปรับยอดให้ตรงระบบ/.test(fix.note) && last.open === 45 && last.out === 5 && last.bal === 40 && chain(it.rows, it.open), it && it.rows.slice(3));
+  const r0 = await raw("PD07", {}, tok, M), bad = await raw("PD07", { month: "2569-1" }, tok, M);
+  T("ไม่ระบุเดือน = รายชื่อเดือน (มีเดือนนี้) ไม่มีรายการ · เดือนผิดรูปแบบ → ปฏิเสธ", r0.status === "success" && r0.months.includes(ym) && r0.items.length === 0 && bad.status === "error", [r0.months, bad]);
+  const old = (await raw("PD07", { month: ym }, tok, M)).rev;
+  const u = await raw("DOCREVSET", { code: "FM-PD-07", text: "REV : 02 Date : 01/12/69" }, tok, M);
+  const s = await raw("DOCREVSET", { code: "FM-PD-07", text: "REV : 02 Date : 01/12/69" }, atok, M);
+  const after = (await raw("PD07", { month: ym }, tok, M)).rev;
+  T("หัวกระดาษ: ค่าเริ่มต้น Rev.01 · พนักงานแก้ไม่ได้ · หัวหน้า/แอดมินแก้ได้ แล้วเอกสารใช้ค่าใหม่", old === "REV : 01 Date : 23/08/62" && u.status === "error" && s.status === "success" && after === "REV : 02 Date : 01/12/69", [old, u.message, s, after]);
+  const badCode = await raw("DOCREVSET", { code: "FM-PD-07'; DROP", text: "x" }, atok, M);
+  T("รหัสเอกสารผิดรูปแบบ → ปฏิเสธ", badCode.status === "error", badCode);
+  await raw("DOCREVSET", { code: "FM-PD-07", text: old }, atok, M);
+  await sqlLocal("DELETE FROM history WHERE op_id LIKE 'pd7-PD7%';");   // เอาแถวยอดไม่ต่อที่แทรกเองออก ไม่งั้นเคสตรวจยอดคลังของรอบถัดไปเจอ
   await raw("DELETE", { sku: SKU }, tok, M);
 }
 

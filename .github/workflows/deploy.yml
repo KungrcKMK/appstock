@@ -48,6 +48,11 @@ jobs:
         with:
           path: '.'
 
+      # 2026-11-27: deploy-pages ถามหาไฟล์หลังอัปโหลดเสร็จแค่ 0.3 วิ แล้ว GitHub ยังไม่ทันลงทะเบียน → "Found 0 artifact(s)" ล้ม 2 รอบติด
+      #   (สั่งรันซ้ำในรอบเดิมไม่ได้ — ไฟล์ซ้อนเป็น 2 ชุด) · รอสั้นๆ ก่อน deploy
+      - name: Wait for artifact registration
+        run: sleep 20
+
       - name: Deploy to GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4

@@ -315,16 +315,16 @@ function drPd07Print() {
   const pages = items.map(it => {
     const rows = it.rows.length ? it.rows : [{ date: "", open: it.open, in: 0, out: 0, bal: it.open, recv: "", wd: "", note: "ไม่มีรับ-เบิกในเดือนนี้" }];
     return `<section class="pg">
-      <div class="top">
-        <div>${escapeHtml(company)}</div>
-        <div class="ttl">บันทึกการรับ - เบิก วัตถุดิบ <u>${escapeHtml(it.name)}</u> <span class="u">(หน่วย: ${escapeHtml(it.unit || "-")})</span></div>
-        <div class="code"><b>FM-PD-07</b><br>${escapeHtml(_pd07.rev || "")}</div>
-      </div>
-      <div class="mon">ประจำเดือน <u>${escapeHtml(monthName)}</u> ปี <u>${yearBE}</u></div>
       <table>
         <colgroup><col style="width:9%"><col style="width:9%"><col style="width:9%"><col style="width:9%"><col style="width:9%">
           <col style="width:10%"><col style="width:10%"><col style="width:9%"><col></colgroup>
         <thead>
+          <tr class="hd"><th colspan="9"><div class="top">
+            <div>${escapeHtml(company)}</div>
+            <div class="ttl">บันทึกการรับ - เบิก วัตถุดิบ <u>${escapeHtml(it.name)}</u> <span class="u">(หน่วย: ${escapeHtml(it.unit || "-")})</span></div>
+            <div class="code"><b>FM-PD-07</b><br>${escapeHtml(_pd07.rev || "")}</div>
+          </div>
+          <div class="mon">ประจำเดือน <u>${escapeHtml(monthName)}</u> ปี <u>${yearBE}</u></div></th></tr>
           <tr><th rowspan="2">วัน/เดือน/ปี</th><th colspan="4">จำนวน</th><th rowspan="2">ผู้รับ</th><th rowspan="2">ผู้เบิก</th><th rowspan="2">ผู้อนุมัติ</th><th rowspan="2">หมายเหตุ</th></tr>
           <tr><th>ยอดยกมา</th><th>รับเข้า</th><th>เบิกใช้</th><th>คงเหลือ</th></tr>
         </thead>
@@ -351,6 +351,7 @@ function drPd07Print() {
     thead{display:table-header-group;} tr{page-break-inside:avoid;}
     th,td{border:1px solid #111;padding:3px 5px;vertical-align:top;}
     th{font-weight:700;text-align:center;background:#f2f2ef;}
+    tr.hd th{border:none;background:none;padding:0 0 2px;font-weight:400;text-align:left;}   /* หัวกระดาษอยู่ใน thead = ขึ้นซ้ำทุกหน้าที่ตารางล้น */
     td.n{text-align:right;font-variant-numeric:tabular-nums;} td.c{text-align:center;white-space:nowrap;} td.nt{font-size:11.5px;word-break:break-word;}
     .ft{margin-top:6px;font-size:10.5px;color:#5c5c57;}
     @media print{body{padding:0;} .noprint{display:none;}}

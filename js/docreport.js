@@ -250,3 +250,116 @@ function drPrint() {
   </body></html>`);
   w.document.close();
 }
+
+// ═══════════════════════════════════════════════════════════
+// FM-PD-07 บันทึกการรับ-เบิกวัตถุดิบ (แบบ Rev.01 · A4 แนวนอน · วัตถุดิบละหน้า)
+//   ตัวเลขทุกช่องคิดที่หลังบ้าน (action PD07) — ที่นี่แค่จัดหน้าพิมพ์
+//   1 แถว = 1 ใบรับ/ใบเบิก · ตรวจนับที่ยอดเปลี่ยน = แถวปรับยอด · ผู้อนุมัติเว้นเซ็นมือ
+// ═══════════════════════════════════════════════════════════
+let _pd07 = null;
+async function openPd07() {
+  const m = document.getElementById("pd07Modal");
+  if (!m) return;
+  document.getElementById("pd07Target").textContent =
+    rawCurrentModule === "SQF" ? "วัตถุดิบ SQF (สุพรรณคิวฟู้ดส์)" : "วัตถุดิบ MLM (แม่ละมาย)";
+  const role = (localStorage.getItem("unified_stock_role") || "").toLowerCase();
+  const canRev = role === "admin" || role === "manager";
+  document.getElementById("pd07Rev").disabled = !canRev;
+  document.getElementById("pd07RevBtn").disabled = !canRev;
+  document.getElementById("pd07Rev").title = canRev ? "" : "หัวหน้า/แอดมินเป็นคนแก้หัวกระดาษ";
+  m.classList.remove("hidden");
+  await drPd07Load("");
+}
+function closePd07() { document.getElementById("pd07Modal")?.classList.add("hidden"); }
+
+async function drPd07Load(month) {
+  const sum = document.getElementById("pd07Sum"), btn = document.getElementById("pd07PrintBtn");
+  sum.textContent = "กำลังโหลด...";
+  btn.disabled = true;
+  try {
+    const r = await rawFetch({ action: "PD07", month: month || "" });
+    if (!r || r.status !== "success") { sum.textContent = (r && r.message) || "โหลดไม่สำเร็จ"; return; }
+    if (!month) {   // ครั้งแรก: เติมรายชื่อเดือน แล้วโหลดเดือนล่าสุด
+      if (!r.months.length) { sum.textContent = "ยังไม่มีรายการรับ-เบิก"; return; }
+      document.getElementById("pd07Month").innerHTML = r.months.map(m =>
+        `<option value="${escapeAttr(m)}">${escapeHtml(_drMonthLabel(m))}</option>`).join("");
+      return drPd07Load(r.months[0]);
+    }
+    _pd07 = r;
+    document.getElementById("pd07Item").innerHTML = '<option value="">ทุกวัตถุดิบ (วัตถุดิบละหน้า)</option>' +
+      r.items.map(i => `<option value="${escapeAttr(i.sku)}">${escapeHtml(i.name)}</option>`).join("");
+    const inp = document.getElementById("pd07Rev");
+    if (document.activeElement !== inp) inp.value = r.rev || "";
+    const n = r.items.reduce((a, i) => a + i.rows.length, 0);
+    sum.textContent = r.items.length + " วัตถุดิบ · " + n.toLocaleString() + " แถว";
+    btn.disabled = !r.items.length;
+  } catch (e) { sum.textContent = "เชื่อมต่อไม่สำเร็จ: " + e.message; }
+}
+
+async function drPd07SaveRev() {
+  const text = document.getElementById("pd07Rev").value.trim();
+  const r = await rawFetch({ action: "DOCREVSET", code: "FM-PD-07", text, user: currentUser });
+  if (r && r.status === "success") { if (_pd07) _pd07.rev = r.text; showToast("บันทึกหัวกระดาษแล้ว", "success"); }
+  else showToast((r && r.message) || "บันทึกไม่สำเร็จ", "error");
+}
+
+function drPd07Print() {
+  if (!_pd07 || !_pd07.items.length) { showToast("ไม่มีข้อมูลให้พิมพ์", "warn"); return; }
+  const sku = document.getElementById("pd07Item").value;
+  const items = _pd07.items.filter(i => !sku || i.sku === sku);
+  const company = rawCurrentModule === "SQF" ? "บริษัท สุพรรณคิวฟู้ดส์ จำกัด" : "หจก.แม่ละมาย";
+  const p = String(_pd07.month).split("-");
+  const monthName = _drMonthLabel(_pd07.month).split(" ")[0], yearBE = Number(p[0]) + 543;
+  const num = n => Number(n || 0).toLocaleString("th-TH", { maximumFractionDigits: 3 });
+  const cell = n => (Number(n) ? num(n) : "");
+  const pages = items.map(it => {
+    const rows = it.rows.length ? it.rows : [{ date: "", open: it.open, in: 0, out: 0, bal: it.open, recv: "", wd: "", note: "ไม่มีรับ-เบิกในเดือนนี้" }];
+    return `<section class="pg">
+      <div class="top">
+        <div>${escapeHtml(company)}</div>
+        <div class="ttl">บันทึกการรับ - เบิก วัตถุดิบ <u>${escapeHtml(it.name)}</u> <span class="u">(หน่วย: ${escapeHtml(it.unit || "-")})</span></div>
+        <div class="code"><b>FM-PD-07</b><br>${escapeHtml(_pd07.rev || "")}</div>
+      </div>
+      <div class="mon">ประจำเดือน <u>${escapeHtml(monthName)}</u> ปี <u>${yearBE}</u></div>
+      <table>
+        <colgroup><col style="width:9%"><col style="width:9%"><col style="width:9%"><col style="width:9%"><col style="width:9%">
+          <col style="width:10%"><col style="width:10%"><col style="width:9%"><col></colgroup>
+        <thead>
+          <tr><th rowspan="2">วัน/เดือน/ปี</th><th colspan="4">จำนวน</th><th rowspan="2">ผู้รับ</th><th rowspan="2">ผู้เบิก</th><th rowspan="2">ผู้อนุมัติ</th><th rowspan="2">หมายเหตุ</th></tr>
+          <tr><th>ยอดยกมา</th><th>รับเข้า</th><th>เบิกใช้</th><th>คงเหลือ</th></tr>
+        </thead>
+        <tbody>${rows.map(r => `<tr>
+          <td class="c">${escapeHtml(r.date)}</td><td class="n">${num(r.open)}</td><td class="n">${cell(r.in)}</td><td class="n">${cell(r.out)}</td><td class="n"><b>${num(r.bal)}</b></td>
+          <td>${escapeHtml(r.recv ? personName(r.recv) : "")}</td><td>${escapeHtml(r.wd ? personName(r.wd) : "")}</td><td></td><td class="nt">${escapeHtml(r.note || "")}</td></tr>`).join("")}</tbody>
+      </table>
+      <div class="ft">พิมพ์จากระบบสต๊อก (AppStock) เมื่อ ${escapeHtml(_drTime(new Date().toISOString()))} · ยอดยกมา + รับเข้า − เบิกใช้ = คงเหลือ ทุกแถว</div>
+    </section>`;
+  }).join("");
+  const w = window.open("", "", "width=1200,height=820");
+  if (!w) { showToast("เบราว์เซอร์บล็อกหน้าต่างใหม่", "warn"); return; }
+  w.document.write(`<!DOCTYPE html><html lang="th"><head><meta charset="UTF-8">
+  <title>FM-PD-07 ${escapeHtml(_drMonthLabel(_pd07.month))}</title>
+  <style>@import url('${fontCssUrl()}');
+    @page{size:A4 landscape;margin:10mm;}
+    body{font-family:'Sarabun','Leelawadee UI',sans-serif;font-size:13px;color:#111;margin:0;padding:16px;}
+    .pg{page-break-after:always;} .pg:last-child{page-break-after:auto;}
+    .top{display:grid;grid-template-columns:1fr auto 1fr;align-items:end;gap:12px;}
+    .ttl{font-size:17px;font-weight:700;text-align:center;} .u{font-size:12px;font-weight:400;}
+    .code{justify-self:end;border:1px solid #111;padding:3px 10px;text-align:center;font-size:12px;line-height:1.35;}
+    .mon{text-align:center;margin:6px 0 8px;}
+    table{width:100%;border-collapse:collapse;table-layout:fixed;}
+    thead{display:table-header-group;} tr{page-break-inside:avoid;}
+    th,td{border:1px solid #111;padding:3px 5px;vertical-align:top;}
+    th{font-weight:700;text-align:center;background:#f2f2ef;}
+    td.n{text-align:right;font-variant-numeric:tabular-nums;} td.c{text-align:center;white-space:nowrap;} td.nt{font-size:11.5px;word-break:break-word;}
+    .ft{margin-top:6px;font-size:10.5px;color:#5c5c57;}
+    @media print{body{padding:0;} .noprint{display:none;}}
+  </style></head><body>
+  <div class="noprint" style="margin-bottom:12px;">
+    <button onclick="window.print()" style="background:#006b31;color:#fff;border:none;padding:9px 22px;border-radius:8px;font-weight:700;font-size:13px;cursor:pointer;">พิมพ์ / บันทึกเป็น PDF</button>
+    <span style="margin-left:10px;color:#5c5c57;">${items.length} หน้า (วัตถุดิบละหน้า) · ตั้งกระดาษ A4 แนวนอน</span>
+  </div>
+  ${pages}
+  </body></html>`);
+  w.document.close();
+}

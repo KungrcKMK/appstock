@@ -2182,6 +2182,7 @@
               <button onclick="openPurchaseRequest()" class="viewer-hide">ใบขอซื้อ</button>
               <button onclick="openStockReport()" class="viewer-hide">ใบรายงานสต๊อกคงเหลือ</button>
               <button onclick="openDocReport()" class="viewer-hide">ตรวจใบเบิกรายเดือน</button>
+              <button onclick="openPd07()" class="viewer-hide">บันทึกการรับ-เบิก (FM-PD-07)</button>
               <button onclick="rawPrintQrAll()" class="viewer-hide">พิมพ์ QR ทั้งหมด</button>
               <div class="rm-more-h viewer-hide">ข้อมูล</div>
               <button onclick="openRawImport()" class="viewer-hide">นำเข้าจากไฟล์</button>
@@ -2381,6 +2382,33 @@
       </div>
 
       <div id="drBody" style="padding:14px 16px;overflow-y:auto;"></div>
+    </div>
+  </div>
+
+  <!-- FM-PD-07 บันทึกการรับ-เบิกวัตถุดิบ — เลือกเดือน/วัตถุดิบ แล้วพิมพ์ตามแบบ Rev.01 (ตัวเลขคิดที่หลังบ้าน action PD07) -->
+  <div id="pd07Modal" class="ui-modal hidden fixed inset-0 z-[630] flex justify-center p-4 overflow-y-auto">
+    <div class="sq-page my-auto" style="width:100%;max-width:520px;border-radius:6px;overflow:hidden;">
+      <div class="ui-plate-head" style="display:flex;align-items:flex-start;gap:10px;">
+        <div style="flex:1;min-width:0;">
+          <div class="sq-card-title">บันทึกการรับ-เบิกวัตถุดิบ (FM-PD-07)</div>
+          <div class="sq-card-note" id="pd07Target">—</div>
+        </div>
+        <button type="button" onclick="closePd07()" aria-label="ปิดหน้าต่าง" title="ปิด (Esc)" class="ui-x"><i class="ic ic-x" aria-hidden="true"></i></button>
+      </div>
+      <div style="padding:16px 20px;display:grid;gap:8px;">
+        <label for="pd07Month" class="sq-card-note" style="font-weight:800;color:var(--sq-ink2);">เดือน</label>
+        <select id="pd07Month" class="sq-select" onchange="drPd07Load(this.value)"></select>
+        <label for="pd07Item" class="sq-card-note" style="font-weight:800;color:var(--sq-ink2);margin-top:6px;">วัตถุดิบ</label>
+        <select id="pd07Item" class="sq-select"></select>
+        <div id="pd07Sum" class="sq-card-note" style="min-height:18px;"></div>
+        <label for="pd07Rev" class="sq-card-note" style="font-weight:800;color:var(--sq-ink2);margin-top:6px;">หัวกระดาษ (รหัส / Rev) — แก้เมื่อ QC ขึ้น Rev ใหม่</label>
+        <div style="display:grid;grid-template-columns:1fr auto;gap:8px;">
+          <input type="text" id="pd07Rev" maxlength="60" class="ui-field" style="padding:8px 10px;min-height:40px;">
+          <button type="button" onclick="drPd07SaveRev()" id="pd07RevBtn" class="sq-btn">บันทึก</button>
+        </div>
+        <button type="button" onclick="drPd07Print()" id="pd07PrintBtn" class="sq-btn sq-btn-primary" style="margin-top:10px;min-height:44px;">พิมพ์</button>
+        <button type="button" onclick="closePd07()" class="ui-cancel" style="margin-top:0;">ปิดหน้าต่าง</button>
+      </div>
     </div>
   </div>
 

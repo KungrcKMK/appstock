@@ -278,6 +278,7 @@ async function drPd07Load(month) {
   btn.disabled = true;
   try {
     const r = await rawFetch({ action: "PD07", month: month || "" });
+    if (month && document.getElementById("pd07Month").value !== month) return;   // เปลี่ยนเดือนระหว่างรอ — คำตอบเก่ามาทีหลัง ไม่เอามาทับ
     if (!r || r.status !== "success") { sum.textContent = (r && r.message) || "โหลดไม่สำเร็จ"; return; }
     if (!month) {   // ครั้งแรก: เติมรายชื่อเดือน แล้วโหลดเดือนล่าสุด
       if (!r.months.length) { sum.textContent = "ยังไม่มีรายการรับ-เบิก"; return; }

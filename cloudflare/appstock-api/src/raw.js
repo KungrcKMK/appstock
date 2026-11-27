@@ -587,7 +587,7 @@ export async function rmPd07(c, data, module) {
   const lotOf = {};   // op_id → "ยอดยกมา 30 · รับ 02/10/69 20"
   for (const r of await all(c, "SELECT mv.op_id, mv.qty, l.recv_date, l.lot_no FROM rm_lot_moves mv JOIN rm_lots l ON l.id = mv.lot_id WHERE mv.module = ? ORDER BY mv.id", module))
     (lotOf[r.op_id] = lotOf[r.op_id] || []).push(lotLabel(r) + " " + Math.abs(Number(r.qty)).toLocaleString("en-US", { maximumFractionDigits: 3 }));
-  const r3 = (n) => Math.round(n * 1000) / 1000, who = (u) => String(u || "").split(" (")[0];
+  const r3 = (n) => Math.round(n * 1000) / 1000, who = (u) => String(u || "").replace(/\s*\(\s*📱[\s\S]*$/, "").trim();   // ตัดชื่อเครื่องแบบเดียวกับ personName (js/utils.js)
   const st = {}, months = {};
   for (const h of rows) {
     const sku = String(h.sku || "").trim() || nameToSku[String(h.name || "").trim()] || "";

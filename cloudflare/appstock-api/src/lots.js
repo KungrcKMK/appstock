@@ -1,4 +1,4 @@
-// ล็อตวัตถุดิบ (2026-10-20) — 1 ครั้งรับเข้า = 1 ล็อต (วันที่รับเข้า + เลขล็อตผู้ขาย + วันหมดอายุ ถ้ามี)
+// ล็อตวัตถุดิบ (2026-10-20) — 1 ครั้งรับเข้า = 1 ล็อต (วันที่รับเข้า + เลขล็อตผู้ขาย + วันหมดอายุ + ผู้ขาย ถ้ามี)
 //   ยอดหลักยังเป็น materials.qty (จอวางแผน/ใบขอซื้อ/สรุปเข้ากลุ่มไม่เปลี่ยน) · ล็อต = ยอดเดียวกันแยกตามวันที่รับ
 //   ผลรวม qty_left ของแต่ละ SKU = materials.qty เสมอ — ทุกการเขียนที่แตะยอดต่อท้าย batch ด้วย lotSync (+ งานตามเวลาทุก 5 นาทีกันพลาด)
 //     ล็อตรวมมากกว่ายอด → ตัดออกจากล็อตเก่าก่อน (เบิก / นับได้น้อยกว่า)
@@ -33,10 +33,10 @@ export function lotAge(recvDate, now) {
   return Math.round((Date.parse(dayTH(now || Date.now()) + "T00:00:00Z") - a) / DAY_MS);
 }
 
-/** ชื่อล็อตที่คนอ่าน: "รับ 02/10/69 · L2409" · "ยอดยกมา" */
+/** ชื่อล็อตที่คนอ่าน: "รับ 02/10/69 · L2409 · ผู้ขาย" · "ยอดยกมา" — ผู้ขายเป็นส่วนของคีย์ล็อต จึงต้องอยู่ในชื่อ (วันเดียวกันคนละผู้ขาย = คนละล็อต) */
 export function lotLabel(r) {
   const m = String(r.recv_date || "").match(/^(\d{4})-(\d{2})-(\d{2})$/);
-  return (m ? "รับ " + m[3] + "/" + m[2] + "/" + String(Number(m[1]) + 543).slice(-2) : "ยอดยกมา") + (r.lot_no ? " · " + r.lot_no : "");
+  return (m ? "รับ " + m[3] + "/" + m[2] + "/" + String(Number(m[1]) + 543).slice(-2) : "ยอดยกมา") + (r.lot_no ? " · " + r.lot_no : "") + (r.supplier ? " · " + r.supplier : "");
 }
 
 // ── ทำให้ล็อตรวม = ยอดคงเหลือ ──
@@ -74,15 +74,15 @@ export function lotSync(c, module, sku, op) {
 
 const GATE = "EXISTS (SELECT 1 FROM history WHERE module = ?1 AND op_id = ?3)";   // ทำเฉพาะเมื่อแถวประวัติของรายการนี้เขียนสำเร็จ
 
-/** รับเข้า → ล็อตตามวันที่รับ (วัน+เลขล็อต+วันหมดอายุ ตรงกับล็อตที่มี = บวกเข้าล็อตนั้น) */
-export function lotReceive(c, module, sku, op, q, recv, lotNo, exp) {
+/** รับเข้า → ล็อตตามวันที่รับ (วัน+เลขล็อต+วันหมดอายุ+ผู้ขาย ตรงกับล็อตที่มี = บวกเข้าล็อตนั้น) */
+export function lotReceive(c, module, sku, op, q, recv, lotNo, exp, supplier) {
   return [
-    stmt(c, "INSERT INTO rm_lots (module, sku, recv_date, lot_no, exp_date, qty_in, qty_left, created_at, op_id) " +
-      "SELECT ?1, ?2, ?4, ?5, ?6, ?7, ?7, ?8, ?3 WHERE " + GATE +
-      " ON CONFLICT(module, sku, recv_date, lot_no, exp_date) DO UPDATE SET qty_in = ROUND(qty_in + excluded.qty_in, 3), qty_left = ROUND(qty_left + excluded.qty_left, 3)",
-      module, sku, op, recv, lotNo, exp, q, nowIso()),
+    stmt(c, "INSERT INTO rm_lots (module, sku, recv_date, lot_no, exp_date, qty_in, qty_left, created_at, op_id, supplier) " +
+      "SELECT ?1, ?2, ?4, ?5, ?6, ?7, ?7, ?8, ?3, ?9 WHERE " + GATE +
+      " ON CONFLICT(module, sku, recv_date, lot_no, exp_date, supplier) DO UPDATE SET qty_in = ROUND(qty_in + excluded.qty_in, 3), qty_left = ROUND(qty_left + excluded.qty_left, 3)",
+      module, sku, op, recv, lotNo, exp, q, nowIso(), supplier),
     stmt(c, "INSERT INTO rm_lot_moves (module, op_id, lot_id, qty) SELECT ?1, ?3, id, ?7 FROM rm_lots " +
-      "WHERE module = ?1 AND sku = ?2 AND recv_date = ?4 AND lot_no = ?5 AND exp_date = ?6 AND " + GATE, module, sku, op, recv, lotNo, exp, q),
+      "WHERE module = ?1 AND sku = ?2 AND recv_date = ?4 AND lot_no = ?5 AND exp_date = ?6 AND supplier = ?8 AND " + GATE, module, sku, op, recv, lotNo, exp, q, supplier),
   ];
 }
 
@@ -100,9 +100,9 @@ export function lotReturn(c, module, sku, op, q) {
 /** ล็อตที่รายการนี้แตะ (เรียงตามลำดับที่ตัด) — ใบเบิก / ข้อความแจ้งเตือน */
 export async function lotMovesOf(c, module, op) {
   if (!op) return [];
-  const rows = await all(c, "SELECT l.id, l.recv_date, l.lot_no, l.exp_date, mv.qty FROM rm_lot_moves mv JOIN rm_lots l ON l.id = mv.lot_id " +
+  const rows = await all(c, "SELECT l.id, l.recv_date, l.lot_no, l.exp_date, l.supplier, mv.qty FROM rm_lot_moves mv JOIN rm_lots l ON l.id = mv.lot_id " +
     "WHERE mv.module = ? AND mv.op_id = ? ORDER BY mv.id", module, op);
-  return rows.map((r) => ({ id: r.id, label: lotLabel(r), recvDate: r.recv_date, lotNo: r.lot_no, expDate: r.exp_date, qty: Math.abs(Number(r.qty)), sign: Number(r.qty) < 0 ? "-" : "+" }));
+  return rows.map((r) => ({ id: r.id, label: lotLabel(r), recvDate: r.recv_date, lotNo: r.lot_no, expDate: r.exp_date, supplier: r.supplier, qty: Math.abs(Number(r.qty)), sign: Number(r.qty) < 0 ? "-" : "+" }));
 }
 /** "ยอดยกมา 30 · รับ 02/10/69 20" */
 export const lotMovesText = (moves) => (moves || []).map((m) => m.label + " " + Number(m.qty).toLocaleString("en-US", { maximumFractionDigits: 3 })).join(" · ");
@@ -110,14 +110,14 @@ export const lotMovesText = (moves) => (moves || []).map((m) => m.label + " " + 
 /** ล็อตที่ยังมีของ แยกตาม SKU (เรียงตามลำดับที่จะถูกตัด) */
 export async function lotOpenMap(c, module) {
   const map = {};
-  for (const r of await all(c, "SELECT id, sku, recv_date, lot_no, exp_date, qty_in, qty_left FROM rm_lots WHERE module = ? AND qty_left > 0 ORDER BY sku, " + FIFO, module))
+  for (const r of await all(c, "SELECT id, sku, recv_date, lot_no, exp_date, supplier, qty_in, qty_left FROM rm_lots WHERE module = ? AND qty_left > 0 ORDER BY sku, " + FIFO, module))
     (map[r.sku] || (map[r.sku] = [])).push(r);
   return map;
 }
 /** แถวล็อต → คำตอบ (ชื่อคีย์ตัวใหญ่แบบเดียวกับรายการวัตถุดิบ) */
 export function lotOut(r, ageLimit, now) {
   const age = lotAge(r.recv_date, now);
-  return { Id: r.id, RecvDate: r.recv_date, LotNo: r.lot_no, ExpDate: r.exp_date, QtyIn: Number(r.qty_in), Qty: Number(r.qty_left),
+  return { Id: r.id, RecvDate: r.recv_date, LotNo: r.lot_no, ExpDate: r.exp_date, Supplier: r.supplier, QtyIn: Number(r.qty_in), Qty: Number(r.qty_left),
            Label: lotLabel(r), AgeDays: age, Old: ageLimit > 0 && age !== null && age > ageLimit };
 }
 
@@ -135,7 +135,7 @@ export function lotEarliestExp(itemExp, lots) {
 export async function lotOldList(c, module, days) {
   if (!(days > 0)) return [];
   const now = Date.now();
-  return (await all(c, "SELECT l.id, l.sku, l.recv_date, l.lot_no, l.exp_date, l.qty_left, m.name, m.unit FROM rm_lots l " +
+  return (await all(c, "SELECT l.id, l.sku, l.recv_date, l.lot_no, l.exp_date, l.supplier, l.qty_left, m.name, m.unit FROM rm_lots l " +
     "JOIN materials m ON m.module = l.module AND m.sku = l.sku WHERE l.module = ? AND l.qty_left > 0 AND l.recv_date <> '' AND m.discontinued = 0 " +
     "ORDER BY l.recv_date, l.id", module))
     .map((r) => Object.assign(r, { age: lotAge(r.recv_date, now) }))

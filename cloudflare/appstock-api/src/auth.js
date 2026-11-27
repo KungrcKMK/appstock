@@ -49,7 +49,8 @@ export const WRITE_MIN_ROLE = {
   SYSSTATUS: "manager", EXPORT: "admin",
   PLANSET: "manager", PLANDIGEST: "manager", MIRRORPUSH: "manager",
   LINESTATUS: "admin", LINESAVE: "admin", LINETEST: "admin", staleDigest: "manager",
-  DOCREVSET: "manager",   // หัวกระดาษ (รหัส/Rev) เอกสารที่พิมพ์จากระบบ เช่น FM-PD-07
+  DOCREVSET: "manager",
+  SUPPLIERSET: "manager",   // รายชื่อผู้ขาย (AVL) — เพิ่ม / ยกเลิก   // หัวกระดาษ (รหัส/Rev) เอกสารที่พิมพ์จากระบบ เช่น FM-PD-07
   NOTIFYSET: "admin", NOTIFYPREVIEW: "admin",   // กำหนดการส่งสรุปเข้ากลุ่ม (วัน/เวลา/หัวข้อ/รูปแบบ) — อยู่ในหน้า ⚙️ ตั้งค่าการแจ้งเตือน ซึ่งเห็นเฉพาะ admin
 };
 export async function authGate(c, action, data, payload) {

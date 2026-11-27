@@ -1097,5 +1097,54 @@ console.log("19) FM-PD-07 บันทึกการรับ-เบิกว�
   await raw("DELETE", { sku: SKU }, tok, M);
 }
 
+console.log("20) ผู้ขาย (AVL) — รับเข้าพร้อมผู้ขาย · ผู้ขายเป็นส่วนของล็อต · นอก AVL ไม่บล็อก · ทะเบียนรับวัตถุดิบ (2026-11-27)");
+{
+  const M = "SQF", SKU = "SUP" + Date.now(), t = String(Date.now()).slice(-6);
+  const A = "ผู้ขายทดสอบ ก " + t, B = "ผู้ขายทดสอบ ข " + t, OUTSIDE = "ร้านนอกรายชื่อ " + t;
+  const today = new Date(Date.now() + 7 * 3600000).toISOString().slice(0, 10), ym = today.slice(0, 7);
+  const u1 = await raw("SUPPLIERSET", { name: A }, tok, M);
+  const s1 = await raw("SUPPLIERSET", { name: "  ผู้ขายทดสอบ   ก " + t + " " }, atok, M);   // ช่องว่างเกิน = ชื่อเดียวกัน
+  await raw("SUPPLIERSET", { name: B }, atok, M);
+  T("รายชื่อผู้ขาย: พนักงานแก้ไม่ได้ · หัวหน้า/แอดมินเพิ่มได้ · ช่องว่างเกินถูกตัด", u1.status === "error" && s1.status === "success" &&
+    s1.suppliers.filter((s) => s.Name === A && s.Active).length === 1, [u1.message, s1.suppliers && s1.suppliers.filter((s) => s.Name.includes(t))]);
+  T("ชื่อว่าง → ปฏิเสธ", (await raw("SUPPLIERSET", { name: "   " }, atok, M)).status === "error");
+  await raw("CREATE", { sku: SKU, name: "ทดสอบผู้ขาย " + SKU, unit: "กก.", qty: 0, min: 0 }, tok, M);
+  const r1 = await raw("UPDATE", { sku: SKU, type: "IN", qty: 10, recvDate: today, supplier: A }, tok, M);
+  T("รับ 10 จากผู้ขาย ก → ใบรับบอกล็อตพร้อมชื่อผู้ขาย", r1.status === "success" && r1.slip.lots.length === 1 && r1.slip.lots[0].supplier === A && r1.slip.lots[0].label.endsWith(" · " + A), r1.slip && r1.slip.lots);
+  await raw("UPDATE", { sku: SKU, type: "IN", qty: 5, recvDate: today, supplier: B }, tok, M);
+  await raw("UPDATE", { sku: SKU, type: "IN", qty: 3, recvDate: today, supplier: A }, tok, M);
+  let x = await matOf(M, SKU);
+  const la = x.Lots.find((l) => l.Supplier === A), lb = x.Lots.find((l) => l.Supplier === B);
+  T("วันเดียวกันคนละผู้ขาย = คนละล็อต · ผู้ขายเดิม = รวมล็อตเดิม (ก 13 · ข 5)", x.Lots.length === 2 && la && la.Qty === 13 && lb && lb.Qty === 5, x.Lots);
+  await raw("UPDATE", { sku: SKU, type: "IN", qty: 2, recvDate: today, supplier: OUTSIDE }, tok, M);
+  const r5 = await raw("UPDATE", { sku: SKU, type: "IN", qty: 1, recvDate: today }, tok, M);
+  x = await matOf(M, SKU);
+  const g = await get(M);
+  T("ผู้ขายนอกรายชื่อ / ไม่ระบุ ยังรับได้ (ไม่บล็อก) · ผู้ขายล่าสุดของรายการ = รายล่าสุดที่ระบุ", r5.status === "success" && x.Qty === 21 && x.LastSupplier === OUTSIDE, [x.Qty, x.LastSupplier]);
+  T("อ่านคลังได้รายชื่อผู้ขายของโรงงาน", Array.isArray(g.suppliers) && g.suppliers.some((s) => s.Name === A && s.Active) && g.suppliers.some((s) => s.Name === B), g.suppliers && g.suppliers.length);
+  let reg = await raw("RECVREG", { month: ym }, tok, M);
+  let mine = (reg.rows || []).filter((r) => r.sku === SKU);
+  T("ทะเบียนรับ: 5 ใบรับของรายการนี้ ครบผู้ขาย/จำนวน/ผู้ตรวจรับ/เลขที่ใบรับ", reg.status === "success" && mine.length === 5 &&
+    mine.map((r) => r.supplier + "=" + r.qty).join("|") === [A + "=10", B + "=5", A + "=3", OUTSIDE + "=2", "=1"].join("|") &&
+    mine.every((r) => r.user === USER && /^RC-SQF-/.test(r.docNo) && r.day === today) && mine[0].docNo === r1.docNo, mine);
+  T("ทะเบียนรับ: นอกรายชื่อ = นอก AVL · ไม่กรอก = ไม่ระบุผู้ขาย · ในรายชื่อ = ว่าง", mine.map((r) => r.flag).join("|") === "||" + "|นอก AVL|ไม่ระบุผู้ขาย", mine.map((r) => r.flag));
+  T("ทะเบียนรับ: เดือนผิดรูปแบบ → ปฏิเสธ", (await raw("RECVREG", { month: "" }, tok, M)).status === "error");
+  // แก้ผู้ขายในล็อต (พิมพ์ผิด) · แก้จนชนล็อตอื่น = ปฏิเสธ
+  const e1 = await raw("LOTEDIT", { sku: SKU, lotId: lb.Id, supplier: B + " (แก้)", seenQty: lb.Qty }, tok, M);
+  x = await matOf(M, SKU);
+  T("แก้ชื่อผู้ขายในล็อต → ยอดไม่เปลี่ยน ล็อตเปลี่ยนชื่อ", e1.status === "success" && x.Qty === 21 && x.Lots.some((l) => l.Id === lb.Id && l.Supplier === B + " (แก้)"), [e1, x.Lots]);
+  const e2 = await raw("LOTEDIT", { sku: SKU, lotId: lb.Id, supplier: A, seenQty: lb.Qty }, tok, M);
+  T("แก้ผู้ขายจนตรงกับล็อตอื่น (วัน/เลขล็อต/วันหมดอายุเดียวกัน) → ปฏิเสธ", e2.status === "error" && /ผู้ขาย ตรงกันอยู่แล้ว/.test(e2.message), e2);
+  const pd = ((await raw("PD07", { month: ym }, tok, M)).items || []).find((i) => i.sku === SKU);
+  T("FM-PD-07: หมายเหตุแถวรับมีชื่อผู้ขายในล็อต", pd && pd.rows[0].note.includes(A), pd && pd.rows[0]);
+  // ยกเลิกผู้ขาย ก → ทะเบียนรับแสดงตามรายชื่อปัจจุบัน (ข้อจำกัดที่จดไว้ในโค้ด)
+  const off = await raw("SUPPLIERSET", { name: A, active: false }, atok, M);
+  reg = await raw("RECVREG", { month: ym }, tok, M);
+  mine = reg.rows.filter((r) => r.sku === SKU);
+  T("ยกเลิกผู้ขาย → อยู่ในรายชื่อแบบยกเลิก (ไม่ลบ) · ทะเบียนรับขึ้นนอก AVL", off.suppliers.some((s) => s.Name === A && !s.Active) && mine[0].flag === "นอก AVL", [mine[0].flag]);
+  await raw("SUPPLIERSET", { name: B, active: false }, atok, M);
+  await raw("DELETE", { sku: SKU }, tok, M);
+}
+
 console.log(`\nสรุป: ผ่าน ${pass} · ไม่ผ่าน ${fail}`);
 process.exit(fail ? 1 : 0);

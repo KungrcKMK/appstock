@@ -19,7 +19,7 @@ if (!rel.startsWith("..") && !path.isAbsolute(rel)) {
 // ชื่อแผ่นในไฟล์สำรอง → ตาราง (คู่กับ SHEETS ใน src/system.js — เพิ่มแผ่นใหม่ที่นั่นแล้วต้องเพิ่มที่นี่ ไม่งั้นเครื่องมือหยุดเอง)
 const TABLE = {
   SQF_Materials: "materials", MLM_Materials: "materials", SQF_History: "history", MLM_History: "history",
-  RM_Lots: "rm_lots", RM_LotMoves: "rm_lot_moves",
+  RM_Lots: "rm_lots", RM_LotMoves: "rm_lot_moves", Suppliers: "suppliers",
   ColdRoom_Products: "cr_products", ColdRoom_Stock: "cr_stock", ColdRoom_Stock_Archive: "cr_stock", ColdRoom_LotHistory: "cr_lot_history",
   ColdRoom_WorkOrders: "work_orders", ColdRoom_DeliveryNotes: "delivery_notes", ColdRoom_StockIn: "stock_in",
   BOM: "bom", AppUsers: "users", PendingUsers: "pending_users", Config: "config", System_Log: "system_log",

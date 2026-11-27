@@ -114,7 +114,8 @@ const SHEETS = [
   // 🏷️ ล็อตวัตถุดิบ (ทุกล็อต รวมที่หมดแล้ว) + ล็อตไหนเปลี่ยนเท่าไรต่อรายการ (OpId ตรงกับชีตประวัติ)
   ["RM_Lots", "(SELECT l.*, m.name AS name, m.unit AS unit FROM rm_lots l LEFT JOIN materials m ON m.module = l.module AND m.sku = l.sku)", "", "module, sku, id",
     [["LotID", "id"], ["Module", "module"], ["SKU", "sku"], ["Name", "name"], ["RecvDate", (r) => r.recv_date || "ยอดยกมา"], ["LotNo", "lot_no"], ["ExpDate", "exp_date"],
-     ["QtyIn", "qty_in"], ["QtyLeft", "qty_left"], ["Unit", "unit"], ["CreatedAt", "created_at"]]],
+     ["QtyIn", "qty_in"], ["QtyLeft", "qty_left"], ["Unit", "unit"], ["CreatedAt", "created_at"], ["Supplier", "supplier"]]],
+  ["Suppliers", "suppliers", "", "module, name", [["Module", "module"], ["Name", "name"], ["Active", (r) => b2(r.active)], ["UpdatedAt", "updated_at"]]],
   ["RM_LotMoves", "rm_lot_moves", "", "id", [["ID", "id"], ["Module", "module"], ["OpId", "op_id"], ["LotID", "lot_id"], ["Qty", "qty"]], true],
   ["ColdRoom_Products", "cr_products", "", "seq, rowid", [["Barcode", "barcode"], ["ProductName", "product_name"], ["SKU", "sku"], ["DefaultUnit", "default_unit"],
     ["StandardShelfLifeDays", "shelf_life_days"], ["WarningPercentage", "warning_pct"], ["WarningDays", "warning_days"], ["SetName", "set_name"], ["UnitsPerSet", "units_per_set"], ["CreatedAt", "created_at"]]],

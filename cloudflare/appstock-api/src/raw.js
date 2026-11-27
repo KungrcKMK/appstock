@@ -65,6 +65,46 @@ async function addHistory(c, module, row) {
     module, row.ts || nowIso(), String(row.name || ""), row.action, row.qty === undefined ? "-" : row.qty, row.user || "", String(row.sku || ""), String(row.unit || ""));
 }
 
+// ───────────── ผู้ขาย (AVL · SD-PC-01) ─────────────
+//   ชื่อผู้ขายเก็บเป็นข้อความในล็อต (rm_lots.supplier) — รายชื่อนี้มีไว้เติมให้เลือก + บอก "นอก AVL" ไม่บล็อกการรับ
+const supName = (v) => String(v == null ? "" : v).replace(/\s+/g, " ").trim().slice(0, 80);
+const supList = async (c, module) =>
+  (await all(c, "SELECT name, active FROM suppliers WHERE module = ? ORDER BY name", module)).map((r) => ({ Name: r.name, Active: Number(r.active) === 1 }));
+
+/** เพิ่ม / ยกเลิก / ใช้อีกครั้ง (หัวหน้าขึ้นไป) — ไม่ลบจริง เพราะล็อตเก่าอ้างชื่อเดิม · เปลี่ยนชื่อ = เพิ่มชื่อใหม่แล้วยกเลิกชื่อเก่า */
+export async function rmSupplierSet(c, data, module) {
+  const name = supName(data.name);
+  if (!name) return { status: "error", message: "ใส่ชื่อผู้ขาย" };
+  const active = data.active === false ? 0 : 1;
+  await run(c, "INSERT INTO suppliers (module, name, active, updated_at) VALUES (?, ?, ?, ?) " +
+    "ON CONFLICT(module, name) DO UPDATE SET active = excluded.active, updated_at = excluded.updated_at", module, name, active, nowIso());
+  await sysLog(c, "supplier", module + " " + (active ? "ใช้ " : "ยกเลิก ") + name, data.user || c.user || "-", "ok");
+  return { status: "success", suppliers: await supList(c, module) };
+}
+
+/** ทะเบียนรับวัตถุดิบรายเดือน (อ่านอย่างเดียว) — 1 แถว = 1 ใบรับ · เดือนตามวันที่รับจริง (วันที่ล็อต) ไว้เทียบกับ FM-PD-03 กระดาษ
+ *  shortcut: "นอก AVL" เทียบกับรายชื่อปัจจุบัน ไม่ใช่ ณ วันที่รับ — ถ้าต้องย้อนดูสถานะ ณ วันรับ ค่อยจดสถานะลงล็อตตอนรับ */
+export async function rmRecvReg(c, data, module) {
+  const ym = String(data.month || "").trim();
+  if (!/^\d{4}-\d{2}$/.test(ym)) return { status: "error", message: "เดือนไม่ถูกต้อง" };
+  const avl = new Set((await supList(c, module)).filter((s) => s.Active).map((s) => s.Name));
+  const rows = await all(c, "SELECT h.ts, h.doc_no, h.sku, h.name, h.qty, h.unit, h.user, l.recv_date, l.lot_no, l.exp_date, l.supplier FROM history h " +
+    "LEFT JOIN rm_lots l ON l.id = (SELECT mv.lot_id FROM rm_lot_moves mv WHERE mv.module = h.module AND mv.op_id = h.op_id AND mv.qty > 0 ORDER BY mv.id LIMIT 1) " +
+    "WHERE h.module = ? AND h.action = ? ORDER BY h.id", module, RM_TYPES.IN.label);
+  const be = (ymd) => { const m = String(ymd || "").match(/^(\d{4})-(\d{2})-(\d{2})$/); return m ? m[3] + "/" + m[2] + "/" + String(Number(m[1]) + 543).slice(-2) : ""; };
+  const out = [];
+  for (const h of rows) {
+    const day = h.recv_date || fmtTH(h.ts, "yyyy-MM-dd");
+    if (!day.startsWith(ym + "-")) continue;
+    const sup = h.supplier || "";
+    out.push({ day, date: be(day), docNo: h.doc_no || "", sku: String(h.sku || ""), name: h.name, qty: Number(h.qty), unit: h.unit || "",
+               user: String(h.user || "").replace(/\s*\(\s*📱[\s\S]*$/, "").trim(), lotNo: h.lot_no || "", exp: be(h.exp_date), supplier: sup,
+               flag: !sup ? "ไม่ระบุผู้ขาย" : avl.size && !avl.has(sup) ? "นอก AVL" : "" });
+  }
+  out.sort((a, b) => (a.day < b.day ? -1 : a.day > b.day ? 1 : 0));   // วันที่รับก่อนหลัง · วันเดียวกันคงลำดับที่บันทึก
+  return { status: "success", month: ym, rows: out, avlCount: avl.size };
+}
+
 // ───────────── อ่านคลัง (GET ?module=) ─────────────
 export async function getRawMaterials(c, module) {
   const rows = await all(c, "SELECT * FROM materials WHERE module = ? ORDER BY seq, rowid", module);
@@ -72,6 +112,8 @@ export async function getRawMaterials(c, module) {
   // ⏰ อัปเดตสต๊อกล่าสุด — หน้าจอแค่แสดง/กรอง ตัวเลขคิดที่นี่ที่เดียว
   const last = await lastStockUpdate(c, module, rows), now = Date.now();
   const cfg = await getCfg(c), lotAgeDays = lotAgeDaysOf(cfg), lots = await lotOpenMap(c, module);
+  const lastSup = {};   // ผู้ขายรายล่าสุดของแต่ละรายการ — หน้าจอเติมให้ตอนรับ (แก้ได้)
+  for (const r of await all(c, "SELECT sku, supplier FROM rm_lots WHERE module = ? AND supplier <> '' ORDER BY id", module)) lastSup[r.sku] = r.supplier;
   rows.forEach((r) => {
     const o = matOut(r);
     o.LastUpdate = last[r.sku] ? new Date(last[r.sku]).toISOString() : "";
@@ -80,6 +122,7 @@ export async function getRawMaterials(c, module) {
     //    ItemExpiry = ค่าที่ตั้งไว้ที่รายการเอง (หน้าแก้ไขใช้ — ไม่งั้นบันทึกแก้ไขแล้ววันของล็อตจะติดไปเป็นค่าของรายการ)
     const myLots = lots[r.sku] || [];
     o.Lots = myLots.map((l) => lotOut(l, lotAgeDays, now));
+    o.LastSupplier = lastSup[r.sku] || "";
     o.LotOld = o.Lots.filter((l) => l.Old).length;
     o.ItemExpiry = r.expiry_date;
     o.ExpiryDate = lotEarliestExp(r.expiry_date, myLots);
@@ -94,7 +137,7 @@ export async function getRawMaterials(c, module) {
   const nums = rows.map((r) => String(r.sku)).filter((s) => s.startsWith(prefix)).map((s) => parseInt(s.replace(prefix, ""), 10)).filter((n) => !isNaN(n));
   const nextNum = nums.length ? Math.max(...nums) + 1 : 1;
   return { status: "success", materials, discontinued, recentHistory: hist.map(histArr), nextSku: prefix + String(nextNum).padStart(4, "0"),
-           staleDays: staleDaysOf(cfg), lotAgeDays };
+           staleDays: staleDaysOf(cfg), lotAgeDays, suppliers: await supList(c, module) };
 }
 
 // ───────────── เพิ่มรายการใหม่ ─────────────
@@ -170,7 +213,7 @@ export async function rmUpdate(c, data, module) {
     const rd = lotYmd(data.recvDate), ex = lotYmd(data.expDate);
     if (rd === null) return { status: "error", message: "วันที่รับเข้าไม่ถูกต้อง" };
     if (ex === null) return { status: "error", message: "วันหมดอายุไม่ถูกต้อง" };
-    lotIn = { recv: rd || dayTH(eventAt), no: String(data.lotNo == null ? "" : data.lotNo).trim().slice(0, 40), exp: ex };
+    lotIn = { recv: rd || dayTH(eventAt), no: String(data.lotNo == null ? "" : data.lotNo).trim().slice(0, 40), exp: ex, sup: supName(data.supplier) };
   }
 
   const m = await first(c, "SELECT * FROM materials WHERE module = ? AND sku = ?", module, sku);
@@ -212,7 +255,7 @@ export async function rmUpdate(c, data, module) {
       stmt(c,
         "UPDATE materials SET qty = ROUND(qty + ?, 3) WHERE module = ? AND sku = ? AND EXISTS (SELECT 1 FROM history WHERE module = ? AND op_id = ?)",
         delta, module, sku, module, op),
-      ...(type === "IN" ? lotReceive(c, module, sku, op, q, lotIn.recv, lotIn.no, lotIn.exp) : type === "RETURN" ? lotReturn(c, module, sku, op, q) : []),
+      ...(type === "IN" ? lotReceive(c, module, sku, op, q, lotIn.recv, lotIn.no, lotIn.exp, lotIn.sup) : type === "RETURN" ? lotReturn(c, module, sku, op, q) : []),
       ...lotSync(c, module, sku, op),
     ]);
   } catch (e) {
@@ -347,6 +390,7 @@ export async function rmLotEdit(c, data, module) {
   if (rd === null) return { status: "error", message: "วันที่รับเข้าไม่ถูกต้อง" };
   if (ex === null) return { status: "error", message: "วันหมดอายุไม่ถูกต้อง" };
   const no = data.lotNo === undefined ? lot.lot_no : String(data.lotNo == null ? "" : data.lotNo).trim().slice(0, 40);
+  const sup = data.supplier === undefined ? lot.supplier : supName(data.supplier);
   const cur = Number(lot.qty_left);
   const q = data.remove === true ? 0 : (data.qty === undefined || data.qty === "" ? cur : qtyStrict(data.qty, true));
   if (isNaN(q) || q < 0) return { status: "error", message: "จำนวนไม่ถูกต้อง (ต้องเป็นตัวเลข 0 ขึ้นไป)" };
@@ -356,7 +400,7 @@ export async function rmLotEdit(c, data, module) {
   if (!isFinite(seen) || Math.abs(seen - cur) > 0.0005)
     return { status: "error", message: "ล็อตนี้เพิ่งมีการเบิก/รับ (ตอนนี้เหลือ " + fmt(cur) + " " + unit + ") — ปิดแล้วเปิดใหม่ก่อนแก้" };
   const diff = Math.round((q - cur) * 1000) / 1000;
-  const meta = rd !== lot.recv_date || no !== lot.lot_no || ex !== lot.exp_date;
+  const meta = rd !== lot.recv_date || no !== lot.lot_no || ex !== lot.exp_date || sup !== lot.supplier;
   if (!diff && !meta) return { status: "success", unchanged: true };
 
   const what = [];
@@ -364,6 +408,7 @@ export async function rmLotEdit(c, data, module) {
   if (rd !== lot.recv_date) what.push("วันที่รับ " + (lot.recv_date || "ยอดยกมา") + " → " + (rd || "ยอดยกมา"));
   if (no !== lot.lot_no) what.push("เลขล็อต " + (lot.lot_no || "–") + " → " + (no || "–"));
   if (ex !== lot.exp_date) what.push("วันหมดอายุ " + (lot.exp_date || "–") + " → " + (ex || "–"));
+  if (sup !== lot.supplier) what.push("ผู้ขาย " + (lot.supplier || "–") + " → " + (sup || "–"));
   const note = ("แก้ล็อต " + lotLabel(lot) + ": " + what.join(", ")).slice(0, 120);
   const op = opId || "lot-" + uuid(), eventAt = eventTime(data.clientAt), who = userWithDevice(c, data.user);
   const gate = "EXISTS (SELECT 1 FROM history WHERE module = ? AND op_id = ?)";
@@ -378,7 +423,7 @@ export async function rmLotEdit(c, data, module) {
           "SELECT ?, ?, m.name, 'แก้ไขล็อต', '-', ?, m.sku, m.unit, ?, ? FROM materials m WHERE m.module = ? AND m.sku = ? " +
           "AND EXISTS (SELECT 1 FROM rm_lots WHERE id = ? AND ABS(qty_left - ?) < 0.0005)",
           module, eventAt, who, note, op, module, sku, lot.id, cur),
-    stmt(c, "UPDATE rm_lots SET recv_date = ?, lot_no = ?, exp_date = ?, qty_left = ? WHERE id = ? AND " + gate, rd, no, ex, q, lot.id, module, op),
+    stmt(c, "UPDATE rm_lots SET recv_date = ?, lot_no = ?, exp_date = ?, supplier = ?, qty_left = ? WHERE id = ? AND " + gate, rd, no, ex, sup, q, lot.id, module, op),
   ];
   if (diff) stmts.push(
     stmt(c, "UPDATE materials SET qty = ROUND(qty + ?, 3) WHERE module = ? AND sku = ? AND " + gate, diff, module, sku, module, op),
@@ -388,7 +433,7 @@ export async function rmLotEdit(c, data, module) {
     const again = await opReplay(c, module, opId);
     if (again) return again;
     if (/UNIQUE/i.test(String(e && e.message || e)))
-      return { status: "error", message: "มีล็อตที่วันที่รับ เลขล็อต และวันหมดอายุ ตรงกันอยู่แล้ว — แก้ให้ต่างกัน หรือแก้จำนวนที่ล็อตนั้นแทน" };
+      return { status: "error", message: "มีล็อตที่วันที่รับ เลขล็อต วันหมดอายุ และผู้ขาย ตรงกันอยู่แล้ว — แก้ให้ต่างกัน หรือแก้จำนวนที่ล็อตนั้นแทน" };
     throw e;
   }
   const h = await first(c, "SELECT balance_after FROM history WHERE module = ? AND op_id = ?", module, op);
@@ -585,7 +630,7 @@ export async function rmPd07(c, data, module) {
   const rows = await all(c, "SELECT id, ts, name, action, qty, user, doc_no, sku, purpose, op_id, balance_after FROM history WHERE module = ? AND " +
     STOCK_ACTION_SQL + " ORDER BY id", module);
   const lotOf = {};   // op_id → "ยอดยกมา 30 · รับ 02/10/69 20"
-  for (const r of await all(c, "SELECT mv.op_id, mv.qty, l.recv_date, l.lot_no FROM rm_lot_moves mv JOIN rm_lots l ON l.id = mv.lot_id WHERE mv.module = ? ORDER BY mv.id", module))
+  for (const r of await all(c, "SELECT mv.op_id, mv.qty, l.recv_date, l.lot_no, l.supplier FROM rm_lot_moves mv JOIN rm_lots l ON l.id = mv.lot_id WHERE mv.module = ? ORDER BY mv.id", module))
     (lotOf[r.op_id] = lotOf[r.op_id] || []).push(lotLabel(r) + " " + Math.abs(Number(r.qty)).toLocaleString("en-US", { maximumFractionDigits: 3 }));
   const r3 = (n) => Math.round(n * 1000) / 1000, who = (u) => String(u || "").replace(/\s*\(\s*📱[\s\S]*$/, "").trim();   // ตัดชื่อเครื่องแบบเดียวกับ personName (js/utils.js)
   const st = {}, months = {};
@@ -790,6 +835,8 @@ export async function handleRaw(c, action, data, module, extra) {
     case "DOCREPORT": return rmDocReport(c, data, module);
     case "SLIPINFO": return rmSlipInfo(c, data, module);
     case "PD07": return rmPd07(c, data, module);
+    case "RECVREG": return rmRecvReg(c, data, module);
+    case "SUPPLIERSET": return rmSupplierSet(c, data, module);
     case "DOCREVSET": return rmDocRevSet(c, data);
     case "ACKDOC": return rmAckDocs(c, data, module);
     case "ROPSTATS": return rmRopStats(c, data, module);

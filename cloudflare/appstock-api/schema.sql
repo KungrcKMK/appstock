@@ -54,10 +54,23 @@ CREATE TABLE IF NOT EXISTS rm_lots (
   qty_in REAL NOT NULL DEFAULT 0,                   -- รับเข้ามาเท่าไร
   qty_left REAL NOT NULL DEFAULT 0,                 -- เหลืออยู่เท่าไร
   created_at TEXT NOT NULL DEFAULT '',
-  op_id TEXT NOT NULL DEFAULT ''
+  op_id TEXT NOT NULL DEFAULT '',
+  supplier TEXT NOT NULL DEFAULT ''                 -- ผู้ขาย (2026-11-27) · '' = ไม่ระบุ / ล็อตก่อนมีช่องนี้
 );
--- รับวันเดียวกัน + เลขล็อตเดียวกัน + วันหมดอายุเดียวกัน = ล็อตเดียวกัน (บวกเพิ่ม)
-CREATE UNIQUE INDEX IF NOT EXISTS idx_rmlot_key ON rm_lots(module, sku, recv_date, lot_no, exp_date);
+-- รับวันเดียวกัน + เลขล็อตเดียวกัน + วันหมดอายุเดียวกัน + ผู้ขายเดียวกัน = ล็อตเดียวกัน (บวกเพิ่ม)
+-- ฐานที่มีอยู่แล้ว (2026-11-27): ALTER TABLE rm_lots ADD COLUMN supplier TEXT NOT NULL DEFAULT '';
+--   DROP INDEX idx_rmlot_key; CREATE UNIQUE INDEX idx_rmlot_key ON rm_lots(module, sku, recv_date, lot_no, exp_date, supplier);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_rmlot_key ON rm_lots(module, sku, recv_date, lot_no, exp_date, supplier);
+
+-- รายชื่อผู้ขายที่อนุมัติ (AVL · SD-PC-01) แยกโรงงาน — หัวหน้าขึ้นไปแก้ในแอป · ยกเลิก = active 0 (ไม่ลบ ล็อตเก่ายังอ้างชื่อเดิม)
+CREATE TABLE IF NOT EXISTS suppliers (
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  module TEXT NOT NULL,
+  name TEXT NOT NULL,
+  active INTEGER NOT NULL DEFAULT 1,
+  updated_at TEXT NOT NULL DEFAULT ''
+);
+CREATE UNIQUE INDEX IF NOT EXISTS idx_supplier_name ON suppliers(module, name);
 CREATE TABLE IF NOT EXISTS rm_lot_moves (           -- ล็อตไหนเปลี่ยนเท่าไร ต่อรายการในประวัติ (op_id) — ใบเบิกแสดงล็อต + คืนกลับล็อตเดิม
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   module TEXT NOT NULL,
